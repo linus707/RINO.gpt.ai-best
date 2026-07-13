@@ -214,5 +214,6 @@ description: |
 ## 참고 파일
 
 - `references/html-template.md` — 네이버 D.I.A 최적화 HTML 템플릿 (검증 완료 버전)
+- `references/acebed-style-BlogGuide.md` — 리노 톤(어투·종결어미·도입/마무리 패턴) 전용 가이드. 주제가 무엇이든 이 문서 기준으로 문체를 맞춘다.
 - 인스타그램 콘텐츠가 필요하면 → `acebed-instagram` 스킬 사용 (블로그와 구조가 다름)
 - 얼뚱트립 여행 블로그는 → `rino-blog-posting` 스킬 사용 (절대 혼용 금지)
