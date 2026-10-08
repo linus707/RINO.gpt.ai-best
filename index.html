@@ -289,7 +289,7 @@ const bgdb=()=>new Promise((ok,no)=>{const r=indexedDB.open("rino-bg",1);r.onupg
 async function bgAll(){try{const d=await bgdb();return await new Promise(ok=>{const q=d.transaction("p").objectStore("p").getAll();q.onsuccess=()=>ok((q.result||[]).sort((a,b)=>a.u-b.u));q.onerror=()=>ok([])})}catch{return[]}}
 async function bgPut(x){const d=await bgdb();return new Promise((ok,no)=>{const t=d.transaction("p","readwrite");t.objectStore("p").put(x);t.oncomplete=ok;t.onerror=()=>no(t.error)})}
 async function bgRemove(id){const d=await bgdb();return new Promise((ok,no)=>{const t=d.transaction("p","readwrite");t.objectStore("p").delete(id);t.oncomplete=ok;t.onerror=()=>no(t.error)})}
-const bgUrl=it=>BG.urls[it.id]||(BG.urls[it.id]=URL.createObjectURL(it.blob));
+const bgUrl=it=>BG.urls[it.id]||(BG.urls[it.id]=URL.createObjectURL(it.view||it.blob));
 const bgItems=()=>BG.list.length?BG.list:BGLIST.map(([id,name])=>({id,name,country:name,sample:1,svg:BGSC[id].svg}));
 function bgPick(c){const a=bgItems();if(c.sel!=="auto"){const f=a.find(x=>x.id===c.sel);if(f)return f}const d=new Date(),day=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);return a[day%a.length]}
 function applyBg(){
@@ -304,13 +304,23 @@ function applyBg(){
 }
 function bgSet(k,v){CFG.bg={...bgDef(),[k]:v};saveCfg();applyBg()}
 function bgSel(id){bgSet("sel",id);render()}
-const shrink=(f,max=1920)=>new Promise((ok,no)=>{const u=URL.createObjectURL(f),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?ok(b):no(new Error("변환 실패")),"image/jpeg",.82)};im.onerror=()=>{URL.revokeObjectURL(u);no(new Error("사진을 읽지 못했어요"))};im.src=u});
+const BIG=6000;/* 이보다 큰 사진은 화면 표시용 복사본(최대 4096px, 고화질)을 따로 만들고 원본도 그대로 보관해요 */
+const probe=f=>new Promise((ok,no)=>{const u=URL.createObjectURL(f),im=new Image();im.onload=()=>ok({im,u});im.onerror=()=>{URL.revokeObjectURL(u);no(new Error("이 형식은 열 수 없어요 (JPG·PNG·WebP를 올려 주세요)"))};im.src=u});
+async function viewCopy(f){
+  const {im,u}=await probe(f);
+  try{const w=im.naturalWidth,h=im.naturalHeight;if(Math.max(w,h)<=BIG)return null;
+    const k=4096/Math.max(w,h),c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
+    const x=c.getContext("2d");x.imageSmoothingQuality="high";x.drawImage(im,0,0,c.width,c.height);
+    return await new Promise(ok=>c.toBlob(b=>ok(b),"image/jpeg",.95))}
+  finally{URL.revokeObjectURL(u)}
+}
 async function bgUpload(inp){
   const fs=[...inp.files];inp.value="";if(!fs.length)return;
   if(BG.list.length+fs.length>20){alert("배경 사진은 최대 20장까지 넣을 수 있어요");return}
   const country=($("#bgc")?$("#bgc").value:"").trim().slice(0,30);let n=0;
-  for(const f of fs){try{const b=await shrink(f);await bgPut({id:uid(),name:f.name.replace(/\.[^.]+$/,"").slice(0,30),country,blob:b,u:Date.now()+n++})}catch(e){alert((f.name||"사진")+": "+(e.message||"올리지 못했어요"))}}
-  BG.list=await bgAll();render();toast(n+"장을 넣었어요");
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch{}
+  for(const f of fs){try{const v=await viewCopy(f);await bgPut({id:uid(),name:f.name.replace(/\.[^.]+$/,"").slice(0,30),country,blob:f,view:v||undefined,u:Date.now()+n});n++}catch(e){alert((f.name||"사진")+": "+(e.message||"올리지 못했어요"))}}
+  BG.list=await bgAll();render();toast(n+"장을 원본 그대로 넣었어요");
 }
 async function bgDelete(id){
   if(!confirm("이 배경 사진을 지울까요? (이 기기에서만 지워져요)"))return;
@@ -319,7 +329,7 @@ async function bgDelete(id){
   const img=$("#bgph .bgimg");img.dataset.k="";BG.list=await bgAll();render();
 }
 const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼️ 배경 사진</h3><div class="body">
-  <div class="m sub">${BG.list.length?`내 사진 ${BG.list.length}장 · 이 기기에만 저장돼요.`:"지금은 예시 일러스트예요. 직접 찍은 여행 사진을 올리면 바뀌어요. 사진은 이 기기에만 저장돼요."} 저작권이 확실한 내 사진만 쓰세요.</div>
+  <div class="m sub">${BG.list.length?`내 사진 ${BG.list.length}장 · 원본 화질 그대로, 이 기기에만 저장돼요.`:"지금은 예시 일러스트예요. 직접 찍은 여행 사진을 올리면 바뀌어요. 사진은 원본 그대로 이 기기에만 저장돼요."} 저작권이 확실한 내 사진만 쓰세요.</div>
   <div class="form" style="border:0;padding:0;background:none;box-shadow:none"><input id="bgc" placeholder="나라·장소 (예: 일본 교토) — 이번에 올리는 사진에 붙어요"><input id="bgf" type="file" accept="image/*" multiple onchange="bgUpload(this)"></div>
   <div class="bgthumbs"><button class="bgt auto ${c.sel==="auto"?"on":""}" onclick="bgSel('auto')">자동<br>(매일 바뀜)</button>${a.map(x=>`<button class="bgt ${c.sel===x.id?"on":""}" style="${x.sample?"":`background-image:url(${bgUrl(x)})`}" onclick="bgSel('${sid(x.id)}')">${esc(x.country||x.name)}${x.sample?"":`<i onclick="event.stopPropagation();bgDelete('${sid(x.id)}')" aria-label="삭제">✕</i>`}</button>`).join("")}</div>
   <div class="rng"><span>어둡기</span><input type="range" min="0" max="85" value="${c.dim}" oninput="bgSet('dim',+this.value);this.nextElementSibling.textContent=this.value">${"<b>"+c.dim+"</b>"}</div>
