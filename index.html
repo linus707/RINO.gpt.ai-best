@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>리노 워크스페이스</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#1f7a52">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="리노WS">
+<style>
+:root{--g:#1f7a52;--g-soft:#e6f4ec;--bg:#f3f5f7;--card:#fff;--tx:#1f2933;--mut:#7b8794;--line:#e4e7eb;
+--idea:#c99a1a;--make:#2f5de0;--review:#8a4fd1;--ready:#d9731a;--done:#1f7a52}
+@media(prefers-color-scheme:dark){:root{--bg:#12161a;--card:#1b2127;--tx:#e8ecef;--mut:#8b97a3;--line:#2a323a;--g-soft:#17302a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 16px}
+.icon{border:1px solid var(--line);background:var(--card);border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:18px}
+.crumb{flex:1;color:var(--mut)}.crumb b{color:var(--tx)}
+.sync{font-size:12px;color:var(--g)}
+main{padding:16px 16px 80px;max-width:760px;margin:auto}
+h1{margin:4px 0 2px;font-size:24px}.sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:center}.grow{flex:1}
+.btn{background:var(--g);color:#fff;border:0;border-radius:12px;padding:11px 16px;font-weight:600;cursor:pointer}
+.btn.ghost{background:var(--card);color:var(--tx);border:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat small{color:var(--mut)}.stat b{display:block;font-size:clamp(17px,5.2vw,26px);overflow-wrap:anywhere}
+.stat.hl{background:var(--g);color:#fff;border-color:var(--g)}.stat.hl small{color:#d8f0e3}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;margin:12px 0;overflow:hidden}
+.card h3{margin:0;padding:12px 14px;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.card .body{padding:0 14px 12px}
+.empty{color:var(--mut);padding:10px 0;font-size:13px}
+.item{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:var(--bg)}
+.item .t{font-weight:600}.item .m{color:var(--mut);font-size:12px}
+.pill{border:0;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;color:#fff;cursor:pointer}
+.tabs{display:flex;gap:4px;background:var(--line);border-radius:12px;padding:3px;margin:12px 0;overflow:auto}
+.tabs button{flex:1;border:0;background:none;padding:8px 10px;border-radius:10px;cursor:pointer;white-space:nowrap;color:var(--mut)}
+.tabs button.on{background:var(--card);color:var(--g);font-weight:700}
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.form{display:grid;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+#drawer{position:fixed;inset:0;display:none;z-index:10}#drawer.open{display:flex}
+#drawer nav{width:290px;max-width:82%;background:var(--card);padding:18px 14px;overflow:auto}
+#drawer .shade{flex:1;background:#0006}
+.logo{font-size:24px;font-weight:800}.logo i{color:var(--g)}
+.brandbox{border:1px solid var(--line);border-radius:14px;padding:12px;margin:14px 0}
+.navbtn{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:12px;border-radius:12px;cursor:pointer;margin:2px 0}
+.navbtn.on{background:var(--g-soft);color:var(--g);font-weight:700}
+.chk{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.chk input{width:20px;height:20px}.done{text-decoration:line-through;color:var(--mut)}
+.qty{display:flex;align-items:center;gap:8px}.qty button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer}
+.low{color:#c0392b;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <button class="icon" id="menu" aria-label="메뉴">☰</button>
+  <div class="crumb">리노 워크스페이스 › <b id="crumb"></b></div>
+  <span class="sync" id="sync">● 자동 저장</span>
+</header>
+<div id="drawer"><nav>
+  <div class="logo">Rino<i>.</i></div>
+  <div class="sub">AI 기반 자동 수익 시스템</div>
+  <div class="brandbox"><b>리노 퍼스널 브랜드</b><div class="m sub" style="margin:0">여행 · 가구 · 스트릿포토</div></div>
+  <div id="navlist"></div>
+</nav><div class="shade"></div></div>
+<main id="app"></main>
+
+<script>
+const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
+const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
+const PAGES=[["home","📡","채널 현황"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["calendar","📅","콘텐츠 캘린더"],["stock","📦","가구 재고"],["sop","📖","나만의 SOP"],["routine","🌿","오늘 루틴"],["revenue","💰","수익 대시보드"],["settings","⚙️","설정"]];
+const RCH={...CH,etc:"기타"};
+const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
+const today=()=>new Date().toISOString().slice(0,10);
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const seed=()=>({updated:0,revenue:[],goal:1000000,contents:[],tasks:[],stock:[],sop:[
+  {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
+  {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
+  routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
+const norm=d=>{const s=seed();d={...s,...d};if(!d.routine||d.routine.date!==today())d.routine={date:today(),items:(d.routine||s.routine).items.map(([n])=>[n,0])};return d};
+let D;try{D=norm(JSON.parse(localStorage.getItem("rino-ws"))||{})}catch{D=norm({})}
+let page="home",tab="open",chF="all";
+const $=s=>document.querySelector(s);
+
+/* ---------- 클라우드 동기화 (GitHub Gist, 비공개) ---------- */
+let CFG={};try{CFG=JSON.parse(localStorage.getItem("rino-cfg"))||{}}catch{}
+const saveCfg=()=>{try{localStorage.setItem("rino-cfg",JSON.stringify(CFG))}catch{}};
+const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
+const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
+async function push(){
+  if(!CFG.token)return;setSync("☁ 저장 중…");
+  try{
+    const files={"rino-workspace.json":{content:JSON.stringify(D)}};
+    let r;
+    if(CFG.gistId)r=await gh("/gists/"+CFG.gistId,{method:"PATCH",body:JSON.stringify({files})});
+    else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Rino workspace data",public:false,files})});
+      if(r.ok){CFG.gistId=(await r.json()).id;saveCfg();setSync("☁ 동기화됨");if(page==="settings")render();return}}
+    if(!r.ok)throw new Error(r.status);setSync("☁ 동기화됨");
+  }catch{setSync("⚠ 동기화 실패")}
+}
+async function pull(){
+  if(!CFG.token||!CFG.gistId)return;
+  try{
+    const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw 0;
+    const f=(await r.json()).files["rino-workspace.json"];if(!f)throw 0;
+    const rd=JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content);
+    if((rd.updated||0)>(D.updated||0)){D=norm(rd);try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}render()}
+    else if((rd.updated||0)<(D.updated||0))await push();
+    setSync("☁ 동기화됨");
+  }catch{setSync("⚠ 동기화 실패")}
+}
+let _t;
+const save=()=>{D.updated=Date.now();try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}clearTimeout(_t);if(CFG.token)_t=setTimeout(push,1500)};
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()});
+
+function go(p){page=p;$("#drawer").classList.remove("open");render()}
+function nav(){$("#navlist").innerHTML=PAGES.map(([k,i,n])=>`<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${i} ${n}</button>`).join("")}
+$("#menu").onclick=()=>{nav();$("#drawer").classList.add("open")};
+$("#drawer .shade").onclick=()=>$("#drawer").classList.remove("open");
+
+const stat=(l,n,hl)=>`<div class="stat ${hl?"hl":""}"><small>${l}</small><b>${n}</b></div>`;
+const stInfo=k=>ST.find(s=>s[0]===k);
+const pill=c=>{const s=stInfo(c.stage);return `<button class="pill" style="background:var(${s[2]})" onclick="advance('${c.id}')" title="누르면 다음 단계">${s[1]} ▸</button>`};
+function advance(id){const c=D.contents.find(x=>x.id===id);const i=ST.findIndex(s=>s[0]===c.stage);c.stage=ST[(i+1)%ST.length][0];save();render()}
+function delItem(list,id){if(!confirm("삭제할까요?"))return;D[list]=D[list].filter(x=>x.id!==id);save();render()}
+const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}</div>${pill(c)}<button class="icon" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
+
+const views={
+home(){
+  const n=s=>D.contents.filter(c=>c.stage===s).length;
+  return `<h1>채널 현황</h1><div class="sub">${today()} · 전체 채널 기준</div>
+  <button class="btn" onclick="go('contents')">＋ 콘텐츠 등록</button>
+  <div class="stats">${stat("오늘 마감",D.contents.filter(c=>c.due===today()&&c.stage!=="done").length,1)}${ST.map(s=>stat(s[1],n(s[0]))).join("")}</div>`+
+  Object.entries(CH).map(([k,name])=>{const list=D.contents.filter(c=>c.ch===k&&c.stage!=="done");
+    return `<div class="card"><h3>${name}<span class="m sub" style="margin:0">${list.length}건 진행</span></h3><div class="body">${list.map(contentItem).join("")||'<div class="empty">진행 중인 콘텐츠가 없어요</div>'}</div></div>`}).join("");
+},
+contents(){
+  const q=(window._q||"").toLowerCase();
+  const list=D.contents.filter(c=>(chF==="all"||c.ch===chF)&&(c.title+c.memo).toLowerCase().includes(q));
+  return `<h1>전체 콘텐츠</h1><div class="sub">단계 버튼을 누르면 다음 단계로 넘어가요</div>
+  <div class="form"><input id="ct" placeholder="콘텐츠 제목 (예: 다낭 3박4일 코스)">
+  <div class="filters"><select id="cc">${Object.entries(CH).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><input id="cd" type="date" value="${today()}"></div>
+  <input id="cm" placeholder="메모 (선택)"><button class="btn" onclick="addContent()">＋ 등록</button><button class="btn ghost" onclick="aiIdeas()">✨ AI 아이디어 받기 (선택한 채널)</button></div>
+  <div id="ai">${ideasHtml()}</div>
+  <div class="filters"><input placeholder="🔍 제목·메모 검색" value="${esc(window._q||"")}" oninput="window._q=this.value;render(true)"><select onchange="chF=this.value;render()"><option value="all">전체 채널</option>${Object.entries(CH).map(([k,v])=>`<option value="${k}" ${chF===k?"selected":""}>${v}</option>`).join("")}</select></div>
+  ${list.map(contentItem).join("")||'<div class="empty">콘텐츠가 없어요</div>'}`;
+},
+tasks(){
+  const t=today(),wk=new Date(Date.now()+7*864e5).toISOString().slice(0,10);
+  const f={open:x=>!x.done,today:x=>!x.done&&x.due===t,week:x=>!x.done&&x.due&&x.due<=wk,done:x=>x.done,all:()=>true}[tab];
+  const list=D.tasks.filter(f).sort((a,b)=>(a.due||"9").localeCompare(b.due||"9"));
+  const tabs=[["open","미완료"],["today","오늘"],["week","이번 주"],["done","완료"],["all","전체"]];
+  return `<h1>업무 관리</h1><div class="sub">하나씩 확인하고, 하나씩 끝내요</div>
+  <div class="stats">${stat("전체 미완료",D.tasks.filter(x=>!x.done).length)}${stat("오늘 마감",D.tasks.filter(x=>!x.done&&x.due===t).length)}${stat("기한초과",D.tasks.filter(x=>!x.done&&x.due&&x.due<t).length)}${stat("오늘 완료",D.tasks.filter(x=>x.done&&x.doneAt===t).length)}</div>
+  <div class="form"><input id="tt" placeholder="할 일 입력"><div class="filters"><input id="td" type="date"><select id="tp"><option>중요도 보통</option><option>중요도 높음</option><option>중요도 낮음</option></select></div><button class="btn" onclick="addTask()">＋ 업무 추가</button></div>
+  <div class="tabs">${tabs.map(([k,n])=>`<button class="${tab===k?"on":""}" onclick="tab='${k}';render()">${n}</button>`).join("")}</div>
+  ${list.map(x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${x.id}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon" style="width:32px;height:32px" onclick="delItem('tasks','${x.id}')">✕</button></div>`).join("")||'<div class="empty">해당 업무가 없어요</div>'}`;
+},
+calendar(){
+  const list=D.contents.filter(c=>c.due).sort((a,b)=>a.due.localeCompare(b.due));
+  const by={};list.forEach(c=>(by[c.due]=by[c.due]||[]).push(c));
+  return `<h1>콘텐츠 캘린더</h1><div class="sub">마감일이 있는 콘텐츠를 날짜순으로 보여줘요</div>`+
+  (Object.keys(by).map(d=>`<div class="card" style="border-color:${d===today()?"var(--g)":"var(--line)"}"><h3>${d}${d===today()?" · 오늘":""}</h3><div class="body">${by[d].map(contentItem).join("")}</div></div>`).join("")||'<div class="empty">마감일이 있는 콘텐츠를 먼저 등록해 주세요</div>');
+},
+stock(){
+  return `<h1>가구 재고</h1><div class="sub">최소 수량 이하이면 빨간색으로 표시돼요</div>
+  <div class="form"><input id="sn" placeholder="품목명 (예: 월넛 사이드테이블)"><div class="filters"><input id="sq" type="number" min="0" placeholder="현재 수량"><input id="sm" type="number" min="0" placeholder="최소 수량"></div><button class="btn" onclick="addStock()">＋ 품목 추가</button></div>
+  ${D.stock.map(s=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(s.name)}</div><div class="m">최소 ${s.min}개 ${s.qty<=s.min?'· <span class="low">재주문 필요</span>':""}</div></div><div class="qty"><button onclick="qty('${s.id}',-1)">−</button><b class="${s.qty<=s.min?"low":""}">${s.qty}</b><button onclick="qty('${s.id}',1)">＋</button></div><button class="icon" style="width:32px;height:32px" onclick="delItem('stock','${s.id}')">✕</button></div></div>`).join("")||'<div class="empty">등록된 품목이 없어요</div>'}`;
+},
+sop(){
+  return `<h1>나만의 SOP</h1><div class="sub">반복 작업을 체크리스트로 만들어 두세요 (줄바꿈으로 단계 구분)</div>
+  <div class="form"><input id="pn" placeholder="SOP 이름"><textarea id="ps" rows="4" placeholder="단계 1&#10;단계 2&#10;단계 3"></textarea><button class="btn" onclick="addSop()">＋ SOP 추가</button></div>
+  ${D.sop.map(p=>`<div class="card"><h3>${esc(p.title)}<button class="icon" style="width:32px;height:32px" onclick="delItem('sop','${p.id}')">✕</button></h3><div class="body"><ol style="margin:0;padding-left:20px">${p.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div></div>`).join("")}`;
+},
+routine(){
+  const r=D.routine.items,d=r.filter(x=>x[1]).length;
+  return `<h1>오늘 루틴</h1><div class="sub">${today()} · 매일 자동으로 초기화돼요</div>
+  <div class="stats">${stat("달성",d+" / "+r.length,1)}</div>
+  ${r.map((x,i)=>`<div class="chk"><input type="checkbox" ${x[1]?"checked":""} onchange="D.routine.items[${i}][1]=this.checked?1:0;save();render()"><div class="grow ${x[1]?"done":""}">${esc(x[0])}</div></div>`).join("")}`;
+}};
+
+/* ---------- 수익 대시보드 ---------- */
+const monthKey=(y,m)=>y+"-"+String(m+1).padStart(2,"0");
+views.revenue=()=>{
+  const now=new Date(),cur=monthKey(now.getFullYear(),now.getMonth());
+  const sum=a=>a.reduce((s,r)=>s+r.amount,0);
+  const month=D.revenue.filter(r=>r.date.startsWith(cur)),total=sum(month);
+  const pct=D.goal>0?Math.min(100,Math.round(total/D.goal*100)):0;
+  const months=[...Array(6)].map((_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-(5-i),1);const k=monthKey(d.getFullYear(),d.getMonth());return[k.slice(5)+"월",sum(D.revenue.filter(r=>r.date.startsWith(k)))]});
+  const mx=Math.max(1,...months.map(m=>m[1]));
+  const recent=[...D.revenue].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
+  return `<h1>수익 대시보드</h1><div class="sub">${cur} · 숫자를 기록하면 흐름이 보여요</div>
+  <div class="stats">${stat("이번 달 수익",won(total),1)}${stat("목표 달성률",pct+"%")}${stat("남은 금액",won(Math.max(0,D.goal-total)))}</div>
+  <div class="card"><div class="body" style="padding-top:12px"><div class="m sub">월 목표 (원)</div><input type="number" min="0" value="${D.goal}" onchange="D.goal=+this.value||0;save();render()">
+  <div style="height:10px;background:var(--line);border-radius:99px;margin-top:10px"><div style="height:10px;width:${pct}%;background:var(--g);border-radius:99px"></div></div></div></div>
+  <div class="card"><h3>최근 6개월</h3><div class="body"><div style="display:flex;gap:8px;align-items:flex-end;height:120px">${months.map(([n,v])=>`<div style="flex:1;text-align:center"><div style="height:${Math.round(v/mx*90)}px;background:var(--g);border-radius:6px 6px 0 0;min-height:2px"></div><div class="m">${n}</div></div>`).join("")}</div></div></div>
+  <div class="card"><h3>채널별 (이번 달)</h3><div class="body">${Object.entries(RCH).map(([k,n])=>`<div class="row" style="padding:4px 0"><span class="grow">${n}</span><b>${won(sum(month.filter(r=>r.ch===k)))}</b></div>`).join("")}</div></div>
+  <div class="form"><div class="filters"><input id="rd" type="date" value="${today()}"><select id="rc">${Object.entries(RCH).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></div>
+  <input id="ra" type="number" min="0" placeholder="금액 (원)"><input id="rm" placeholder="출처 메모 (예: 애드센스, 쿠팡파트너스, 가구 판매)"><button class="btn" onclick="addRev()">＋ 수익 기록</button></div>
+  ${recent.map(r=>`<div class="item"><div class="row"><div class="grow"><div class="t">${won(r.amount)}</div><div class="m">${esc(r.date)} · ${RCH[r.ch]||"기타"}${r.memo?" · "+esc(r.memo):""}</div></div><button class="icon" style="width:32px;height:32px" onclick="delItem('revenue','${r.id}')">✕</button></div></div>`).join("")||'<div class="empty">아직 기록이 없어요</div>'}`;
+};
+function addRev(){const a=+$("#ra").value;if(!a)return;D.revenue.push({id:uid(),date:$("#rd").value||today(),ch:$("#rc").value,amount:a,memo:$("#rm").value.trim()});save();render()}
+
+/* ---------- 설정 (동기화·백업·AI 키) ---------- */
+views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 백업, AI 연결</div>
+  <div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
+  <div class="m sub">내 GitHub 비공개 Gist에 데이터를 저장해요. <a href="https://github.com/settings/tokens/new?scopes=gist&description=rino-workspace" target="_blank" rel="noopener">여기</a>에서 <b>gist 권한만</b> 있는 토큰을 만들어 붙여넣으세요.</div>
+  <div class="form" style="border:0;padding:0"><input id="tk" type="password" placeholder="GitHub 토큰 (ghp_…)" value="${esc(CFG.token||"")}" autocomplete="off">
+  <input id="gi" placeholder="Gist ID (두 번째 기기에서만 입력)" value="${esc(CFG.gistId||"")}">
+  <button class="btn" onclick="connectSync()">연결 / 지금 동기화</button>
+  ${CFG.token?'<button class="btn ghost" onclick="disconnectSync()">연결 해제</button>':""}</div>
+  <div class="m sub">${CFG.gistId?"내 Gist ID: <b>"+esc(CFG.gistId)+"</b> — 다른 기기에 같은 토큰과 이 ID를 입력하면 같은 데이터가 보여요.":"첫 연결 시 Gist가 자동으로 만들어져요."}</div></div></div>
+  <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div></div></div>
+  <div class="card"><h3>✨ AI 연결</h3><div class="body"><div class="m sub">Anthropic API 키를 넣으면 콘텐츠 아이디어를 받을 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</div>
+  <div class="form" style="border:0;padding:0"><input id="ak" type="password" placeholder="sk-ant-…" value="${esc(CFG.aiKey||"")}" autocomplete="off"><button class="btn" onclick="CFG.aiKey=$('#ak').value.trim();saveCfg();alert('저장했어요')">저장</button></div></div></div>`;
+function connectSync(){CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value.trim()||CFG.gistId||"";saveCfg();if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
+function disconnectSync(){delete CFG.token;saveCfg();setSync("● 자동 저장");render()}
+function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
+function importJson(f){if(!f)return;f.text().then(t=>{try{D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
+
+/* ---------- AI 콘텐츠 아이디어 ---------- */
+window._ideas=[];
+const ideasHtml=()=>_ideas.map((x,i)=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(x.title)}</div><div class="m">${esc(x.memo)}</div></div><button class="pill" style="background:var(--g)" onclick="addIdea(${i})">＋ 추가</button></div></div>`).join("");
+async function aiIdeas(){
+  if(!CFG.aiKey){alert("설정에서 AI 키를 먼저 입력해 주세요");return go("settings")}
+  const ch=$("#cc").value,box=$("#ai");box.innerHTML='<div class="empty">아이디어 생각 중… ✨</div>';
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":CFG.aiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-haiku-5-5",max_tokens:700,messages:[{role:"user",content:`30대 1인 퍼스널 브랜드 운영자의 "${CH[ch]}" 채널에 올릴 콘텐츠 아이디어 5개를 제안해줘. 초보자도 따라 만들 수 있게 구체적으로. 이미 있는 제목은 피해줘: ${D.contents.slice(0,15).map(c=>c.title).join(", ")||"없음"}. 한 줄에 하나, 형식은 "제목 | 한 줄 설명". 번호나 다른 말은 쓰지 마.`}]})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||r.status);
+    _ideas=j.content[0].text.split("\n").map(l=>l.trim()).filter(l=>l.includes("|")).map(l=>{const[t,...m]=l.replace(/^[-*\d.\s]+/,"").split("|");return{title:t.trim(),memo:m.join("|").trim(),ch}}).slice(0,5);
+    box.innerHTML=ideasHtml()||'<div class="empty">결과를 읽지 못했어요. 다시 눌러 주세요</div>';
+  }catch(e){box.innerHTML='<div class="empty low">AI 요청 실패: '+esc(e.message)+'</div>'}
+}
+function addIdea(i){const x=_ideas.splice(i,1)[0];D.contents.unshift({id:uid(),title:x.title,ch:x.ch,due:"",memo:x.memo,stage:"idea"});save();render()}
+
+function addContent(){const t=$("#ct").value.trim();if(!t)return;D.contents.unshift({id:uid(),title:t,ch:$("#cc").value,due:$("#cd").value,memo:$("#cm").value.trim(),stage:"idea"});save();render()}
+function addTask(){const t=$("#tt").value.trim();if(!t)return;D.tasks.unshift({id:uid(),title:t,due:$("#td").value,pri:$("#tp").value,done:0});save();render()}
+function toggleTask(id){const x=D.tasks.find(t=>t.id===id);x.done=x.done?0:1;x.doneAt=x.done?today():null;save();render()}
+function addStock(){const n=$("#sn").value.trim();if(!n)return;D.stock.push({id:uid(),name:n,qty:+$("#sq").value||0,min:+$("#sm").value||0});save();render()}
+function qty(id,v){const s=D.stock.find(x=>x.id===id);s.qty=Math.max(0,s.qty+v);save();render()}
+function addSop(){const n=$("#pn").value.trim(),s=$("#ps").value.split("\n").map(x=>x.trim()).filter(Boolean);if(!n||!s.length)return;D.sop.push({id:uid(),title:n,steps:s});save();render()}
+
+function render(keepFocus){
+  $("#crumb").textContent=PAGES.find(p=>p[0]===page)[2];
+  const a=document.activeElement,id=a&&a.id,pos=a&&a.selectionStart;
+  $("#app").innerHTML=views[page]();
+  if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
+}
+render();
+if(CFG.token){setSync("☁ 확인 중…");pull()}
+if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
