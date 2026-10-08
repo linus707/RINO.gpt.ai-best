@@ -57,6 +57,7 @@ body.staff .del{display:none}
 .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;line-height:1.8;word-break:keep-all}
 .doc h3{margin:14px 0 4px;font-size:16px}.doc hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .ph{background:rgba(201,154,26,.22);border-radius:6px;padding:0 4px}
+.doc code{background:var(--bg);border-radius:5px;padding:0 4px;font-size:.92em}
 .doc a{color:var(--g)}
 .lock{max-width:380px;margin:40px auto}
 </style>
@@ -325,10 +326,10 @@ function md(src){
     if(/^\s*-{3,}\s*$/.test(l))return "<hr>";
     if(/^[|\s:-]+$/.test(l)&&l.includes("|"))return "";
     let t=l.startsWith("|")?l.split("|").slice(1,-1).map(c=>c.trim()).join(" — "):l;
-    let head=/^##\s+/.test(t);if(head)t=t.replace(/^##\s+/,"");
+    let head=/^#{1,3}\s+/.test(t);if(head)t=t.replace(/^#{1,3}\s+/,"");
     t=esc(t);
-    t=t.replace(/`([^`]+)`/g,'<span class="ph">$1</span>');
-    if(!t.includes('class="ph"'))t=t.replace(/\[확인 필요[^\]]*\]/g,m=>'<span class="ph">'+m+'</span>');
+    t=t.replace(/`([^`]+)`/g,(m,x)=>/확인 필요|직접 채워/.test(x)?'<span class="ph">'+x+'</span>':'<code>'+x+'</code>');
+    t=t.replace(/\[확인 필요[^\]]*\]/g,(m,off,str)=>str.charAt(off-1)===">"?m:'<span class="ph">'+m+'</span>');
     t=t.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/\*([^*\n]+)\*/g,"<i>$1</i>");
     t=t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     return head?`<h3>${t}</h3>`:(t.trim()===""?"<br>":t+"<br>");
@@ -367,6 +368,81 @@ function importContent(f){
     save();render();alert(n+"건을 가져왔어요. 전체 콘텐츠에서 확인하세요.");
   }catch{alert("콘텐츠 파일이 아니에요")}});
 }
+
+/* ---------- SOLAMEN 작업 폴더 불러오기 (읽기 전용 토큰, 관리자 기기에만 저장) ---------- */
+/* 직원들이 SOLAMEN 레포의 작업 폴더(작업/날짜_[태그]_제목/)에 저장한 글을 읽어 전체 콘텐츠에 넣어요.
+   클라우드 직원 세션은 Gist 같은 계정 API를 쓸 수 없어서, 이미 하던 대로 레포에 저장하게 두고 앱이 읽어 와요. */
+const WORK_RE=/^작업\/([^/]+)\/(brief|plan|draft|final|copyedit)\.md$/;
+const REPO_CH={트립:"blog",슬립:"furn",포토:"photo",공통:"blog"};
+const repoOk=r=>/^[\w.-]+\/[\w.-]+$/.test(r||"");
+const ghRepo=path=>fetch("https://api.github.com"+path,{headers:{Authorization:"Bearer "+CFG.repoToken,Accept:"application/vnd.github+json"}});
+function b64text(b64){const bin=atob(String(b64).replace(/\s/g,""));const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder("utf-8").decode(u)}
+function splitDraft(text){
+  const sec=re=>{const m=text.match(new RegExp("^##\\s+"+re+"[^\\n]*\\n","m"));if(!m)return null;const s0=m.index+m[0].length;const n=text.slice(s0).search(/^##\s+/m);const end=n<0?text.length:s0+n;return{start:m.index,end,body:text.slice(s0,end).replace(/^\n+|\n+$/g,"")}};
+  const b=sec("본문");if(!b)return{title:"",body:text.trim(),report:""};
+  let body=b.body.replace(/(\n\s*-{3,}\s*)+$/,"").trim();const cuts=[[b.start,b.end]];
+  const t=sec("해시태그");if(t){body+="\n\n---\n\n"+t.body.trim();cuts.push([t.start,t.end])}
+  let rest=text;cuts.sort((x,y)=>y[0]-x[0]).forEach(([a,z])=>{rest=rest.slice(0,a)+rest.slice(z)});
+  let title="";const ts=sec("제목");
+  if(ts){const bold=ts.body.match(/^\*\*([^*\n]+)\*\*\s*$/m);if(bold)title=bold[1].trim();else{const li=ts.body.match(/^\s*1\.\s*(.+)$/m);if(li)title=li[1].replace(/\*\*/g,"").split(" — ")[0].trim()}}
+  return{title,body,report:rest.trim()};
+}
+function stageOf(f,head){
+  if(f.final||/최종 승인[^\n:]*:\s*완료/.test(head))return"ready";
+  if(f.copyedit||/교열[^\n:]*:\s*완료/.test(head))return"review";
+  return(f.draft||f.plan)?"make":"idea";
+}
+async function importRepo(silent){
+  if(!isAdmin())return;
+  const say=m=>{if(!silent)alert(m)};
+  const repo=(CFG.repo||"").trim(),br=(CFG.repoBranch||"work").trim();
+  if(!CFG.repoToken||!repoOk(repo)){say("저장소 이름과 읽기 전용 토큰을 먼저 입력해 주세요");return}
+  const back=$("#sync")?$("#sync").textContent:"";setSync("📂 작업 폴더 확인 중…");
+  try{
+    const r=await ghRepo(`/repos/${repo}/git/trees/${encodeURIComponent(br)}?recursive=1`);
+    if(r.status===401){say("토큰이 올바르지 않거나 만료됐어요");return}
+    if(r.status===403){say("이 토큰으로는 읽을 수 없어요. 토큰의 저장소 선택과 Contents 읽기 권한을 확인해 주세요");return}
+    if(r.status===404){say("저장소나 브랜치를 찾지 못했어요. 이름과 토큰의 저장소 선택을 확인해 주세요");return}
+    if(!r.ok)throw new Error(r.status);
+    const tree=await r.json(),folders={};
+    (tree.tree||[]).forEach(e=>{if(e.type!=="blob")return;const m=WORK_RE.exec(e.path);if(m)(folders[m[1]]=folders[m[1]]||{})[m[2]]=e.sha});
+    const names=Object.keys(folders).filter(n=>{const f=folders[n];return f.draft||f.final||f.plan||f.brief}).sort().reverse().slice(0,60);
+    const cut=(v,m)=>String(v||"").slice(0,m);let added=0,updated=0;
+    for(const name of names){
+      const f=folders[name],sig=Object.keys(f).sort().map(k=>k+":"+f[k]).join("|");
+      const ex=D.contents.find(c=>c.src===name);
+      if(ex&&ex.srcSig===sig)continue;
+      const blob=async k=>{const x=await ghRepo(`/repos/${repo}/git/blobs/${f[k]}`);if(!x.ok)throw new Error(x.status);return b64text((await x.json()).content)};
+      const text=await blob(f.final?"final":f.draft?"draft":f.plan?"plan":"brief"),sp=splitDraft(text);
+      let report=sp.report;
+      if(f.copyedit){const ce=await blob("copyedit");report=(report?report+"\n\n---\n\n":"")+"## 교열·사실 확인 결과 (copyedit.md)\n\n"+ce.replace(/^#\s+교열[^\n]*\n/,"")}
+      const head=text.slice(0,3000),stage=stageOf(f,head),bm=/\[([^\]]+)\]/.exec(name),brand=bm?bm[1]:"";
+      const title=cut(sp.title||name.replace(/^\d{4}-\d\d-\d\d_/,"").replace(/\[[^\]]+\]_?/,"").replace(/_/g," "),200);
+      const am=/^-\s*작성:\s*([^\s(·]+)/m.exec(head),by=cut(am?am[1]:"SOLAMEN",40);
+      const memo=cut(`SOLAMEN 작업 폴더 ${name} · ${stInfo(stage)[1]}(파일로 추정)`,300);
+      if(ex){
+        if(ex.title===ex.srcTitle)ex.title=title;
+        if(ex.stage===ex.srcStage)ex.stage=stage;
+        Object.assign(ex,{body:cut(sp.body,100000),report:cut(report,100000),memo,brand,srcSig:sig,srcStage:stage,srcTitle:title});updated++;
+      }else{
+        D.contents.unshift({id:uid(),title,ch:REPO_CH[brand]||"blog",stage,due:"",memo,by,body:cut(sp.body,100000),report:cut(report,100000),brand,src:name,srcSig:sig,srcStage:stage,srcTitle:title});added++;
+      }
+    }
+    CFG.repoLast=Date.now();saveCfg();
+    if(added||updated){save();render()}
+    say(added||updated?`새 글 ${added}건, 갱신 ${updated}건을 불러왔어요`:"새로 바뀐 글이 없어요 (이미 최신이에요)");
+    setSync(back&&!back.startsWith("📂")?back:(CFG.token?"☁ 동기화됨":"● 자동 저장"));
+  }catch(e){setSync("⚠ 불러오기 실패");say("불러오지 못했어요. 인터넷 연결과 토큰을 확인해 주세요")}
+}
+function saveRepo(){
+  if(!isAdmin())return;
+  const repo=$("#wr").value.trim(),br=$("#wb").value.trim()||"work",tk=$("#wt").value.trim();
+  if(!repoOk(repo)){alert("저장소는 '주인/이름' 형태로 입력해 주세요 (예: linus707/solamen)");return}
+  if(!tk){alert("읽기 전용 토큰을 입력해 주세요");return}
+  if(/^ghp_/.test(tk)&&!confirm("이 토큰(ghp_…)은 권한이 넓을 수 있어요. 가능하면 SOLAMEN 레포 하나만, 읽기 전용(Contents: Read-only)으로 만든 토큰(github_pat_…)을 쓰세요. 그래도 계속할까요?"))return;
+  CFG.repo=repo;CFG.repoBranch=br;CFG.repoToken=tk;CFG.repoAuto=$("#wa").checked?1:0;saveCfg();importRepo(false);
+}
+function clearRepo(){if(!confirm("이 기기에 저장된 읽기 전용 토큰을 지울까요? (불러온 글은 그대로 남아요)"))return;delete CFG.repoToken;CFG.repoAuto=0;saveCfg();render()}
 
 /* ---------- 로그인·권한 (PIN) ---------- */
 /* ※ 서버가 없는 방식이라 PIN은 화면 접근을 막는 '편의용 잠금'이에요. 민감한 개인정보는 넣지 마세요. */
@@ -447,6 +523,16 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 백업
   <button class="btn" onclick="connectSync()">연결 / 지금 동기화</button>
   ${CFG.token?'<button class="btn ghost" onclick="disconnectSync()">연결 해제</button>':""}</div>
   <div class="m sub">${CFG.gistId?"내 Gist ID: <b>"+esc(CFG.gistId)+"</b> — 다른 기기에 같은 토큰과 이 ID를 입력하면 같은 데이터가 보여요.":"첫 연결 시 Gist가 자동으로 만들어져요."}</div></div></div>
+  <div class="card"><h3>📂 SOLAMEN 작업 폴더 불러오기 ${CFG.repoToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
+  <div class="m sub">직원들이 SOLAMEN의 <b>작업 폴더</b>에 저장한 글(draft.md, copyedit.md 등)을 읽어 와서 전체 콘텐츠에 넣어요. 직원이 따로 할 일은 없어요. <b>읽기 전용 토큰</b>을 쓰고, 이 토큰은 <b>이 기기에만</b> 저장돼요(직원 초대 링크에 들어가지 않아요). 불러온 글은 직원도 볼 수 있어요.</div>
+  <div class="form" style="border:0;padding:0"><input id="wr" placeholder="저장소 (예: linus707/solamen)" value="${esc(CFG.repo||"linus707/solamen")}">
+  <input id="wb" placeholder="브랜치 (직원 작업대: work)" value="${esc(CFG.repoBranch||"work")}">
+  <input id="wt" type="password" placeholder="읽기 전용 토큰 (github_pat_…)" value="${esc(CFG.repoToken||"")}" autocomplete="off">
+  <label class="m"><input id="wa" type="checkbox" style="width:auto" ${CFG.repoAuto?"checked":""}> 앱을 열 때 자동으로 불러오기</label>
+  <button class="btn" onclick="saveRepo()">저장하고 지금 불러오기</button>
+  ${CFG.repoToken?'<button class="btn ghost" onclick="importRepo(false)">지금 다시 불러오기</button><button class="btn ghost" onclick="clearRepo()">토큰 지우기</button>':""}</div>
+  <div class="m sub">토큰 만드는 곳: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained token</a> (SOLAMEN 레포 소유 계정으로 로그인) · Repository access는 <b>Only select repositories → SOLAMEN</b> · Permissions는 <b>Contents: Read-only</b> 하나만</div>
+  ${CFG.repoLast?`<div class="m sub">마지막으로 불러온 시각: ${new Date(CFG.repoLast).toLocaleString("ko-KR")}</div>`:""}</div></div>
   <div class="card"><h3>📄 콘텐츠 초안 가져오기</h3><div class="body"><div class="m sub">초안·보고가 담긴 콘텐츠 파일(rino-content-*.json)을 올리면 전체 콘텐츠에 들어가요. 같은 제목과 작성자는 덮어써요.</div>
   <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>
   <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div></div></div>
@@ -493,7 +579,8 @@ function render(keepFocus){
   /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
   try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
   render();
-  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>render())}
+  const auto=()=>{if(CFG.repoAuto&&CFG.repoToken&&isAdmin())importRepo(true)};
+  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{render();auto()})}else auto();
 })();
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
