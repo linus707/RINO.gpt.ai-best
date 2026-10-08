@@ -54,6 +54,10 @@ input,select,textarea{width:100%;background:var(--card);border:1px solid var(--l
 .qty{display:flex;align-items:center;gap:8px}.qty button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .low{color:#c0392b;font-weight:700}
 body.staff .del{display:none}
+.doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;line-height:1.8;word-break:keep-all}
+.doc h3{margin:14px 0 4px;font-size:16px}.doc hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+.ph{background:rgba(201,154,26,.22);border-radius:6px;padding:0 4px}
+.doc a{color:var(--g)}
 .lock{max-width:380px;margin:40px auto}
 </style>
 </head>
@@ -75,7 +79,7 @@ body.staff .del{display:none}
 <script>
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","📡","채널 현황"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["calendar","📅","콘텐츠 캘린더"],["org","🏛️","조직도"],["stock","📦","가구 재고"],["sop","📖","나만의 SOP"],["routine","🌿","오늘 루틴"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["settings","⚙️","설정",1]];
+const PAGES=[["home","📡","채널 현황"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["calendar","📅","콘텐츠 캘린더"],["org","🏛️","조직도"],["stock","📦","가구 재고"],["sop","📖","나만의 SOP"],["routine","🌿","오늘 루틴"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
 const RCH={...CH,etc:"기타"};
 const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const today=()=>new Date().toISOString().slice(0,10);
@@ -159,7 +163,7 @@ function go(p){page=p;$("#drawer").classList.remove("open");render()}
 function nav(){
   const m=me();
   $("#who").innerHTML=m?`<div class="brandbox"><b>${esc(m.name)}</b><div class="m sub" style="margin:0">${m.role==="admin"?"관리자":"직원"}${m.open?" · PIN 미설정":""}</div>${m.open?"":'<button class="btn ghost" style="margin-top:8px;padding:8px 12px" onclick="logout()">로그아웃</button>'}</div>`:"";
-  $("#navlist").innerHTML=m?PAGES.filter(p=>!p[3]||m.role==="admin").map(([k,i,n])=>`<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${i} ${n}</button>`).join(""):"";
+  $("#navlist").innerHTML=m?PAGES.filter(p=>!p[4]&&(!p[3]||m.role==="admin")).map(([k,i,n])=>`<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${i} ${n}</button>`).join(""):"";
 }
 $("#menu").onclick=()=>{if(!me())return;nav();$("#drawer").classList.add("open")};
 $("#drawer .shade").onclick=()=>$("#drawer").classList.remove("open");
@@ -169,7 +173,7 @@ const stInfo=k=>ST.find(s=>s[0]===k);
 const pill=c=>{const s=stInfo(c.stage);return `<button class="pill" style="background:var(${s[2]})" onclick="advance('${c.id}')" title="누르면 다음 단계">${s[1]} ▸</button>`};
 function advance(id){const c=D.contents.find(x=>x.id===id);const i=ST.findIndex(s=>s[0]===c.stage);c.stage=ST[(i+1)%ST.length][0];save();render()}
 function delItem(list,id){if(!isAdmin())return;if(!confirm("삭제할까요?"))return;D[list]=D[list].filter(x=>x.id!==id);save();render()}
-const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}</div>${pill(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
+const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:""}</div>${pill(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
 
 const views={
 home(){
@@ -313,6 +317,57 @@ function copyCmd(id,imm){
 function cycleAs(id){const x=D.tasks.find(t=>t.id===id),i=AS.findIndex(a=>a[0]===(x.as||""));x.as=AS[(i+1)%AS.length][0];if(x.as==="ok"&&!x.done){x.done=1;x.doneAt=today();x.doneBy=curName()}save();render()}
 function setLink(id){const x=D.tasks.find(t=>t.id===id),v=prompt("Slack 스레드 링크를 붙여넣어 주세요 (비우면 삭제)",x.link||"");if(v===null)return;const t=v.trim();if(t&&!/^https:\/\/[\w.-]+\.slack\.com\//.test(t)){alert("Slack 링크(https://…slack.com/…)만 넣을 수 있어요");return}x.link=t;save();render()}
 
+/* ---------- 초안·보고 보기 ---------- */
+let docId="",docTab="body";
+function openDoc(id){docId=id;docTab="body";go("doc")}
+function md(src){
+  return String(src||"").split("\n").map(l=>{
+    if(/^\s*-{3,}\s*$/.test(l))return "<hr>";
+    if(/^[|\s:-]+$/.test(l)&&l.includes("|"))return "";
+    let t=l.startsWith("|")?l.split("|").slice(1,-1).map(c=>c.trim()).join(" — "):l;
+    let head=/^##\s+/.test(t);if(head)t=t.replace(/^##\s+/,"");
+    t=esc(t);
+    t=t.replace(/`([^`]+)`/g,'<span class="ph">$1</span>');
+    if(!t.includes('class="ph"'))t=t.replace(/\[확인 필요[^\]]*\]/g,m=>'<span class="ph">'+m+'</span>');
+    t=t.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/\*([^*\n]+)\*/g,"<i>$1</i>");
+    t=t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    return head?`<h3>${t}</h3>`:(t.trim()===""?"<br>":t+"<br>");
+  }).join("");
+}
+views.doc=()=>{
+  const c=D.contents.find(x=>x.id===docId);
+  if(!c){return `<div class="empty">문서를 찾을 수 없어요.</div><button class="btn ghost" onclick="go('contents')">← 목록으로</button>`}
+  const has=!!c.report;
+  return `<button class="btn ghost" style="padding:8px 12px" onclick="go('contents')">← 목록으로</button>
+  <h1 style="margin-top:12px;font-size:20px">${esc(c.title)}</h1>
+  <div class="sub">${CH[c.ch]||""} · ${stInfo(c.stage)[1]}${c.by?" · 작성 "+esc(c.by):""}${c.memo?" · "+esc(c.memo):""}</div>
+  <div class="tabs"><button class="${docTab==="body"?"on":""}" onclick="docTab='body';render()">초안</button>${has?`<button class="${docTab==="report"?"on":""}" onclick="docTab='report';render()">보고</button>`:""}</div>
+  <div class="row" style="margin-bottom:10px;flex-wrap:wrap"><button class="btn" onclick="copyDoc('${c.id}')">📋 ${docTab==="report"?"보고":"초안"} 복사</button><button class="btn ghost" onclick="copyTitle('${c.id}')">제목 복사</button></div>
+  <div class="m sub">노란 칸은 아직 확인하지 못했거나 직접 채워야 하는 부분이에요.</div>
+  <div class="doc">${md(docTab==="report"?c.report:c.body)}</div>`;
+};
+function clip(txt,okMsg){
+  const fb=()=>prompt("복사해서 사용해 주세요",txt);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>alert(okMsg),fb);else fb();
+}
+function copyDoc(id){const c=D.contents.find(x=>x.id===id);clip(docTab==="report"?c.report:c.body,"복사했어요")}
+function copyTitle(id){const c=D.contents.find(x=>x.id===id);clip(c.title,"제목을 복사했어요")}
+function importContent(f){
+  if(!f||!isAdmin())return;
+  f.text().then(t=>{try{
+    const j=JSON.parse(t);if(j.kind!=="rino-content"||!Array.isArray(j.items))throw 0;
+    let n=0;const cut=(v,m)=>String(v||"").slice(0,m);
+    j.items.slice(0,50).forEach(it=>{
+      if(!it||!it.title)return;
+      const o={title:cut(it.title,200),ch:CH[it.ch]?it.ch:"blog",stage:ST.some(x=>x[0]===it.stage)?it.stage:"idea",due:cut(it.due,10),memo:cut(it.memo,300),by:cut(it.by,40),body:cut(it.body,100000),report:cut(it.report,100000)};
+      const ex=D.contents.find(c=>c.title===o.title&&c.by===o.by);
+      if(ex)Object.assign(ex,o);else D.contents.unshift({id:uid(),...o});
+      n++;
+    });
+    save();render();alert(n+"건을 가져왔어요. 전체 콘텐츠에서 확인하세요.");
+  }catch{alert("콘텐츠 파일이 아니에요")}});
+}
+
 /* ---------- 로그인·권한 (PIN) ---------- */
 /* ※ 서버가 없는 방식이라 PIN은 화면 접근을 막는 '편의용 잠금'이에요. 민감한 개인정보는 넣지 마세요. */
 const ME_KEY="rino-me";
@@ -392,6 +447,8 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 백업
   <button class="btn" onclick="connectSync()">연결 / 지금 동기화</button>
   ${CFG.token?'<button class="btn ghost" onclick="disconnectSync()">연결 해제</button>':""}</div>
   <div class="m sub">${CFG.gistId?"내 Gist ID: <b>"+esc(CFG.gistId)+"</b> — 다른 기기에 같은 토큰과 이 ID를 입력하면 같은 데이터가 보여요.":"첫 연결 시 Gist가 자동으로 만들어져요."}</div></div></div>
+  <div class="card"><h3>📄 콘텐츠 초안 가져오기</h3><div class="body"><div class="m sub">초안·보고가 담긴 콘텐츠 파일(rino-content-*.json)을 올리면 전체 콘텐츠에 들어가요. 같은 제목과 작성자는 덮어써요.</div>
+  <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>
   <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div></div></div>
   <div class="card"><h3>✨ AI 연결</h3><div class="body"><div class="m sub">Anthropic API 키를 넣으면 콘텐츠 아이디어를 받을 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</div>
   <div class="form" style="border:0;padding:0"><input id="ak" type="password" placeholder="sk-ant-…" value="${esc(CFG.aiKey||"")}" autocomplete="off"><button class="btn" onclick="CFG.aiKey=$('#ak').value.trim();saveCfg();alert('저장했어요')">저장</button></div></div></div>`;
