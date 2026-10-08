@@ -7,13 +7,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#1f7a52">
+<meta name="theme-color" content="#f5efe4">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&display=swap">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="리노WS">
 <style>
-:root{--g:#1f7a52;--g-soft:#e6f4ec;--bg:#f3f5f7;--card:#fff;--tx:#1f2933;--mut:#7b8794;--line:#e4e7eb;
---idea:#c99a1a;--make:#2f5de0;--review:#8a4fd1;--ready:#d9731a;--done:#1f7a52}
-@media(prefers-color-scheme:dark){:root{--bg:#12161a;--card:#1b2127;--tx:#e8ecef;--mut:#8b97a3;--line:#2a323a;--g-soft:#17302a}}
+:root{--g:#b8472a;--g-soft:#f3e1d3;--bg:#f5efe4;--card:#fffaf1;--tx:#1c1915;--mut:#7a7165;--line:#ddd2bf;--ink:#1c1915;--paper:#fffaf1;
+--idea:#b88a1e;--make:#2c5a8a;--review:#7a4a8c;--ready:#c76a1a;--done:#3f6b4a;--serif:"Noto Serif KR","Nanum Myeongjo",Georgia,serif}
+@media(prefers-color-scheme:dark){:root{--bg:#16130f;--card:#201c17;--tx:#f1eadc;--mut:#a39a8b;--line:#3a342b;--g-soft:#3a2418;--g:#e0734f;--ink:#f1eadc;--paper:#201c17}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}
 header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 16px}
@@ -70,14 +72,63 @@ body.staff .del{display:none}
 .chips{display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:var(--mut);font-size:13px}
 .chips button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;cursor:pointer}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1f2933;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;display:none;max-width:86%;text-align:center}
+
+/* ── 에디토리얼 매거진 톤 ── */
+body{font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;letter-spacing:-.01em}
+h1,.card h3,.logo,.mast,.sheet b,.stat b,.doc h3{font-family:var(--serif)}
+header{background:var(--bg);border-bottom:2px solid var(--ink);padding:10px 16px}
+.mast{font-size:22px;font-weight:900;margin-right:10px;letter-spacing:-.03em}.mast i,.logo i{color:var(--g);font-style:normal}
+.crumb{display:flex;align-items:baseline;color:var(--mut);font-size:13px;letter-spacing:.08em}.crumb b{color:var(--tx);font-weight:600}
+.icon{border:1.5px solid var(--ink);border-radius:50%;background:transparent}
+.ticker{background:var(--ink);color:var(--paper);overflow:hidden;white-space:nowrap;font-size:11px;letter-spacing:.2em;padding:6px 0}
+.tk-in{display:inline-flex;animation:tk 38s linear infinite}.tk-in span{padding-right:0}
+@keyframes tk{to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.tk-in{animation:none}}
+main{padding:22px 18px 90px}
+h1{font-size:30px;font-weight:900;letter-spacing:-.04em;line-height:1.25;margin:6px 0 4px}
+.sub{font-size:13px}
+.eyebrow{font-size:11px;letter-spacing:.22em;color:var(--g);font-weight:700;text-transform:uppercase}
+.hero{padding:6px 0 18px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.hero h1{font-size:clamp(28px,8vw,40px);margin:10px 0 8px}.hero h1 em{font-style:normal;color:var(--g)}
+.btn{background:var(--ink);color:var(--paper);border-radius:999px;padding:11px 20px;letter-spacing:.02em}
+.btn.ghost{background:transparent;color:var(--tx);border:1.5px solid var(--ink)}
+.stats{grid-template-columns:1fr 1fr;gap:0 14px;margin:18px 0;border-top:2px solid var(--ink)}
+.item .pill{margin-right:6px}
+.stat{background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:12px 10px 12px 0}
+.stat b{font-size:clamp(26px,8vw,40px);font-weight:900;letter-spacing:-.04em;line-height:1.1}
+.stat small{font-size:11px;letter-spacing:.12em}
+.stat.hl{background:var(--g);color:#fff;padding-left:12px;border-color:var(--g)}.stat.hl small{color:#ffe9de}
+.card{background:var(--card);border:1.5px solid var(--ink);border-radius:4px;box-shadow:5px 5px 0 var(--ink);margin:22px 5px 22px 0}
+.card h3{font-size:19px;font-weight:900;letter-spacing:-.03em;border-bottom:1px solid var(--line);margin-bottom:10px}
+.item{background:transparent;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:10px 0;margin:0}
+.pill{border-radius:2px;letter-spacing:.04em;padding:4px 10px}
+.tabs{background:transparent;border-bottom:1.5px solid var(--ink);border-radius:0;padding:0;gap:0}
+.tabs button{border-radius:0;font-weight:600}.tabs button.on{background:var(--ink);color:var(--paper)}
+input,select,textarea{background:var(--bg);border:1.5px solid var(--line);border-radius:4px}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--ink)}
+.form{background:transparent;border:1.5px dashed var(--ink);border-radius:4px}
+.tile{background:var(--bg);border:1.5px solid var(--ink);border-radius:4px;transition:transform .15s,box-shadow .15s}
+.tile:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--g)}
+.tile b{font-family:var(--serif)}
+.brandbox{border:1.5px solid var(--ink);border-radius:4px}
+#drawer nav{background:var(--bg);border-right:2px solid var(--ink)}
+.navbtn{border-radius:0;border-bottom:1px solid var(--line);font-weight:500}.navbtn.on{background:var(--ink);color:var(--paper)}
+.fab{background:var(--g);border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:50%}
+.sheet{background:var(--card);border:2px solid var(--ink);border-bottom:0;border-radius:14px 14px 0 0}
+.chips button{border:1.5px solid var(--ink);border-radius:999px}
+.doc{background:var(--card);border:1.5px solid var(--ink);border-radius:4px;font-size:15.5px}
+.doc h3{font-weight:900}
+#toast{background:var(--ink);color:var(--paper);border-radius:2px}
+.lock{border:1.5px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:22px;background:var(--card);border-radius:4px}
 </style>
 </head>
 <body>
 <header>
   <button class="icon" id="menu" aria-label="메뉴">☰</button>
-  <div class="crumb">리노 워크스페이스 › <b id="crumb"></b></div>
+  <div class="crumb"><span class="mast">Rino<i>.</i></span><b id="crumb"></b></div>
   <span class="sync" id="sync">● 자동 저장</span>
 </header>
+<div class="ticker" aria-hidden="true"><div class="tk-in"><span>TRAVEL ✦ FURNITURE ✦ STREET PHOTO ✦ SOLAMEN ✦ A LITTLE COMFORT FOR YOUR EVERYDAY ✦ </span><span>TRAVEL ✦ FURNITURE ✦ STREET PHOTO ✦ SOLAMEN ✦ A LITTLE COMFORT FOR YOUR EVERYDAY ✦ </span></div></div>
 <div id="drawer"><nav>
   <div class="logo">Rino<i>.</i></div>
   <div class="sub">AI 기반 자동 수익 시스템</div>
@@ -221,7 +272,8 @@ home(){
   const t=today(),open=D.tasks.filter(x=>!x.done),nm=curName();
   const over=open.filter(x=>x.due&&x.due<t),dueT=open.filter(x=>x.due===t),mineT=open.filter(x=>x.who===nm&&x.due!==t&&!(x.due&&x.due<t));
   const todo=[...over,...dueT,...mineT].slice(0,6),recent=D.contents.slice(0,5),links=D.set.links||[],ed=editLinks&&isAdmin();
-  return `<h1>홈</h1><div class="sub">${t} · ${esc(nm)}님, 오늘도 한 걸음씩</div>
+  const wd=["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"][new Date().getDay()];
+  return `<div class="hero"><div class="eyebrow">${wd} · ${t.replace(/-/g,".")}</div><h1><em>${esc(nm)}</em>님,<br>오늘은 어떤 장면을<br>만들어 볼까요?</h1><div class="sub" style="margin:0">작은 위로가 되는 하루의 기록, 지금 시작해요</div></div>
   <div class="stats">${stat("오늘 마감 업무",dueT.length,1)}${stat("기한초과",over.length)}${stat("내 업무",open.filter(x=>x.who===nm).length)}${stat("제작·검수 중 글",D.contents.filter(c=>c.stage==="make"||c.stage==="review").length)}</div>
   <div class="card"><h3>✅ 오늘 할 일<button class="btn" style="padding:7px 12px" onclick="openTaskModal()">＋ 업무 추가</button></h3><div class="body">${todo.map(taskRow).join("")||'<div class="empty">오늘 할 일이 없어요 🎉</div>'}<button class="btn ghost" style="margin-top:10px" onclick="go('tasks')">업무 관리 전체 보기 ›</button></div></div>
   <div class="card"><h3>🔗 채널 바로가기${isAdmin()?`<button class="pill" style="background:var(--mut)" onclick="editLinks=!editLinks;render()">${ed?"완료":"✏️ 편집"}</button>`:""}</h3><div class="body">
