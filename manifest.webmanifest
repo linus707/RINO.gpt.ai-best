@@ -1,0 +1,14 @@
+{
+  "name": "리노 워크스페이스",
+  "short_name": "리노WS",
+  "description": "AI 기반 자동 수익 시스템 · 퍼스널 브랜드 운영 워크스페이스",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f7",
+  "theme_color": "#1f7a52",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
