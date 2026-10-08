@@ -130,6 +130,8 @@ select option{color:#111;background:#fff}input[type=date]{color-scheme:dark}
 .hero h1{font-size:clamp(34px,7.4vw,84px);line-height:.98;letter-spacing:-.05em;margin:8px 0 8px}
 .hero .kpi{display:flex;gap:24px;text-align:right}.hero .kpi b{display:block;font-family:var(--serif);font-size:clamp(30px,5vw,46px);font-weight:900;letter-spacing:-.04em;line-height:1}
 .homegrid{display:grid;grid-template-columns:1.6fr 1fr;gap:0 16px;align-items:start}
+.hg-list{grid-area:list}.hg-quick{grid-area:quick}.hg-rest{grid-area:rest}
+.homegrid{grid-template-areas:"list quick" "list rest";grid-template-rows:auto 1fr}
 .li{display:grid;grid-template-columns:30px 1fr auto auto;gap:10px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .li:last-of-type{border-bottom:0}
 .li b{font-size:clamp(16px,1.8vw,21px);letter-spacing:-.03em;font-weight:800;overflow-wrap:anywhere}
@@ -163,7 +165,7 @@ select option{color:#111;background:#fff}input[type=date]{color-scheme:dark}
  #menu{display:none}#tabbar{display:flex}body.out #tabbar{display:none}
  #drawer{z-index:12}
  .fab{bottom:calc(92px + env(safe-area-inset-bottom));right:16px;width:52px;height:52px;font-size:28px}
- .homegrid{grid-template-columns:1fr}
+ .homegrid{grid-template-columns:1fr;grid-template-areas:"quick" "list" "rest";grid-template-rows:auto}
  .hero .kpi{display:none}
  .li{grid-template-columns:26px 1fr auto}.li .cty{display:none}
 }
@@ -178,6 +180,12 @@ select option{color:#111;background:#fff}input[type=date]{color-scheme:dark}
  .fab{right:28px;bottom:28px;display:flex}
 }
 body.out main{max-width:760px}
+.fab.chat{font-size:26px;background:var(--make);color:#fff;border:2px solid #fff}
+.fab.chat i{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:#ff5a4d;color:#fff;font:700 11px/20px -apple-system,sans-serif;font-style:normal;text-align:center;padding:0 5px}
+.fab.chat i:empty{display:none}
+@media(max-width:899px){.fab.chat{bottom:calc(92px + 62px + env(safe-area-inset-bottom));right:16px;width:52px;height:52px}}
+@media(min-width:900px){.fab.chat{right:28px;bottom:100px}}
+.quickcard textarea{min-height:64px}
 </style>
 </head>
 <body>
@@ -196,6 +204,7 @@ body.out main{max-width:760px}
 </nav><div class="shade"></div></div>
 <main id="app"></main>
 <button class="fab" id="fab" aria-label="업무 추가" onclick="openTaskModal()">＋</button>
+<button class="fab chat" id="chatfab" aria-label="직원에게 지시" onclick="go('chat')">💬<i id="chatbadge"></i></button>
 <nav id="tabbar" aria-label="하단 메뉴"></nav>
 <div id="modal"></div>
 <div id="toast" role="status"></div>
@@ -350,9 +359,10 @@ const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼
   </div></div>`};
 bgAll().then(l=>{BG.list=l;if(l.length)render()});
 /* 하단 탭 */
-const TABS=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"]];
+const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"]];
+const tabsNow=()=>isAdmin()?[TABS_BASE[0],TABS_BASE[1],["chat","💬","지시"],TABS_BASE[2]]:TABS_BASE;
 function tabbar(){
-  const m=me();$("#tabbar").innerHTML=m?TABS.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')"><span>${i}</span>${n}</button>`).join("")+`<button class="${TABS.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')"><span>☰</span>더보기</button>`:"";
+  const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')"><span>${i}</span>${n}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')"><span>☰</span>더보기</button>`:"";
 }
 function go(p){page=p;window.scrollTo(0,0);$("#drawer").classList.remove("open");closeModal();render()}
 function nav(){
@@ -404,11 +414,11 @@ home(){
   const CT={blog:"BLOG",furn:"FURNITURE",photo:"PHOTO"};
   return `<div class="hero"><div><div class="mono" style="opacity:.85">${esc(BG.label?BG.label+" · ":"")}${t.replace(/-/g,".")}</div><h1 class="serif">오늘은 어디로<br>떠날까요</h1><div class="sub" style="margin:0">${esc(nm)}님 · 마감 ${dueT.length}건 · 기한초과 ${over.length}건</div></div>
   <div class="kpi"><div><b>${p2(dueT.length)}</b><span class="mono">오늘 마감</span></div><div><b>${p2(mk)}</b><span class="mono">제작중</span></div></div></div>
-  <div class="homegrid"><div>
+  <div class="homegrid"><div class="hg-list">
   <div class="card"><h3>콘텐츠 목록<span><span class="mono" style="opacity:.7;margin-right:8px">${D.contents.length} ITEMS</span><button class="pill" style="background:rgba(255,255,255,.25)" onclick="go('contents')">전체 ›</button></span></h3><div class="body">
   ${list.map((c,i)=>{const s2=stInfo(c.stage);return `<div class="li ${i===hot?"hot":""}" onclick="${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}"><span class="mono">${p2(i+1)}</span><b>${esc(c.title)}</b><span class="mono cty">${CT[c.ch]||""}</span><span class="st">${s2[1]}</span></div>`}).join("")||'<div class="empty">아직 콘텐츠가 없어요. 전체 콘텐츠에서 AI 아이디어를 받아 보세요</div>'}
   <div class="stchips">${ST.map(s2=>`<span>${s2[1]} ${D.contents.filter(c=>c.stage===s2[0]).length}</span>`).join("")}</div></div></div>
-  </div><div>
+  </div><div class="hg-quick">${quickCard()}</div><div class="hg-rest">
   <div class="card"><h3>✅ 오늘 할 일<button class="btn" style="padding:7px 14px" onclick="openTaskModal()">＋ 업무 추가</button></h3><div class="body">${todo.map(taskRow).join("")||'<div class="empty">오늘 할 일이 없어요 🎉</div>'}<button class="btn ghost" style="margin-top:10px" onclick="go('tasks')">업무 관리 전체 보기 ›</button></div></div>
   <div class="card"><h3>🔗 채널 바로가기${isAdmin()?`<button class="pill" style="background:rgba(255,255,255,.25)" onclick="editLinks=!editLinks;render()">${ed?"완료":"✏️ 편집"}</button>`:""}</h3><div class="body">
   ${links.length?`<div class="grid2">${links.map(l=>linkTile(l,ed)).join("")}</div>`:`<div class="empty">${isAdmin()?"아직 등록한 채널이 없어요. ✏️ 편집을 눌러 인스타·블로그·스토어 주소를 추가해 보세요.":"관리자가 채널 링크를 등록하면 여기에 나와요."}</div>`}
@@ -893,18 +903,41 @@ views.chat=()=>{
 };
 function chatSet(n){chatDraft=($("#cmsg")||{value:chatDraft}).value;chatWho=n;render()}
 function chatDueSet(n){chatDue=addDays(n);const e=$("#cdue");if(e)e.value=chatDue}
+function dispatchTask(name,txt,due,brand,mode){
+  const lines=txt.split("\n"),title=lines[0].trim().slice(0,200),memo=lines.slice(1).join("\n").trim().slice(0,1500);
+  const x={id:uid(),title,due:due||"",pri:"중요도 보통",done:0,who:name,memo,brand:brand||"",by:curName(),as:"sent",at:Date.now()};
+  D.tasks.unshift(x);save();
+  const out=cmdText(x,mode);
+  const ok=()=>toast(mode===2?"복사했어요. 이 채팅(Claude)에 붙여넣으면 "+name+" 한 명만 깨워요":"복사했어요. Slack에 붙여넣어 올려 주세요");
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(out).then(ok,()=>prompt("복사해서 보내 주세요",out));else prompt("복사해서 보내 주세요",out);
+}
 function sendChat(){
   const txt=($("#cmsg").value||"").trim();if(!txt){alert("지시 내용을 써 주세요");return}
   const cur=chatPick();if(!cur)return;
-  const lines=txt.split("\n"),title=lines[0].trim().slice(0,200),memo=lines.slice(1).join("\n").trim().slice(0,1500);
-  const x={id:uid(),title,due:($("#cdue").value||""),pri:"중요도 보통",done:0,who:cur.name,memo,brand:$("#cbr")?$("#cbr").value:"",by:curName(),as:"sent",at:Date.now()};
-  D.tasks.unshift(x);save();
-  const mode=+($("#cmode").value||1),out=cmdText(x,mode);
+  dispatchTask(cur.name,txt,$("#cdue").value||"",$("#cbr")?$("#cbr").value:"",+($("#cmode").value||1));
   chatDraft="";chatDue="";render();
   const log=$("#chatlog");if(log)log.scrollTop=log.scrollHeight;
-  const ok=()=>toast(mode===2?"복사했어요. 이 채팅(Claude)에 붙여넣으면 "+cur.name+" 한 명만 깨워요":"복사했어요. Slack에 붙여넣어 올려 주세요");
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(out).then(ok,()=>prompt("복사해서 보내 주세요",out));else prompt("복사해서 보내 주세요",out);
 }
+/* 홈의 빠른 지시 카드 */
+let qDue="",qWho="";
+function qDueSet(n){qDue=addDays(n);const e=$("#qdue");if(e)e.value=qDue}
+function qSend(){
+  const txt=($("#qmsg").value||"").trim();if(!txt){alert("지시 내용을 써 주세요");return}
+  const who=$("#qwho").value;if(!who)return;qWho=who;
+  dispatchTask(who,txt,$("#qdue").value||"",$("#qbr")?$("#qbr").value:"",+(CFG.chatMode||1));
+  qDue="";$("#qmsg").value="";render();
+}
+const quickCard=()=>{
+  if(!isAdmin())return "";const A=D.set.agents;
+  if(!A.length)return `<div class="card quickcard"><h3>💬 직원에게 바로 지시</h3><div class="body"><div class="empty">AI 직원이 아직 없어요.</div><button class="btn" onclick="go('org')">조직도에서 직원 넣기</button></div></div>`;
+  const depts=[...new Set(A.map(a=>a.dept))],sel=qWho&&A.some(a=>a.name===qWho)?qWho:(A.find(a=>openCnt(a.name))||A.find(active)||A[0]).name,brands=D.set.brands||[];
+  return `<div class="card quickcard"><h3>💬 직원에게 바로 지시<button class="pill" style="background:rgba(255,255,255,.25)" onclick="go('chat')">채팅 열기 ›</button></h3><div class="body">
+  <select id="qwho">${depts.map(d=>`<optgroup label="${esc(d)}">${A.filter(a=>a.dept===d).map(a=>`<option value="${esc(a.name)}" ${a.name===sel?"selected":""}>${esc(a.name)} · ${esc(a.title)}${active(a)?"":" (대기 단계)"}</option>`).join("")}</optgroup>`).join("")}</select>
+  <textarea id="qmsg" rows="2" placeholder="지시할 내용을 써 주세요" style="margin-top:8px"></textarea>
+  <div class="chips" style="margin:8px 0">마감 <button onclick="qDueSet(0)">오늘</button><button onclick="qDueSet(1)">내일</button><button onclick="qDueSet(3)">3일 뒤</button><button onclick="qDueSet(7)">1주 뒤</button><input id="qdue" type="date" value="${esc(qDue)}" onchange="qDue=this.value" style="width:auto"></div>
+  <div class="filters">${brands.length?`<select id="qbr"><option value="">브랜드 선택 안 함</option>${brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}</option>`).join("")}</select>`:"<span></span>"}<select onchange="CFG.chatMode=this.value;saveCfg()">${CMODES.map(m=>`<option value="${m[0]}" ${m[0]===(CFG.chatMode||"1")?"selected":""}>보낼 곳: ${m[1]}</option>`).join("")}</select></div>
+  <button class="btn" onclick="qSend()">보내기 (업무 저장 + 문구 복사)</button></div></div>`;
+};
 function addTask(more){
   const t=($("#tt")||{value:""}).value.trim();if(!t){alert("업무 내용을 입력해 주세요");return}
   D.tasks.unshift({id:uid(),title:t.slice(0,200),due:$("#td").value,pri:$("#tp").value,done:0,who:$("#tw").value,memo:($("#tm").value||"").trim().slice(0,300),brand:$("#tb")?$("#tb").value:"",by:curName()});
@@ -1090,6 +1123,7 @@ function render(keepFocus){
   const m=me();
   document.body.classList.toggle("staff",!!m&&m.role!=="admin");document.body.classList.toggle("out",!m);
   $("#fab").style.display=m?"flex":"none";
+  {const cf=$("#chatfab"),n=m&&isAdmin()?D.tasks.filter(t=>!t.done&&agentNames().has(t.who)).length:0;cf.style.display=m&&isAdmin()&&page!=="chat"?"flex":"none";$("#chatbadge").textContent=n?String(n):""}
   if(!m){$("#crumb").textContent="로그인";applyBg();$("#app").innerHTML=lockView();return}
   const pg=PAGES.find(p=>p[0]===page&&(!p[3]||m.role==="admin"));if(!pg)page="home";
   nav();tabbar();applyBg();
