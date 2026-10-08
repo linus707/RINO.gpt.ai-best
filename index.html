@@ -372,6 +372,7 @@ function importContent(f){
 /* ---------- SOLAMEN 작업 폴더 불러오기 (읽기 전용 토큰, 관리자 기기에만 저장) ---------- */
 /* 직원들이 SOLAMEN 레포의 작업 폴더(작업/날짜_[태그]_제목/)에 저장한 글을 읽어 전체 콘텐츠에 넣어요.
    클라우드 직원 세션은 Gist 같은 계정 API를 쓸 수 없어서, 이미 하던 대로 레포에 저장하게 두고 앱이 읽어 와요. */
+const PARSER_V="p2";
 const WORK_RE=/^작업\/([^/]+)\/(brief|plan|draft|final|copyedit)\.md$/;
 const REPO_CH={트립:"blog",슬립:"furn",포토:"photo",공통:"blog"};
 const repoOk=r=>/^[\w.-]+\/[\w.-]+$/.test(r||"");
@@ -382,6 +383,7 @@ function splitDraft(text){
   const b=sec("본문");if(!b)return{title:"",body:text.trim(),report:""};
   let body=b.body.replace(/(\n\s*-{3,}\s*)+$/,"").trim();const cuts=[[b.start,b.end]];
   const t=sec("해시태그");if(t){body+="\n\n---\n\n"+t.body.trim();cuts.push([t.start,t.end])}
+  body=body.replace(/(\n\s*-{3,}\s*)+$/,"").trim();
   let rest=text;cuts.sort((x,y)=>y[0]-x[0]).forEach(([a,z])=>{rest=rest.slice(0,a)+rest.slice(z)});
   let title="";const ts=sec("제목");
   if(ts){const bold=ts.body.match(/^\*\*([^*\n]+)\*\*\s*$/m);if(bold)title=bold[1].trim();else{const li=ts.body.match(/^\s*1\.\s*(.+)$/m);if(li)title=li[1].replace(/\*\*/g,"").split(" — ")[0].trim()}}
@@ -409,7 +411,7 @@ async function importRepo(silent){
     const names=Object.keys(folders).filter(n=>{const f=folders[n];return f.draft||f.final||f.plan||f.brief}).sort().reverse().slice(0,60);
     const cut=(v,m)=>String(v||"").slice(0,m);let added=0,updated=0;
     for(const name of names){
-      const f=folders[name],sig=Object.keys(f).sort().map(k=>k+":"+f[k]).join("|");
+      const f=folders[name],sig=PARSER_V+"|"+Object.keys(f).sort().map(k=>k+":"+f[k]).join("|");
       const ex=D.contents.find(c=>c.src===name);
       if(ex&&ex.srcSig===sig)continue;
       const blob=async k=>{const x=await ghRepo(`/repos/${repo}/git/blobs/${f[k]}`);if(!x.ok)throw new Error(x.status);return b64text((await x.json()).content)};
