@@ -81,7 +81,7 @@ const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const today=()=>new Date().toISOString().slice(0,10);
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
@@ -198,9 +198,9 @@ tasks(){
   const tabs=[["mine","내 업무"],...(D.set.agents.length?[["ai","AI 직원"]]:[]),["open","미완료"],["today","오늘"],["week","이번 주"],["done","완료"],["all","전체"]];
   return `<h1>업무 관리</h1><div class="sub">하나씩 확인하고, 하나씩 끝내요</div>
   <div class="stats">${stat("전체 미완료",D.tasks.filter(x=>!x.done).length)}${stat("오늘 마감",D.tasks.filter(x=>!x.done&&x.due===t).length)}${stat("기한초과",D.tasks.filter(x=>!x.done&&x.due&&x.due<t).length)}${stat("오늘 완료",D.tasks.filter(x=>x.done&&x.doneAt===t).length)}</div>
-  <div class="form"><input id="tt" placeholder="할 일 입력"><div class="filters"><input id="td" type="date"><select id="tp"><option>중요도 보통</option><option>중요도 높음</option><option>중요도 낮음</option></select></div><select id="tw">${assigneeOpts()}</select><button class="btn" onclick="addTask()">＋ 업무 추가</button></div>
+  <div class="form"><input id="tt" placeholder="할 일 입력"><input id="tm" placeholder="상세 내용 (선택 · AI 직원 지시문에 들어가요)"><div class="filters"><input id="td" type="date"><select id="tp"><option>중요도 보통</option><option>중요도 높음</option><option>중요도 낮음</option></select></div><select id="tw">${assigneeOpts()}</select>${D.set.brands.length?`<select id="tb">${D.set.brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}${b.name?" · "+esc(b.name):""}</option>`).join("")}</select>`:""}<button class="btn" onclick="addTask()">＋ 업무 추가</button></div>
   <div class="tabs">${tabs.map(([k,n])=>`<button class="${tab===k?"on":""}" onclick="tab='${k}';render()">${n}</button>`).join("")}</div>
-  ${list.map(x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${x.id}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.who?" · 담당 "+esc(x.who):""}${x.done&&x.doneBy?" · 완료 "+esc(x.doneBy):""}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('tasks','${x.id}')">✕</button></div>`).join("")||'<div class="empty">해당 업무가 없어요</div>'}`;
+  ${list.map(x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${x.id}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.who?" · 담당 "+esc(x.who):""}${x.done&&x.doneBy?" · 완료 "+esc(x.doneBy):""}${x.memo?"<br>"+esc(x.memo):""}${aiRow(x)}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('tasks','${x.id}')">✕</button></div>`).join("")||'<div class="empty">해당 업무가 없어요</div>'}`;
 },
 calendar(){
   const list=D.contents.filter(c=>c.due).sort((a,b)=>a.due.localeCompare(b.due));
@@ -276,11 +276,42 @@ function importAgents(f){
     const j=JSON.parse(t);if(j.kind!=="solamen-staff"||!Array.isArray(j.agents))throw 0;
     const by=new Map(D.set.agents.map(a=>[a.emp,a]));
     j.agents.forEach(a=>{if(a&&a.emp&&a.name)by.set(a.emp,{emp:String(a.emp),agent:String(a.agent||""),name:String(a.name),title:String(a.title||""),dept:String(a.dept||"기타"),channel:String(a.channel||""),stage:+a.stage||0,boss:String(a.boss||""),model:String(a.model||"")})});
-    D.set.agents=[...by.values()];if(j.activeStage)D.set.stage=+j.activeStage;D.set.u=Date.now();save();render();alert(j.agents.length+"명을 가져왔어요")
+    D.set.agents=[...by.values()];if(j.activeStage)D.set.stage=+j.activeStage;if(Array.isArray(j.brands))D.set.brands=j.brands.filter(b=>b&&b.tag).map(b=>({tag:String(b.tag),name:String(b.name||"")}));D.set.u=Date.now();save();render();alert(j.agents.length+"명을 가져왔어요")
   }catch{alert("SOLAMEN 직원 파일이 아니에요")}});
 }
 function setStage(v){D.set.stage=+v;D.set.u=Date.now();save();render()}
 function clearAgents(){if(!confirm("AI 직원 명단을 모두 지울까요? (업무의 담당자 이름은 남아요)"))return;D.set.agents=[];D.set.u=Date.now();save();render()}
+
+/* ---------- Slack 지시문 (SOLAMEN 연결) ---------- */
+/* SOLAMEN은 '대표가 직접 쓴 Slack 글'만 지시로 인정해요. 그래서 앱은 글을 대신 올리지 않고,
+   SOLAMEN 형식의 지시문을 만들어 주면 대표가 복사해서 Slack에 직접 올려요. */
+const AS=[["","지시 전","--idea"],["sent","📋 지시함","--make"],["work","🔄 착수","--review"],["rep","✅ 보고 도착","--ready"],["ok","🔍 검증 완료","--done"]];
+const asInfo=k=>AS.find(a=>a[0]===(k||""))||AS[0];
+function aiRow(x){
+  if(!agentNames().has(x.who))return "";
+  const s=asInfo(x.as);
+  return `<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px">
+  <button class="pill" style="background:var(${s[2]})" onclick="cycleAs('${x.id}')" title="누르면 다음 상태로">${s[1]} ▸</button>
+  <button class="pill" style="background:var(--g)" onclick="copyCmd('${x.id}',0)">📋 지시문 복사</button>
+  <button class="pill" style="background:var(--ready)" onclick="copyCmd('${x.id}',1)">⚡ 즉시(@Claude)</button>
+  <button class="pill" style="background:var(--mut)" onclick="setLink('${x.id}')">${x.link?"🔗 스레드 링크":"🔗 링크 붙이기"}</button>
+  ${x.link?`<a class="m" href="${esc(x.link)}" target="_blank" rel="noopener">Slack 열기</a>`:""}</div>`;
+}
+function cmdText(x,imm){
+  const lines=[`${imm?"@Claude ":""}${x.who}${x.brand?" ["+x.brand+"]":""} ${x.title}`];
+  if(x.memo)lines.push("- 내용: "+x.memo);
+  if(x.due)lines.push("- 마감: "+x.due);
+  lines.push("- 업무번호: "+x.id);
+  return lines.join("\n");
+}
+function copyCmd(id,imm){
+  const x=D.tasks.find(t=>t.id===id),txt=cmdText(x,imm);
+  const done=()=>{if(!x.as){x.as="sent";save();render()}alert("복사했어요. Slack에 붙여넣어 올려 주세요.\n\n"+txt)};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,()=>{prompt("복사해서 Slack에 붙여넣어 주세요",txt)});
+  else prompt("복사해서 Slack에 붙여넣어 주세요",txt);
+}
+function cycleAs(id){const x=D.tasks.find(t=>t.id===id),i=AS.findIndex(a=>a[0]===(x.as||""));x.as=AS[(i+1)%AS.length][0];if(x.as==="ok"&&!x.done){x.done=1;x.doneAt=today();x.doneBy=curName()}save();render()}
+function setLink(id){const x=D.tasks.find(t=>t.id===id),v=prompt("Slack 스레드 링크를 붙여넣어 주세요 (비우면 삭제)",x.link||"");if(v===null)return;const t=v.trim();if(t&&!/^https:\/\/[\w.-]+\.slack\.com\//.test(t)){alert("Slack 링크(https://…slack.com/…)만 넣을 수 있어요");return}x.link=t;save();render()}
 
 /* ---------- 로그인·권한 (PIN) ---------- */
 /* ※ 서버가 없는 방식이라 PIN은 화면 접근을 막는 '편의용 잠금'이에요. 민감한 개인정보는 넣지 마세요. */
@@ -386,7 +417,7 @@ async function aiIdeas(){
 function addIdea(i){const x=_ideas.splice(i,1)[0];D.contents.unshift({id:uid(),title:x.title,ch:x.ch,due:"",memo:x.memo,stage:"idea",by:curName()});save();render()}
 
 function addContent(){const t=$("#ct").value.trim();if(!t)return;D.contents.unshift({id:uid(),title:t,ch:$("#cc").value,due:$("#cd").value,memo:$("#cm").value.trim(),stage:"idea",by:curName()});save();render()}
-function addTask(){const t=$("#tt").value.trim();if(!t)return;D.tasks.unshift({id:uid(),title:t,due:$("#td").value,pri:$("#tp").value,done:0,who:$("#tw").value,by:curName()});save();render()}
+function addTask(){const t=$("#tt").value.trim();if(!t)return;D.tasks.unshift({id:uid(),title:t,due:$("#td").value,pri:$("#tp").value,done:0,who:$("#tw").value,memo:($("#tm").value||"").trim(),brand:$("#tb")?$("#tb").value:"",by:curName()});save();render()}
 function toggleTask(id){const x=D.tasks.find(t=>t.id===id);x.done=x.done?0:1;x.doneAt=x.done?today():null;x.doneBy=x.done?curName():null;save();render()}
 function addStock(){const n=$("#sn").value.trim();if(!n)return;D.stock.push({id:uid(),name:n,qty:+$("#sq").value||0,min:+$("#sm").value||0});save();render()}
 function qty(id,v){const s=D.stock.find(x=>x.id===id);s.qty=Math.max(0,s.qty+v);save();render()}
