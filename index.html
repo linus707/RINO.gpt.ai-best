@@ -53,6 +53,8 @@ input,select,textarea{width:100%;background:var(--card);border:1px solid var(--l
 .chk input{width:20px;height:20px}.done{text-decoration:line-through;color:var(--mut)}
 .qty{display:flex;align-items:center;gap:8px}.qty button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .low{color:#c0392b;font-weight:700}
+body.staff .del{display:none}
+.lock{max-width:380px;margin:40px auto}
 </style>
 </head>
 <body>
@@ -65,6 +67,7 @@ input,select,textarea{width:100%;background:var(--card);border:1px solid var(--l
   <div class="logo">Rino<i>.</i></div>
   <div class="sub">AI 기반 자동 수익 시스템</div>
   <div class="brandbox"><b>리노 퍼스널 브랜드</b><div class="m sub" style="margin:0">여행 · 가구 · 스트릿포토</div></div>
+  <div id="who"></div>
   <div id="navlist"></div>
 </nav><div class="shade"></div></div>
 <main id="app"></main>
@@ -72,17 +75,17 @@ input,select,textarea{width:100%;background:var(--card);border:1px solid var(--l
 <script>
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","📡","채널 현황"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["calendar","📅","콘텐츠 캘린더"],["stock","📦","가구 재고"],["sop","📖","나만의 SOP"],["routine","🌿","오늘 루틴"],["revenue","💰","수익 대시보드"],["settings","⚙️","설정"]];
+const PAGES=[["home","📡","채널 현황"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["calendar","📅","콘텐츠 캘린더"],["org","🏛️","조직도"],["stock","📦","가구 재고"],["sop","📖","나만의 SOP"],["routine","🌿","오늘 루틴"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["settings","⚙️","설정",1]];
 const RCH={...CH,etc:"기타"};
 const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const today=()=>new Date().toISOString().slice(0,10);
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,revenue:[],goal:1000000,contents:[],tasks:[],stock:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
-const norm=d=>{const s=seed();d={...s,...d};if(!d.routine||d.routine.date!==today())d.routine={date:today(),items:(d.routine||s.routine).items.map(([n])=>[n,0])};return d};
+const norm=d=>{const s=seed();d={...s,...d};d.set={...s.set,...(d.set||{})};d.del=d.del||{};if(typeof d.goal==="number"){if(!d.set.u)d.set.goal=d.goal;delete d.goal}if(!d.routine||d.routine.date!==today())d.routine={date:today(),items:(d.routine||s.routine).items.map(([n])=>[n,0])};return d};
 let D;try{D=norm(JSON.parse(localStorage.getItem("rino-ws"))||{})}catch{D=norm({})}
 let page="home",tab="open",chF="all";
 const $=s=>document.querySelector(s);
@@ -92,43 +95,81 @@ let CFG={};try{CFG=JSON.parse(localStorage.getItem("rino-cfg"))||{}}catch{}
 const saveCfg=()=>{try{localStorage.setItem("rino-cfg",JSON.stringify(CFG))}catch{}};
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-async function push(){
-  if(!CFG.token)return;setSync("☁ 저장 중…");
-  try{
-    const files={"rino-workspace.json":{content:JSON.stringify(D)}};
-    let r;
-    if(CFG.gistId)r=await gh("/gists/"+CFG.gistId,{method:"PATCH",body:JSON.stringify({files})});
-    else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Rino workspace data",public:false,files})});
-      if(r.ok){CFG.gistId=(await r.json()).id;saveCfg();setSync("☁ 동기화됨");if(page==="settings")render();return}}
-    if(!r.ok)throw new Error(r.status);setSync("☁ 동기화됨");
-  }catch{setSync("⚠ 동기화 실패")}
+const LISTS=["contents","tasks","stock","sop","revenue"];
+let SNAP={};
+const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
+resnap();
+/* 저장할 때 바뀐 항목에만 수정시각(u)을 찍고, 지운 항목은 삭제기록(del)에 남겨요 */
+function stamp(){
+  const now=Date.now(),seen={};
+  LISTS.forEach(l=>D[l].forEach(it=>{seen[it.id]=1;const{u,...r}=it,h=JSON.stringify(r);if(SNAP[it.id]!==h){it.u=now;SNAP[it.id]=h}}));
+  Object.keys(SNAP).forEach(id=>{if(!seen[id]){D.del[id]=now;delete SNAP[id]}});
 }
-async function pull(){
-  if(!CFG.token||!CFG.gistId)return;
+/* 두 기기의 데이터를 항목 단위로 합쳐요 (같은 항목이면 나중에 고친 쪽 우선) */
+function merge(a,b){
+  const o={...(b.updated>a.updated?b:a)};
+  o.updated=Math.max(a.updated||0,b.updated||0);
+  o.del={...b.del};Object.entries(a.del).forEach(([k,v])=>{o.del[k]=Math.max(v,o.del[k]||0)});
+  LISTS.forEach(l=>{
+    const m=new Map();
+    [...b[l],...a[l]].forEach(it=>{const c=m.get(it.id);if(!c||(it.u||0)>=(c.u||0))m.set(it.id,it)});
+    o[l]=[...m.values()].filter(it=>!((o.del[it.id]||0)>=(it.u||0)&&o.del[it.id]));
+    const order=new Map(a[l].map((x,i)=>[x.id,i]));
+    o[l].sort((x,y)=>(order.has(x.id)?order.get(x.id):-1)-(order.has(y.id)?order.get(y.id):-1)||0);
+  });
+  o.set=(b.set.u||0)>(a.set.u||0)?b.set:a.set;
+  if(a.routine.date===b.routine.date){o.routine={date:a.routine.date,items:a.routine.items.map((x,i)=>[x[0],(x[1]||(b.routine.items[i]&&b.routine.items[i][1]))?1:0])}}
+  else o.routine=a.routine.date>b.routine.date?a.routine:b.routine;
+  return o;
+}
+const persist=()=>{try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}};
+async function fetchRemote(){
+  const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw new Error(r.status);
+  const f=(await r.json()).files["rino-workspace.json"];if(!f)return null;
+  return norm(JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content));
+}
+let _busy=false,_again=false;
+async function syncNow(){
+  if(!CFG.token)return;
+  if(_busy){_again=true;return}
+  _busy=true;setSync("☁ 동기화 중…");
   try{
-    const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw 0;
-    const f=(await r.json()).files["rino-workspace.json"];if(!f)throw 0;
-    const rd=JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content);
-    if((rd.updated||0)>(D.updated||0)){D=norm(rd);try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}render()}
-    else if((rd.updated||0)<(D.updated||0))await push();
+    let rd=null,write=true;
+    if(CFG.gistId){
+      rd=await fetchRemote();
+      if(rd){const M=merge(D,rd);const ch=JSON.stringify(M)!==JSON.stringify(D);write=JSON.stringify(M)!==JSON.stringify(rd);D=M;if(ch){persist();resnap();render()}}
+    }
+    if(write){
+      const files={"rino-workspace.json":{content:JSON.stringify(D)}};
+      let r;
+      if(CFG.gistId)r=await gh("/gists/"+CFG.gistId,{method:"PATCH",body:JSON.stringify({files})});
+      else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Rino workspace data",public:false,files})});if(r.ok){CFG.gistId=(await r.json()).id;saveCfg()}}
+      if(!r.ok)throw new Error(r.status);
+    }
     setSync("☁ 동기화됨");
   }catch{setSync("⚠ 동기화 실패")}
+  _busy=false;if(_again){_again=false;syncNow()}
 }
+const pull=syncNow,push=syncNow;
 let _t;
-const save=()=>{D.updated=Date.now();try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}clearTimeout(_t);if(CFG.token)_t=setTimeout(push,1500)};
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()});
+const save=()=>{stamp();D.updated=Date.now();persist();clearTimeout(_t);if(CFG.token)_t=setTimeout(syncNow,1500)};
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncNow()});
 
 function go(p){page=p;$("#drawer").classList.remove("open");render()}
-function nav(){$("#navlist").innerHTML=PAGES.map(([k,i,n])=>`<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${i} ${n}</button>`).join("")}
-$("#menu").onclick=()=>{nav();$("#drawer").classList.add("open")};
+function nav(){
+  const m=me();
+  $("#who").innerHTML=m?`<div class="brandbox"><b>${esc(m.name)}</b><div class="m sub" style="margin:0">${m.role==="admin"?"관리자":"직원"}${m.open?" · PIN 미설정":""}</div>${m.open?"":'<button class="btn ghost" style="margin-top:8px;padding:8px 12px" onclick="logout()">로그아웃</button>'}</div>`:"";
+  $("#navlist").innerHTML=m?PAGES.filter(p=>!p[3]||m.role==="admin").map(([k,i,n])=>`<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${i} ${n}</button>`).join(""):"";
+}
+$("#menu").onclick=()=>{if(!me())return;nav();$("#drawer").classList.add("open")};
 $("#drawer .shade").onclick=()=>$("#drawer").classList.remove("open");
 
 const stat=(l,n,hl)=>`<div class="stat ${hl?"hl":""}"><small>${l}</small><b>${n}</b></div>`;
 const stInfo=k=>ST.find(s=>s[0]===k);
 const pill=c=>{const s=stInfo(c.stage);return `<button class="pill" style="background:var(${s[2]})" onclick="advance('${c.id}')" title="누르면 다음 단계">${s[1]} ▸</button>`};
 function advance(id){const c=D.contents.find(x=>x.id===id);const i=ST.findIndex(s=>s[0]===c.stage);c.stage=ST[(i+1)%ST.length][0];save();render()}
-function delItem(list,id){if(!confirm("삭제할까요?"))return;D[list]=D[list].filter(x=>x.id!==id);save();render()}
-const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}</div>${pill(c)}<button class="icon" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
+function delItem(list,id){if(!isAdmin())return;if(!confirm("삭제할까요?"))return;D[list]=D[list].filter(x=>x.id!==id);save();render()}
+const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}</div>${pill(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
 
 const views={
 home(){
@@ -152,14 +193,14 @@ contents(){
 },
 tasks(){
   const t=today(),wk=new Date(Date.now()+7*864e5).toISOString().slice(0,10);
-  const f={open:x=>!x.done,today:x=>!x.done&&x.due===t,week:x=>!x.done&&x.due&&x.due<=wk,done:x=>x.done,all:()=>true}[tab];
+  const f={mine:x=>!x.done&&x.who===curName(),ai:x=>!x.done&&agentNames().has(x.who),open:x=>!x.done,today:x=>!x.done&&x.due===t,week:x=>!x.done&&x.due&&x.due<=wk,done:x=>x.done,all:()=>true}[tab];
   const list=D.tasks.filter(f).sort((a,b)=>(a.due||"9").localeCompare(b.due||"9"));
-  const tabs=[["open","미완료"],["today","오늘"],["week","이번 주"],["done","완료"],["all","전체"]];
+  const tabs=[["mine","내 업무"],...(D.set.agents.length?[["ai","AI 직원"]]:[]),["open","미완료"],["today","오늘"],["week","이번 주"],["done","완료"],["all","전체"]];
   return `<h1>업무 관리</h1><div class="sub">하나씩 확인하고, 하나씩 끝내요</div>
   <div class="stats">${stat("전체 미완료",D.tasks.filter(x=>!x.done).length)}${stat("오늘 마감",D.tasks.filter(x=>!x.done&&x.due===t).length)}${stat("기한초과",D.tasks.filter(x=>!x.done&&x.due&&x.due<t).length)}${stat("오늘 완료",D.tasks.filter(x=>x.done&&x.doneAt===t).length)}</div>
-  <div class="form"><input id="tt" placeholder="할 일 입력"><div class="filters"><input id="td" type="date"><select id="tp"><option>중요도 보통</option><option>중요도 높음</option><option>중요도 낮음</option></select></div><button class="btn" onclick="addTask()">＋ 업무 추가</button></div>
+  <div class="form"><input id="tt" placeholder="할 일 입력"><input id="tm" placeholder="상세 내용 (선택 · AI 직원 지시문에 들어가요)"><div class="filters"><input id="td" type="date"><select id="tp"><option>중요도 보통</option><option>중요도 높음</option><option>중요도 낮음</option></select></div><select id="tw">${assigneeOpts()}</select>${D.set.brands.length?`<select id="tb">${D.set.brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}${b.name?" · "+esc(b.name):""}</option>`).join("")}</select>`:""}<button class="btn" onclick="addTask()">＋ 업무 추가</button></div>
   <div class="tabs">${tabs.map(([k,n])=>`<button class="${tab===k?"on":""}" onclick="tab='${k}';render()">${n}</button>`).join("")}</div>
-  ${list.map(x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${x.id}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon" style="width:32px;height:32px" onclick="delItem('tasks','${x.id}')">✕</button></div>`).join("")||'<div class="empty">해당 업무가 없어요</div>'}`;
+  ${list.map(x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${x.id}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.who?" · 담당 "+esc(x.who):""}${x.done&&x.doneBy?" · 완료 "+esc(x.doneBy):""}${x.memo?"<br>"+esc(x.memo):""}${aiRow(x)}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('tasks','${x.id}')">✕</button></div>`).join("")||'<div class="empty">해당 업무가 없어요</div>'}`;
 },
 calendar(){
   const list=D.contents.filter(c=>c.due).sort((a,b)=>a.due.localeCompare(b.due));
@@ -170,12 +211,12 @@ calendar(){
 stock(){
   return `<h1>가구 재고</h1><div class="sub">최소 수량 이하이면 빨간색으로 표시돼요</div>
   <div class="form"><input id="sn" placeholder="품목명 (예: 월넛 사이드테이블)"><div class="filters"><input id="sq" type="number" min="0" placeholder="현재 수량"><input id="sm" type="number" min="0" placeholder="최소 수량"></div><button class="btn" onclick="addStock()">＋ 품목 추가</button></div>
-  ${D.stock.map(s=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(s.name)}</div><div class="m">최소 ${s.min}개 ${s.qty<=s.min?'· <span class="low">재주문 필요</span>':""}</div></div><div class="qty"><button onclick="qty('${s.id}',-1)">−</button><b class="${s.qty<=s.min?"low":""}">${s.qty}</b><button onclick="qty('${s.id}',1)">＋</button></div><button class="icon" style="width:32px;height:32px" onclick="delItem('stock','${s.id}')">✕</button></div></div>`).join("")||'<div class="empty">등록된 품목이 없어요</div>'}`;
+  ${D.stock.map(s=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(s.name)}</div><div class="m">최소 ${s.min}개 ${s.qty<=s.min?'· <span class="low">재주문 필요</span>':""}</div></div><div class="qty"><button onclick="qty('${s.id}',-1)">−</button><b class="${s.qty<=s.min?"low":""}">${s.qty}</b><button onclick="qty('${s.id}',1)">＋</button></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('stock','${s.id}')">✕</button></div></div>`).join("")||'<div class="empty">등록된 품목이 없어요</div>'}`;
 },
 sop(){
   return `<h1>나만의 SOP</h1><div class="sub">반복 작업을 체크리스트로 만들어 두세요 (줄바꿈으로 단계 구분)</div>
   <div class="form"><input id="pn" placeholder="SOP 이름"><textarea id="ps" rows="4" placeholder="단계 1&#10;단계 2&#10;단계 3"></textarea><button class="btn" onclick="addSop()">＋ SOP 추가</button></div>
-  ${D.sop.map(p=>`<div class="card"><h3>${esc(p.title)}<button class="icon" style="width:32px;height:32px" onclick="delItem('sop','${p.id}')">✕</button></h3><div class="body"><ol style="margin:0;padding-left:20px">${p.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div></div>`).join("")}`;
+  ${D.sop.map(p=>`<div class="card"><h3>${esc(p.title)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('sop','${p.id}')">✕</button></h3><div class="body"><ol style="margin:0;padding-left:20px">${p.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div></div>`).join("")}`;
 },
 routine(){
   const r=D.routine.items,d=r.filter(x=>x[1]).length;
@@ -190,21 +231,157 @@ views.revenue=()=>{
   const now=new Date(),cur=monthKey(now.getFullYear(),now.getMonth());
   const sum=a=>a.reduce((s,r)=>s+r.amount,0);
   const month=D.revenue.filter(r=>r.date.startsWith(cur)),total=sum(month);
-  const pct=D.goal>0?Math.min(100,Math.round(total/D.goal*100)):0;
+  const pct=D.set.goal>0?Math.min(100,Math.round(total/D.set.goal*100)):0;
   const months=[...Array(6)].map((_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-(5-i),1);const k=monthKey(d.getFullYear(),d.getMonth());return[k.slice(5)+"월",sum(D.revenue.filter(r=>r.date.startsWith(k)))]});
   const mx=Math.max(1,...months.map(m=>m[1]));
   const recent=[...D.revenue].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
   return `<h1>수익 대시보드</h1><div class="sub">${cur} · 숫자를 기록하면 흐름이 보여요</div>
-  <div class="stats">${stat("이번 달 수익",won(total),1)}${stat("목표 달성률",pct+"%")}${stat("남은 금액",won(Math.max(0,D.goal-total)))}</div>
-  <div class="card"><div class="body" style="padding-top:12px"><div class="m sub">월 목표 (원)</div><input type="number" min="0" value="${D.goal}" onchange="D.goal=+this.value||0;save();render()">
+  <div class="stats">${stat("이번 달 수익",won(total),1)}${stat("목표 달성률",pct+"%")}${stat("남은 금액",won(Math.max(0,D.set.goal-total)))}</div>
+  <div class="card"><div class="body" style="padding-top:12px"><div class="m sub">월 목표 (원)</div><input type="number" min="0" value="${D.set.goal}" onchange="D.set.goal=+this.value||0;D.set.u=Date.now();save();render()">
   <div style="height:10px;background:var(--line);border-radius:99px;margin-top:10px"><div style="height:10px;width:${pct}%;background:var(--g);border-radius:99px"></div></div></div></div>
   <div class="card"><h3>최근 6개월</h3><div class="body"><div style="display:flex;gap:8px;align-items:flex-end;height:120px">${months.map(([n,v])=>`<div style="flex:1;text-align:center"><div style="height:${Math.round(v/mx*90)}px;background:var(--g);border-radius:6px 6px 0 0;min-height:2px"></div><div class="m">${n}</div></div>`).join("")}</div></div></div>
   <div class="card"><h3>채널별 (이번 달)</h3><div class="body">${Object.entries(RCH).map(([k,n])=>`<div class="row" style="padding:4px 0"><span class="grow">${n}</span><b>${won(sum(month.filter(r=>r.ch===k)))}</b></div>`).join("")}</div></div>
   <div class="form"><div class="filters"><input id="rd" type="date" value="${today()}"><select id="rc">${Object.entries(RCH).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></div>
   <input id="ra" type="number" min="0" placeholder="금액 (원)"><input id="rm" placeholder="출처 메모 (예: 애드센스, 쿠팡파트너스, 가구 판매)"><button class="btn" onclick="addRev()">＋ 수익 기록</button></div>
-  ${recent.map(r=>`<div class="item"><div class="row"><div class="grow"><div class="t">${won(r.amount)}</div><div class="m">${esc(r.date)} · ${RCH[r.ch]||"기타"}${r.memo?" · "+esc(r.memo):""}</div></div><button class="icon" style="width:32px;height:32px" onclick="delItem('revenue','${r.id}')">✕</button></div></div>`).join("")||'<div class="empty">아직 기록이 없어요</div>'}`;
+  ${recent.map(r=>`<div class="item"><div class="row"><div class="grow"><div class="t">${won(r.amount)}</div><div class="m">${esc(r.date)} · ${RCH[r.ch]||"기타"}${r.memo?" · "+esc(r.memo):""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('revenue','${r.id}')">✕</button></div></div>`).join("")||'<div class="empty">아직 기록이 없어요</div>'}`;
 };
 function addRev(){const a=+$("#ra").value;if(!a)return;D.revenue.push({id:uid(),date:$("#rd").value||today(),ch:$("#rc").value,amount:a,memo:$("#rm").value.trim()});save();render()}
+
+/* ---------- SOLAMEN AI 직원 (가져오기·조직도) ---------- */
+const agentNames=()=>new Set(D.set.agents.map(a=>a.name));
+const agentOf=n=>D.set.agents.find(a=>a.name===n);
+function assigneeOpts(){
+  const h=[...new Set([curName(),...D.set.staff,"전체"])].filter(Boolean);
+  let o=`<optgroup label="사람">${h.map(n=>`<option value="${esc(n)}">담당: ${esc(n)}</option>`).join("")}</optgroup>`;
+  const depts=[...new Set(D.set.agents.map(a=>a.dept))];
+  depts.forEach(d=>{o+=`<optgroup label="AI · ${esc(d)}">${D.set.agents.filter(a=>a.dept===d).map(a=>`<option value="${esc(a.name)}">담당: ${esc(a.name)} · ${esc(a.title)}</option>`).join("")}</optgroup>`});
+  return o;
+}
+const active=a=>a.stage<=D.set.stage;
+const openCnt=n=>D.tasks.filter(t=>!t.done&&t.who===n).length;
+views.org=()=>{
+  const A=D.set.agents;
+  if(!A.length)return `<h1>조직도</h1><div class="sub">AI 직원을 아직 가져오지 않았어요</div><div class="card"><div class="body"><div class="empty">${isAdmin()?"직원 관리 메뉴에서 SOLAMEN 직원 파일을 가져와 주세요.":"관리자가 직원 명단을 가져오면 여기에 보여요."}</div></div></div>`;
+  const depts=[...new Set(A.map(a=>a.dept))];
+  const on=A.filter(active).length;
+  return `<h1>조직도</h1><div class="sub">AI 직원 ${A.length}명 · ${depts.length}개 팀 · 가동 중 ${on}명 (현재 ${D.set.stage}단계)</div>
+  <div class="stats">${stat("전체 AI 직원",A.length+"명",1)}${stat("가동 중",on+"명")}${stat("대기",(A.length-on)+"명")}${stat("진행 업무",D.tasks.filter(t=>!t.done&&agentNames().has(t.who)).length)}</div>`+
+  depts.map(d=>{const m=A.filter(a=>a.dept===d);return `<div class="card"><h3>${esc(d)}<span class="m sub" style="margin:0">${m.length}명 · ${esc(m[0].channel)}</span></h3><div class="body">`+
+    m.map(a=>`<div class="item" style="${active(a)?"":"opacity:.6"}"><div class="row"><div class="grow"><div class="t">${esc(a.name)} <span class="m">${esc(a.title)}</span></div><div class="m">${esc(a.emp)} · ${esc(a.model)} · 보고 ${esc(a.boss)}</div></div>
+    ${openCnt(a.name)?`<span class="pill" style="background:var(--make)">업무 ${openCnt(a.name)}</span>`:""}<span class="pill" style="background:var(${active(a)?"--done":"--idea"})">${active(a)?"가동":a.stage+"단계"}</span></div></div>`).join("")+`</div></div>`}).join("");
+};
+function importAgents(f){
+  if(!f||!isAdmin())return;
+  f.text().then(t=>{try{
+    const j=JSON.parse(t);if(j.kind!=="solamen-staff"||!Array.isArray(j.agents))throw 0;
+    const by=new Map(D.set.agents.map(a=>[a.emp,a]));
+    j.agents.forEach(a=>{if(a&&a.emp&&a.name)by.set(a.emp,{emp:String(a.emp),agent:String(a.agent||""),name:String(a.name),title:String(a.title||""),dept:String(a.dept||"기타"),channel:String(a.channel||""),stage:+a.stage||0,boss:String(a.boss||""),model:String(a.model||"")})});
+    D.set.agents=[...by.values()];if(j.activeStage)D.set.stage=+j.activeStage;if(Array.isArray(j.brands))D.set.brands=j.brands.filter(b=>b&&b.tag).map(b=>({tag:String(b.tag),name:String(b.name||"")}));D.set.u=Date.now();save();render();alert(j.agents.length+"명을 가져왔어요")
+  }catch{alert("SOLAMEN 직원 파일이 아니에요")}});
+}
+function setStage(v){D.set.stage=+v;D.set.u=Date.now();save();render()}
+function clearAgents(){if(!confirm("AI 직원 명단을 모두 지울까요? (업무의 담당자 이름은 남아요)"))return;D.set.agents=[];D.set.u=Date.now();save();render()}
+
+/* ---------- Slack 지시문 (SOLAMEN 연결) ---------- */
+/* SOLAMEN은 '대표가 직접 쓴 Slack 글'만 지시로 인정해요. 그래서 앱은 글을 대신 올리지 않고,
+   SOLAMEN 형식의 지시문을 만들어 주면 대표가 복사해서 Slack에 직접 올려요. */
+const AS=[["","지시 전","--idea"],["sent","📋 지시함","--make"],["work","🔄 착수","--review"],["rep","✅ 보고 도착","--ready"],["ok","🔍 검증 완료","--done"]];
+const asInfo=k=>AS.find(a=>a[0]===(k||""))||AS[0];
+function aiRow(x){
+  if(!agentNames().has(x.who))return "";
+  const s=asInfo(x.as);
+  return `<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px">
+  <button class="pill" style="background:var(${s[2]})" onclick="cycleAs('${x.id}')" title="누르면 다음 상태로">${s[1]} ▸</button>
+  <button class="pill" style="background:var(--g)" onclick="copyCmd('${x.id}',0)">📋 지시문 복사</button>
+  <button class="pill" style="background:var(--ready)" onclick="copyCmd('${x.id}',1)">⚡ 즉시(@Claude)</button>
+  <button class="pill" style="background:var(--mut)" onclick="setLink('${x.id}')">${x.link?"🔗 스레드 링크":"🔗 링크 붙이기"}</button>
+  ${x.link?`<a class="m" href="${esc(x.link)}" target="_blank" rel="noopener">Slack 열기</a>`:""}</div>`;
+}
+function cmdText(x,imm){
+  const lines=[`${imm?"@Claude ":""}${x.who}${x.brand?" ["+x.brand+"]":""} ${x.title}`];
+  if(x.memo)lines.push("- 내용: "+x.memo);
+  if(x.due)lines.push("- 마감: "+x.due);
+  lines.push("- 업무번호: "+x.id);
+  return lines.join("\n");
+}
+function copyCmd(id,imm){
+  const x=D.tasks.find(t=>t.id===id),txt=cmdText(x,imm);
+  const done=()=>{if(!x.as){x.as="sent";save();render()}alert("복사했어요. Slack에 붙여넣어 올려 주세요.\n\n"+txt)};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,()=>{prompt("복사해서 Slack에 붙여넣어 주세요",txt)});
+  else prompt("복사해서 Slack에 붙여넣어 주세요",txt);
+}
+function cycleAs(id){const x=D.tasks.find(t=>t.id===id),i=AS.findIndex(a=>a[0]===(x.as||""));x.as=AS[(i+1)%AS.length][0];if(x.as==="ok"&&!x.done){x.done=1;x.doneAt=today();x.doneBy=curName()}save();render()}
+function setLink(id){const x=D.tasks.find(t=>t.id===id),v=prompt("Slack 스레드 링크를 붙여넣어 주세요 (비우면 삭제)",x.link||"");if(v===null)return;const t=v.trim();if(t&&!/^https:\/\/[\w.-]+\.slack\.com\//.test(t)){alert("Slack 링크(https://…slack.com/…)만 넣을 수 있어요");return}x.link=t;save();render()}
+
+/* ---------- 로그인·권한 (PIN) ---------- */
+/* ※ 서버가 없는 방식이라 PIN은 화면 접근을 막는 '편의용 잠금'이에요. 민감한 개인정보는 넣지 마세요. */
+const ME_KEY="rino-me";
+let ME=null;
+try{ME=JSON.parse(sessionStorage.getItem(ME_KEY)||localStorage.getItem(ME_KEY)||"null")}catch{}
+async function hashPin(pin,salt){
+  const t=salt+":"+pin;
+  try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+  catch{let h=5381;for(const c of t)h=((h<<5)+h+c.charCodeAt(0))>>>0;return"w"+h}
+}
+function me(){
+  const p=D.set.pins;
+  if(!p)return CFG.invited?null:{role:"admin",name:"관리자",open:true};
+  if(ME&&ME.h===(ME.role==="admin"?p.a:p.s))return ME;
+  return null;
+}
+const isAdmin=()=>{const m=me();return !!m&&m.role==="admin"};
+const curName=()=>{const m=me();return m?m.name:""};
+async function login(){
+  const role=$("#lr").value,name=role==="admin"?"관리자":$("#ln").value.trim(),pin=$("#lp").value.trim(),p=D.set.pins;
+  if(!p)return;
+  if(!name){alert("이름을 입력해 주세요");return}
+  const h=await hashPin(pin,p.salt);
+  if(h!==(role==="admin"?p.a:p.s)){alert("PIN이 맞지 않아요");$("#lp").value="";return}
+  ME={role,name,h};
+  const store=$("#lk").checked?localStorage:sessionStorage;
+  try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY);store.setItem(ME_KEY,JSON.stringify(ME))}catch{}
+  page="home";render();
+}
+function logout(){ME=null;try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY)}catch{}$("#drawer").classList.remove("open");render()}
+const lockView=()=>{
+  if(!D.set.pins)return `<div class="card lock"><h3>불러오는 중…</h3><div class="body"><div class="empty">관리자가 보낸 초대 링크로 접속하셨어요. 데이터를 가져오는 중이에요. 계속 이 화면이면 관리자에게 링크를 다시 받아 주세요.</div></div></div>`;
+  return `<div class="lock"><h1>리노 워크스페이스</h1><div class="sub">로그인해 주세요</div>
+  <div class="form"><select id="lr" onchange="$('#lnw').style.display=this.value==='admin'?'none':'block'"><option value="staff">직원</option><option value="admin">관리자</option></select>
+  <div id="lnw"><input id="ln" list="stl" placeholder="내 이름" autocomplete="off"><datalist id="stl">${D.set.staff.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+  <input id="lp" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off" onkeydown="if(event.key==='Enter')login()">
+  <label class="m"><input id="lk" type="checkbox" style="width:auto"> 이 기기에서 로그인 상태 유지</label>
+  <button class="btn" onclick="login()">로그인</button></div></div>`;
+};
+
+views.staff=()=>{
+  const p=D.set.pins,link=(CFG.token&&CFG.gistId)?location.origin+location.pathname+"#invite="+btoa(JSON.stringify({t:CFG.token,g:CFG.gistId})):"";
+  return `<h1>직원 관리</h1><div class="sub">직원 명단, 로그인 PIN, 초대 링크</div>
+  <div class="card"><h3>👥 직원 명단</h3><div class="body">
+  ${D.set.staff.map((n,i)=>`<div class="chk"><div class="grow">${esc(n)}</div><button class="icon" style="width:32px;height:32px" onclick="rmStaff(${i})">✕</button></div>`).join("")||'<div class="empty">아직 등록된 직원이 없어요</div>'}
+  <div class="row" style="margin-top:8px"><input id="sname" placeholder="직원 이름"><button class="btn" onclick="addStaff()">추가</button></div></div></div>
+  <div class="card"><h3>🤖 SOLAMEN AI 직원 ${D.set.agents.length?'<span class="m sub" style="margin:0">'+D.set.agents.length+'명</span>':""}</h3><div class="body">
+  <div class="m sub">SOLAMEN 레포에서 만든 <b>solamen-staff.json</b> 파일을 올리면 AI 직원이 조직도와 업무 담당자 목록에 들어와요. 데이터는 내 비공개 저장소(Gist)에만 저장돼요. 같은 사번은 덮어써요.</div>
+  <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importAgents(this.files[0]);this.value=''">
+  ${D.set.agents.length?`<select onchange="setStage(this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${D.set.stage===n?"selected":""}>가동 단계 ${n}단계 (이 단계까지 가동)</option>`).join("")}</select><button class="btn ghost" onclick="clearAgents()">AI 직원 명단 지우기</button>`:""}</div></div></div>
+  <div class="card"><h3>🔑 로그인 PIN ${p?'<span class="m sub" style="margin:0">설정됨</span>':'<span class="m sub low" style="margin:0">미설정 (누구나 관리자)</span>'}</h3><div class="body">
+  <div class="m sub">숫자 4~8자리. 바꾸면 모든 기기가 다시 로그인해야 해요.</div>
+  <div class="form" style="border:0;padding:0"><input id="pa" type="password" inputmode="numeric" placeholder="관리자 PIN"><input id="ps2" type="password" inputmode="numeric" placeholder="직원 PIN"><button class="btn" onclick="setPins()">PIN 저장</button></div></div></div>
+  <div class="card"><h3>🔗 직원 초대 링크</h3><div class="body">
+  ${!p?'<div class="empty">먼저 위에서 PIN을 설정해 주세요.</div>':!link?'<div class="empty">먼저 설정 메뉴에서 클라우드 동기화를 연결해 주세요.</div>':
+  `<div class="m sub">이 링크를 열면 직원 기기가 자동으로 연결돼요. <b>링크 안에 저장소 접근 키가 들어 있어요.</b> 카카오톡 1:1처럼 믿을 수 있는 곳으로만 보내고, 이 앱 전용 GitHub 계정의 토큰을 쓰세요.</div>
+  <div class="form" style="border:0;padding:0"><input id="inv" readonly value="${esc(link)}" onfocus="this.select()"><button class="btn" onclick="navigator.clipboard.writeText($('#inv').value).then(()=>alert('복사했어요'))">링크 복사</button></div>`}</div></div>`;
+};
+function addStaff(){const n=$("#sname").value.trim();if(!n||D.set.staff.includes(n))return;D.set.staff.push(n);D.set.u=Date.now();save();render()}
+function rmStaff(i){if(!confirm("명단에서 뺄까요?"))return;D.set.staff.splice(i,1);D.set.u=Date.now();save();render()}
+async function setPins(){
+  const a=$("#pa").value.trim(),b=$("#ps2").value.trim(),ok=/^\d{4,8}$/;
+  if(!ok.test(a)||!ok.test(b)){alert("PIN은 숫자 4~8자리로 입력해 주세요");return}
+  if(a===b){alert("관리자 PIN과 직원 PIN은 서로 달라야 해요");return}
+  const salt=uid()+uid();
+  D.set.pins={salt,a:await hashPin(a,salt),s:await hashPin(b,salt)};D.set.u=Date.now();save();
+  ME={role:"admin",name:"관리자",h:D.set.pins.a};try{sessionStorage.setItem(ME_KEY,JSON.stringify(ME))}catch{}
+  alert("저장했어요");render();
+}
 
 /* ---------- 설정 (동기화·백업·AI 키) ---------- */
 views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 백업, AI 연결</div>
@@ -227,7 +404,7 @@ function importJson(f){if(!f)return;f.text().then(t=>{try{D=norm(JSON.parse(t));
 window._ideas=[];
 const ideasHtml=()=>_ideas.map((x,i)=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(x.title)}</div><div class="m">${esc(x.memo)}</div></div><button class="pill" style="background:var(--g)" onclick="addIdea(${i})">＋ 추가</button></div></div>`).join("");
 async function aiIdeas(){
-  if(!CFG.aiKey){alert("설정에서 AI 키를 먼저 입력해 주세요");return go("settings")}
+  if(!CFG.aiKey){if(!isAdmin()){alert("이 기기에는 AI 키가 없어요. 관리자에게 문의해 주세요");return}alert("설정에서 AI 키를 먼저 입력해 주세요");return go("settings")}
   const ch=$("#cc").value,box=$("#ai");box.innerHTML='<div class="empty">아이디어 생각 중… ✨</div>';
   try{
     const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":CFG.aiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
@@ -237,23 +414,30 @@ async function aiIdeas(){
     box.innerHTML=ideasHtml()||'<div class="empty">결과를 읽지 못했어요. 다시 눌러 주세요</div>';
   }catch(e){box.innerHTML='<div class="empty low">AI 요청 실패: '+esc(e.message)+'</div>'}
 }
-function addIdea(i){const x=_ideas.splice(i,1)[0];D.contents.unshift({id:uid(),title:x.title,ch:x.ch,due:"",memo:x.memo,stage:"idea"});save();render()}
+function addIdea(i){const x=_ideas.splice(i,1)[0];D.contents.unshift({id:uid(),title:x.title,ch:x.ch,due:"",memo:x.memo,stage:"idea",by:curName()});save();render()}
 
-function addContent(){const t=$("#ct").value.trim();if(!t)return;D.contents.unshift({id:uid(),title:t,ch:$("#cc").value,due:$("#cd").value,memo:$("#cm").value.trim(),stage:"idea"});save();render()}
-function addTask(){const t=$("#tt").value.trim();if(!t)return;D.tasks.unshift({id:uid(),title:t,due:$("#td").value,pri:$("#tp").value,done:0});save();render()}
-function toggleTask(id){const x=D.tasks.find(t=>t.id===id);x.done=x.done?0:1;x.doneAt=x.done?today():null;save();render()}
+function addContent(){const t=$("#ct").value.trim();if(!t)return;D.contents.unshift({id:uid(),title:t,ch:$("#cc").value,due:$("#cd").value,memo:$("#cm").value.trim(),stage:"idea",by:curName()});save();render()}
+function addTask(){const t=$("#tt").value.trim();if(!t)return;D.tasks.unshift({id:uid(),title:t,due:$("#td").value,pri:$("#tp").value,done:0,who:$("#tw").value,memo:($("#tm").value||"").trim(),brand:$("#tb")?$("#tb").value:"",by:curName()});save();render()}
+function toggleTask(id){const x=D.tasks.find(t=>t.id===id);x.done=x.done?0:1;x.doneAt=x.done?today():null;x.doneBy=x.done?curName():null;save();render()}
 function addStock(){const n=$("#sn").value.trim();if(!n)return;D.stock.push({id:uid(),name:n,qty:+$("#sq").value||0,min:+$("#sm").value||0});save();render()}
 function qty(id,v){const s=D.stock.find(x=>x.id===id);s.qty=Math.max(0,s.qty+v);save();render()}
 function addSop(){const n=$("#pn").value.trim(),s=$("#ps").value.split("\n").map(x=>x.trim()).filter(Boolean);if(!n||!s.length)return;D.sop.push({id:uid(),title:n,steps:s});save();render()}
 
 function render(keepFocus){
+  const m=me();
+  document.body.classList.toggle("staff",!!m&&m.role!=="admin");
+  if(!m){$("#crumb").textContent="로그인";$("#app").innerHTML=lockView();return}
+  const pg=PAGES.find(p=>p[0]===page&&(!p[3]||m.role==="admin"));if(!pg)page="home";
   $("#crumb").textContent=PAGES.find(p=>p[0]===page)[2];
-  const a=document.activeElement,id=a&&a.id,pos=a&&a.selectionStart;
   $("#app").innerHTML=views[page]();
   if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
 }
-render();
-if(CFG.token){setSync("☁ 확인 중…");pull()}
+(function boot(){
+  /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
+  try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
+  render();
+  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>render())}
+})();
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
