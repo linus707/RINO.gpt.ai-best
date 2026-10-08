@@ -580,17 +580,24 @@ function aiRow(x){
   <button class="pill" style="background:var(--mut)" onclick="setLink('${x.id}')">${x.link?"🔗 스레드 링크":"🔗 링크 붙이기"}</button>
   ${x.link?`<a class="m" href="${esc(x.link)}" target="_blank" rel="noopener">Slack 열기</a>`:""}</div>`;
 }
+const outSpec=x=>{
+  const tag=x.brand?`[${x.brand}]`:"[트립|슬립|포토|공통 중 하나]";
+  return [`- 결과 저장: SOLAMEN \`작업/YYYY-MM-DD_${tag}_제목/draft.md\` 에 저장하고 \`work\` 브랜치에 커밋·푸시 (편집규칙 6-1 · 앱이 이 폴더를 읽어 전체 콘텐츠에 올려요)`,
+    `- draft.md 서식: 맨 위 \`# [작성 정보]\` 아래 \`- 작성: ${x.who}\` 줄, 제목은 \`## 제목\`, 본문은 \`## 본문\`, 해시태그는 \`## 해시태그\``];
+};
 function cmdText(x,imm){
   if(imm===2){
     const a=agentOf(x.who)||{};
     const L=["[직원 깨우기 요청]",`대상: ${x.who}${a.agent?" ("+a.agent+(a.emp?", "+a.emp:"")+")":""}${a.title?" · "+a.title:""}`,"이 직원 한 명만 깨워서 아래 지시를 전달해 주세요. 다른 직원은 깨우지 마세요.","",`지시: ${x.title}${x.brand?" ["+x.brand+"]":""}`];
     if(x.memo)L.push("- 내용: "+x.memo);
     if(x.due)L.push("- 마감: "+x.due);
+    if(x.out)L.push(...outSpec(x));
     L.push("- 업무번호: "+x.id);return L.join("\n");
   }
   const lines=[`${imm?"@Claude ":""}${x.who}${x.brand?" ["+x.brand+"]":""} ${x.title}`];
   if(x.memo)lines.push("- 내용: "+x.memo);
   if(x.due)lines.push("- 마감: "+x.due);
+  if(x.out)lines.push(...outSpec(x));
   lines.push("- 업무번호: "+x.id);
   return lines.join("\n");
 }
@@ -717,6 +724,7 @@ async function importRepo(silent){
     }
     CFG.repoLast=Date.now();saveCfg();
     if(added||updated){save();render()}
+    linkResults();
     say(added||updated?`새 글 ${added}건, 갱신 ${updated}건을 불러왔어요`:"새로 바뀐 글이 없어요 (이미 최신이에요)");
     setSync(back&&!back.startsWith("📂")?back:(CFG.token?"☁ 동기화됨":"● 자동 저장"));
   }catch(e){setSync("⚠ 불러오기 실패");say("불러오지 못했어요. 인터넷 연결과 토큰을 확인해 주세요")}
@@ -889,42 +897,80 @@ views.chat=()=>{
   const sel=`<select class="chatsel" onchange="chatSet(this.value)">${depts.map(d=>`<optgroup label="${esc(d)}">${A.filter(a=>a.dept===d).map(a=>`<option value="${esc(a.name)}" ${a.name===cur.name?"selected":""}>${esc(a.name)} · ${esc(a.title)}${openCnt(a.name)?` (진행 ${openCnt(a.name)})`:""}</option>`).join("")}</optgroup>`).join("")}</select>`;
   const bubbles=tasks.map(x=>{const di=dueInfo(x.due),s=asInfo(x.as);return `<div class="bubble me"><div class="t ${x.done?"done":""}">${esc(x.title)}</div>${x.memo?`<div class="m" style="color:#4a4258;white-space:pre-wrap">${esc(x.memo)}</div>`:""}
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="pill" style="background:var(${di[1]})">⏰ ${di[0]}</span>${x.done?`<span class="pill" style="background:var(--done)">✅ 완료</span>`:""}${x.brand?`<span class="pill" style="background:var(--mut)">${esc(x.brand)}</span>`:""}</div>
+    ${x.res?`<button class="pill" style="background:var(--done);margin-top:6px" onclick="openDoc('${sid(x.res)}')">📄 결과 보기</button>`:(x.out&&!x.done?`<div class="m" style="margin-top:4px">⏳ 결과 대기 중${CFG.repoToken?" · 도착하면 자동으로 올라와요":" · 설정에서 작업 폴더 토큰을 저장하면 자동으로 올라와요"}</div>`:"")}
     ${x.done?"":aiRow(x)}</div>`}).join("")||`<div class="empty" style="text-align:center">아직 ${esc(cur.name)}에게 한 지시가 없어요. 아래에 첫 지시를 써 보세요.</div>`;
   const results=res.map(c=>{const s2=stInfo(c.stage);return `<div class="bubble sys" onclick="${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}" style="cursor:pointer"><div class="m">📥 ${esc(cur.name)}님이 올린 결과</div><div class="t">${esc(c.title)}</div><div class="m">${s2[1]}${c.body?" · 눌러서 초안 보기":""}</div></div>`}).join("");
   return `<h1>지시 채팅</h1><div class="sub">직원 한 명을 골라 업무와 마감을 지시해요. 보내면 업무로 저장되고 보낼 문구가 복사돼요</div>
   <div class="chatgrid"><div class="chatlist glass">${listPc}</div>
   <div class="chatmain"><div class="chatsel-wrap">${sel}</div>
-  <div class="chathead glass"><b>${esc(cur.name)}</b> <span class="m">${esc(cur.title)} · ${esc(cur.dept)} · ${esc(cur.agent)}</span>${active(cur)?"":`<div class="m low">현재 가동 단계(${D.set.stage}단계) 밖의 직원이에요. 지시해도 바로 움직이지 않을 수 있어요.</div>`}</div>
+  <div class="chathead glass"><button class="pill" style="background:var(--make);float:right" onclick="pollResults(true)">🔄 결과 확인</button><b>${esc(cur.name)}</b> <span class="m">${esc(cur.title)} · ${esc(cur.dept)} · ${esc(cur.agent)}</span>${active(cur)?"":`<div class="m low">현재 가동 단계(${D.set.stage}단계) 밖의 직원이에요. 지시해도 바로 움직이지 않을 수 있어요.</div>`}</div>
   <div class="chatlog" id="chatlog">${bubbles}${results}</div>
-  <div class="composer glass"><textarea id="cmsg" rows="3" placeholder="${esc(cur.name)}에게 지시할 내용을 써 주세요" oninput="chatDraft=this.value">${esc(chatDraft)}</textarea>
+  <div class="composer glass"><textarea id="cmsg" rows="3" placeholder="${esc(cur.name)}에게 지시할 내용을 써 주세요" oninput="chatInput(this)">${esc(chatDraft)}</textarea><div id="chint">${hintHtml(cur.name,chatDraft,"chatSet")}</div>
    <div class="chips">마감 <button onclick="chatDueSet(0)">오늘</button><button onclick="chatDueSet(1)">내일</button><button onclick="chatDueSet(3)">3일 뒤</button><button onclick="chatDueSet(7)">1주 뒤</button><input id="cdue" type="date" value="${esc(chatDue)}" onchange="chatDue=this.value" style="width:auto"></div>
    <div class="filters">${brands.length?`<select id="cbr"><option value="">브랜드 선택 안 함</option>${brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}${b.name?" · "+esc(b.name):""}</option>`).join("")}</select>`:"<span></span>"}<select id="cmode" onchange="CFG.chatMode=this.value;saveCfg()">${CMODES.map(m=>`<option value="${m[0]}" ${m[0]===mode?"selected":""}>보낼 곳: ${m[1]}</option>`).join("")}</select></div>
+   <label class="m"><input id="cout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 콘텐츠에 올리기 (글·초안 지시)</label>
    <button class="btn" onclick="sendChat()">보내기 (업무 저장 + 문구 복사)</button></div></div></div>`;
 };
 function chatSet(n){chatDraft=($("#cmsg")||{value:chatDraft}).value;chatWho=n;render()}
 function chatDueSet(n){chatDue=addDays(n);const e=$("#cdue");if(e)e.value=chatDue}
-function dispatchTask(name,txt,due,brand,mode){
+function dispatchTask(name,txt,due,brand,mode,out){
   const lines=txt.split("\n"),title=lines[0].trim().slice(0,200),memo=lines.slice(1).join("\n").trim().slice(0,1500);
-  const x={id:uid(),title,due:due||"",pri:"중요도 보통",done:0,who:name,memo,brand:brand||"",by:curName(),as:"sent",at:Date.now()};
+  const x={id:uid(),title,due:due||"",pri:"중요도 보통",done:0,who:name,memo,brand:brand||"",by:curName(),as:"sent",at:Date.now(),out:out?1:0};
   D.tasks.unshift(x);save();
-  const out=cmdText(x,mode);
+  const txtOut=cmdText(x,mode);
   const ok=()=>toast(mode===2?"복사했어요. 이 채팅(Claude)에 붙여넣으면 "+name+" 한 명만 깨워요":"복사했어요. Slack에 붙여넣어 올려 주세요");
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(out).then(ok,()=>prompt("복사해서 보내 주세요",out));else prompt("복사해서 보내 주세요",out);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txtOut).then(ok,()=>prompt("복사해서 보내 주세요",txtOut));else prompt("복사해서 보내 주세요",txtOut);
 }
 function sendChat(){
   const txt=($("#cmsg").value||"").trim();if(!txt){alert("지시 내용을 써 주세요");return}
   const cur=chatPick();if(!cur)return;
-  dispatchTask(cur.name,txt,$("#cdue").value||"",$("#cbr")?$("#cbr").value:"",+($("#cmode").value||1));
+  dispatchTask(cur.name,txt,$("#cdue").value||"",$("#cbr")?$("#cbr").value:"",+($("#cmode").value||1),$("#cout").checked);
   chatDraft="";chatDue="";render();
   const log=$("#chatlog");if(log)log.scrollTop=log.scrollHeight;
 }
+/* 담당자 안내: 글 초안 지시인데 글 쓰는 직원이 아니면 맞는 직원을 알려 줘요 */
+const WRITER_AGENTS=new Set(["editor-writer","editor-multiformat","editor-lead","video-writer","mkt-promo","planning-content"]);
+function writerSuggest(who,text){
+  const a=agentOf(who);if(!a||WRITER_AGENTS.has(a.agent))return null;
+  if(!/초안|포스팅|블로그|글을|글 |작성|캡션|카드뉴스|릴스|대본/.test(text||""))return null;
+  const sns=/인스타|캡션|카드뉴스|릴스|쇼츠|대본/.test(text);
+  const t=D.set.agents.find(x=>x.agent===(sns?"editor-multiformat":"editor-writer"));
+  return t&&t.name!==who?t:null;
+}
+function hintHtml(who,text,fn){
+  const t=writerSuggest(who,text);if(!t)return "";
+  return `<div class="m" style="margin:6px 0">✍️ 글 초안은 <b>${esc(t.name)}</b>(${esc(t.title)})가 맡는 역할이에요. ${esc(who)}님은 기획·관리 쪽이라 초안 대신 기획서를 쓸 수 있어요. <button class="pill" style="background:var(--g)" onclick="${fn}(decodeURIComponent('${encodeURIComponent(t.name)}'))">${esc(t.name)}로 바꾸기</button></div>`;
+}
+function chatInput(el){chatDraft=el.value;const h=$("#chint");if(h)h.innerHTML=hintHtml(chatWho,chatDraft,"chatSet")}
+function qInput(){const w=$("#qwho"),m=$("#qmsg"),h=$("#qhint");if(h&&w&&m)h.innerHTML=hintHtml(w.value,m.value,"qUse")}
+function qUse(n){const w=$("#qwho");if(w){w.value=n;qWho=n}qInput()}
+/* 결과 연결: 지시한 직원 이름으로 work 폴더 글이 도착하면 업무를 '보고 도착'으로 바꾸고 연결해요 */
+function linkResults(){
+  const used=new Set(D.tasks.map(t=>t.res).filter(Boolean));let ch=0;
+  const cands=D.contents.filter(c=>c.src).slice().sort((a,b)=>a.src.localeCompare(b.src));
+  D.tasks.slice().reverse().forEach(t=>{
+    if(!t.out||t.done||t.res||!t.at||t.as==="ok"||!agentNames().has(t.who))return;
+    const day=ymd(new Date(t.at)),c=cands.find(c=>c.by===t.who&&c.src.slice(0,10)>=day&&!used.has(c.id));
+    if(c){t.res=c.id;used.add(c.id);t.as="rep";ch++}
+  });
+  if(ch){save();render()}
+  return ch;
+}
+const pendingAI=()=>D.tasks.filter(t=>t.out&&!t.done&&!t.res&&agentNames().has(t.who)).length;
+let _lastPoll=0;
+async function pollResults(force){
+  if(!isAdmin()||!CFG.repoToken||!repoOk((CFG.repo||"").trim()))return;
+  if(!force&&(!pendingAI()||Date.now()-_lastPoll<60000))return;
+  _lastPoll=Date.now();await importRepo(!force);
+}
+setInterval(()=>{if(!document.hidden&&["home","chat","contents","tasks"].includes(page))pollResults(false)},180000);
 /* 홈의 빠른 지시 카드 */
 let qDue="",qWho="";
 function qDueSet(n){qDue=addDays(n);const e=$("#qdue");if(e)e.value=qDue}
 function qSend(){
   const txt=($("#qmsg").value||"").trim();if(!txt){alert("지시 내용을 써 주세요");return}
   const who=$("#qwho").value;if(!who)return;qWho=who;
-  dispatchTask(who,txt,$("#qdue").value||"",$("#qbr")?$("#qbr").value:"",+(CFG.chatMode||1));
+  dispatchTask(who,txt,$("#qdue").value||"",$("#qbr")?$("#qbr").value:"",+(CFG.chatMode||1),$("#qout").checked);
   qDue="";$("#qmsg").value="";render();
 }
 const quickCard=()=>{
@@ -932,10 +978,11 @@ const quickCard=()=>{
   if(!A.length)return `<div class="card quickcard"><h3>💬 직원에게 바로 지시</h3><div class="body"><div class="empty">AI 직원이 아직 없어요.</div><button class="btn" onclick="go('org')">조직도에서 직원 넣기</button></div></div>`;
   const depts=[...new Set(A.map(a=>a.dept))],sel=qWho&&A.some(a=>a.name===qWho)?qWho:(A.find(a=>openCnt(a.name))||A.find(active)||A[0]).name,brands=D.set.brands||[];
   return `<div class="card quickcard"><h3>💬 직원에게 바로 지시<button class="pill" style="background:rgba(255,255,255,.25)" onclick="go('chat')">채팅 열기 ›</button></h3><div class="body">
-  <select id="qwho">${depts.map(d=>`<optgroup label="${esc(d)}">${A.filter(a=>a.dept===d).map(a=>`<option value="${esc(a.name)}" ${a.name===sel?"selected":""}>${esc(a.name)} · ${esc(a.title)}${active(a)?"":" (대기 단계)"}</option>`).join("")}</optgroup>`).join("")}</select>
-  <textarea id="qmsg" rows="2" placeholder="지시할 내용을 써 주세요" style="margin-top:8px"></textarea>
+  <select id="qwho" onchange="qInput()">${depts.map(d=>`<optgroup label="${esc(d)}">${A.filter(a=>a.dept===d).map(a=>`<option value="${esc(a.name)}" ${a.name===sel?"selected":""}>${esc(a.name)} · ${esc(a.title)}${active(a)?"":" (대기 단계)"}</option>`).join("")}</optgroup>`).join("")}</select>
+  <textarea id="qmsg" rows="2" placeholder="지시할 내용을 써 주세요" style="margin-top:8px" oninput="qInput()"></textarea><div id="qhint"></div>
   <div class="chips" style="margin:8px 0">마감 <button onclick="qDueSet(0)">오늘</button><button onclick="qDueSet(1)">내일</button><button onclick="qDueSet(3)">3일 뒤</button><button onclick="qDueSet(7)">1주 뒤</button><input id="qdue" type="date" value="${esc(qDue)}" onchange="qDue=this.value" style="width:auto"></div>
   <div class="filters">${brands.length?`<select id="qbr"><option value="">브랜드 선택 안 함</option>${brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}</option>`).join("")}</select>`:"<span></span>"}<select onchange="CFG.chatMode=this.value;saveCfg()">${CMODES.map(m=>`<option value="${m[0]}" ${m[0]===(CFG.chatMode||"1")?"selected":""}>보낼 곳: ${m[1]}</option>`).join("")}</select></div>
+  <label class="m" style="display:block;margin-bottom:8px"><input id="qout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 콘텐츠에 올리기 (글·초안 지시)</label>
   <button class="btn" onclick="qSend()">보내기 (업무 저장 + 문구 복사)</button></div></div>`;
 };
 function addTask(more){
@@ -1170,6 +1217,7 @@ function render(keepFocus){
   $("#crumb").textContent=PAGES.find(p=>p[0]===page)[2];
   $("#app").innerHTML=views[page]();
   if(page==="chat"){const lg=$("#chatlog");if(lg)lg.scrollTop=lg.scrollHeight}
+  if(page==="chat"||page==="home")pollResults(false);
   if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
 }
 (function boot(){
