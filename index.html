@@ -246,7 +246,7 @@ async function fetchRemote(){
   const f=(await r.json()).files["rino-workspace.json"];if(!f)return null;
   return norm(JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content));
 }
-let _busy=false,_again=false;
+let _busy=false,_again=false,SYNC_OK=false;
 async function syncNow(){
   if(!CFG.token)return;
   if(_busy){_again=true;return}
@@ -264,8 +264,8 @@ async function syncNow(){
       else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Rino workspace data",public:false,files})});if(r.ok){CFG.gistId=(await r.json()).id;saveCfg()}}
       if(!r.ok)throw new Error(r.status);
     }
-    setSync("☁ 동기화됨");
-  }catch{setSync("⚠ 동기화 실패")}
+    setSync("☁ 동기화됨");SYNC_OK=true;
+  }catch{SYNC_OK=false;setSync("⚠ 동기화 실패")}
   _busy=false;if(_again){_again=false;syncNow()}
 }
 const pull=syncNow,push=syncNow;
@@ -486,7 +486,7 @@ const active=a=>a.stage<=D.set.stage;
 const openCnt=n=>D.tasks.filter(t=>!t.done&&t.who===n).length;
 views.org=()=>{
   const A=D.set.agents;
-  if(!A.length)return `<h1>조직도</h1><div class="sub">AI 직원을 아직 가져오지 않았어요</div><div class="card"><div class="body"><div class="empty">${isAdmin()?"직원 관리 메뉴에서 SOLAMEN 직원 파일을 가져와 주세요.":"관리자가 직원 명단을 가져오면 여기에 보여요."}</div></div></div>`;
+  if(!A.length)return `<h1>조직도</h1><div class="sub">AI 직원을 아직 가져오지 않았어요</div><div class="card"><div class="body"><div class="empty">${isAdmin()?"SOLAMEN 직원 34명을 한 번에 넣을 수 있어요.":"관리자가 직원 명단을 가져오면 여기에 보여요."}</div>${isAdmin()?`<button class="btn" onclick="seedAgents()">SOLAMEN 직원 ${SOL_ROSTER.agents.length}명 넣기</button>`:""}</div></div>`;
   const depts=[...new Set(A.map(a=>a.dept))];
   const on=A.filter(active).length;
   return `<h1>조직도</h1><div class="sub">AI 직원 ${A.length}명 · ${depts.length}개 팀 · 가동 중 ${on}명 (현재 ${D.set.stage}단계)</div>
@@ -495,6 +495,41 @@ views.org=()=>{
     m.map(a=>`<div class="item" style="${active(a)?"":"opacity:.6"}"><div class="row"><div class="grow"><div class="t">${esc(a.name)} <span class="m">${esc(a.title)}</span></div><div class="m">${esc(a.emp)} · ${esc(a.model)} · 보고 ${esc(a.boss)}</div></div>
     ${openCnt(a.name)?`<span class="pill" style="background:var(--make)">업무 ${openCnt(a.name)}</span>`:""}<span class="pill" style="background:var(${active(a)?"--done":"--idea"})">${active(a)?"가동":a.stage+"단계"}</span></div></div>`).join("")+`</div></div>`}).join("");
 };
+/* SOLAMEN AI 직원 기본 명단 (2026-10-08 기준 34명, 직원명부.md 에서 생성) */
+const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"SOLAMEN"}],"agents":[{"emp":"SOL-001","agent":"master","name":"아우렐리우스","title":"마스터 (CEO)","dept":"대표실","channel":"#sol-대표실","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"planning-lead","name":"아그리파","title":"기획팀장","dept":"기획팀","channel":"#sol-기획팀","stage":1,"boss":"아우렐리우스","model":"Opus"},{"emp":"SOL-003","agent":"planning-biz","name":"아티쿠스","title":"사업전략","dept":"기획팀","channel":"#sol-기획팀","stage":1,"boss":"아그리파","model":"Sonnet"},{"emp":"SOL-004","agent":"planning-content","name":"마에케나스","title":"콘텐츠기획","dept":"기획팀","channel":"#sol-기획팀","stage":1,"boss":"아그리파","model":"Sonnet"},{"emp":"SOL-005","agent":"planning-ops","name":"티로","title":"운영기획","dept":"기획팀","channel":"#sol-기획팀","stage":1,"boss":"아그리파","model":"Haiku"},{"emp":"SOL-006","agent":"editor-lead","name":"퀸틸리아누스","title":"편집장","dept":"에디터팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"아우렐리우스","model":"Opus"},{"emp":"SOL-007","agent":"editor-writer","name":"세네카","title":"작가","dept":"에디터팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"퀸틸리아누스","model":"Sonnet"},{"emp":"SOL-008","agent":"editor-seo","name":"바로","title":"SEO","dept":"에디터팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"퀸틸리아누스","model":"Sonnet"},{"emp":"SOL-009","agent":"editor-multiformat","name":"오비디우스","title":"멀티포맷","dept":"에디터팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"퀸틸리아누스","model":"Sonnet"},{"emp":"SOL-010","agent":"editor-copyedit","name":"겔리우스","title":"교열","dept":"에디터팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"퀸틸리아누스","model":"Sonnet"},{"emp":"SOL-011","agent":"design-lead","name":"하드리아누스","title":"디자인팀장","dept":"디자인팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"아우렐리우스","model":"Opus"},{"emp":"SOL-012","agent":"design-ux","name":"켈레르","title":"UX/UI","dept":"디자인팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"하드리아누스","model":"Sonnet"},{"emp":"SOL-013","agent":"design-system","name":"헤르모게네스","title":"디자인시스템","dept":"디자인팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"하드리아누스","model":"Sonnet"},{"emp":"SOL-014","agent":"design-visual","name":"스투디우스","title":"비주얼","dept":"디자인팀","channel":"#sol-콘텐츠본부","stage":2,"boss":"하드리아누스","model":"Sonnet"},{"emp":"SOL-015","agent":"video-lead","name":"로스키우스","title":"영상PD","dept":"영상팀","channel":"#sol-콘텐츠본부","stage":3,"boss":"아우렐리우스","model":"Opus"},{"emp":"SOL-016","agent":"video-writer","name":"플라우투스","title":"구성작가","dept":"영상팀","channel":"#sol-콘텐츠본부","stage":3,"boss":"로스키우스","model":"Sonnet"},{"emp":"SOL-017","agent":"video-editor","name":"필라데스","title":"편집","dept":"영상팀","channel":"#sol-콘텐츠본부","stage":3,"boss":"로스키우스","model":"Sonnet"},{"emp":"SOL-018","agent":"mkt-lead","name":"베르길리우스","title":"마케팅팀장","dept":"마케팅팀","channel":"#sol-성장본부","stage":3,"boss":"아우렐리우스","model":"Opus"},{"emp":"SOL-019","agent":"mkt-insight","name":"플리니우스","title":"인사이트","dept":"마케팅팀","channel":"#sol-성장본부","stage":3,"boss":"베르길리우스","model":"Sonnet"},{"emp":"SOL-020","agent":"mkt-brand","name":"호라티우스","title":"브랜드","dept":"마케팅팀","channel":"#sol-성장본부","stage":1,"boss":"베르길리우스","model":"Sonnet"},{"emp":"SOL-021","agent":"mkt-promo","name":"마르티알리스","title":"프로모션","dept":"마케팅팀","channel":"#sol-성장본부","stage":3,"boss":"베르길리우스","model":"Sonnet"},{"emp":"SOL-022","agent":"mkt-growth","name":"콜루멜라","title":"그로스","dept":"마케팅팀","channel":"#sol-성장본부","stage":3,"boss":"베르길리우스","model":"Sonnet"},{"emp":"SOL-023","agent":"commerce-lead","name":"소시우스","title":"출판커머스팀장","dept":"출판·커머스팀","channel":"#sol-성장본부","stage":4,"boss":"아우렐리우스","model":"Opus"},{"emp":"SOL-024","agent":"commerce-publishing","name":"트리폰","title":"e-book제작","dept":"출판·커머스팀","channel":"#sol-성장본부","stage":4,"boss":"소시우스","model":"Sonnet"},{"emp":"SOL-025","agent":"commerce-store","name":"스카우루스","title":"스토어","dept":"출판·커머스팀","channel":"#sol-성장본부","stage":4,"boss":"소시우스","model":"Sonnet"},{"emp":"SOL-026","agent":"cs-lead","name":"필레몬","title":"CS팀장","dept":"CS팀","channel":"#sol-성장본부","stage":3,"boss":"아우렐리우스","model":"Sonnet"},{"emp":"SOL-027","agent":"cs-agent","name":"바우키스","title":"CS","dept":"CS팀","channel":"#sol-성장본부","stage":3,"boss":"필레몬","model":"Haiku"},{"emp":"SOL-028","agent":"dev-lead","name":"비트루비우스","title":"테크리드","dept":"개발팀","channel":"#sol-기술본부","stage":4,"boss":"아우렐리우스","model":"Opus"},{"emp":"SOL-029","agent":"dev-backend","name":"아폴로도로스","title":"백엔드","dept":"개발팀","channel":"#sol-기술본부","stage":4,"boss":"비트루비우스","model":"Sonnet"},{"emp":"SOL-030","agent":"dev-frontend","name":"파불루스","title":"프론트엔드","dept":"개발팀","channel":"#sol-기술본부","stage":4,"boss":"비트루비우스","model":"Sonnet"},{"emp":"SOL-031","agent":"dev-qa-ops","name":"프론티누스","title":"QA인프라","dept":"개발팀","channel":"#sol-기술본부","stage":4,"boss":"비트루비우스","model":"Sonnet"},{"emp":"SOL-032","agent":"admin-lead","name":"카토","title":"경영지원팀장","dept":"경영지원팀","channel":"#sol-경영지원","stage":4,"boss":"아우렐리우스","model":"Opus"},{"emp":"SOL-033","agent":"admin-accounting","name":"팔라스","title":"회계","dept":"경영지원팀","channel":"#sol-경영지원","stage":4,"boss":"카토","model":"Sonnet"},{"emp":"SOL-034","agent":"admin-legal","name":"가이우스","title":"법무행정","dept":"경영지원팀","channel":"#sol-경영지원","stage":4,"boss":"카토","model":"Sonnet"}]};
+let AG_READY=false;
+function mergeAgents(list){
+  const by=new Map(D.set.agents.map(a=>[a.emp,a]));
+  list.forEach(a=>by.set(a.emp,{...(by.get(a.emp)||{}),...a}));
+  D.set.agents=[...by.values()].sort((a,b)=>String(a.emp).localeCompare(String(b.emp)));
+}
+function seedAgents(auto){
+  if(!isAdmin())return;
+  if(auto&&(D.set.agents.length||D.set.agentsOff))return;
+  const was=D.set.agents.length;
+  mergeAgents(SOL_ROSTER.agents);
+  if(!was)D.set.stage=SOL_ROSTER.activeStage;
+  if(!D.set.brands.length)D.set.brands=SOL_ROSTER.brands.map(b=>({...b}));
+  D.set.agentsOff=false;D.set.u=Date.now();save();render();
+  toast(SOL_ROSTER.agents.length+"명을 조직도에 넣었어요");
+}
+async function refreshAgents(){
+  if(!isAdmin())return;
+  const repo=(CFG.repo||"").trim(),br=(CFG.repoBranch||"work").trim();
+  if(!CFG.repoToken||!repoOk(repo)){alert("먼저 설정의 'SOLAMEN 작업 폴더 불러오기'에서 저장소와 읽기 전용 토큰을 저장해 주세요");return}
+  try{
+    const r=await ghRepo(`/repos/${repo}/contents/tools/staff_registry.json?ref=${encodeURIComponent(br)}`);
+    if(!r.ok)throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===404?"tools/staff_registry.json 을 찾지 못했어요":"읽지 못했어요 ("+r.status+")");
+    const reg=JSON.parse(b64text((await r.json()).content)),st=reg.staff||[];
+    if(!st.length)throw new Error("직원 목록이 비어 있어요");
+    const nameOf={};st.forEach(x=>{nameOf[x.agent]=x.name});
+    const model={};SOL_ROSTER.agents.forEach(a=>{model[a.agent]=a.model});D.set.agents.forEach(a=>{if(a.model)model[a.agent]=a.model});
+    mergeAgents(st.map(x=>({emp:String(x.emp_id),agent:String(x.agent||""),name:String(x.name),title:String(x.title||""),dept:String(x.team||"기타"),channel:x.home_channel?"#"+x.home_channel:"",stage:+x.stage||0,boss:x.reports_to==="ceo"?"대표":(nameOf[x.reports_to]||String(x.reports_to||"")),model:model[x.agent]||""})));
+    if(!D.set.brands.length)D.set.brands=SOL_ROSTER.brands.map(b=>({...b}));
+    D.set.agentsOff=false;D.set.u=Date.now();save();render();
+    alert(st.length+"명을 저장소 기준으로 새로고침했어요."+(reg.active_stage&&+reg.active_stage!==D.set.stage?`\nSOLAMEN 현재 가동 단계는 ${reg.active_stage}단계예요 (앱은 ${D.set.stage}단계). 필요하면 아래에서 바꿔 주세요.`:""));
+  }catch(e){alert("새로고침하지 못했어요: "+(e.message||e))}
+}
 function importAgents(f){
   if(!f||!isAdmin())return;
   f.text().then(t=>{try{
@@ -505,7 +540,7 @@ function importAgents(f){
   }catch{alert("SOLAMEN 직원 파일이 아니에요")}});
 }
 function setStage(v){D.set.stage=+v;D.set.u=Date.now();save();render()}
-function clearAgents(){if(!confirm("AI 직원 명단을 모두 지울까요? (업무의 담당자 이름은 남아요)"))return;D.set.agents=[];D.set.u=Date.now();save();render()}
+function clearAgents(){if(!confirm("AI 직원 명단을 모두 지울까요? (업무의 담당자 이름은 남아요)"))return;D.set.agents=[];D.set.agentsOff=true;D.set.u=Date.now();save();render()}
 
 /* ---------- Slack 지시문 (SOLAMEN 연결) ---------- */
 /* SOLAMEN은 '대표가 직접 쓴 Slack 글'만 지시로 인정해요. 그래서 앱은 글을 대신 올리지 않고,
@@ -714,7 +749,7 @@ views.staff=()=>{
   <div class="row" style="margin-top:8px"><input id="sname" placeholder="직원 이름"><button class="btn" onclick="addStaff()">추가</button></div></div></div>
   <div class="card"><h3>🤖 SOLAMEN AI 직원 ${D.set.agents.length?'<span class="m sub" style="margin:0">'+D.set.agents.length+'명</span>':""}</h3><div class="body">
   <div class="m sub">SOLAMEN 레포에서 만든 <b>solamen-staff.json</b> 파일을 올리면 AI 직원이 조직도와 업무 담당자 목록에 들어와요. 데이터는 내 비공개 저장소(Gist)에만 저장돼요. 같은 사번은 덮어써요.</div>
-  <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importAgents(this.files[0]);this.value=''">
+  <div class="form" style="border:0;padding:0"><button class="btn" onclick="seedAgents()">기본 명단 ${SOL_ROSTER.agents.length}명 넣기</button><button class="btn ghost" onclick="refreshAgents()">저장소 기준으로 새로고침</button><input type="file" accept="application/json" onchange="importAgents(this.files[0]);this.value=''">
   ${D.set.agents.length?`<select onchange="setStage(this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${D.set.stage===n?"selected":""}>가동 단계 ${n}단계 (이 단계까지 가동)</option>`).join("")}</select><button class="btn ghost" onclick="clearAgents()">AI 직원 명단 지우기</button>`:""}</div></div></div>
   <div class="card"><h3>🔑 로그인 PIN ${p?'<span class="m sub" style="margin:0">설정됨</span>':'<span class="m sub low" style="margin:0">미설정 (누구나 관리자)</span>'}</h3><div class="body">
   <div class="m sub">숫자 4~8자리. 바꾸면 모든 기기가 다시 로그인해야 해요.</div>
@@ -990,6 +1025,7 @@ function render(keepFocus){
   if(!m){$("#crumb").textContent="로그인";applyBg();$("#app").innerHTML=lockView();return}
   const pg=PAGES.find(p=>p[0]===page&&(!p[3]||m.role==="admin"));if(!pg)page="home";
   nav();tabbar();applyBg();
+  if(AG_READY&&(!CFG.token||SYNC_OK)&&isAdmin()&&!D.set.agents.length&&!D.set.agentsOff){seedAgents(true);return}
   $("#crumb").textContent=PAGES.find(p=>p[0]===page)[2];
   $("#app").innerHTML=views[page]();
   if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
@@ -999,7 +1035,7 @@ function render(keepFocus){
   try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
   render();
   const auto=()=>{if(CFG.repoAuto&&CFG.repoToken&&isAdmin())importRepo(true)};
-  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{render();auto()})}else auto();
+  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;render();auto()},()=>{AG_READY=true;render()})}else{AG_READY=true;render();auto()}
 })();
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
