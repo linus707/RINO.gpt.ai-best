@@ -75,13 +75,13 @@ body.staff .del{display:none}
 <script>
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","📡","채널 현황"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["calendar","📅","콘텐츠 캘린더"],["stock","📦","가구 재고"],["sop","📖","나만의 SOP"],["routine","🌿","오늘 루틴"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["settings","⚙️","설정",1]];
+const PAGES=[["home","📡","채널 현황"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["calendar","📅","콘텐츠 캘린더"],["org","🏛️","조직도"],["stock","📦","가구 재고"],["sop","📖","나만의 SOP"],["routine","🌿","오늘 루틴"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["settings","⚙️","설정",1]];
 const RCH={...CH,etc:"기타"};
 const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const today=()=>new Date().toISOString().slice(0,10);
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
@@ -193,12 +193,12 @@ contents(){
 },
 tasks(){
   const t=today(),wk=new Date(Date.now()+7*864e5).toISOString().slice(0,10);
-  const f={mine:x=>!x.done&&x.who===curName(),open:x=>!x.done,today:x=>!x.done&&x.due===t,week:x=>!x.done&&x.due&&x.due<=wk,done:x=>x.done,all:()=>true}[tab];
+  const f={mine:x=>!x.done&&x.who===curName(),ai:x=>!x.done&&agentNames().has(x.who),open:x=>!x.done,today:x=>!x.done&&x.due===t,week:x=>!x.done&&x.due&&x.due<=wk,done:x=>x.done,all:()=>true}[tab];
   const list=D.tasks.filter(f).sort((a,b)=>(a.due||"9").localeCompare(b.due||"9"));
-  const tabs=[["mine","내 업무"],["open","미완료"],["today","오늘"],["week","이번 주"],["done","완료"],["all","전체"]];
+  const tabs=[["mine","내 업무"],...(D.set.agents.length?[["ai","AI 직원"]]:[]),["open","미완료"],["today","오늘"],["week","이번 주"],["done","완료"],["all","전체"]];
   return `<h1>업무 관리</h1><div class="sub">하나씩 확인하고, 하나씩 끝내요</div>
   <div class="stats">${stat("전체 미완료",D.tasks.filter(x=>!x.done).length)}${stat("오늘 마감",D.tasks.filter(x=>!x.done&&x.due===t).length)}${stat("기한초과",D.tasks.filter(x=>!x.done&&x.due&&x.due<t).length)}${stat("오늘 완료",D.tasks.filter(x=>x.done&&x.doneAt===t).length)}</div>
-  <div class="form"><input id="tt" placeholder="할 일 입력"><div class="filters"><input id="td" type="date"><select id="tp"><option>중요도 보통</option><option>중요도 높음</option><option>중요도 낮음</option></select></div><select id="tw">${[...new Set([curName(),...D.set.staff,"전체"])].filter(Boolean).map(n=>`<option value="${esc(n)}">담당: ${esc(n)}</option>`).join("")}</select><button class="btn" onclick="addTask()">＋ 업무 추가</button></div>
+  <div class="form"><input id="tt" placeholder="할 일 입력"><div class="filters"><input id="td" type="date"><select id="tp"><option>중요도 보통</option><option>중요도 높음</option><option>중요도 낮음</option></select></div><select id="tw">${assigneeOpts()}</select><button class="btn" onclick="addTask()">＋ 업무 추가</button></div>
   <div class="tabs">${tabs.map(([k,n])=>`<button class="${tab===k?"on":""}" onclick="tab='${k}';render()">${n}</button>`).join("")}</div>
   ${list.map(x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${x.id}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.who?" · 담당 "+esc(x.who):""}${x.done&&x.doneBy?" · 완료 "+esc(x.doneBy):""}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('tasks','${x.id}')">✕</button></div>`).join("")||'<div class="empty">해당 업무가 없어요</div>'}`;
 },
@@ -247,6 +247,41 @@ views.revenue=()=>{
 };
 function addRev(){const a=+$("#ra").value;if(!a)return;D.revenue.push({id:uid(),date:$("#rd").value||today(),ch:$("#rc").value,amount:a,memo:$("#rm").value.trim()});save();render()}
 
+/* ---------- SOLAMEN AI 직원 (가져오기·조직도) ---------- */
+const agentNames=()=>new Set(D.set.agents.map(a=>a.name));
+const agentOf=n=>D.set.agents.find(a=>a.name===n);
+function assigneeOpts(){
+  const h=[...new Set([curName(),...D.set.staff,"전체"])].filter(Boolean);
+  let o=`<optgroup label="사람">${h.map(n=>`<option value="${esc(n)}">담당: ${esc(n)}</option>`).join("")}</optgroup>`;
+  const depts=[...new Set(D.set.agents.map(a=>a.dept))];
+  depts.forEach(d=>{o+=`<optgroup label="AI · ${esc(d)}">${D.set.agents.filter(a=>a.dept===d).map(a=>`<option value="${esc(a.name)}">담당: ${esc(a.name)} · ${esc(a.title)}</option>`).join("")}</optgroup>`});
+  return o;
+}
+const active=a=>a.stage<=D.set.stage;
+const openCnt=n=>D.tasks.filter(t=>!t.done&&t.who===n).length;
+views.org=()=>{
+  const A=D.set.agents;
+  if(!A.length)return `<h1>조직도</h1><div class="sub">AI 직원을 아직 가져오지 않았어요</div><div class="card"><div class="body"><div class="empty">${isAdmin()?"직원 관리 메뉴에서 SOLAMEN 직원 파일을 가져와 주세요.":"관리자가 직원 명단을 가져오면 여기에 보여요."}</div></div></div>`;
+  const depts=[...new Set(A.map(a=>a.dept))];
+  const on=A.filter(active).length;
+  return `<h1>조직도</h1><div class="sub">AI 직원 ${A.length}명 · ${depts.length}개 팀 · 가동 중 ${on}명 (현재 ${D.set.stage}단계)</div>
+  <div class="stats">${stat("전체 AI 직원",A.length+"명",1)}${stat("가동 중",on+"명")}${stat("대기",(A.length-on)+"명")}${stat("진행 업무",D.tasks.filter(t=>!t.done&&agentNames().has(t.who)).length)}</div>`+
+  depts.map(d=>{const m=A.filter(a=>a.dept===d);return `<div class="card"><h3>${esc(d)}<span class="m sub" style="margin:0">${m.length}명 · ${esc(m[0].channel)}</span></h3><div class="body">`+
+    m.map(a=>`<div class="item" style="${active(a)?"":"opacity:.6"}"><div class="row"><div class="grow"><div class="t">${esc(a.name)} <span class="m">${esc(a.title)}</span></div><div class="m">${esc(a.emp)} · ${esc(a.model)} · 보고 ${esc(a.boss)}</div></div>
+    ${openCnt(a.name)?`<span class="pill" style="background:var(--make)">업무 ${openCnt(a.name)}</span>`:""}<span class="pill" style="background:var(${active(a)?"--done":"--idea"})">${active(a)?"가동":a.stage+"단계"}</span></div></div>`).join("")+`</div></div>`}).join("");
+};
+function importAgents(f){
+  if(!f||!isAdmin())return;
+  f.text().then(t=>{try{
+    const j=JSON.parse(t);if(j.kind!=="solamen-staff"||!Array.isArray(j.agents))throw 0;
+    const by=new Map(D.set.agents.map(a=>[a.emp,a]));
+    j.agents.forEach(a=>{if(a&&a.emp&&a.name)by.set(a.emp,{emp:String(a.emp),agent:String(a.agent||""),name:String(a.name),title:String(a.title||""),dept:String(a.dept||"기타"),channel:String(a.channel||""),stage:+a.stage||0,boss:String(a.boss||""),model:String(a.model||"")})});
+    D.set.agents=[...by.values()];if(j.activeStage)D.set.stage=+j.activeStage;D.set.u=Date.now();save();render();alert(j.agents.length+"명을 가져왔어요")
+  }catch{alert("SOLAMEN 직원 파일이 아니에요")}});
+}
+function setStage(v){D.set.stage=+v;D.set.u=Date.now();save();render()}
+function clearAgents(){if(!confirm("AI 직원 명단을 모두 지울까요? (업무의 담당자 이름은 남아요)"))return;D.set.agents=[];D.set.u=Date.now();save();render()}
+
 /* ---------- 로그인·권한 (PIN) ---------- */
 /* ※ 서버가 없는 방식이라 PIN은 화면 접근을 막는 '편의용 잠금'이에요. 민감한 개인정보는 넣지 마세요. */
 const ME_KEY="rino-me";
@@ -293,6 +328,10 @@ views.staff=()=>{
   <div class="card"><h3>👥 직원 명단</h3><div class="body">
   ${D.set.staff.map((n,i)=>`<div class="chk"><div class="grow">${esc(n)}</div><button class="icon" style="width:32px;height:32px" onclick="rmStaff(${i})">✕</button></div>`).join("")||'<div class="empty">아직 등록된 직원이 없어요</div>'}
   <div class="row" style="margin-top:8px"><input id="sname" placeholder="직원 이름"><button class="btn" onclick="addStaff()">추가</button></div></div></div>
+  <div class="card"><h3>🤖 SOLAMEN AI 직원 ${D.set.agents.length?'<span class="m sub" style="margin:0">'+D.set.agents.length+'명</span>':""}</h3><div class="body">
+  <div class="m sub">SOLAMEN 레포에서 만든 <b>solamen-staff.json</b> 파일을 올리면 AI 직원이 조직도와 업무 담당자 목록에 들어와요. 데이터는 내 비공개 저장소(Gist)에만 저장돼요. 같은 사번은 덮어써요.</div>
+  <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importAgents(this.files[0]);this.value=''">
+  ${D.set.agents.length?`<select onchange="setStage(this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${D.set.stage===n?"selected":""}>가동 단계 ${n}단계 (이 단계까지 가동)</option>`).join("")}</select><button class="btn ghost" onclick="clearAgents()">AI 직원 명단 지우기</button>`:""}</div></div></div>
   <div class="card"><h3>🔑 로그인 PIN ${p?'<span class="m sub" style="margin:0">설정됨</span>':'<span class="m sub low" style="margin:0">미설정 (누구나 관리자)</span>'}</h3><div class="body">
   <div class="m sub">숫자 4~8자리. 바꾸면 모든 기기가 다시 로그인해야 해요.</div>
   <div class="form" style="border:0;padding:0"><input id="pa" type="password" inputmode="numeric" placeholder="관리자 PIN"><input id="ps2" type="password" inputmode="numeric" placeholder="직원 PIN"><button class="btn" onclick="setPins()">PIN 저장</button></div></div></div>
