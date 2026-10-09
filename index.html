@@ -258,6 +258,7 @@ const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],sta
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
 const norm=d=>{const s=seed();d={...s,...d};d.set={...s.set,...(d.set||{})};d.del=d.del||{};if(typeof d.goal==="number"){if(!d.set.u)d.set.goal=d.goal;delete d.goal}if(!d.routine||d.routine.date!==today())d.routine={date:today(),items:(d.routine||s.routine).items.map(([n])=>[n,0])};return d};
+let FRESH_BOOT=false;try{FRESH_BOOT=!localStorage.getItem("rino-ws")}catch{}
 let D;try{D=norm(JSON.parse(localStorage.getItem("rino-ws"))||{})}catch{D=norm({})}
 let page="home",tab="open",chF="all";
 const $=s=>document.querySelector(s);
@@ -265,6 +266,10 @@ const $=s=>document.querySelector(s);
 /* ---------- 클라우드 동기화 (GitHub Gist, 비공개) ---------- */
 let CFG={};try{CFG=JSON.parse(localStorage.getItem("rino-cfg"))||{}}catch{}
 const saveCfg=()=>{try{localStorage.setItem("rino-cfg",JSON.stringify(CFG))}catch{}};
+/* 저장 공간이 비어 있는 새 기기 표시, 그리고 브라우저가 저장 공간을 지우지 않도록 보호 요청 */
+if(FRESH_BOOT&&!CFG.token&&!CFG.fresh){CFG.fresh=1;saveCfg()}
+const askPersist=()=>{try{if(navigator.storage&&navigator.storage.persist&&!CFG.persisted)navigator.storage.persist().then(ok=>{if(ok){CFG.persisted=1;saveCfg()}})}catch{}};
+askPersist();document.addEventListener("click",askPersist,{once:true});
 function applyTheme(){document.documentElement.dataset.theme=CFG.theme||"auto"}
 applyTheme();
 function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
@@ -313,7 +318,7 @@ async function syncNow(){
     let rd=null,write=true;
     if(CFG.gistId){
       rd=await fetchRemote();
-      if(rd){const M=merge(D,rd);const ch=JSON.stringify(M)!==JSON.stringify(D);write=JSON.stringify(M)!==JSON.stringify(rd);D=M;if(ch){persist();resnap();render()}}
+      if(rd){if(CFG.fresh)D.set.u=0;const M=merge(D,rd);const ch=JSON.stringify(M)!==JSON.stringify(D);write=JSON.stringify(M)!==JSON.stringify(rd);D=M;if(ch){persist();resnap();render()}}
     }
     if(write){
       const files={"rino-workspace.json":{content:JSON.stringify(D)}};
@@ -322,7 +327,7 @@ async function syncNow(){
       else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Rino workspace data",public:false,files})});if(r.ok){CFG.gistId=(await r.json()).id;saveCfg()}}
       if(!r.ok)throw new Error(r.status);
     }
-    setSync("☁ 동기화됨");SYNC_OK=true;
+    setSync("☁ 동기화됨");SYNC_OK=true;if(CFG.fresh){delete CFG.fresh;saveCfg()}
   }catch{SYNC_OK=false;setSync("⚠ 동기화 실패")}
   _busy=false;if(_again){_again=false;syncNow()}
 }
@@ -451,6 +456,7 @@ home(){
   const CT={blog:"BLOG",furn:"FURNITURE",photo:"PHOTO"};
   return `<div class="hero"><div><div class="mono" style="opacity:.85">${esc(BG.label?BG.label+" · ":"")}${t.replace(/-/g,".")}</div><h1 class="serif">오늘은 어디로<br>떠날까요</h1><div class="sub" style="margin:0">${esc(nm)}님 · 마감 ${dueT.length}건 · 기한초과 ${over.length}건</div></div>
   <div class="kpi"><div><b>${p2(dueT.length)}</b><span class="mono">오늘 마감</span></div><div><b>${p2(mk)}</b><span class="mono">제작중</span></div></div></div>
+  ${syncCard()}
   <div class="homegrid"><div class="hg-list">
   <div class="card"><h3>콘텐츠 목록<span><span class="mono" style="opacity:.7;margin-right:8px">${D.contents.length} ITEMS</span><button class="pill" style="background:var(--fill)" onclick="go('contents')">전체 ›</button></span></h3><div class="body">
   ${list.map((c,i)=>{const s2=stInfo(c.stage);return `<div class="li ${i===hot?"hot":""}" onclick="${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}"><span class="mono">${p2(i+1)}</span><b>${esc(c.title)}</b><span class="mono cty">${CT[c.ch]||""}</span><span class="st">${s2[1]}</span></div>`}).join("")||'<div class="empty">아직 콘텐츠가 없어요. 전체 콘텐츠에서 AI 아이디어를 받아 보세요</div>'}
@@ -867,7 +873,8 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경
   ${CFG.repoLast?`<div class="m sub">마지막으로 불러온 시각: ${new Date(CFG.repoLast).toLocaleString("ko-KR")}</div>`:""}</div></div>
   <div class="card"><h3>📄 콘텐츠 초안 가져오기</h3><div class="body"><div class="m sub">초안·보고가 담긴 콘텐츠 파일(rino-content-*.json)을 올리면 전체 콘텐츠에 들어가요. 같은 제목과 작성자는 덮어써요.</div>
   <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>
-  <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div></div></div>
+  <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div>
+  <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>
   ${themeCard()}
   ${skillCard()}
   ${bgCard()}
@@ -1002,6 +1009,28 @@ async function pollResults(force){
   _lastPoll=Date.now();await importRepo(!force);
 }
 setInterval(()=>{if(!document.hidden&&["home","chat","contents","tasks"].includes(page))pollResults(false)},180000);
+/* 새 기기 / 동기화 안내 카드 (홈) */
+function connectQuick(){
+  const tk=$("#qtk").value.trim(),gi=$("#qgi").value.trim();
+  if(!tk){alert("GitHub 토큰을 입력해 주세요");return}
+  if(!gi&&CFG.fresh&&!confirm("Gist ID가 비어 있으면 빈 새 데이터가 만들어져요. 다른 기기의 데이터를 가져오려면 Gist ID를 넣어야 해요. 그래도 새로 시작할까요?"))return;
+  const prev={token:CFG.token,gistId:CFG.gistId};
+  CFG.token=tk;CFG.gistId=gi||CFG.gistId||"";saveCfg();setSync("☁ 연결 중…");
+  syncNow().then(()=>{
+    if(!SYNC_OK){CFG.token=prev.token||"";CFG.gistId=prev.gistId||"";if(!CFG.token)delete CFG.token;saveCfg();toast("연결하지 못했어요. 토큰과 Gist ID를 확인해 주세요")}
+    else toast("연결했어요");
+    render();
+  });
+}
+const syncCard=()=>{
+  if(!isAdmin()||CFG.token||CFG.syncTipOff)return "";
+  const f=!!CFG.fresh;
+  return `<div class="card"><h3>${f?"다른 기기의 데이터 가져오기":"데이터를 안전하게 보관하기"}<button class="pill" style="background:var(--fill)" onclick="CFG.syncTipOff=1;saveCfg();render()">나중에</button></h3><div class="body">
+  <div class="m sub">${f?"이 기기에는 저장된 데이터가 아직 없어요. PC나 다른 기기에서 쓰던 데이터를 가져오려면 아래에 입력하세요. (홈 화면 앱과 사파리는 저장 공간이 따로예요)":"지금은 이 기기에만 저장돼요. 기기를 바꾸거나 브라우저 데이터가 지워져도 복구하려면 클라우드 동기화를 켜세요."}</div>
+  <input id="qtk" type="password" placeholder="GitHub 토큰 (ghp_…)" autocomplete="off">
+  <input id="qgi" placeholder="${f?"Gist ID (다른 기기에서 쓰던 것)":"Gist ID (처음이면 비워 두세요)"}" style="margin-top:8px" autocomplete="off">
+  <button class="btn" style="margin-top:8px" onclick="connectQuick()">${f?"연결하고 가져오기":"연결하기"}</button></div></div>`;
+};
 /* 홈의 빠른 지시 카드 */
 let qDue="",qWho="";
 function qDueSet(n){qDue=addDays(n);const e=$("#qdue");if(e)e.value=qDue}
