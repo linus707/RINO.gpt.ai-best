@@ -42,11 +42,11 @@ button{cursor:pointer;-webkit-appearance:none;appearance:none}
 #bgph .bgimg svg{width:100%;height:100%;display:block}
 #bgph .bgdim{position:absolute;inset:0;transition:background .3s}
 #bgph.show .bgdim:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,0) 32%,rgba(0,0,0,.18))}
-main{position:relative;z-index:1;padding:8px 16px 120px;max-width:1040px;margin:0 auto}
+main{position:relative;z-index:1;padding:calc(14px + env(safe-area-inset-top)) 16px 120px;max-width:1040px;margin:0 auto}
 /* 소재(머티리얼) */
 .glass,.card,.form,.doc,.tile,.lock,.stat,.chathead,.composer,.chatlist{background:var(--mat);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8)}
 /* 상단 바 */
-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--mat-nav);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);border-bottom:.5px solid var(--sep)}
+header{display:none!important}header.x{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--mat-nav);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);border-bottom:.5px solid var(--sep)}
 .mast{display:none}
 .crumb{flex:1;text-align:center;font-size:17px;font-weight:600;letter-spacing:-.02em}.crumb b{font-weight:600;color:var(--tx)}
 .sync{font-size:12px;color:var(--mut);min-width:78px;text-align:right}
