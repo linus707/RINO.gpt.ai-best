@@ -42,11 +42,11 @@ button{cursor:pointer;-webkit-appearance:none;appearance:none}
 #bgph .bgimg svg{width:100%;height:100%;display:block}
 #bgph .bgdim{position:absolute;inset:0;transition:background .3s}
 #bgph.show .bgdim:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,0) 32%,rgba(0,0,0,.18))}
-main{position:relative;z-index:1;padding:8px 16px 120px;max-width:1040px;margin:0 auto}
+main{position:relative;z-index:1;padding:calc(14px + env(safe-area-inset-top)) 16px 120px;max-width:1040px;margin:0 auto}
 /* 소재(머티리얼) */
 .glass,.card,.form,.doc,.tile,.lock,.stat,.chathead,.composer,.chatlist{background:var(--mat);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8)}
 /* 상단 바 */
-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--mat-nav);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);border-bottom:.5px solid var(--sep)}
+header{display:none!important}header.x{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--mat-nav);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);border-bottom:.5px solid var(--sep)}
 .mast{display:none}
 .crumb{flex:1;text-align:center;font-size:17px;font-weight:600;letter-spacing:-.02em}.crumb b{font-weight:600;color:var(--tx)}
 .sync{font-size:12px;color:var(--mut);min-width:78px;text-align:right}
@@ -133,6 +133,19 @@ input[type=file]{padding:9px 10px}
 .hero .kpi .mono{font-size:12px;opacity:.75}
 body.photo-on .hero,body.photo-on main>h1,body.photo-on main>.sub{color:#fff;text-shadow:0 1px 14px rgba(0,0,0,.4)}
 .homegrid{display:grid;grid-template-columns:1.6fr 1fr;gap:0 16px;align-items:start;grid-template-areas:"list quick" "list rest";grid-template-rows:auto 1fr}
+.idcard .body{padding:18px 20px}.idcard .idl{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.04em}
+.idcard .idt{font-size:clamp(18px,2.6vw,24px);font-weight:700;letter-spacing:-.02em;line-height:1.35;margin:6px 0 12px}
+.idcard .idb{display:flex;flex-wrap:wrap;gap:8px}.idcard .idb span{background:var(--fill);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}
+.hero.idn h1{font-size:clamp(48px,10vw,96px)}
+.dhead{display:flex;justify-content:space-between;align-items:baseline;margin:22px 2px 10px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--tx)}
+.dhead .m{font-size:12px;font-weight:500;opacity:.7}
+body.photo-on .dhead,body.photo-on .dhead .m{color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.4)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding-bottom:20px}@media(max-width:899px){.dgrid{grid-template-columns:repeat(2,1fr)}.dest{aspect-ratio:1/1}}
+.dest{position:relative;border:0;padding:0;border-radius:18px;overflow:hidden;aspect-ratio:4/5;cursor:pointer;background:var(--fill);box-shadow:0 1px 0 rgba(0,0,0,.04),0 6px 18px rgba(0,0,0,.12)}
+.dest .dimg{position:absolute;inset:0;background-size:cover;background-position:center}.dest .dimg svg{width:100%;height:100%;display:block}
+.dest:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,.6))}
+.dest .dnm{position:absolute;left:12px;right:12px;bottom:11px;z-index:1;color:#fff;font-size:15px;font-weight:700;text-align:left;letter-spacing:-.01em}
+.dest.on{outline:3px solid var(--accent);outline-offset:-3px}
 .hg-list{grid-area:list}.hg-quick{grid-area:quick}.hg-rest{grid-area:rest}
 .li{display:grid;grid-template-columns:28px 1fr auto auto;gap:10px;align-items:center;padding:11px 0;border-bottom:.5px solid var(--sep);cursor:pointer}
 .li:last-of-type{border-bottom:0}
@@ -448,25 +461,19 @@ const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div 
 
 const views={
 home(){
-  const t=today(),open=D.tasks.filter(x=>!x.done),nm=curName();
-  const over=open.filter(x=>x.due&&x.due<t),dueT=open.filter(x=>x.due===t),mineT=open.filter(x=>x.who===nm&&x.due!==t&&!(x.due&&x.due<t));
-  const todo=[...over,...dueT,...mineT].slice(0,6),links=D.set.links||[],ed=editLinks&&isAdmin();
-  const mk=D.contents.filter(c=>c.stage==="make"||c.stage==="review").length,p2=n=>String(n).padStart(2,"0");
-  const list=D.contents.slice(0,6),hot=Math.max(0,list.findIndex(c=>c.stage==="make"||c.stage==="review"));
-  const CT={blog:"BLOG",furn:"FURNITURE",photo:"PHOTO"};
-  return `<div class="hero"><div><div class="mono" style="opacity:.85">${esc(BG.label?BG.label+" · ":"")}${t.replace(/-/g,".")}</div><h1 class="serif">오늘은 어디로<br>떠날까요</h1><div class="sub" style="margin:0">${esc(nm)}님 · 마감 ${dueT.length}건 · 기한초과 ${over.length}건</div></div>
-  <div class="kpi"><div><b>${p2(dueT.length)}</b><span class="mono">오늘 마감</span></div><div><b>${p2(mk)}</b><span class="mono">제작중</span></div></div></div>
+  const t=today(),items=bgItems(),cur=bgPick(bgDef()),brands=(D.set.brands||[]).filter(b=>b.tag!=="공통");
+  const tile=it=>{const on=it.id===cur.id,nm=it.country||it.name||"";
+    const bgs=it.sample?"":`style="background-image:url(${bgUrl(it)})"`;
+    return `<button class="dest ${on?"on":""}" onclick="bgSel('${sid(it.id)}')" aria-label="${esc(nm)}"><span class="dimg" ${bgs}>${it.sample?it.svg():""}</span><span class="dnm">${esc(nm)}</span></button>`};
+  return `<div class="hero idn"><div><div class="mono">${esc(BG.label?BG.label+" · ":"")}${t.replace(/-/g,".")}</div>
+  <h1 class="serif">Rino.</h1><div class="sub">여행을 영화처럼 기록하는 사람</div></div></div>
   ${syncCard()}
-  <div class="homegrid"><div class="hg-list">
-  <div class="card"><h3>콘텐츠 목록<span><span class="mono" style="opacity:.7;margin-right:8px">${D.contents.length} ITEMS</span><button class="pill" style="background:var(--fill)" onclick="go('contents')">전체 ›</button></span></h3><div class="body">
-  ${list.map((c,i)=>{const s2=stInfo(c.stage);return `<div class="li ${i===hot?"hot":""}" onclick="${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}"><span class="mono">${p2(i+1)}</span><b>${esc(c.title)}</b><span class="mono cty">${CT[c.ch]||""}</span><span class="st">${s2[1]}</span></div>`}).join("")||'<div class="empty">아직 콘텐츠가 없어요. 전체 콘텐츠에서 AI 아이디어를 받아 보세요</div>'}
-  <div class="stchips">${ST.map(s2=>`<span>${s2[1]} ${D.contents.filter(c=>c.stage===s2[0]).length}</span>`).join("")}</div></div></div>
-  </div><div class="hg-quick">${quickCard()}</div><div class="hg-rest">
-  <div class="card"><h3>✅ 오늘 할 일<button class="btn" style="padding:7px 14px" onclick="openTaskModal()">＋ 업무 추가</button></h3><div class="body">${todo.map(taskRow).join("")||'<div class="empty">오늘 할 일이 없어요 🎉</div>'}<button class="btn ghost" style="margin-top:10px" onclick="go('tasks')">업무 관리 전체 보기 ›</button></div></div>
-  <div class="card"><h3>🔗 채널 바로가기${isAdmin()?`<button class="pill" style="background:var(--fill)" onclick="editLinks=!editLinks;render()">${ed?"완료":"✏️ 편집"}</button>`:""}</h3><div class="body">
-  ${links.length?`<div class="grid2">${links.map(l=>linkTile(l,ed)).join("")}</div>`:`<div class="empty">${isAdmin()?"아직 등록한 채널이 없어요. ✏️ 편집을 눌러 인스타·블로그·스토어 주소를 추가해 보세요.":"관리자가 채널 링크를 등록하면 여기에 나와요."}</div>`}
-  ${ed?linkForm():""}</div></div>
-  </div></div>`;
+  <div class="card idcard"><div class="body"><div class="idl">리노 퍼스널 브랜드</div>
+  <div class="idt">여행 · 가구 · 스트릿포토를 하나의 시선으로 잇는 1인 브랜드</div>
+  <div class="idb">${(brands.length?brands.map(b=>b.name||b.tag):["얼뚱트립","에이스침대 정림동점","스트릿포토"]).map(n=>`<span>${esc(n)}</span>`).join("")}<span>SOLAMEN</span></div>
+  <div class="m sub" style="margin:10px 0 0">A little comfort for your everyday — 지친 하루에 작은 위로를</div></div></div>
+  <div class="dhead">대표 여행지<span class="m">${items.length}곳 · 누르면 배경이 바뀌어요</span></div>
+  <div class="dgrid">${items.map(tile).join("")}</div>`;
 },
 contents(){
   const q=(window._q||"").toLowerCase();
@@ -1023,7 +1030,7 @@ function connectQuick(){
   });
 }
 const syncCard=()=>{
-  if(!isAdmin()||CFG.token||CFG.syncTipOff)return "";
+  if(!isAdmin()||CFG.token||CFG.syncTipOff||!CFG.fresh)return "";
   const f=!!CFG.fresh;
   return `<div class="card"><h3>${f?"다른 기기의 데이터 가져오기":"데이터를 안전하게 보관하기"}<button class="pill" style="background:var(--fill)" onclick="CFG.syncTipOff=1;saveCfg();render()">나중에</button></h3><div class="body">
   <div class="m sub">${f?"이 기기에는 저장된 데이터가 아직 없어요. PC나 다른 기기에서 쓰던 데이터를 가져오려면 아래에 입력하세요. (홈 화면 앱과 사파리는 저장 공간이 따로예요)":"지금은 이 기기에만 저장돼요. 기기를 바꾸거나 브라우저 데이터가 지워져도 복구하려면 클라우드 동기화를 켜세요."}</div>
