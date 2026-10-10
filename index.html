@@ -466,7 +466,7 @@ home(){
     const bgs=it.sample?"":`style="background-image:url(${bgUrl(it)})"`;
     return `<button class="dest ${on?"on":""}" onclick="bgSel('${sid(it.id)}')" aria-label="${esc(nm)}"><span class="dimg" ${bgs}>${it.sample?it.svg():""}</span><span class="dnm">${esc(nm)}</span></button>`};
   return `<div class="hero idn"><div><div class="mono">${esc(BG.label?BG.label+" · ":"")}${t.replace(/-/g,".")}</div>
-  <h1 class="serif">Rino.</h1><div class="sub">여행을 영화처럼 기록하는 사람</div></div></div>
+  <div class="sub">여행을 영화처럼 기록하는 사람</div></div></div>
   ${syncCard()}
   <div class="card idcard"><div class="body"><div class="idl">리노 퍼스널 브랜드</div>
   <div class="idt">여행 · 가구 · 스트릿포토를 하나의 시선으로 잇는 1인 브랜드</div>
