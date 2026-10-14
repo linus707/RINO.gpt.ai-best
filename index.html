@@ -258,9 +258,10 @@ const IC={
  more:'<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
 };
 const ic=(k,z=22)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||IC.more}</svg>`;
+IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["calendar","📅","콘텐츠 캘린더"],["org","🏛️","조직도"],["sop","📖","나만의 SOP"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["biz","🧑‍💼","사업자 설립",1],["calendar","📅","콘텐츠 캘린더"],["org","🏛️","조직도"],["sop","📖","나만의 SOP"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
 const RCH={...CH,etc:"기타"};
 const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -1017,6 +1018,82 @@ function connectSync(){CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value
 function disconnectSync(){delete CFG.token;saveCfg();setSync("● 자동 저장");render()}
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
 function importJson(f){if(!f)return;f.text().then(t=>{try{D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
+
+/* ---------- 사업자 설립 룸 (세움과 대화 · 단계 · 자료) ----------
+   대화·체크 기록은 이 기기(localStorage rino-biz)에만 저장해요. 클라우드 동기화·공개 사이트에 올라가지 않아요.
+   자료는 공식 기관 페이지 요약이에요(2026-10-14 수집 · 원문 직접 열람 못함). 신청 전 원문 확인 필요. */
+const BIZ_STEPS=[
+ {id:"s0",t:"현황 파악",d:"기존 사업자(에이스침대 정림동점)와 새 사업의 관계를 정리해요",c:["무엇을 팔지 정하기 (e-book·실물·촬영·제휴·강의)","새 사업자를 따로 낼지, 기존 사업자에 업종을 더할지 비교","사업장 주소를 자택으로 쓸지 정하기","첫해 예상 수입 규모 대략 정하기"]},
+ {id:"s1",t:"결정",d:"상호·업종·과세유형을 정해요",c:["상호 정하기 (사명: Linus Company)","업종(업태·종목) 후보 정하기","일반·간이과세 판단 (세무사 확인)"]},
+ {id:"s2",t:"사업자등록",d:"사업 개시일부터 20일 이내 신청 (개시 전에도 가능)",c:["신청서·신분증·임대차계약서(임차 시) 준비","홈택스 또는 세무서에서 신청","사업자등록증 받기"]},
+ {id:"s3",t:"인허가·신고",d:"팔 것에 따라 필요한 신고가 달라요",c:["통신판매업 신고 필요 여부 확인","e-book 출판사 신고 필요 여부 확인 (문체부·구청)","필요한 신고 진행"]},
+ {id:"s4",t:"돈 길 만들기",d:"사업용 계좌·카드 분리, 증빙 준비",c:["사업용 계좌·카드 따로 쓰기","사업용 계좌 신고 대상인지 확인","전자세금계산서·현금영수증 준비","결제대행(PG) 가입 서류 준비"]},
+ {id:"s5",t:"세금 달력",d:"신고 일정을 달력에 넣어요",c:["부가세 신고일 달력에 넣기","종합소득세 5월 일정 넣기","장부 방식 정하기 (간편장부·복식부기)","직원 고용 시 4대보험 확인"]},
+ {id:"s6",t:"신뢰 서류",d:"고객에게 보이는 서류",c:["이용약관·환불 규정 초안","개인정보 처리방침 초안","상표 출원 명칭 재검토 (사명 변경)"]},
+ {id:"s7",t:"지원·절세",d:"받을 수 있는 지원과 합법적 공제",c:["K-Startup 접수 중 공고 확인","소상공인 지원사업 확인"]}];
+const BIZ_FACTS=[
+ ["사업자등록","신청 기한은 사업 개시일부터 20일 이내(개시 전에도 가능). 홈택스(접수 09:00~18:00) 또는 세무서. 기본 서류는 신청서·신분증·임대차계약서(임차 시). 처리 기본 2일, 수수료 없음.","https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?mi=2444&cntntsId=7777"],
+ ["자택을 사업장으로","별도 사업장이 없으면 주소지를 사업장으로 봐요. 임대인 동의·비상주 사무실 기준은 확인하지 못했어요 → 세무서·126 문의.","https://call.nts.go.kr/call/qna/selectHomeQnaInfo.do?mi=12940&ctgId=CTG11559"],
+ ["간이과세 기준","직전 연도 공급대가 1억 400만 원 미만(2024.1.1~). 4,800만 원 미만이면 납부의무 면제(신고는 필요). 이미 일반과세 사업장이 있으면 제한될 수 있어 세무사 확인.","https://call.nts.go.kr/call/qna/selectQnaInfo.do?mi=1329&ctgId=CTG11937"],
+ ["부가세 신고","일반과세 연 2회(7/25·1/25), 간이과세 연 1회(1/25).","https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?mi=2273&cntntsId=7694"],
+ ["종합소득세","다음 해 5/1~5/31 신고(성실신고확인 대상 6/30). 신규 사업자는 간편장부대상자로 봐요. 장부 미작성 시 가산세, 장부·증빙 5년 보관.","https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?mi=2225&cntntsId=7665"],
+ ["사업용 계좌","복식부기의무자는 홈택스에 신고해야 해요(기준 금액은 업종별, 최신 확인 필요). 간편장부대상자도 계좌 분리는 권장.","https://call.nts.go.kr/call/qna/selectQnaInfo.do?mi=1441&ctgId=CTG11781"],
+ ["통신판매업 신고","전자상거래법 제12조. 소비자24 답변 기준 직전 연도 거래 50회 미만 또는 간이과세자는 면제 대상. 일부 쇼핑몰 안내(6개월 20회·1,200만 원)와 달라서 구청 확인 필요. 신고는 정부24, 구매안전서비스 이용확인증 필요, 등록면허세는 지자체별.","https://www.consumer.go.kr/user/bbs/consumer/380/940/bbsDataView/3579.do"],
+ ["1인 미디어·블로그 수익","계속적·반복적 수익이면 사업자등록 대상. 과세·면세 모두 종합소득세 신고, 면세는 사업장현황신고. 제휴마케팅 수익 처리는 따로 확인하지 못했어요.","https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?mi=2479&cntntsId=7801"],
+ ["e-book 판매","출판사를 경영하려면 관할 구청에 신고(출판문화산업 진흥법 제9조). 개인이 e-book을 팔 때 필요한지는 근거를 못 찾았어요 → 문체부·구청 확인.","https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13700000045"],
+ ["개인정보 처리방침","개인정보 보호법 제30조. 개인정보보호위원회 작성지침(2026.4 개정) 참고, 개정안 시행 시점 확인.","https://www.privacy.go.kr/front/bbs/bbsView.do?bbsNo=BBSMSTR_000000000049&bbscttNo=20806"],
+ ["창업 지원","예비·초기·창업도약 패키지는 2026년 공고가 대부분 마감. 접수 중 공고는 K-Startup에서 확인.","https://www.k-startup.go.kr"]];
+const BIZ_LINKS=[["공식 창구",[["홈택스","https://www.hometax.go.kr"],["정부24","https://www.gov.kr"],["국세청","https://www.nts.go.kr"],["국가법령정보센터","https://www.law.go.kr"],["소비자24","https://www.consumer.go.kr"],["개인정보포털","https://www.privacy.go.kr"]]],["지원",[["K-Startup","https://www.k-startup.go.kr"],["소상공인시장진흥공단","https://www.sbiz.or.kr"],["중소벤처기업부 공고","https://www.mss.go.kr/site/smba/ex/bbs/List.do?cbIdx=310"]]]];
+const BIZ_SYS=["너는 Linus Company의 개인사업자 설립 전문가 '세움'이다. 대표 리노가 개인사업자를 설립하도록 초보자도 따라 할 수 있게 쉬운 말로, 순서대로, 구조화해서(번호·표·짧은 문단) 돕는다. 마지막에는 '리노가 오늘 할 일 1~3가지'를 적는다.",
+ "규칙: 1) 모르면 모른다고 하고 [확인 필요: 무엇]으로 표시한다. 세금·기한·금액은 해마다 바뀌니 공식 원문(국세청·정부24·126) 확인을 권한다. 2) 과세유형, 겸업 처리, 절세 판단, 상표는 세무사·변리사 확인이 필요하다고 말한다. 3) 신고·제출·납부는 대신하지 않는다. 입력 순서와 초안만 안내한다. 4) 주민등록번호·계좌·카드·인증서·비밀번호·상세 주소는 받지도 묻지도 않는다. 5) 편법·허위 서류·가공 거래는 절대 제안하지 않는다. 6) 결정은 리노가 한다. 선택지와 추천(이유 한 줄)을 준다. 7) 묻기 전에 계획부터 만들지 말고, 필요하면 선택지형 질문을 한 번에 5개 이하로 한다.",
+ "배경: 리노는 이미 에이스침대 정림동점(개인사업자)을 운영한다. 새로 e-book·온라인 판매·촬영/스냅·제휴 수익 등을 하려 한다. 기존 사업자에 업종 추가할지, 별도 사업자를 낼지는 아직 미정이다. 사명은 2026-10-14 SOLAMEN에서 Linus Company로 바뀌었다.",
+ "참고 자료(2026-10-14 공식 기관 페이지 요약, 원문 미열람):",
+ ...BIZ_FACTS.map(f=>"- "+f[0]+": "+f[1])].join("\n");
+const bizLoad=()=>{try{const j=JSON.parse(localStorage.getItem("rino-biz")||"{}");return {chk:j.chk||{},log:Array.isArray(j.log)?j.log:[]}}catch{return {chk:{},log:[]}}};
+let BIZ=bizLoad(),bizTab="chat",bizBusy=false,bizDraft="";
+const bizSave=()=>{try{localStorage.setItem("rino-biz",JSON.stringify(BIZ))}catch{}};
+function bizMask(t){let n=0;const r=t.replace(/\b\d{6}[-\s]?[1-4]\d{6}\b/g,()=>{n++;return "[주민번호 가림]"}).replace(/\b\d{2,6}(?:-\d{2,8}){2,}\b|\b\d{10,16}\b/g,()=>{n++;return "[번호 가림]"});return{t:r,n}}
+const bizRich=s=>esc(s).replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>");
+function bizTabSet(k){bizDraft=($("#bizin")||{value:bizDraft}).value;bizTab=k;render()}
+function bizChk(k){BIZ.chk[k]=BIZ.chk[k]?0:1;bizSave();render()}
+function bizAsk(i){const s=BIZ_STEPS[i];bizDraft=`${i}단계(${s.t})를 시작하고 싶어요. 지금 제가 해야 할 일을 순서대로 알려 주세요.`;bizTab="chat";render();setTimeout(()=>{const e=$("#bizin");if(e)e.focus()},50)}
+function bizClear(){if(!confirm("이 기기의 세움 대화 기록을 지울까요? (체크리스트는 그대로예요)"))return;BIZ.log=[];bizSave();render()}
+async function bizSend(){
+  if(bizBusy)return;const el=$("#bizin");if(!el)return;let t=el.value.trim();if(!t)return;
+  if(!CFG.aiKey){alert(isAdmin()?"설정에서 AI 키를 먼저 입력해 주세요. 키 없이도 아래 '업무로 보내기'는 쓸 수 있어요":"이 기기에는 AI 키가 없어요");return}
+  const m=bizMask(t);t=m.t;if(m.n)toast("민감해 보이는 번호 "+m.n+"개를 가리고 보냈어요");
+  BIZ.log.push({r:"u",t,ts:Date.now()});BIZ.log=BIZ.log.slice(-60);bizDraft="";bizBusy=true;bizSave();render();
+  try{
+    let msgs=BIZ.log.filter(x=>!x.err).slice(-14).map(x=>({role:x.r==="u"?"user":"assistant",content:x.t}));
+    while(msgs.length&&msgs[0].role!=="user")msgs.shift();
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:aiHeaders(),body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:1500,system:BIZ_SYS,messages:msgs})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||r.status);
+    BIZ.log.push({r:"a",t:(j.content||[]).map(c=>c.text||"").join("").trim()||"(빈 답변)",ts:Date.now()});
+  }catch(e){BIZ.log.push({r:"a",t:"⚠️ 답을 받지 못했어요: "+(e.message||e),ts:Date.now(),err:1})}
+  bizBusy=false;bizSave();render();setTimeout(()=>{const l=$("#bizlog");if(l)l.scrollTop=l.scrollHeight},50);
+}
+function bizDispatch(){
+  const el=$("#bizin"),t=el?el.value.trim():"";if(!t){alert("보낼 내용을 입력창에 써 주세요");return}
+  if(!agentOf("영환")){alert("조직도에 영환이 없어요. 조직도에서 Linus Company 직원을 먼저 넣어 주세요");return}
+  const m=bizMask(t);
+  dispatchTask("영환","[공통] 개인사업자 설립 — 세움 호출\n"+m.t+"\n\n배분 안내: 세움(.claude/agents/bizsetup.md)을 Agent로 불러 처리하고, 결과는 기획/사업자설립/ 에 저장. 금액·개인정보는 쓰지 않고 신고·제출·납부는 하지 않는다. 대표 승인이 필요한 것은 보고에 모은다.","","",+chatModeNow(),0);
+  bizDraft="";if(el)el.value="";
+}
+views.biz=()=>{
+  const done=BIZ_STEPS.reduce((a,s,i)=>a+s.c.filter((_,j)=>BIZ.chk[i+"."+j]).length,0),all=BIZ_STEPS.reduce((a,s)=>a+s.c.length,0);
+  const tabs=[["chat","💬 세움과 대화"],["steps",`✅ 단계 ${done}/${all}`],["kb","📚 자료"]];
+  const head=`<h1>사업자 설립</h1><div class="sub">개인사업자 설립 전문가 <b>세움</b>과 이야기하고, 단계를 체크하고, 자료를 모아 봐요</div>
+  <div class="chips">${tabs.map(([k,n])=>`<button class="${bizTab===k?"on":""}" onclick="bizTabSet('${k}')">${n}</button>`).join("")}</div>`;
+  const warn=`<div class="m sub" style="margin:8px 0">⚠️ 주민번호·계좌·카드·인증서·비밀번호는 입력하지 마세요. 세움은 안내와 초안만 해요. 신고·제출·납부는 리노가 직접, 최종 판단은 세무사 확인이 필요해요.</div>`;
+  if(bizTab==="steps")return head+BIZ_STEPS.map((s,i)=>{const n=s.c.filter((_,j)=>BIZ.chk[i+"."+j]).length;return `<div class="card"><h3>${i}. ${esc(s.t)} <span class="m sub" style="margin:0">${n}/${s.c.length}</span></h3><div class="body"><div class="m sub">${esc(s.d)}</div>${s.c.map((c,j)=>`<label class="m" style="display:flex;gap:8px;align-items:flex-start;margin:6px 0"><input type="checkbox" style="width:auto;margin-top:3px" ${BIZ.chk[i+"."+j]?"checked":""} onchange="bizChk('${i}.${j}')"><span class="${BIZ.chk[i+"."+j]?"done":""}">${esc(c)}</span></label>`).join("")}<button class="pill" style="background:var(--make);margin-top:6px" onclick="bizAsk(${i})">💬 세움에게 이 단계 물어보기</button></div></div>`}).join("");
+  if(bizTab==="kb")return head+`<div class="m sub" style="margin:8px 0">공식 기관 페이지 요약이에요 (2026-10-14 수집). 원문을 직접 열어 확인하지는 못했어요. 신청 전에는 링크의 원문이나 국세상담센터 126에서 한 번 더 확인해 주세요.</div>`+BIZ_FACTS.map(f=>`<div class="card"><h3>${esc(f[0])}</h3><div class="body"><div class="m" style="white-space:pre-wrap">${esc(f[1])}</div><a class="pill" style="background:var(--g);display:inline-block;margin-top:6px" href="${esc(f[2])}" target="_blank" rel="noopener">출처 ↗</a></div></div>`).join("")+BIZ_LINKS.map(([g,l])=>`<div class="card"><h3>${esc(g)}</h3><div class="body"><div class="chips">${l.map(([n,u])=>`<a class="pill" style="background:var(--g)" href="${esc(u)}" target="_blank" rel="noopener">${esc(n)} ↗</a>`).join(" ")}</div></div></div>`).join("")+`<div class="m sub">자세한 자료집은 SOLAMEN 저장소 <b>기획/사업자설립/</b>에 있어요.</div>`;
+  const log=BIZ.log.map(x=>`<div class="bubble ${x.r==="u"?"me":"sys"}"><div class="m" style="white-space:pre-wrap">${x.r==="u"?esc(x.t):bizRich(x.t)}</div></div>`).join("")||`<div class="empty" style="text-align:center">아직 대화가 없어요. 아래에 첫 질문을 써 보세요.<br>예) "새 사업자를 따로 내는 게 좋을까요, 기존 사업자에 업종을 더할까요?"</div>`;
+  return head+warn+`<div class="chatlog" id="bizlog" style="max-height:52vh;overflow:auto">${log}${bizBusy?'<div class="bubble sys"><div class="m">세움이 생각 중… ✨</div></div>':""}</div>
+  <div class="composer glass"><textarea id="bizin" rows="3" placeholder="세움에게 물어보세요 (예: 간이과세와 일반과세 차이가 뭐예요?)">${esc(bizDraft)}</textarea>
+  <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn grow" ${bizBusy?"disabled":""} onclick="bizSend()">보내기</button><button class="btn ghost" onclick="bizDispatch()">업무로 보내기 (영환 → 세움)</button></div>
+  <div class="m sub">대화는 이 기기에만 저장돼요. '업무로 보내기'는 지시함에 올라가 영환이 세움에게 배분해요(다음 정기 확인 때).</div>
+  <button class="pill" style="background:var(--mut)" onclick="bizClear()">대화 기록 지우기</button></div>`;
+};
 
 /* ---------- AI 콘텐츠 아이디어 ---------- */
 window._ideas=[];
