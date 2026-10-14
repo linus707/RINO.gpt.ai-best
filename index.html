@@ -671,21 +671,64 @@ function importAgents(f){
 function setStage(v){D.set.stage=+v;D.set.u=Date.now();save();render()}
 function clearAgents(){if(!confirm("AI 직원 명단을 모두 지울까요? (업무의 담당자 이름은 남아요)"))return;D.set.agents=[];D.set.agentsOff=true;D.set.u=Date.now();save();render()}
 
-/* ---------- Slack 지시문 (SOLAMEN 연결) ---------- */
-/* SOLAMEN은 '대표가 직접 쓴 Slack 글'만 지시로 인정해요. 그래서 앱은 글을 대신 올리지 않고,
-   SOLAMEN 형식의 지시문을 만들어 주면 대표가 복사해서 Slack에 직접 올려요. */
+/* ---------- 지시함 (SOLAMEN 연결) ---------- */
+/* Slack 없이 일해요(2026-10-14). 보내기 = SOLAMEN work 브랜치의 지시/<번호>.md 로 저장(쓰기 토큰 필요).
+   직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 처리하며, 앱은 그 파일을 읽어 상태를 보여요. */
 const AS=[["","지시 전","--idea"],["sent","📋 지시함","--make"],["work","🔄 착수","--review"],["rep","✅ 보고 도착","--ready"],["ok","🔍 검증 완료","--done"]];
 const asInfo=k=>AS.find(a=>a[0]===(k||""))||AS[0];
+const instrRepo=()=>{const r=(CFG.repo||"").trim();return repoOk(r)?r:""};
+const instrUrl=x=>`https://github.com/${instrRepo()}/blob/${encodeURIComponent((CFG.repoBranch||"work").trim())}/${encodeURI("지시/"+String(x.id).replace(/[^\w-]/g,"")+".md")}`;
 function aiRow(x){
   if(!agentNames().has(x.who))return "";
-  const s=asInfo(x.as);
+  const s=asInfo(x.as),can=!!(CFG.repoWToken&&instrRepo());
   return `<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px">
-  <button class="pill" style="background:var(${s[2]})" onclick="cycleAs('${x.id}')" title="누르면 다음 상태로">${s[1]} ▸</button>
-  <button class="pill" style="background:var(--g)" onclick="copyCmd('${x.id}',0)">📋 지시문 복사</button>
-  <button class="pill" style="background:var(--ready)" onclick="copyCmd('${x.id}',1)">⚡ 즉시(@Claude)</button>
-  <button class="pill" style="background:var(--review)" onclick="copyCmd('${x.id}',2)">🤖 이 직원만 깨우기</button>
-  <button class="pill" style="background:var(--mut)" onclick="setLink('${x.id}')">${x.link?"🔗 스레드 링크":"🔗 링크 붙이기"}</button>
-  ${x.link?`<a class="m" href="${esc(x.link)}" target="_blank" rel="noopener">Slack 열기</a>`:""}</div>`;
+  <button class="pill" style="background:var(${s[2]})" onclick="cycleAs('${x.id}')" title="누르면 다음 상태로">${s[1]}${x.rej?" · 반려됨":""} ▸</button>
+  ${x.inbox?"":`<button class="pill" style="background:var(--g)" onclick="${can?`sendInbox('${x.id}')`:`copyCmd('${x.id}',0)`}">${can?"📨 지시함에 보내기":"📋 지시문 복사"}</button>`}
+  ${x.inbox&&instrRepo()?`<a class="m" href="${esc(instrUrl(x))}" target="_blank" rel="noopener">지시 파일 열기</a>`:""}
+  <button class="pill" style="background:var(--review)" onclick="copyCmd('${x.id}',2)">🤖 이 직원만 깨우기</button></div>
+  ${x.rep?`<div class="m" style="margin-top:6px;white-space:pre-wrap">📝 ${esc(x.rep)}</div>`:""}`;
+}
+/* 지시 파일(지시/<번호>.md) 만들기·보내기 */
+const kst=()=>{const d=new Date(Date.now()+9*36e5);return d.toISOString().slice(0,16).replace("T"," ")};
+const b64enc=str=>{const u=new TextEncoder().encode(str);let b="";u.forEach(c=>b+=String.fromCharCode(c));return btoa(b)};
+function instrMd(x){
+  const a=agentOf(x.who)||{};
+  return ["# 지시",`- 번호: ${x.id}`,`- 담당: ${a.agent||x.who}`,`- 담당이름: ${x.who}`,"- 보낸이: 대표(리노) · 앱",`- 보낸 시각: ${kst()}`,
+    `- 마감: ${x.due||"-"}`,`- 브랜드: ${x.brand||"-"}`,`- 결과저장: ${x.out?"예":"아니오"}`,"- 상태: 지시됨","","## 제목",x.title,"","## 내용",x.memo||"",
+    ...(x.out?["","## 결과 저장 규칙",...outSpec(x)]:[]),"","## 진행 기록",`- ${kst()} 📨 지시 (대표, 앱)`,""].join("\n");
+}
+async function sendInbox(id){
+  const x=D.tasks.find(t=>t.id===id);if(!x||x.inbox)return;
+  const repo=instrRepo(),br=(CFG.repoBranch||"work").trim()||"work";
+  if(!repo||!CFG.repoWToken){alert("설정 > 지시함 연결에서 쓰기 권한 토큰을 먼저 저장해 주세요");return}
+  if(!agentOf(x.who)){alert("담당 직원이 명단에 없어요. 조직도에서 직원을 먼저 확인해 주세요");return}
+  const fid=String(x.id).replace(/[^\w-]/g,"");
+  try{
+    const r=await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURI("지시/"+fid+".md")}`,{method:"PUT",headers:{Authorization:"Bearer "+CFG.repoWToken,Accept:"application/vnd.github+json","Content-Type":"application/json"},
+      body:JSON.stringify({message:`지시 ${fid}: ${x.who} — ${x.title.slice(0,50)}`,content:b64enc(instrMd(x)),branch:br})});
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")":r.status===422?"같은 번호의 지시가 이미 있어요":(j.message||"저장하지 못했어요 ("+r.status+")"))}
+    x.inbox=1;x.as="sent";x.u=Date.now();save();render();
+    toast("지시함에 저장했어요 · "+x.who+"이(가) 다음 정기 확인(매일 08:00)에 착수해요");
+  }catch(e){alert("지시함에 보내지 못했어요: "+(e.message||e)+"\n\n(‘지시문 복사’나 ‘이 직원만 깨우기’로 직접 전달할 수도 있어요)")}
+}
+const AS_FROM={"지시됨":"sent","착수":"work","보고":"rep","검증완료":"ok","반려":"sent"};
+async function syncInbox(){
+  const repo=instrRepo();if(!repo||!CFG.repoToken)return 0;
+  const br=(CFG.repoBranch||"work").trim()||"work";let ch=0;
+  for(const x of D.tasks.filter(t=>t.inbox&&t.as!=="ok"&&!t.done)){
+    try{
+      const r=await ghRepo(`/repos/${repo}/contents/${encodeURI("지시/"+String(x.id).replace(/[^\w-]/g,"")+".md")}?ref=${encodeURIComponent(br)}`);
+      if(!r.ok)continue;
+      const txt=b64text((await r.json()).content),st=((txt.match(/^- 상태:\s*(.+)$/m)||[])[1]||"").trim(),to=AS_FROM[st];
+      if(!to)continue;
+      const rep=((txt.split("\n## 보고")[1]||"").trim().split("\n").filter(l=>l.trim()&&!l.startsWith("###")).slice(0,6).join("\n")).slice(0,500);
+      const rej=st==="반려"?1:0;
+      if(x.as!==to||(x.rep||"")!==rep||!!x.rej!==!!rej){x.as=to;x.rep=rep;x.rej=rej;x.u=Date.now();ch++}
+      if(to==="ok"&&!x.done){x.done=1;x.doneAt=today();x.doneBy="영환(검증)";ch++}
+    }catch{}
+  }
+  if(ch){save();render()}
+  return ch;
 }
 const outSpec=x=>{
   const tag=x.brand?`[${x.brand}]`:"[트립|슬립|포토|공통 중 하나]";
@@ -701,7 +744,7 @@ function cmdText(x,imm){
     if(x.out)L.push(...outSpec(x));
     L.push("- 업무번호: "+x.id);return L.join("\n");
   }
-  const lines=[`${imm?"@Claude ":""}${x.who}${x.brand?" ["+x.brand+"]":""} ${x.title}`];
+  const lines=[`${x.who}${x.brand?" ["+x.brand+"]":""} ${x.title}`];
   if(x.memo)lines.push("- 내용: "+x.memo);
   if(x.due)lines.push("- 마감: "+x.due);
   if(x.out)lines.push(...outSpec(x));
@@ -710,12 +753,11 @@ function cmdText(x,imm){
 }
 function copyCmd(id,imm){
   const x=D.tasks.find(t=>t.id===id),txt=cmdText(x,imm);
-  const done=()=>{if(!x.as){x.as="sent";save();render()}alert(imm===2?"복사했어요. 이 채팅(Claude)에 붙여넣으면 이 직원 한 명만 깨워요.\n\n"+txt:"복사했어요. Slack에 붙여넣어 올려 주세요.\n\n"+txt)};
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,()=>{prompt("복사해서 Slack에 붙여넣어 주세요",txt)});
-  else prompt("복사해서 Slack에 붙여넣어 주세요",txt);
+  const done=()=>{if(!x.as){x.as="sent";save();render()}alert(imm===2?"복사했어요. 이 직원의 Claude 세션에 붙여넣으면 이 직원 한 명만 깨워요.\n\n"+txt:"복사했어요. 필요한 곳에 붙여넣어 전달해 주세요.\n\n"+txt)};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,()=>{prompt("복사해서 전달해 주세요",txt)});
+  else prompt("복사해서 전달해 주세요",txt);
 }
 function cycleAs(id){const x=D.tasks.find(t=>t.id===id),i=AS.findIndex(a=>a[0]===(x.as||""));x.as=AS[(i+1)%AS.length][0];if(x.as==="ok"&&!x.done){x.done=1;x.doneAt=today();x.doneBy=curName()}save();render()}
-function setLink(id){const x=D.tasks.find(t=>t.id===id),v=prompt("Slack 스레드 링크를 붙여넣어 주세요 (비우면 삭제)",x.link||"");if(v===null)return;const t=v.trim();if(t&&!/^https:\/\/[\w.-]+\.slack\.com\//.test(t)){alert("Slack 링크(https://…slack.com/…)만 넣을 수 있어요");return}x.link=t;save();render()}
 
 /* ---------- 초안·보고 보기 ---------- */
 let docId="",docTab="body";
@@ -919,6 +961,27 @@ async function setPins(){
 /* ---------- 설정 (동기화·백업·AI 키) ---------- */
 const brandLinkCard=()=>`<div class="card"><h3>브랜드 링크</h3><div class="body"><div class="m sub">홈의 브랜드 이름을 누르면 이동할 블로그·인스타 주소예요. 비워 두면 링크 없이 이름만 보여요.</div>
   <div class="form" style="border:0;padding:0">${coList().map(c=>`<div class="m" style="margin-top:6px"><b>${esc(c.name)}</b></div><input value="${esc(brandUrl(c))}" placeholder="https://… 블로그·인스타 주소" inputmode="url" autocapitalize="off" onchange="setBrandUrl(decodeURIComponent('${encodeURIComponent(c.tag)}'),this.value)">`).join("")}</div></div></div>`;
+const inboxCard=()=>`<div class="card"><h3>📨 지시함 연결 ${CFG.repoWToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
+  <div class="m sub">Slack 없이, 지시 채팅에서 보낸 지시가 SOLAMEN 저장소(<b>${esc(CFG.repo||"저장소 미설정")}</b> · ${esc(CFG.repoBranch||"work")} 브랜치)의 <b>지시/</b> 폴더에 파일로 저장돼요. 직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 일해요. 상태와 결과는 앱이 읽어 와요.</div>
+  <div class="m sub" style="margin-top:6px">필요한 것: <b>SOLAMEN 저장소 하나에만</b>, <b>Contents: Read and write</b> 권한의 토큰(github_pat_…), 만료일 지정. 이 기기에만 저장돼요. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만드는 곳</a></div>
+  <div class="form" style="border:0;padding:0"><input id="iwt" type="password" placeholder="쓰기 권한 토큰 (github_pat_…)" value="${esc(CFG.repoWToken||"")}" autocomplete="off">
+  <button class="btn" onclick="saveInboxToken()">저장하고 확인</button>${CFG.repoWToken?'<button class="btn ghost" onclick="clearInboxToken()">연결 해제</button>':""}</div>
+  <div class="m sub" style="margin-top:6px">상태를 읽으려면 위쪽 「SOLAMEN 작업 폴더 불러오기」의 읽기 전용 토큰도 저장돼 있어야 해요.</div></div></div>`;
+async function saveInboxToken(){
+  if(!isAdmin())return;
+  const tk=$("#iwt").value.trim(),repo=instrRepo();
+  if(!repo){alert("먼저 「SOLAMEN 작업 폴더 불러오기」에서 저장소를 저장해 주세요");return}
+  if(!tk){alert("쓰기 권한 토큰을 입력해 주세요");return}
+  if(/^ghp_/.test(tk)&&!confirm("이 토큰(ghp_…)은 권한이 넓어요. SOLAMEN 저장소 하나만, Contents: Read and write로 만든 토큰(github_pat_…)을 권해요. 그래도 계속할까요?"))return;
+  try{
+    const r=await fetch("https://api.github.com/repos/"+repo,{headers:{Authorization:"Bearer "+tk,Accept:"application/vnd.github+json"}});
+    if(!r.ok)throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===404?"저장소를 찾지 못했어요(토큰이 이 저장소를 가리키는지 확인)":"확인하지 못했어요 ("+r.status+")");
+    const j=await r.json();
+    if(j.permissions&&!j.permissions.push)throw new Error("이 토큰에는 쓰기 권한이 없어요. Contents를 Read and write로 만들어 주세요");
+    CFG.repoWToken=tk;saveCfg();render();toast("지시함에 연결했어요");
+  }catch(e){alert("연결하지 못했어요: "+(e.message||e))}
+}
+function clearInboxToken(){if(!confirm("지시함 쓰기 토큰을 지울까요? (이미 보낸 지시는 그대로예요)"))return;delete CFG.repoWToken;saveCfg();render()}
 views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경 사진, 백업, AI 연결</div>
   <div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
   <div class="m sub">내 GitHub 비공개 Gist에 데이터를 저장해요. <a href="https://github.com/settings/tokens/new?scopes=gist&description=rino-workspace" target="_blank" rel="noopener">여기</a>에서 <b>gist 권한만</b> 있는 토큰을 만들어 붙여넣으세요.</div>
@@ -941,6 +1004,7 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경
   <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>
   <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div>
   <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>
+  ${isAdmin()?inboxCard():""}
   ${isAdmin()?brandLinkCard():""}
   ${themeCard()}
   ${skillCard()}
@@ -988,9 +1052,10 @@ function openTaskModal(pre){
 }
 function setDue(n){const e=$("#td");if(e)e.value=n===null?"":addDays(n)}
 /* ---------- 지시 채팅 (직원 한 명에게 업무와 마감 지시) ---------- */
-/* 앱은 직원을 직접 깨울 수 없어요(서버 없음, 지시는 대표가 직접 쓴 글만 인정). 그래서 보내기 = 업무로 저장 + 보낼 문구 복사예요. */
+/* 앱은 직원을 직접 깨울 수 없어요(서버 없음). 보내기 = 업무로 저장 + 지시함(지시/)에 파일 저장이고, 직원은 다음 정기 확인에 읽어요. */
 let chatWho="",chatDraft="",chatDue="";
-const CMODES=[["1","Slack · 즉시(@Claude)"],["0","Slack · 다음 순찰"],["2","Claude에게 · 이 직원만 깨우기"]];
+const CMODES=[["1","지시함으로 보내기 (자동 · 다음 정기 확인)"],["2","복사만 · 이 직원 Claude 세션에 붙여넣기"]];
+const chatModeNow=()=>{const m=String(CFG.chatMode||"1");return m==="2"?"2":"1"};
 const dueInfo=d=>{if(!d)return["마감 없음","--mut"];const n=Math.round((new Date(d+"T00:00:00")-new Date(today()+"T00:00:00"))/864e5);return n<0?[`기한 초과 ${-n}일`,"--red"]:n===0?["오늘 마감","--idea"]:[`D-${n} · ${d.slice(5)}`,n<=2?"--review":"--make"]};
 function chatPick(){
   const A=D.set.agents;if(!A.length)return null;
@@ -1001,7 +1066,7 @@ views.chat=()=>{
   const A=D.set.agents;
   if(!A.length)return `<h1>지시 채팅</h1><div class="sub">AI 직원에게 업무와 마감을 지시해요</div><div class="card"><div class="body"><div class="empty">AI 직원이 아직 없어요. 조직도에서 SOLAMEN 직원을 먼저 넣어 주세요.</div><button class="btn" onclick="go('org')">조직도로 가기</button></div></div>`;
   const cur=chatPick();chatWho=cur.name;
-  const depts=[...new Set(A.map(a=>a.dept))],mode=CFG.chatMode||"1";
+  const depts=[...new Set(A.map(a=>a.dept))],mode=chatModeNow();
   const tasks=D.tasks.filter(t=>t.who===cur.name).slice().reverse();
   const res=D.contents.filter(c=>c.by===cur.name).slice(0,5);
   const brands=D.set.brands||[];
@@ -1012,7 +1077,7 @@ views.chat=()=>{
     ${x.res?`<button class="pill" style="background:var(--done);margin-top:6px" onclick="openDoc('${sid(x.res)}')">📄 결과 보기</button>`:(x.out&&!x.done?`<div class="m" style="margin-top:4px">⏳ 결과 대기 중${CFG.repoToken?" · 도착하면 자동으로 올라와요":" · 설정에서 작업 폴더 토큰을 저장하면 자동으로 올라와요"}</div>`:"")}
     ${x.done?"":aiRow(x)}</div>`}).join("")||`<div class="empty" style="text-align:center">아직 ${esc(cur.name)}에게 한 지시가 없어요. 아래에 첫 지시를 써 보세요.</div>`;
   const results=res.map(c=>{const s2=stInfo(c.stage);return `<div class="bubble sys" onclick="${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}" style="cursor:pointer"><div class="m">📥 ${esc(cur.name)}님이 올린 결과</div><div class="t">${esc(c.title)}</div><div class="m">${s2[1]}${c.body?" · 눌러서 초안 보기":""}</div></div>`}).join("");
-  return `<h1>지시 채팅</h1><div class="sub">직원 한 명을 골라 업무와 마감을 지시해요. 보내면 업무로 저장되고 보낼 문구가 복사돼요</div>
+  return `<h1>지시 채팅</h1><div class="sub">직원 한 명을 골라 업무와 마감을 지시해요. 보내면 업무로 저장되고 지시함(저장소)에 올라가요</div>
   <div class="chatgrid"><div class="chatlist glass">${listPc}</div>
   <div class="chatmain"><div class="chatsel-wrap">${sel}</div>
   <div class="chathead glass"><button class="pill" style="background:var(--make);float:right" onclick="pollResults(true)">🔄 결과 확인</button><b>${esc(cur.name)}</b> <span class="m">${esc(cur.title)} · ${esc(cur.dept)} · ${esc(cur.agent)}</span>${active(cur)?"":`<div class="m low">현재 가동 단계(${D.set.stage}단계) 밖의 직원이에요. 지시해도 바로 움직이지 않을 수 있어요.</div>`}</div>
@@ -1021,7 +1086,7 @@ views.chat=()=>{
    <div class="chips">마감 <button onclick="chatDueSet(0)">오늘</button><button onclick="chatDueSet(1)">내일</button><button onclick="chatDueSet(3)">3일 뒤</button><button onclick="chatDueSet(7)">1주 뒤</button><input id="cdue" type="date" value="${esc(chatDue)}" onchange="chatDue=this.value" style="width:auto"></div>
    <div class="filters">${brands.length?`<select id="cbr"><option value="">브랜드 선택 안 함</option>${brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}${b.name?" · "+esc(b.name):""}</option>`).join("")}</select>`:"<span></span>"}<select id="cmode" onchange="CFG.chatMode=this.value;saveCfg()">${CMODES.map(m=>`<option value="${m[0]}" ${m[0]===mode?"selected":""}>보낼 곳: ${m[1]}</option>`).join("")}</select></div>
    <label class="m"><input id="cout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 콘텐츠에 올리기 (글·초안 지시)</label>
-   <button class="btn" onclick="sendChat()">보내기 (업무 저장 + 문구 복사)</button></div></div></div>`;
+   <button class="btn" onclick="sendChat()">보내기 (업무 저장 + 지시함)</button></div></div></div>`;
 };
 function chatSet(n){chatDraft=($("#cmsg")||{value:chatDraft}).value;chatWho=n;render()}
 function chatDueSet(n){chatDue=addDays(n);const e=$("#cdue");if(e)e.value=chatDue}
@@ -1029,8 +1094,9 @@ function dispatchTask(name,txt,due,brand,mode,out){
   const lines=txt.split("\n"),title=lines[0].trim().slice(0,200),memo=lines.slice(1).join("\n").trim().slice(0,1500);
   const x={id:uid(),title,due:due||"",pri:"중요도 보통",done:0,who:name,memo,brand:brand||"",by:curName(),as:"sent",at:Date.now(),out:out?1:0};
   D.tasks.unshift(x);save();
-  const txtOut=cmdText(x,mode);
-  const ok=()=>toast(mode===2?"복사했어요. 이 채팅(Claude)에 붙여넣으면 "+name+" 한 명만 깨워요":"복사했어요. Slack에 붙여넣어 올려 주세요");
+  if(mode!==2&&CFG.repoWToken&&instrRepo()){sendInbox(x.id);return}
+  const txtOut=cmdText(x,mode===2?2:0);
+  const ok=()=>toast(mode===2?"복사했어요. 이 직원의 Claude 세션에 붙여넣으면 "+name+" 한 명만 깨워요":"지시함 쓰기 토큰이 없어 복사만 했어요. 설정 > 지시함 연결을 해 두면 자동으로 보내져요");
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txtOut).then(ok,()=>prompt("복사해서 보내 주세요",txtOut));else prompt("복사해서 보내 주세요",txtOut);
 }
 function sendChat(){
@@ -1068,12 +1134,12 @@ function linkResults(){
   if(ch){save();render()}
   return ch;
 }
-const pendingAI=()=>D.tasks.filter(t=>t.out&&!t.done&&!t.res&&agentNames().has(t.who)).length;
+const pendingAI=()=>D.tasks.filter(t=>((t.out&&!t.res)||t.inbox)&&!t.done&&agentNames().has(t.who)).length;
 let _lastPoll=0;
 async function pollResults(force){
   if(!isAdmin()||!CFG.repoToken||!repoOk((CFG.repo||"").trim()))return;
   if(!force&&(!pendingAI()||Date.now()-_lastPoll<60000))return;
-  _lastPoll=Date.now();await importRepo(!force);
+  _lastPoll=Date.now();await syncInbox();await importRepo(!force);
 }
 setInterval(()=>{if(!document.hidden&&["home","chat","contents","tasks"].includes(page))pollResults(false)},180000);
 /* 새 기기 / 동기화 안내 카드 (홈) */
@@ -1104,7 +1170,7 @@ function qDueSet(n){qDue=addDays(n);const e=$("#qdue");if(e)e.value=qDue}
 function qSend(){
   const txt=($("#qmsg").value||"").trim();if(!txt){alert("지시 내용을 써 주세요");return}
   const who=$("#qwho").value;if(!who)return;qWho=who;
-  dispatchTask(who,txt,$("#qdue").value||"",$("#qbr")?$("#qbr").value:"",+(CFG.chatMode||1),$("#qout").checked);
+  dispatchTask(who,txt,$("#qdue").value||"",$("#qbr")?$("#qbr").value:"",+chatModeNow(),$("#qout").checked);
   qDue="";$("#qmsg").value="";render();
 }
 const quickCard=()=>{
@@ -1117,7 +1183,7 @@ const quickCard=()=>{
   <div class="chips" style="margin:8px 0">마감 <button onclick="qDueSet(0)">오늘</button><button onclick="qDueSet(1)">내일</button><button onclick="qDueSet(3)">3일 뒤</button><button onclick="qDueSet(7)">1주 뒤</button><input id="qdue" type="date" value="${esc(qDue)}" onchange="qDue=this.value" style="width:auto"></div>
   <div class="filters">${brands.length?`<select id="qbr"><option value="">브랜드 선택 안 함</option>${brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}</option>`).join("")}</select>`:"<span></span>"}<select onchange="CFG.chatMode=this.value;saveCfg()">${CMODES.map(m=>`<option value="${m[0]}" ${m[0]===(CFG.chatMode||"1")?"selected":""}>보낼 곳: ${m[1]}</option>`).join("")}</select></div>
   <label class="m" style="display:block;margin-bottom:8px"><input id="qout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 콘텐츠에 올리기 (글·초안 지시)</label>
-  <button class="btn" onclick="qSend()">보내기 (업무 저장 + 문구 복사)</button></div></div>`;
+  <button class="btn" onclick="qSend()">보내기 (업무 저장 + 지시함)</button></div></div>`;
 };
 function addTask(more){
   const t=($("#tt")||{value:""}).value.trim();if(!t){alert("업무 내용을 입력해 주세요");return}
