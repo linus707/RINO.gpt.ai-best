@@ -136,7 +136,9 @@ body.photo-on .hero,body.photo-on main>h1,body.photo-on main>.sub{color:#fff;tex
 .homegrid{display:grid;grid-template-columns:1.6fr 1fr;gap:0 16px;align-items:start;grid-template-areas:"list quick" "list rest";grid-template-rows:auto 1fr}
 .idcard .body{padding:18px 20px}.idcard .idl{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.04em}
 .idcard .idt{font-size:clamp(18px,2.6vw,24px);font-weight:700;letter-spacing:-.02em;line-height:1.35;margin:6px 0 12px}
-.idcard .idb{display:flex;flex-wrap:wrap;gap:8px}.idcard .idb span{background:var(--fill);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}
+.idcard .idb{display:flex;flex-wrap:wrap;gap:8px}.idcard .idb span,.idcard .idb a{background:var(--fill);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;color:inherit;text-decoration:none}
+.idcard .idb a i{font-style:normal;color:var(--accent);margin-left:4px}.idcard .idb a:active{opacity:.6}
+.idcard .idb .bedit{display:flex;flex-direction:column;gap:4px;border-radius:14px;width:100%}.idcard .idb .bedit input{padding:8px 10px;font-size:14px}
 .hero.idn h1{font-size:clamp(48px,10vw,96px)}
 .dhead{display:flex;justify-content:space-between;align-items:baseline;margin:22px 2px 10px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--tx)}
 .dhead .m{font-size:12px;font-weight:500;opacity:.7}
@@ -460,18 +462,27 @@ function editLink(id){
 function delLink(id){if(!isAdmin()||!confirm("이 채널 링크를 지울까요?"))return;D.set.links=D.set.links.filter(x=>x.id!==id);D.set.u=Date.now();save();render()}
 const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${pill(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
 
+let brEdit=0;
+const BRAND_URL={"트립":"https://www.instagram.com/ellttoong.trip/"};
+const brandUrl=c=>c.url!==undefined?c.url:(BRAND_URL[c.tag]||"");
+function setBrandUrl(tag,v){
+  v=(v||"").trim();if(v&&!/^https?:\/\//i.test(v))v="https://"+v;
+  if(v&&!/^https?:\/\/[^\s]+\.[^\s]+/i.test(v)){alert("주소 형식이 올바르지 않아요");render();return}
+  if(!(D.set.brands||[]).length)D.set.brands=coList().map(c=>({tag:c.tag,name:c.name}));
+  const b=D.set.brands.find(x=>x.tag===tag);if(!b)return;b.url=v;D.set.u=Date.now();save();render();
+}
 const views={
 home(){
-  const t=today(),items=bgItems(),cur=bgPick(bgDef()),brands=(D.set.brands||[]).filter(b=>b.tag!=="공통");
+  const t=today(),items=bgItems(),cur=bgPick(bgDef());
   const tile=it=>{const on=it.id===cur.id,nm=it.country||it.name||"";
     const bgs=it.sample?"":`style="background-image:url(${bgUrl(it)})"`;
     return `<button class="dest ${on?"on":""}" onclick="bgSel('${sid(it.id)}')" aria-label="${esc(nm)}"><span class="dimg" ${bgs}>${it.sample?it.svg():""}</span><span class="dnm">${esc(nm)}</span></button>`};
-  return `<div class="hero idn"><div><div class="sub">여행을 영화처럼 기록하는 사람</div></div></div>
+  return `<div class="hero idn"><div><div class="sub">Linus corporation</div></div></div>
   ${syncCard()}
-  <div class="card idcard"><div class="body"><div class="idl">리노 퍼스널 브랜드</div>
-  <div class="idt">여행 · 가구 · 스트릿포토를 하나의 시선으로 잇는 1인 브랜드</div>
-  <div class="idb">${(brands.length?brands.map(b=>b.name||b.tag):["얼뚱트립","에이스침대 정림동점","스트릿포토"]).map(n=>`<span>${esc(n)}</span>`).join("")}<span>SOLAMEN</span></div>
-  <div class="m sub" style="margin:10px 0 0">A little comfort for your everyday — 지친 하루에 작은 위로를</div></div></div>
+  <div class="card idcard"><div class="body"><div class="idl">Linus personal academy</div>
+  <div class="idt">A little comfort for your everyday — 지친 하루에 작은 위로를 가치로 하는 브랜드 컴퍼니</div>
+  <div class="idb">${coList().map(c=>{const u=brandUrl(c);return brEdit&&isAdmin()?`<span class="bedit"><b>${esc(c.name)}</b><input value="${esc(u)}" placeholder="https://… 블로그·인스타 주소" onchange="setBrandUrl(decodeURIComponent('${encodeURIComponent(c.tag)}'),this.value)"></span>`:(u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}<i>↗</i></a>`:`<span ${isAdmin()?`onclick="brEdit=1;render()" style="cursor:pointer" title="눌러서 링크 넣기"`:""}>${esc(c.name)}</span>`)}).join("")}</div>
+  ${isAdmin()?`<button class="pill" style="background:var(--fill);margin-top:10px" onclick="brEdit=!brEdit;render()">${brEdit?"완료":"브랜드 링크 편집"}</button>`:""}</div></div>
   <div class="dhead">대표 여행지<span class="m">${items.length}곳 · 누르면 배경이 바뀌어요</span></div>
   <div class="dgrid">${items.map(tile).join("")}</div>`;
 },
@@ -524,7 +535,7 @@ routine(){
 
 /* ---------- 수익 대시보드 ---------- */
 let revCo="all",revYear="";
-const coList=()=>{const b=(D.set.brands||[]).filter(x=>x.tag&&x.name);return b.length?b.map(x=>({tag:x.tag,name:x.name})):[{tag:"트립",name:"얼뚱트립"},{tag:"슬립",name:"에이스침대 정림동점"},{tag:"포토",name:"퍼스널브랜딩 (스트릿포토)"},{tag:"공통",name:"SOLAMEN"}]};
+const coList=()=>{const b=(D.set.brands||[]).filter(x=>x.tag&&x.name);return b.length?b.map(x=>({tag:x.tag,name:x.name,url:x.url})):[{tag:"트립",name:"얼뚱트립"},{tag:"슬립",name:"에이스침대 정림동점"},{tag:"포토",name:"퍼스널브랜딩 (스트릿포토)"},{tag:"공통",name:"SOLAMEN"}]};
 const coName=t=>{const c=coList().find(x=>x.tag===t);return c?c.name:(t||"회사 미지정")};
 const monthKey=(y,m)=>y+"-"+String(m+1).padStart(2,"0");
 const yearCard=(pool,COs,sum)=>{
@@ -638,7 +649,7 @@ function importAgents(f){
     const j=JSON.parse(t);if(j.kind!=="solamen-staff"||!Array.isArray(j.agents))throw 0;
     const by=new Map(D.set.agents.map(a=>[a.emp,a]));
     j.agents.forEach(a=>{if(a&&a.emp&&a.name)by.set(a.emp,{emp:String(a.emp),agent:String(a.agent||""),name:String(a.name),title:String(a.title||""),dept:String(a.dept||"기타"),channel:String(a.channel||""),stage:+a.stage||0,boss:String(a.boss||""),model:String(a.model||"")})});
-    D.set.agents=[...by.values()];if(j.activeStage)D.set.stage=+j.activeStage;if(Array.isArray(j.brands))D.set.brands=j.brands.filter(b=>b&&b.tag).map(b=>({tag:String(b.tag),name:String(b.name||"")}));D.set.u=Date.now();save();render();alert(j.agents.length+"명을 가져왔어요")
+    D.set.agents=[...by.values()];if(j.activeStage)D.set.stage=+j.activeStage;if(Array.isArray(j.brands)){const old=Object.fromEntries((D.set.brands||[]).map(b=>[b.tag,b.url]));D.set.brands=j.brands.filter(b=>b&&b.tag).map(b=>({tag:String(b.tag),name:String(b.name||""),...(old[String(b.tag)]?{url:old[String(b.tag)]}:{})}))}D.set.u=Date.now();save();render();alert(j.agents.length+"명을 가져왔어요")
   }catch{alert("SOLAMEN 직원 파일이 아니에요")}});
 }
 function setStage(v){D.set.stage=+v;D.set.u=Date.now();save();render()}
