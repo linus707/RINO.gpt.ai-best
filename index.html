@@ -138,7 +138,6 @@ body.photo-on .hero,body.photo-on main>h1,body.photo-on main>.sub{color:#fff;tex
 .idcard .idt{font-size:clamp(18px,2.6vw,24px);font-weight:700;letter-spacing:-.02em;line-height:1.35;margin:6px 0 12px}
 .idcard .idb{display:flex;flex-wrap:wrap;gap:8px}.idcard .idb span,.idcard .idb a{background:var(--fill);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;color:inherit;text-decoration:none}
 .idcard .idb a i{font-style:normal;color:var(--accent);margin-left:4px}.idcard .idb a:active{opacity:.6}
-.idcard .idb .bedit{display:flex;flex-direction:column;gap:4px;border-radius:14px;width:100%}.idcard .idb .bedit input{padding:8px 10px;font-size:14px}
 .hero.idn h1{font-size:clamp(48px,10vw,96px)}
 .dhead{display:flex;justify-content:space-between;align-items:baseline;margin:22px 2px 10px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--tx)}
 .dhead .m{font-size:12px;font-weight:500;opacity:.7}
@@ -462,7 +461,6 @@ function editLink(id){
 function delLink(id){if(!isAdmin()||!confirm("이 채널 링크를 지울까요?"))return;D.set.links=D.set.links.filter(x=>x.id!==id);D.set.u=Date.now();save();render()}
 const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${pill(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
 
-let brEdit=0;
 const BRAND_URL={"트립":"https://www.instagram.com/ellttoong.trip/"};
 const brandUrl=c=>c.url!==undefined?c.url:(BRAND_URL[c.tag]||"");
 function setBrandUrl(tag,v){
@@ -481,8 +479,8 @@ home(){
   ${syncCard()}
   <div class="card idcard"><div class="body"><div class="idl">Linus personal academy</div>
   <div class="idt">A little comfort for your everyday — 지친 하루에 작은 위로를 가치로 하는 브랜드 컴퍼니</div>
-  <div class="idb">${coList().map(c=>{const u=brandUrl(c);return brEdit&&isAdmin()?`<span class="bedit"><b>${esc(c.name)}</b><input value="${esc(u)}" placeholder="https://… 블로그·인스타 주소" onchange="setBrandUrl(decodeURIComponent('${encodeURIComponent(c.tag)}'),this.value)"></span>`:(u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}<i>↗</i></a>`:`<span ${isAdmin()?`onclick="brEdit=1;render()" style="cursor:pointer" title="눌러서 링크 넣기"`:""}>${esc(c.name)}</span>`)}).join("")}</div>
-  ${isAdmin()?`<button class="pill" style="background:var(--fill);margin-top:10px" onclick="brEdit=!brEdit;render()">${brEdit?"완료":"브랜드 링크 편집"}</button>`:""}</div></div>
+  <div class="idb">${coList().map(c=>{const u=brandUrl(c);return u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}<i>↗</i></a>`:`<span ${isAdmin()?`onclick="go('settings')" style="cursor:pointer" title="설정에서 링크 넣기"`:""}>${esc(c.name)}</span>`}).join("")}</div>
+  </div></div>
   <div class="dhead">대표 여행지<span class="m">${items.length}곳 · 누르면 배경이 바뀌어요</span></div>
   <div class="dgrid">${items.map(tile).join("")}</div>`;
 },
@@ -901,6 +899,8 @@ async function setPins(){
 }
 
 /* ---------- 설정 (동기화·백업·AI 키) ---------- */
+const brandLinkCard=()=>`<div class="card"><h3>브랜드 링크</h3><div class="body"><div class="m sub">홈의 브랜드 이름을 누르면 이동할 블로그·인스타 주소예요. 비워 두면 링크 없이 이름만 보여요.</div>
+  <div class="form" style="border:0;padding:0">${coList().map(c=>`<div class="m" style="margin-top:6px"><b>${esc(c.name)}</b></div><input value="${esc(brandUrl(c))}" placeholder="https://… 블로그·인스타 주소" inputmode="url" autocapitalize="off" onchange="setBrandUrl(decodeURIComponent('${encodeURIComponent(c.tag)}'),this.value)">`).join("")}</div></div></div>`;
 views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경 사진, 백업, AI 연결</div>
   <div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
   <div class="m sub">내 GitHub 비공개 Gist에 데이터를 저장해요. <a href="https://github.com/settings/tokens/new?scopes=gist&description=rino-workspace" target="_blank" rel="noopener">여기</a>에서 <b>gist 권한만</b> 있는 토큰을 만들어 붙여넣으세요.</div>
@@ -923,6 +923,7 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경
   <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>
   <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div>
   <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>
+  ${isAdmin()?brandLinkCard():""}
   ${themeCard()}
   ${skillCard()}
   ${bgCard()}
