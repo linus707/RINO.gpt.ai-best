@@ -533,7 +533,7 @@ routine(){
 
 /* ---------- 수익 대시보드 ---------- */
 let revCo="all",revYear="";
-const coList=()=>{const b=(D.set.brands||[]).filter(x=>x.tag&&x.name);return b.length?b.map(x=>({tag:x.tag,name:x.name,url:x.url})):[{tag:"트립",name:"얼뚱트립"},{tag:"슬립",name:"에이스침대 정림동점"},{tag:"포토",name:"퍼스널브랜딩 (스트릿포토)"},{tag:"공통",name:"SOLAMEN"}]};
+const coList=()=>{const b=(D.set.brands||[]).filter(x=>x.tag&&x.name);return b.length?b.map(x=>({tag:x.tag,name:x.name,url:x.url})):[{tag:"트립",name:"얼뚱트립"},{tag:"슬립",name:"에이스침대 정림동점"},{tag:"포토",name:"퍼스널브랜딩 (스트릿포토)"},{tag:"공통",name:"Linus Company"}]};
 const coName=t=>{const c=coList().find(x=>x.tag===t);return c?c.name:(t||"회사 미지정")};
 const monthKey=(y,m)=>y+"-"+String(m+1).padStart(2,"0");
 const yearCard=(pool,COs,sum)=>{
@@ -583,7 +583,7 @@ views.revenue=()=>{
 };
 function addRev(){const a=+$("#ra").value;if(!a)return;D.revenue.push({id:uid(),date:$("#rd").value||today(),co:$("#rco").value,ch:$("#rc").value,amount:a,memo:$("#rm").value.trim()});save();render()}
 
-/* ---------- SOLAMEN AI 직원 (가져오기·조직도) ---------- */
+/* ---------- Linus Company AI 직원 (가져오기·조직도) ---------- */
 const agentNames=()=>new Set(D.set.agents.map(a=>a.name));
 const agentOf=n=>D.set.agents.find(a=>a.name===n);
 function assigneeOpts(){
@@ -622,7 +622,7 @@ views.org=()=>{
     ${openCnt(a.name)?`<span class="pill" style="background:var(--make)">업무 ${openCnt(a.name)}</span>`:""}<span class="pill" style="background:var(${active(a)?"--done":"--idea"})">${active(a)?"가동":a.stage+"단계"}</span></div></div>`).join("")+`</div></div>`}).join("");
 };
 /* Linus Company AI 직원 기본 명단 (2026-10-14 개편: 6명, SOLAMEN tools/staff_registry.json 기준) */
-const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"SOLAMEN"}],"agents":[{"emp":"SOL-001","agent":"younghwan","name":"영환","title":"부대표","dept":"부대표실","channel":"#sol-대표실","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"mina","name":"민아","title":"운영 시스템","dept":"운영시스템","channel":"#sol-경영지원","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-003","agent":"giho","name":"기호","title":"현장 신뢰","dept":"현장신뢰","channel":"#sol-콘텐츠본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-004","agent":"yujin","name":"유진","title":"수익 상품","dept":"수익상품","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-005","agent":"jisu","name":"지수","title":"채널 실험","dept":"채널실험","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-006","agent":"siyeon","name":"시연","title":"커뮤니티","dept":"커뮤니티","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"}]};
+const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"Linus Company"}],"agents":[{"emp":"SOL-001","agent":"younghwan","name":"영환","title":"부대표","dept":"부대표실","channel":"#sol-대표실","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"mina","name":"민아","title":"운영 시스템","dept":"운영시스템","channel":"#sol-경영지원","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-003","agent":"giho","name":"기호","title":"현장 신뢰","dept":"현장신뢰","channel":"#sol-콘텐츠본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-004","agent":"yujin","name":"유진","title":"수익 상품","dept":"수익상품","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-005","agent":"jisu","name":"지수","title":"채널 실험","dept":"채널실험","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-006","agent":"siyeon","name":"시연","title":"커뮤니티","dept":"커뮤니티","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"}]};
 /* 이전 34명 이름 → 이어받은 직원 (업무 담당자 이름 자동 변경용) */
 const OLD2NEW={"아우렐리우스":"영환","아그리파":"영환","아티쿠스":"유진","마에케나스":"지수","티로":"영환","퀸틸리아누스":"기호","세네카":"기호","바로":"지수","오비디우스":"지수","겔리우스":"기호","하드리아누스":"지수","켈레르":"영환","헤르모게네스":"민아","스투디우스":"지수","로스키우스":"지수","플라우투스":"지수","필라데스":"지수","베르길리우스":"유진","플리니우스":"지수","호라티우스":"영환","마르티알리스":"지수","콜루멜라":"지수","소시우스":"유진","트리폰":"유진","스카우루스":"유진","필레몬":"시연","바우키스":"시연","비트루비우스":"영환","아폴로도로스":"영환","파불루스":"영환","프론티누스":"영환","카토":"민아","팔라스":"민아","가이우스":"민아"};
 let AG_READY=false;
@@ -644,7 +644,7 @@ function seedAgents(auto){
 async function refreshAgents(){
   if(!isAdmin())return;
   const repo=(CFG.repo||"").trim(),br=(CFG.repoBranch||"work").trim();
-  if(!CFG.repoToken||!repoOk(repo)){alert("먼저 설정의 'SOLAMEN 작업 폴더 불러오기'에서 저장소와 읽기 전용 토큰을 저장해 주세요");return}
+  if(!CFG.repoToken||!repoOk(repo)){alert("먼저 설정의 'Linus Company 작업 폴더 불러오기'에서 저장소와 읽기 전용 토큰을 저장해 주세요");return}
   try{
     const r=await ghRepo(`/repos/${repo}/contents/tools/staff_registry.json?ref=${encodeURIComponent(br)}`);
     if(!r.ok)throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===404?"tools/staff_registry.json 을 찾지 못했어요":"읽지 못했어요 ("+r.status+")");
@@ -656,7 +656,7 @@ async function refreshAgents(){
     applyRoster(st.map(x=>({emp:String(x.emp_id),agent:String(x.agent||""),name:String(x.name),title:String(x.title||""),dept:String(x.team||"기타"),channel:x.home_channel?"#"+x.home_channel:"",stage:+x.stage||0,boss:x.reports_to==="ceo"?"대표":(nameOf[x.reports_to]||String(x.reports_to||"")),model:model[x.agent]||""})),amap);
     if(!D.set.brands.length)D.set.brands=SOL_ROSTER.brands.map(b=>({...b}));
     D.set.agentsOff=false;D.set.u=Date.now();save();render();
-    alert(st.length+"명을 저장소 기준으로 새로고침했어요."+(reg.active_stage&&+reg.active_stage!==D.set.stage?`\nSOLAMEN 현재 가동 단계는 ${reg.active_stage}단계예요 (앱은 ${D.set.stage}단계). 필요하면 아래에서 바꿔 주세요.`:""));
+    alert(st.length+"명을 저장소 기준으로 새로고침했어요."+(reg.active_stage&&+reg.active_stage!==D.set.stage?`\nLinus Company 현재 가동 단계는 ${reg.active_stage}단계예요 (앱은 ${D.set.stage}단계). 필요하면 아래에서 바꿔 주세요.`:""));
   }catch(e){alert("새로고침하지 못했어요: "+(e.message||e))}
 }
 function importAgents(f){
@@ -666,13 +666,13 @@ function importAgents(f){
     const by=new Map(D.set.agents.map(a=>[a.emp,a]));
     j.agents.forEach(a=>{if(a&&a.emp&&a.name)by.set(a.emp,{emp:String(a.emp),agent:String(a.agent||""),name:String(a.name),title:String(a.title||""),dept:String(a.dept||"기타"),channel:String(a.channel||""),stage:+a.stage||0,boss:String(a.boss||""),model:String(a.model||"")})});
     D.set.agents=[...by.values()];if(j.activeStage)D.set.stage=+j.activeStage;if(Array.isArray(j.brands)){const old=Object.fromEntries((D.set.brands||[]).map(b=>[b.tag,b.url]));D.set.brands=j.brands.filter(b=>b&&b.tag).map(b=>({tag:String(b.tag),name:String(b.name||""),...(old[String(b.tag)]?{url:old[String(b.tag)]}:{})}))}D.set.u=Date.now();save();render();alert(j.agents.length+"명을 가져왔어요")
-  }catch{alert("SOLAMEN 직원 파일이 아니에요")}});
+  }catch{alert("Linus Company 직원 파일이 아니에요")}});
 }
 function setStage(v){D.set.stage=+v;D.set.u=Date.now();save();render()}
 function clearAgents(){if(!confirm("AI 직원 명단을 모두 지울까요? (업무의 담당자 이름은 남아요)"))return;D.set.agents=[];D.set.agentsOff=true;D.set.u=Date.now();save();render()}
 
-/* ---------- 지시함 (SOLAMEN 연결) ---------- */
-/* Slack 없이 일해요(2026-10-14). 보내기 = SOLAMEN work 브랜치의 지시/<번호>.md 로 저장(쓰기 토큰 필요).
+/* ---------- 지시함 (Linus Company 연결) ---------- */
+/* Slack 없이 일해요(2026-10-14). 보내기 = Linus Company work 브랜치의 지시/<번호>.md 로 저장(쓰기 토큰 필요).
    직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 처리하며, 앱은 그 파일을 읽어 상태를 보여요. */
 const AS=[["","지시 전","--idea"],["sent","📋 지시함","--make"],["work","🔄 착수","--review"],["rep","✅ 보고 도착","--ready"],["ok","🔍 검증 완료","--done"]];
 const asInfo=k=>AS.find(a=>a[0]===(k||""))||AS[0];
@@ -732,7 +732,7 @@ async function syncInbox(){
 }
 const outSpec=x=>{
   const tag=x.brand?`[${x.brand}]`:"[트립|슬립|포토|공통 중 하나]";
-  return [`- 결과 저장: SOLAMEN \`작업/YYYY-MM-DD_${tag}_제목/draft.md\` 에 저장하고 \`work\` 브랜치에 커밋·푸시 (편집규칙 6-1 · 앱이 이 폴더를 읽어 전체 콘텐츠에 올려요)`,
+  return [`- 결과 저장: Linus Company \`작업/YYYY-MM-DD_${tag}_제목/draft.md\` 에 저장하고 \`work\` 브랜치에 커밋·푸시 (편집규칙 6-1 · 앱이 이 폴더를 읽어 전체 콘텐츠에 올려요)`,
     `- draft.md 서식: 맨 위 \`# [작성 정보]\` 아래 \`- 작성: ${x.who}\` 줄, 제목은 \`## 제목\`, 본문은 \`## 본문\`, 해시태그는 \`## 해시태그\``];
 };
 function cmdText(x,imm){
@@ -810,8 +810,8 @@ function importContent(f){
   }catch{alert("콘텐츠 파일이 아니에요")}});
 }
 
-/* ---------- SOLAMEN 작업 폴더 불러오기 (읽기 전용 토큰, 관리자 기기에만 저장) ---------- */
-/* 직원들이 SOLAMEN 레포의 작업 폴더(작업/날짜_[태그]_제목/)에 저장한 글을 읽어 전체 콘텐츠에 넣어요.
+/* ---------- Linus Company 작업 폴더 불러오기 (읽기 전용 토큰, 관리자 기기에만 저장) ---------- */
+/* 직원들이 Linus Company 저장소의 작업 폴더(작업/날짜_[태그]_제목/)에 저장한 글을 읽어 전체 콘텐츠에 넣어요.
    클라우드 직원 세션은 Gist 같은 계정 API를 쓸 수 없어서, 이미 하던 대로 레포에 저장하게 두고 앱이 읽어 와요. */
 const PARSER_V="p2";
 const WORK_RE=/^작업\/([^/]+)\/(brief|plan|draft|final|copyedit)\.md$/;
@@ -861,8 +861,8 @@ async function importRepo(silent){
       if(f.copyedit){const ce=await blob("copyedit");report=(report?report+"\n\n---\n\n":"")+"## 교열·사실 확인 결과 (copyedit.md)\n\n"+ce.replace(/^#\s+교열[^\n]*\n/,"")}
       const head=text.slice(0,3000),stage=stageOf(f,head),bm=/\[([^\]]+)\]/.exec(name),brand=bm?bm[1]:"";
       const title=cut(sp.title||name.replace(/^\d{4}-\d\d-\d\d_/,"").replace(/\[[^\]]+\]_?/,"").replace(/_/g," "),200);
-      const am=/^-\s*작성:\s*([^\s(·]+)/m.exec(head),by=cut(am?am[1]:"SOLAMEN",40);
-      const memo=cut(`SOLAMEN 작업 폴더 ${name} · ${stInfo(stage)[1]}(파일로 추정)`,300);
+      const am=/^-\s*작성:\s*([^\s(·]+)/m.exec(head),by=cut(am?am[1]:"Linus Company",40);
+      const memo=cut(`Linus Company 작업 폴더 ${name} · ${stInfo(stage)[1]}(파일로 추정)`,300);
       if(ex){
         if(ex.title===ex.srcTitle)ex.title=title;
         if(ex.stage===ex.srcStage)ex.stage=stage;
@@ -883,7 +883,7 @@ function saveRepo(){
   const repo=$("#wr").value.trim(),br=$("#wb").value.trim()||"work",tk=$("#wt").value.trim();
   if(!repoOk(repo)){alert("저장소는 '주인/이름' 형태로 입력해 주세요 (예: linus707/solamen)");return}
   if(!tk){alert("읽기 전용 토큰을 입력해 주세요");return}
-  if(/^ghp_/.test(tk)&&!confirm("이 토큰(ghp_…)은 권한이 넓을 수 있어요. 가능하면 SOLAMEN 레포 하나만, 읽기 전용(Contents: Read-only)으로 만든 토큰(github_pat_…)을 쓰세요. 그래도 계속할까요?"))return;
+  if(/^ghp_/.test(tk)&&!confirm("이 토큰(ghp_…)은 권한이 넓을 수 있어요. 가능하면 Linus Company 저장소 하나만, 읽기 전용(Contents: Read-only)으로 만든 토큰(github_pat_…)을 쓰세요. 그래도 계속할까요?"))return;
   CFG.repo=repo;CFG.repoBranch=br;CFG.repoToken=tk;CFG.repoAuto=$("#wa").checked?1:0;saveCfg();importRepo(false);
 }
 function clearRepo(){if(!confirm("이 기기에 저장된 읽기 전용 토큰을 지울까요? (불러온 글은 그대로 남아요)"))return;delete CFG.repoToken;CFG.repoAuto=0;saveCfg();render()}
@@ -934,8 +934,8 @@ views.staff=()=>{
   <div class="card"><h3>👥 직원 명단</h3><div class="body">
   ${D.set.staff.map((n,i)=>`<div class="chk"><div class="grow">${esc(n)}</div><button class="icon" style="width:32px;height:32px" onclick="rmStaff(${i})">✕</button></div>`).join("")||'<div class="empty">아직 등록된 직원이 없어요</div>'}
   <div class="row" style="margin-top:8px"><input id="sname" placeholder="직원 이름"><button class="btn" onclick="addStaff()">추가</button></div></div></div>
-  <div class="card"><h3>🤖 SOLAMEN AI 직원 ${D.set.agents.length?'<span class="m sub" style="margin:0">'+D.set.agents.length+'명</span>':""}</h3><div class="body">
-  <div class="m sub">SOLAMEN 레포에서 만든 <b>solamen-staff.json</b> 파일을 올리면 AI 직원이 조직도와 업무 담당자 목록에 들어와요. 데이터는 내 비공개 저장소(Gist)에만 저장돼요. 같은 사번은 덮어써요.</div>
+  <div class="card"><h3>🤖 Linus Company AI 직원 ${D.set.agents.length?'<span class="m sub" style="margin:0">'+D.set.agents.length+'명</span>':""}</h3><div class="body">
+  <div class="m sub">Linus Company 저장소에서 만든 <b>solamen-staff.json</b> 파일을 올리면 AI 직원이 조직도와 업무 담당자 목록에 들어와요. 데이터는 내 비공개 저장소(Gist)에만 저장돼요. 같은 사번은 덮어써요.</div>
   <div class="form" style="border:0;padding:0"><button class="btn" onclick="seedAgents()">기본 명단 ${SOL_ROSTER.agents.length}명 넣기</button><button class="btn ghost" onclick="refreshAgents()">저장소 기준으로 새로고침</button><input type="file" accept="application/json" onchange="importAgents(this.files[0]);this.value=''">
   ${D.set.agents.length?`<select onchange="setStage(this.value)">${[...Array(Math.max(1,...D.set.agents.map(a=>+a.stage||0))).keys()].map(i=>i+1).map(n=>`<option value="${n}" ${D.set.stage===n?"selected":""}>가동 단계 ${n}단계 (이 단계까지 가동)</option>`).join("")}</select><button class="btn ghost" onclick="clearAgents()">AI 직원 명단 지우기</button>`:""}</div></div></div>
   <div class="card"><h3>🔑 로그인 PIN ${p?'<span class="m sub" style="margin:0">설정됨</span>':'<span class="m sub low" style="margin:0">미설정 (누구나 관리자)</span>'}</h3><div class="body">
@@ -962,17 +962,17 @@ async function setPins(){
 const brandLinkCard=()=>`<div class="card"><h3>브랜드 링크</h3><div class="body"><div class="m sub">홈의 브랜드 이름을 누르면 이동할 블로그·인스타 주소예요. 비워 두면 링크 없이 이름만 보여요.</div>
   <div class="form" style="border:0;padding:0">${coList().map(c=>`<div class="m" style="margin-top:6px"><b>${esc(c.name)}</b></div><input value="${esc(brandUrl(c))}" placeholder="https://… 블로그·인스타 주소" inputmode="url" autocapitalize="off" onchange="setBrandUrl(decodeURIComponent('${encodeURIComponent(c.tag)}'),this.value)">`).join("")}</div></div></div>`;
 const inboxCard=()=>`<div class="card"><h3>📨 지시함 연결 ${CFG.repoWToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
-  <div class="m sub">Slack 없이, 지시 채팅에서 보낸 지시가 SOLAMEN 저장소(<b>${esc(CFG.repo||"저장소 미설정")}</b> · ${esc(CFG.repoBranch||"work")} 브랜치)의 <b>지시/</b> 폴더에 파일로 저장돼요. 직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 일해요. 상태와 결과는 앱이 읽어 와요.</div>
-  <div class="m sub" style="margin-top:6px">필요한 것: <b>SOLAMEN 저장소 하나에만</b>, <b>Contents: Read and write</b> 권한의 토큰(github_pat_…), 만료일 지정. 이 기기에만 저장돼요. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만드는 곳</a></div>
+  <div class="m sub">Slack 없이, 지시 채팅에서 보낸 지시가 Linus Company 저장소(<b>${esc(CFG.repo||"저장소 미설정")}</b> · ${esc(CFG.repoBranch||"work")} 브랜치)의 <b>지시/</b> 폴더에 파일로 저장돼요. 직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 일해요. 상태와 결과는 앱이 읽어 와요.</div>
+  <div class="m sub" style="margin-top:6px">필요한 것: <b>Linus Company 저장소 하나에만</b>, <b>Contents: Read and write</b> 권한의 토큰(github_pat_…), 만료일 지정. 이 기기에만 저장돼요. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만드는 곳</a></div>
   <div class="form" style="border:0;padding:0"><input id="iwt" type="password" placeholder="쓰기 권한 토큰 (github_pat_…)" value="${esc(CFG.repoWToken||"")}" autocomplete="off">
   <button class="btn" onclick="saveInboxToken()">저장하고 확인</button>${CFG.repoWToken?'<button class="btn ghost" onclick="clearInboxToken()">연결 해제</button>':""}</div>
-  <div class="m sub" style="margin-top:6px">상태를 읽으려면 위쪽 「SOLAMEN 작업 폴더 불러오기」의 읽기 전용 토큰도 저장돼 있어야 해요.</div></div></div>`;
+  <div class="m sub" style="margin-top:6px">상태를 읽으려면 위쪽 「Linus Company 작업 폴더 불러오기」의 읽기 전용 토큰도 저장돼 있어야 해요.</div></div></div>`;
 async function saveInboxToken(){
   if(!isAdmin())return;
   const tk=$("#iwt").value.trim(),repo=instrRepo();
-  if(!repo){alert("먼저 「SOLAMEN 작업 폴더 불러오기」에서 저장소를 저장해 주세요");return}
+  if(!repo){alert("먼저 「Linus Company 작업 폴더 불러오기」에서 저장소를 저장해 주세요");return}
   if(!tk){alert("쓰기 권한 토큰을 입력해 주세요");return}
-  if(/^ghp_/.test(tk)&&!confirm("이 토큰(ghp_…)은 권한이 넓어요. SOLAMEN 저장소 하나만, Contents: Read and write로 만든 토큰(github_pat_…)을 권해요. 그래도 계속할까요?"))return;
+  if(/^ghp_/.test(tk)&&!confirm("이 토큰(ghp_…)은 권한이 넓어요. Linus Company 저장소 하나만, Contents: Read and write로 만든 토큰(github_pat_…)을 권해요. 그래도 계속할까요?"))return;
   try{
     const r=await fetch("https://api.github.com/repos/"+repo,{headers:{Authorization:"Bearer "+tk,Accept:"application/vnd.github+json"}});
     if(!r.ok)throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===404?"저장소를 찾지 못했어요(토큰이 이 저장소를 가리키는지 확인)":"확인하지 못했어요 ("+r.status+")");
@@ -990,15 +990,15 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경
   <button class="btn" onclick="connectSync()">연결 / 지금 동기화</button>
   ${CFG.token?'<button class="btn ghost" onclick="disconnectSync()">연결 해제</button>':""}</div>
   <div class="m sub">${CFG.gistId?"내 Gist ID: <b>"+esc(CFG.gistId)+"</b> — 다른 기기에 같은 토큰과 이 ID를 입력하면 같은 데이터가 보여요.":"첫 연결 시 Gist가 자동으로 만들어져요."}</div></div></div>
-  <div class="card"><h3>📂 SOLAMEN 작업 폴더 불러오기 ${CFG.repoToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
-  <div class="m sub">직원들이 SOLAMEN의 <b>작업 폴더</b>에 저장한 글(draft.md, copyedit.md 등)을 읽어 와서 전체 콘텐츠에 넣어요. 직원이 따로 할 일은 없어요. <b>읽기 전용 토큰</b>을 쓰고, 이 토큰은 <b>이 기기에만</b> 저장돼요(직원 초대 링크에 들어가지 않아요). 불러온 글은 직원도 볼 수 있어요.</div>
+  <div class="card"><h3>📂 Linus Company 작업 폴더 불러오기 ${CFG.repoToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
+  <div class="m sub">직원들이 Linus Company의 <b>작업 폴더</b>에 저장한 글(draft.md, copyedit.md 등)을 읽어 와서 전체 콘텐츠에 넣어요. 직원이 따로 할 일은 없어요. <b>읽기 전용 토큰</b>을 쓰고, 이 토큰은 <b>이 기기에만</b> 저장돼요(직원 초대 링크에 들어가지 않아요). 불러온 글은 직원도 볼 수 있어요.</div>
   <div class="form" style="border:0;padding:0"><input id="wr" placeholder="저장소 (예: linus707/solamen)" value="${esc(CFG.repo||"linus707/solamen")}">
   <input id="wb" placeholder="브랜치 (직원 작업대: work)" value="${esc(CFG.repoBranch||"work")}">
   <input id="wt" type="password" placeholder="읽기 전용 토큰 (github_pat_…)" value="${esc(CFG.repoToken||"")}" autocomplete="off">
   <label class="m"><input id="wa" type="checkbox" style="width:auto" ${CFG.repoAuto?"checked":""}> 앱을 열 때 자동으로 불러오기</label>
   <button class="btn" onclick="saveRepo()">저장하고 지금 불러오기</button>
   ${CFG.repoToken?'<button class="btn ghost" onclick="importRepo(false)">지금 다시 불러오기</button><button class="btn ghost" onclick="clearRepo()">토큰 지우기</button>':""}</div>
-  <div class="m sub">토큰 만드는 곳: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained token</a> (SOLAMEN 레포 소유 계정으로 로그인) · Repository access는 <b>Only select repositories → SOLAMEN</b> · Permissions는 <b>Contents: Read-only</b> 하나만</div>
+  <div class="m sub">토큰 만드는 곳: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained token</a> (Linus Company 저장소 소유 계정으로 로그인) · Repository access는 <b>Only select repositories → SOLAMEN</b> · Permissions는 <b>Contents: Read-only</b> 하나만</div>
   ${CFG.repoLast?`<div class="m sub">마지막으로 불러온 시각: ${new Date(CFG.repoLast).toLocaleString("ko-KR")}</div>`:""}</div></div>
   <div class="card"><h3>📄 콘텐츠 초안 가져오기</h3><div class="body"><div class="m sub">초안·보고가 담긴 콘텐츠 파일(rino-content-*.json)을 올리면 전체 콘텐츠에 들어가요. 같은 제목과 작성자는 덮어써요.</div>
   <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>
@@ -1064,7 +1064,7 @@ function chatPick(){
 }
 views.chat=()=>{
   const A=D.set.agents;
-  if(!A.length)return `<h1>지시 채팅</h1><div class="sub">AI 직원에게 업무와 마감을 지시해요</div><div class="card"><div class="body"><div class="empty">AI 직원이 아직 없어요. 조직도에서 SOLAMEN 직원을 먼저 넣어 주세요.</div><button class="btn" onclick="go('org')">조직도로 가기</button></div></div>`;
+  if(!A.length)return `<h1>지시 채팅</h1><div class="sub">AI 직원에게 업무와 마감을 지시해요</div><div class="card"><div class="body"><div class="empty">AI 직원이 아직 없어요. 조직도에서 Linus Company 직원을 먼저 넣어 주세요.</div><button class="btn" onclick="go('org')">조직도로 가기</button></div></div>`;
   const cur=chatPick();chatWho=cur.name;
   const depts=[...new Set(A.map(a=>a.dept))],mode=chatModeNow();
   const tasks=D.tasks.filter(t=>t.who===cur.name).slice().reverse();
@@ -1234,7 +1234,7 @@ function skillMeta(t){
 async function loadSkills(){
   if(!isAdmin())return;
   const repo=(CFG.repo||"").trim(),br=(CFG.repoBranch||"work").trim();
-  if(!CFG.repoToken||!repoOk(repo)){alert("먼저 위의 'SOLAMEN 작업 폴더 불러오기'에서 저장소와 읽기 전용 토큰을 저장해 주세요");return}
+  if(!CFG.repoToken||!repoOk(repo)){alert("먼저 위의 'Linus Company 작업 폴더 불러오기'에서 저장소와 읽기 전용 토큰을 저장해 주세요");return}
   setSync("🧩 스킬 읽는 중…");
   try{
     const r=await ghRepo(`/repos/${repo}/git/trees/${encodeURIComponent(br)}?recursive=1`);
@@ -1298,7 +1298,7 @@ const skillRow=x=>`<div class="item"><div class="row"><div class="grow"><div cla
 const skillCard=()=>{const c=skillsCache(),W=c.items.filter(x=>skillKind(x)==="write"),T=c.items.filter(x=>skillKind(x)!=="write");return `<div class="card"><h3>🧩 AI 스킬 ${c.items.length?`<span class="m sub" style="margin:0">${c.items.length}개</span>`:""}</h3><div class="body">
   <div class="m sub">내가 쓰는 스킬을 이 기기에 넣어 두면, <b>📋 프롬프트 복사</b> 창에서 글 쓸 때마다 골라 지침을 함께 복사할 수 있어요. 스킬 내용은 <b>이 기기에만</b> 저장되고, 사이트(공개)나 동기화에는 올라가지 않아요.</div>
   <div class="form" style="border:0;padding:0;background:none;box-shadow:none"><input type="file" accept=".json,.md" multiple onchange="importSkills(this.files);this.value=''">
-  ${isAdmin()?`<button class="btn ghost" onclick="loadSkills()">SOLAMEN 저장소에서 불러오기(토큰 필요)</button>`:""}</div>
+  ${isAdmin()?`<button class="btn ghost" onclick="loadSkills()">Linus Company 저장소에서 불러오기(토큰 필요)</button>`:""}</div>
   <div class="m sub" style="margin-top:6px">올릴 수 있는 파일: <b>rino-skills.json</b>(스킬 묶음) 또는 <b>SKILL.md</b> 파일들</div>
   ${W.length?`<div class="m sub" style="margin:12px 0 2px">✍️ 글쓰기 스킬</div>${W.map(skillRow).join("")}`:""}
   ${T.length?`<div class="m sub" style="margin:12px 0 2px">🛠 이미지·영상 작업 스킬 <span class="m">(도구·파일이 필요해 claude.ai에서는 일부만 가능)</span></div>${T.map(skillRow).join("")}`:""}
