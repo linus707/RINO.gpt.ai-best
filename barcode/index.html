@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>바코드 카운터</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--tx:#f1f5f9;--sub:#94a3b8;--ac:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+header{padding:14px 16px 6px;display:flex;justify-content:space-between;align-items:baseline}
+h1{font-size:18px;margin:0}
+.tot{color:var(--sub);font-size:14px}.tot b{color:var(--ac);font-size:20px}
+main{padding:0 16px 40px;max-width:640px;margin:auto}
+#cam{position:relative;background:#000;border-radius:14px;overflow:hidden;aspect-ratio:4/3;display:none}
+#cam.on{display:block}
+video{width:100%;height:100%;object-fit:cover}
+.frame{position:absolute;inset:25% 10%;border:2px solid rgba(34,197,94,.9);border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.35);pointer-events:none}
+#flash{position:absolute;inset:0;background:var(--ac);opacity:0;pointer-events:none;transition:opacity .25s}
+#last{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(15,23,42,.85);border-radius:8px;padding:6px 10px;font-size:14px;text-align:center}
+.row{display:flex;gap:8px;margin:10px 0}
+button{font:inherit;border:0;border-radius:10px;padding:12px 14px;background:var(--card);color:var(--tx);cursor:pointer}
+button.pri{background:var(--ac);color:#04210f;font-weight:700}
+button.bad{color:var(--bad)}
+.row button{flex:1}
+input{font:inherit;background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:11px 12px;min-width:0}
+.row input{flex:1}
+.opts{display:flex;gap:14px;flex-wrap:wrap;color:var(--sub);font-size:14px;margin:6px 0 12px}
+.opts label{display:flex;align-items:center;gap:6px}
+.item{background:var(--card);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.item.hit{outline:2px solid var(--ac)}
+.info{flex:1;min-width:0}
+.name{width:100%;background:transparent;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:2px 0;font-weight:600}
+.code{color:var(--sub);font-size:12px;word-break:break-all}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:38px;height:38px;padding:0;font-size:20px}
+.qty input{width:56px;text-align:center;padding:8px 2px;font-weight:700}
+.del{background:transparent;color:var(--sub);padding:6px;font-size:18px}
+.empty{text-align:center;color:var(--sub);padding:30px 0}
+#msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:9}
+#msg.on{opacity:1}
+</style>
+</head>
+<body>
+<header><h1>📦 바코드 카운터</h1><div class="tot">총 <b id="tAll">0</b>개 · <span id="tKind">0</span>종</div></header>
+<main>
+  <div id="cam"><video id="v" playsinline muted></video><div class="frame"></div><div id="flash"></div><div id="last"></div></div>
+  <div class="row"><button class="pri" id="bScan">📷 스캔 시작</button><button id="bTorch" style="display:none">🔦 플래시</button></div>
+  <div class="row"><input id="manual" inputmode="numeric" placeholder="바코드 직접 입력 / 블루투스 스캐너"><button id="bAdd">추가</button></div>
+  <div class="opts">
+    <label><input type="checkbox" id="oBeep" checked>소리</label>
+    <label><input type="checkbox" id="oVib" checked>진동</label>
+    <label><input type="checkbox" id="oRep">같은 바코드 연속 스캔 허용</label>
+  </div>
+  <div class="row"><button id="bCsv">⬇ CSV 저장</button><button id="bShare">📤 공유</button><button id="bUndo">↩ 되돌리기</button></div>
+  <div id="list"></div>
+  <div class="row"><button class="bad" id="bReset">🗑 전체 초기화</button></div>
+</main>
+<div id="msg"></div>
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const KEY="barcode-counter-v1";
+let items={}, hist=[], lastCode="", lastTime=0, hitCode="";
+try{const s=JSON.parse(localStorage.getItem(KEY)||"{}");items=s.items||{};hist=s.hist||[]}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({items,hist:hist.slice(-200)}))}catch(e){}};
+function toast(t){const m=$("msg");m.textContent=t;m.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>m.classList.remove("on"),1600)}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const codes=Object.keys(items).sort((a,b)=>items[b].t-items[a].t);
+  let sum=0;
+  $("list").innerHTML=codes.length?codes.map(c=>{const it=items[c];sum+=it.q;
+    return `<div class="item${c===hitCode?" hit":""}" data-c="${esc(c)}"><div class="info"><input class="name" value="${esc(it.n)}" placeholder="상품명 (선택)"><div class="code">${esc(c)}</div></div>
+    <div class="qty"><button data-a="-">−</button><input type="number" inputmode="numeric" value="${it.q}" data-a="q"><button data-a="+">＋</button></div><button class="del" data-a="x">✕</button></div>`}).join(""):'<div class="empty">아직 스캔한 상품이 없어요.<br>[스캔 시작]을 눌러 바코드를 비춰보세요.</div>';
+  $("tAll").textContent=sum;$("tKind").textContent=codes.length;
+}
+function add(code,d=1,record=true){
+  code=String(code).trim();if(!code)return;
+  const it=items[code]||(items[code]={n:"",q:0,t:0});
+  it.q=Math.max(0,it.q+d);it.t=Date.now();hitCode=code;
+  if(record)hist.push([code,d]);
+  save();render();
+}
+function feedback(){
+  if($("oVib").checked&&navigator.vibrate)navigator.vibrate(60);
+  if($("oBeep").checked){try{const a=feedback.a||(feedback.a=new (window.AudioContext||window.webkitAudioContext)());const o=a.createOscillator(),g=a.createGain();o.frequency.value=1100;g.gain.value=.15;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.09)}catch(e){}}
+  const f=$("flash");f.style.opacity=.5;setTimeout(()=>f.style.opacity=0,120);
+}
+function onCode(code){
+  const now=Date.now();
+  if(code===lastCode&&now-lastTime<(($("oRep").checked)?1200:3000)){lastTime=now;return}
+  lastCode=code;lastTime=now;
+  add(code);feedback();
+  $("last").textContent=code+" → "+items[code].q+"개";
+}
+
+// ---- 카메라 스캔 ----
+let stream=null,running=false,reader=null,detector=null,track=null;
+const FORMATS=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","code_93","itf","codabar","qr_code","data_matrix"];
+async function start(){
+  if(running)return;
+  if(!navigator.mediaDevices?.getUserMedia){toast("이 브라우저는 카메라를 지원하지 않아요 (HTTPS 필요)");return}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+  }catch(e){toast("카메라 권한을 허용해 주세요");return}
+  const v=$("v");v.srcObject=stream;await v.play().catch(()=>{});
+  track=stream.getVideoTracks()[0];
+  try{if(track.getCapabilities?.().torch)$("bTorch").style.display=""}catch(e){}
+  running=true;$("cam").classList.add("on");$("bScan").textContent="⏹ 스캔 중지";
+  if("BarcodeDetector" in window){
+    try{detector=new BarcodeDetector({formats:(await BarcodeDetector.getSupportedFormats()).filter(f=>FORMATS.includes(f))})}catch(e){detector=null}
+  }
+  if(detector){loopNative()}
+  else if(window.ZXing){
+    const hints=new Map();hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+    reader=new ZXing.BrowserMultiFormatReader(hints,300);
+    reader.decodeFromVideoElementContinuously?reader.decodeFromVideoElementContinuously(v,(r)=>{if(r)onCode(r.getText())}):reader.decodeFromStream(stream,v,(r)=>{if(r)onCode(r.getText())});
+  }else{toast("스캔 엔진을 불러오지 못했어요. 인터넷을 확인하세요");stop()}
+}
+async function loopNative(){
+  const v=$("v");
+  while(running&&detector){
+    try{if(v.readyState>=2){const r=await detector.detect(v);if(r.length)onCode(r[0].rawValue)}}catch(e){}
+    await new Promise(r=>setTimeout(r,120));
+  }
+}
+function stop(){
+  running=false;detector=null;
+  try{reader&&reader.reset()}catch(e){}reader=null;
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  $("v").srcObject=null;$("cam").classList.remove("on");$("bScan").textContent="📷 스캔 시작";$("bTorch").style.display="none";
+}
+$("bScan").onclick=()=>running?stop():start();
+let torchOn=false;
+$("bTorch").onclick=async()=>{torchOn=!torchOn;try{await track.applyConstraints({advanced:[{torch:torchOn}]})}catch(e){toast("플래시를 켤 수 없어요")}};
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&running)stop()});
+
+// ---- 수동 입력 ----
+function manual(){const v=$("manual").value.trim();if(!v)return;add(v);feedback();$("manual").value="";$("last").textContent=v}
+$("bAdd").onclick=manual;
+$("manual").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();manual()}};
+
+// ---- 목록 조작 ----
+$("list").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  const c=b.closest(".item").dataset.c,a=b.dataset.a;
+  if(a==="+")add(c,1);else if(a==="-")add(c,-1);
+  else if(a==="x"&&confirm("이 상품을 삭제할까요?\n"+c)){delete items[c];save();render()}
+});
+$("list").addEventListener("change",e=>{
+  const c=e.target.closest(".item")?.dataset.c;if(!c||!items[c])return;
+  if(e.target.classList.contains("name")){items[c].n=e.target.value}
+  else if(e.target.dataset.a==="q"){const n=Math.max(0,parseInt(e.target.value)||0);hist.push([c,n-items[c].q]);items[c].q=n}
+  save();render();
+});
+$("bUndo").onclick=()=>{
+  const h=hist.pop();if(!h){toast("되돌릴 내용이 없어요");return}
+  const it=items[h[0]];if(it){it.q=Math.max(0,it.q-h[1]);if(it.q===0&&!it.n)delete items[h[0]]}
+  save();render();toast("마지막 동작을 되돌렸어요");
+};
+$("bReset").onclick=()=>{if(confirm("모든 기록을 지울까요? (CSV를 먼저 저장하세요)")){items={};hist=[];save();render()}};
+
+// ---- 내보내기 ----
+function csv(){
+  const rows=[["바코드","상품명","수량"]];
+  Object.keys(items).forEach(c=>rows.push([c,items[c].n,items[c].q]));
+  return "﻿"+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+}
+const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`};
+$("bCsv").onclick=()=>{
+  if(!Object.keys(items).length){toast("저장할 내용이 없어요");return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv()],{type:"text/csv;charset=utf-8"}));
+  a.download=`바코드수량_${stamp()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+};
+$("bShare").onclick=async()=>{
+  if(!Object.keys(items).length){toast("공유할 내용이 없어요");return}
+  const file=new File([csv()],`바코드수량_${stamp()}.csv`,{type:"text/csv"});
+  try{
+    if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:"바코드 수량"});
+    else if(navigator.share)await navigator.share({title:"바코드 수량",text:csv().slice(1)});
+    else{await navigator.clipboard.writeText(csv().slice(1));toast("클립보드에 복사했어요")}
+  }catch(e){}
+};
+
+render();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
