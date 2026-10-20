@@ -1509,6 +1509,8 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&s
 (function boot(){
   /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
   try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
+  /* 알림을 눌러 들어오면(?chat=… / ?messenger=1) 관리자는 지시 채팅으로 바로 가요 */
+  try{const q=new URLSearchParams(location.search);if(q.has("chat")||q.has("messenger")){if(me()&&isAdmin())page="chat";history.replaceState(null,"",location.pathname)}}catch{}
   render();
   const auto=()=>{if(CFG.repoAuto&&CFG.repoToken&&isAdmin())importRepo(true)};
   if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;render();auto()},()=>{AG_READY=true;render()})}else{AG_READY=true;render();auto()}
