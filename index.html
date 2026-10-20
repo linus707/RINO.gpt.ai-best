@@ -171,6 +171,13 @@ body.photo-on .dhead,body.photo-on .dhead .m{color:#fff;text-shadow:0 1px 12px r
 .chathead{border-radius:16px;padding:10px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
 .chatlog{display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 430px);min-height:220px;overflow:auto;padding:6px 2px 10px}
 .bubble{border-radius:20px;padding:10px 14px;max-width:86%}
+.sgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.swd{text-align:center;font-size:12px;opacity:.6;padding:4px 0}.sun{color:#ff3b30}
+.sday{min-height:58px;border-radius:12px;padding:5px 3px 4px;background:var(--fill);border:2px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit;color:inherit;cursor:pointer;min-width:0}.sday.empty0{background:none;cursor:default}
+.sday.sel{border-color:var(--accent)}.sday .sn{font-size:13px;font-weight:600;width:24px;height:24px;border-radius:50%;display:grid;place-items:center}.sday.td .sn{background:var(--accent);color:#fff}
+.sdots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}.sdots i{width:6px;height:6px;border-radius:50%;display:block}.schs{display:none;width:100%;gap:2px;flex-direction:column}
+.sch{display:block;font-size:11px;line-height:1.3;padding:1px 5px;border-radius:6px;background:color-mix(in srgb,var(--c) 20%,transparent);color:inherit;border-left:3px solid var(--c);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.schmore{font-size:11px;opacity:.6}
+@media(min-width:760px){.sday{min-height:92px;align-items:stretch}.sday .sn{align-self:flex-start}.sdots{display:none}.schs{display:flex}}
+.schrow{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}.schrow:last-of-type{border-bottom:0}.schbar{width:4px;align-self:stretch;border-radius:2px;flex:none}
 .mname{font-size:12px;font-weight:600;margin-bottom:2px;opacity:.75}.mtime{font-size:11px;opacity:.6;margin-top:3px}.mtime a{color:inherit}.mday{align-self:center;font-size:12px;opacity:.55;margin:6px 0 2px}.mimg{max-width:min(240px,100%);border-radius:12px;display:block;margin-top:6px;cursor:zoom-in}
 .bubble.me{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:6px}
 .bubble.me .t{font-weight:600}.bubble.me .m{color:rgba(255,255,255,.82)}
@@ -259,11 +266,11 @@ const IC={
  more:'<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
 };
 const ic=(k,z=22)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||IC.more}</svg>`;
-IC.messenger=IC.chat;
+IC.messenger=IC.chat;IC.schedule=IC.calendar;
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["calendar","📅","콘텐츠 캘린더"],["org","🏛️","조직도"],["sop","📖","나만의 SOP"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["org","🏛️","조직도"],["sop","📖","나만의 SOP"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
 const RCH={...CH,etc:"기타"};
 const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -271,7 +278,7 @@ const today=()=>ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],msgs:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],msgs:[],events:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
@@ -294,7 +301,7 @@ function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-const LISTS=["contents","tasks","stock","sop","revenue","msgs"];
+const LISTS=["contents","tasks","stock","sop","revenue","msgs","events"];
 let SNAP={};
 const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
 resnap();
@@ -1020,6 +1027,73 @@ function connectSync(){CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value
 function disconnectSync(){delete CFG.token;saveCfg();setSync("● 자동 저장");render()}
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
 function importJson(f){if(!f)return;f.text().then(t=>{try{D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
+
+/* ---------- 일정표 (월간 달력 · 날짜별 일정 · 콘텐츠/업무 마감 겹쳐 보기) ----------
+   일정은 D.events 에 저장되고 기존 클라우드 동기화로 항목 단위로 합쳐져요. */
+const SCH_CATS=[["event","일정","#007aff"],["meet","회의","#af52de"],["shoot","촬영·여행","#ff9500"],["pub","발행","#34c759"],["leave","휴가","#ff3b30"]];
+const schCat=k=>SCH_CATS.find(c=>c[0]===k)||SCH_CATS[0];
+const SS=(()=>{try{return JSON.parse(localStorage.getItem("rino-sch"))||{}}catch{return{}}})();
+const schSaveSS=()=>{try{localStorage.setItem("rino-sch",JSON.stringify(SS))}catch{}};
+let schM=today().slice(0,7),schSel=today(),schEdit="";
+const schLay=()=>({content:SS.content!==0,task:SS.task!==0});
+const p2=n=>String(n).padStart(2,"0");
+const WD=["일","월","화","수","목","금","토"];
+function schItems(date){
+  const out=[],L=schLay();
+  D.events.forEach(e=>{const end=e.end&&e.end>=e.date?e.end:e.date;if(date>=e.date&&date<=end)out.push({src:"ev",id:e.id,title:e.title,time:e.time||"",color:schCat(e.cat)[2],label:schCat(e.cat)[1],e})});
+  if(L.content)D.contents.forEach(c=>{if(c.due===date)out.push({src:"ct",id:c.id,title:c.title,time:"",color:"#5ac8fa",label:"콘텐츠 마감",c})});
+  if(L.task)D.tasks.forEach(t=>{if(!t.done&&t.due===date)out.push({src:"tk",id:t.id,title:t.title,time:"",color:"#8e8e93",label:"업무 마감"})});
+  return out.sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
+}
+function schMove(n){const[y,m]=schM.split("-").map(Number),d=new Date(y,m-1+n,1);schM=d.getFullYear()+"-"+p2(d.getMonth()+1);schEdit="";render()}
+function schNow(){schM=today().slice(0,7);schSel=today();schEdit="";render()}
+function schPick(d){schSel=d;schEdit="";render()}
+function schLayer(k){SS[k]=schLay()[k]?0:1;schSaveSS();render()}
+function schNew(){schEdit="new";render();setTimeout(()=>{const e=$("#sT");if(e)e.focus()},60)}
+function schEditOpen(id){schEdit=id;render()}
+function schCancel(){schEdit="";render()}
+const schCan=e=>isAdmin()||e.by===curName()||!e.by;
+function schSave(){
+  const t=$("#sT").value.trim();if(!t){alert("제목을 입력해 주세요");return}
+  const date=$("#sD").value||schSel;let end=$("#sE").value;if(end&&end<=date)end="";
+  const rec={title:t.slice(0,80),date,end,time:$("#sTm").value,cat:$("#sC").value,memo:$("#sM").value.trim().slice(0,300)};
+  if(schEdit&&schEdit!=="new"){const e=D.events.find(x=>x.id===schEdit);if(e&&schCan(e))Object.assign(e,rec)}
+  else D.events.push({id:uid(),by:curName(),...rec});
+  schSel=date;schM=date.slice(0,7);schEdit="";save();render();
+}
+function schDel(id){const e=D.events.find(x=>x.id===id);if(!e||!schCan(e))return;if(!confirm("이 일정을 지울까요?"))return;D.events=D.events.filter(x=>x.id!==id);schEdit="";save();render()}
+views.schedule=()=>{
+  const[y,m]=schM.split("-").map(Number),first=new Date(y,m-1,1).getDay(),days=new Date(y,m,0).getDate(),td=today();
+  const cells=[];for(let i=0;i<first;i++)cells.push(null);for(let d=1;d<=days;d++)cells.push(`${schM}-${p2(d)}`);while(cells.length%7)cells.push(null);
+  let total=0;
+  const grid=cells.map(date=>{
+    if(!date)return '<div class="sday empty0"></div>';
+    const it=schItems(date);total+=it.filter(x=>x.src==="ev"&&date===x.e.date).length;
+    const dots=it.slice(0,4).map(x=>`<i style="background:${x.color}"></i>`).join("");
+    const chips=it.slice(0,2).map(x=>`<span class="sch" style="--c:${x.color}">${esc(x.title)}</span>`).join("")+(it.length>2?`<span class="schmore">+${it.length-2}</span>`:"");
+    const dow=new Date(date+"T00:00:00").getDay();
+    return `<button class="sday ${date===td?"td":""} ${date===schSel?"sel":""}" onclick="schPick('${date}')" aria-label="${date}${it.length?` 일정 ${it.length}건`:""}"><span class="sn ${dow===0?"sun":""}">${+date.slice(8)}</span><span class="sdots">${dots}</span><span class="schs">${chips}</span></button>`;
+  }).join("");
+  const L=schLay(),sel=schItems(schSel),sd=new Date(schSel+"T00:00:00");
+  const row=x=>{
+    const base=`<div class="schrow"><i class="schbar" style="background:${x.color}"></i><div class="grow"><div class="t">${esc(x.title)}</div><div class="m">${x.time?esc(x.time)+" · ":""}${esc(x.label)}${x.src==="ev"?(x.e.end?` · ${x.e.date.slice(5)} ~ ${x.e.end.slice(5)}`:""):""}${x.src==="ev"&&x.e.by?` · ${esc(dn(x.e.by))}`:""}</div>${x.src==="ev"&&x.e.memo?`<div class="m" style="white-space:pre-wrap">${esc(x.e.memo)}</div>`:""}</div>`;
+    if(x.src==="ev")return base+(schCan(x.e)?`<button class="pill" style="background:var(--g)" onclick="schEditOpen('${x.id}')">수정</button><button class="pill" style="background:var(--mut)" onclick="schDel('${x.id}')">삭제</button>`:"")+"</div>";
+    if(x.src==="ct")return base+`<button class="pill" style="background:var(--g)" onclick="${x.c.body?`openDoc('${sid(x.id)}')`:"go('contents')"}">보기</button></div>`;
+    return base+`<button class="pill" style="background:var(--g)" onclick="go('tasks')">보기</button></div>`;
+  };
+  const ed=schEdit==="new"?{date:schSel,end:"",time:"",cat:"event",title:"",memo:""}:D.events.find(x=>x.id===schEdit);
+  const form=ed?`<div class="form"><input id="sT" placeholder="일정 제목 (필수)" value="${esc(ed.title)}" onkeydown="if(event.key==='Enter')schSave()">
+    <div class="filters"><label class="m">시작일<input id="sD" type="date" value="${esc(ed.date)}"></label><label class="m">종료일 (선택)<input id="sE" type="date" value="${esc(ed.end||"")}"></label></div>
+    <div class="filters"><label class="m">시간 (선택)<input id="sTm" type="time" value="${esc(ed.time||"")}"></label><label class="m">종류<select id="sC">${SCH_CATS.map(c=>`<option value="${c[0]}" ${ed.cat===c[0]?"selected":""}>${c[1]}</option>`).join("")}</select></label></div>
+    <textarea id="sM" rows="2" placeholder="메모 (선택)">${esc(ed.memo||"")}</textarea>
+    <div class="row" style="gap:8px"><button class="btn grow" onclick="schSave()">${schEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="schCancel()">취소</button></div></div>`:"";
+  return `<h1>일정표</h1><div class="sub">날짜를 눌러 그날 일정을 보고, 새 일정을 추가해요</div>
+  <div class="row" style="gap:8px;margin:6px 0 10px"><button class="icon" onclick="schMove(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center;font-size:18px">${y}년 ${m}월</b><button class="icon" onclick="schMove(1)" aria-label="다음 달">›</button><button class="pill" style="background:var(--make)" onclick="schNow()">이번 달</button></div>
+  <div class="chips">겹쳐 보기 <button class="${L.content?"on":""}" onclick="schLayer('content')">콘텐츠 마감</button><button class="${L.task?"on":""}" onclick="schLayer('task')">업무 마감</button></div>
+  <div class="sgrid">${WD.map((w,i)=>`<div class="swd ${i===0?"sun":""}">${w}</div>`).join("")}${grid}</div>
+  <div class="m sub" style="margin:6px 2px 10px">이번 달 일정 ${total}건 · ${SCH_CATS.map(c=>`<span style="color:${c[2]}">●</span> ${c[1]}`).join("  ")}</div>
+  <div class="card" style="border-color:${schSel===td?"var(--g)":"var(--line)"}"><h3>${sd.getMonth()+1}월 ${sd.getDate()}일 (${WD[sd.getDay()]})${schSel===td?" · 오늘":""} <button class="pill" style="background:var(--make);float:right" onclick="schNew()">＋ 일정 추가</button></h3><div class="body">${sel.map(row).join("")||'<div class="empty">이 날 일정이 없어요</div>'}${form}</div></div>`;
+};
 
 /* ---------- 메신저 (직원 대화방 · 공지 · @멘션 · 사진 · 알림) ----------
    메시지는 기존 클라우드 동기화(Gist)로 항목 단위로 합쳐져요. 서버가 없는 방식이라
