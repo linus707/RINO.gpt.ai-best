@@ -266,11 +266,11 @@ const IC={
  more:'<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
 };
 const ic=(k,z=22)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||IC.more}</svg>`;
-IC.messenger=IC.chat;IC.schedule=IC.calendar;IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
+IC.messenger=IC.chat;IC.schedule=IC.calendar;IC.proto='<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5h5V7h-5zM9 12h6M9 15.5h4"/>';IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도"],["sop","📖","나만의 SOP"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도"],["proto","📋","업무 절차"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
 const RCH={...CH,etc:"기타"};
 const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -278,7 +278,7 @@ const today=()=>ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
@@ -301,7 +301,7 @@ function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog"];
+const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun"];
 let SNAP={};
 const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
 resnap();
@@ -1027,6 +1027,73 @@ function connectSync(){CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value
 function disconnectSync(){delete CFG.token;saveCfg();setSync("● 자동 저장");render()}
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
 function importJson(f){if(!f)return;f.text().then(t=>{try{D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
+
+/* ---------- 업무 절차 (절차 문서 · 실행 체크 · 완료 기록) ----------
+   절차는 D.proto, 실행 기록은 D.protorun 에 저장되고 기존 클라우드 동기화로 합쳐져요.
+   예전 '나만의 SOP'(D.sop)는 처음 한 번 '기본' 분류로 옮겨 와요(원본은 그대로 남아요). */
+(function ptMigrate(){
+  try{D.sop.forEach(s=>{const id="p-"+s.id;if(!D.proto.some(x=>x.id===id)&&!D.del[id])D.proto.push({id,title:s.title,cat:"기본",steps:(s.steps||[]).slice(),who:"",memo:"",ver:1})})}catch{}
+})();
+let ptTab="list",ptQ="",ptCat="",ptEdit="",ptOpen={};
+const ptRuns=()=>D.protorun.filter(r=>!r.fin);
+const ptStat=r=>{const n=r.steps.length,d=r.done.filter(Boolean).length;return{n,d,pct:n?Math.round(d/n*100):0}};
+function ptTabSet(k){ptTab=k;ptEdit="";render()}
+function ptNew(){ptEdit="new";ptTab="list";render();const e=$("#pT");if(e)e.focus()}
+function ptEditOpen(id){ptEdit=id;ptTab="list";render();const e=$("#pT");if(e)e.focus()}
+function ptCancel(){ptEdit="";render()}
+const ptCan=p=>isAdmin()||!p.by||p.by===curName();
+function ptSave(){
+  const t=$("#pT").value.trim();if(!t){alert("절차 이름을 입력해 주세요");return}
+  const steps=$("#pS").value.split("\n").map(x=>x.trim()).filter(Boolean).slice(0,40).map(x=>x.slice(0,200));
+  if(!steps.length){alert("단계를 한 줄에 하나씩 적어 주세요");return}
+  const rec={title:t.slice(0,60),cat:($("#pC").value.trim()||"기본").slice(0,20),who:$("#pW").value.trim().slice(0,30),steps,memo:$("#pM").value.trim().slice(0,300)};
+  if(ptEdit==="new")D.proto.push({id:uid(),...rec,ver:1,by:curName()||"관리자"});
+  else{const p=D.proto.find(x=>x.id===ptEdit);if(p&&ptCan(p)){const ch=JSON.stringify(p.steps)!==JSON.stringify(steps);Object.assign(p,rec);if(ch)p.ver=(p.ver||1)+1}}
+  ptEdit="";save();render();
+}
+function ptDel(id){const p=D.proto.find(x=>x.id===id);if(!p||!ptCan(p))return;if(!confirm(`'${p.title}' 절차를 지울까요? (실행 기록은 남아요)`))return;D.proto=D.proto.filter(x=>x.id!==id);save();render()}
+function ptCopy(id){const p=D.proto.find(x=>x.id===id);if(!p)return;D.proto.push({...p,id:uid(),title:(p.title+" (복사)").slice(0,60),ver:1,by:curName()||"관리자",u:undefined});save();render();toast("복사했어요")}
+function ptStart(id){
+  const p=D.proto.find(x=>x.id===id);if(!p)return;
+  D.protorun.push({id:uid(),pid:p.id,title:p.title,ver:p.ver||1,steps:p.steps.slice(),done:p.steps.map(()=>0),by:curName()||"관리자",t:Date.now(),fin:0});
+  ptTab="run";save();render();toast("실행을 시작했어요");
+}
+function ptTog(rid,i){
+  const r=D.protorun.find(x=>x.id===rid);if(!r||r.fin)return;r.done[i]=r.done[i]?0:1;
+  if(r.done.every(Boolean)){r.fin=Date.now();toast("모든 단계를 마쳤어요 🎉")}
+  save();render();
+}
+function ptDrop(rid){if(!confirm("이 실행을 그만둘까요? (기록도 지워져요)"))return;D.protorun=D.protorun.filter(x=>x.id!==rid);save();render()}
+function ptMore(id){ptOpen[id]=!ptOpen[id];render()}
+const ptDur=(a,b)=>{const m=Math.max(1,Math.round((b-a)/60000));return m<60?m+"분":m<1440?Math.round(m/60)+"시간":Math.round(m/1440)+"일"};
+views.proto=()=>{
+  const nr=ptRuns().length;
+  const tabs=[["list","📋 절차"],["run",`▶ 진행 중${nr?" "+nr:""}`],["done","✅ 완료 기록"]];
+  const head=`<h1>업무 절차</h1><div class="sub">반복되는 일을 단계로 만들어 두고, 할 때마다 체크하며 실행해요</div>
+  <div class="tabs">${tabs.map(([k,n])=>`<button class="${ptTab===k?"on":""}" onclick="ptTabSet('${k}')">${n}</button>`).join("")}</div>`;
+  if(ptTab==="run"){
+    const R=ptRuns().sort((a,b)=>b.t-a.t);
+    return head+(R.map(r=>{const s=ptStat(r);return `<div class="card"><h3>${esc(r.title)} <span class="m sub" style="margin:0">${s.d}/${s.n} · ${s.pct}%</span></h3><div class="body">
+      <div style="height:6px;border-radius:3px;background:var(--fill);overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${s.pct}%;background:var(--accent)"></div></div>
+      ${r.steps.map((t,i)=>`<label class="m" style="display:flex;gap:8px;align-items:flex-start;margin:6px 0"><input type="checkbox" style="width:auto;margin-top:3px" ${r.done[i]?"checked":""} onchange="ptTog('${r.id}',${i})"><span class="${r.done[i]?"done":""}">${esc(t)}</span></label>`).join("")}
+      <div class="m sub">${esc(dn(r.by))} · ${new Date(r.t).toLocaleDateString("ko-KR",{month:"numeric",day:"numeric"})} 시작 · v${r.ver}</div><button class="pill" style="background:var(--mut)" onclick="ptDrop('${r.id}')">그만두기</button></div></div>`}).join("")||'<div class="empty">진행 중인 실행이 없어요. 절차 탭에서 ‘시작’을 눌러 보세요</div>');
+  }
+  if(ptTab==="done"){
+    const R=D.protorun.filter(r=>r.fin).sort((a,b)=>b.fin-a.fin).slice(0,50);
+    return head+(R.map(r=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(r.title)} <span class="pill" style="background:var(--done)">완료</span></div><div class="m">${esc(dn(r.by))} · ${new Date(r.fin).toLocaleDateString("ko-KR",{month:"numeric",day:"numeric"})} · ${ptDur(r.t,r.fin)} 걸림 · ${r.steps.length}단계 · v${r.ver}</div></div></div></div>`).join("")||'<div class="empty">아직 끝낸 실행이 없어요</div>');
+  }
+  const cats=[...new Set(D.proto.map(x=>x.cat))].filter(Boolean),q=ptQ.trim().toLowerCase();
+  const list=D.proto.filter(p=>(!q||(p.title+" "+p.steps.join(" ")+" "+(p.memo||"")).toLowerCase().includes(q))&&(!ptCat||p.cat===ptCat)).sort((a,b)=>a.cat.localeCompare(b.cat,"ko")||a.title.localeCompare(b.title,"ko"));
+  const ed=ptEdit==="new"?{title:"",cat:ptCat||"",who:"",steps:[],memo:""}:D.proto.find(x=>x.id===ptEdit);
+  const form=ed?`<div class="form"><input id="pT" placeholder="절차 이름 (예: 블로그 발행)" value="${esc(ed.title)}"><div class="filters"><input id="pC" list="ptc" placeholder="분류 (예: 콘텐츠)" value="${esc(ed.cat)}"><datalist id="ptc">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist><input id="pW" placeholder="담당 (선택)" value="${esc(ed.who||"")}"></div>
+    <textarea id="pS" rows="6" placeholder="단계를 한 줄에 하나씩 적어요&#10;키워드 선정&#10;초안 작성&#10;발행">${esc(ed.steps.join("\n"))}</textarea><input id="pM" placeholder="메모 (선택)" value="${esc(ed.memo||"")}">
+    <div class="row" style="gap:8px"><button class="btn grow" onclick="ptSave()">${ptEdit==="new"?"만들기":"저장"}</button><button class="btn ghost" onclick="ptCancel()">취소</button></div></div>`:"";
+  return head+`<button class="btn" style="width:100%;margin-bottom:8px" onclick="ptNew()">＋ 절차 만들기</button>${form}
+  <div class="filters"><input placeholder="🔍 절차·단계 검색" value="${esc(ptQ)}" oninput="ptQ=this.value;render(true)"><select onchange="ptCat=this.value;render()"><option value="">전체 분류</option>${cats.map(c=>`<option value="${esc(c)}" ${ptCat===c?"selected":""}>${esc(c)}</option>`).join("")}</select></div>
+  ${list.map(p=>`<div class="card"><h3>${esc(p.title)} <span class="pill" style="background:var(--g)">${esc(p.cat)}</span></h3><div class="body"><div class="m sub">${p.steps.length}단계 · v${p.ver||1}${p.who?" · 담당 "+esc(p.who):""}${p.memo?" · "+esc(p.memo):""}</div>
+    ${ptOpen[p.id]?`<ol style="margin:8px 0;padding-left:20px">${p.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:""}
+    <div class="row" style="gap:6px;flex-wrap:wrap"><button class="pill" style="background:var(--make)" onclick="ptStart('${p.id}')">▶ 시작</button><button class="pill" style="background:var(--g)" onclick="ptMore('${p.id}')">${ptOpen[p.id]?"접기":"단계 보기"}</button><button class="pill" style="background:var(--g)" onclick="ptCopy('${p.id}')">복사</button>${ptCan(p)?`<button class="pill" style="background:var(--g)" onclick="ptEditOpen('${p.id}')">수정</button><button class="pill" style="background:var(--mut)" onclick="ptDel('${p.id}')">삭제</button>`:""}</div></div></div>`).join("")||'<div class="empty">절차가 없어요. 위에서 만들어 보세요</div>'}`;
+};
 
 /* ---------- 물품·재고 (재고 · 요청 · 기록) ----------
    품목은 D.inv, 요청은 D.invreq, 입출고 기록은 D.invlog 에 저장되고 기존 클라우드 동기화로 합쳐져요.
