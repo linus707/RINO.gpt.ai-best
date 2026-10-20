@@ -1082,7 +1082,7 @@ function ptStart(id){
 }
 function ptTog(rid,i){
   const r=D.protorun.find(x=>x.id===rid);if(!r||r.fin)return;r.done[i]=r.done[i]?0:1;
-  if(r.done.every(Boolean)){r.fin=Date.now();toast("모든 단계를 마쳤어요 🎉")}
+  if(r.done.every(Boolean)){r.fin=Date.now();toast("모든 단계를 마쳤어요 🎉");ntfy(`📋 절차 완료 · ${r.title} (${dn(curName()||"관리자")})`,curName()||"관리자")}
   save();render();
 }
 function ptDrop(rid){if(!confirm("이 실행을 그만둘까요? (기록도 지워져요)"))return;D.protorun=D.protorun.filter(x=>x.id!==rid);save();render()}
@@ -1129,7 +1129,7 @@ const invLowN=()=>D.inv.filter(x=>x.qty<=x.min).length;
 const invReqN=()=>D.invreq.filter(x=>x.status==="요청"||x.status==="주문").length;
 function invLog(item,delta,note){D.invlog.push({id:uid(),item,delta,by:curName()||"관리자",t:Date.now(),note:note||""});if(D.invlog.length>200){D.invlog.sort((a,b)=>a.t-b.t);D.invlog.splice(0,D.invlog.length-200)}}
 function invTabSet(k){invTab=k;invEdit="";render()}
-function invAdj(id,d){const x=D.inv.find(v=>v.id===id);if(!x)return;const n=Math.max(0,x.qty+d);if(n===x.qty)return;invLog(x.name,n-x.qty);x.qty=n;save();render()}
+function invAdj(id,d){const x=D.inv.find(v=>v.id===id);if(!x)return;const n=Math.max(0,x.qty+d);if(n===x.qty)return;invLog(x.name,n-x.qty);const was=x.qty;x.qty=n;if(was>x.min&&n<=x.min)ntfy(`⚠️ 재고 부족 · ${x.name} ${n}${x.unit} 남음 (최소 ${x.min}${x.unit})`,curName()||"관리자");save();render()}
 function invOpen(id){invEdit=id;render();const e=$("#iN");if(e)e.focus()}
 function invCancel(){invEdit="";render()}
 function invSave(){
@@ -1144,6 +1144,7 @@ function invAsk(name){invTab="req";invEdit="";window._invPre=name||"";render();s
 function invReqAdd(){
   const n=$("#rN").value.trim();if(!n){alert("물품명을 입력해 주세요");return}
   D.invreq.push({id:uid(),name:n.slice(0,60),qty:Math.max(1,+$("#rQ").value||1),note:$("#rM").value.trim().slice(0,200),by:curName()||"관리자",t:Date.now(),status:"요청"});
+  ntfy(`📦 물품 요청 · ${n.slice(0,60)} × ${Math.max(1,+$("#rQ").value||1)} (${dn(curName()||"관리자")}) @리노`,curName()||"관리자");
   save();render();toast("요청을 올렸어요");
 }
 function invReqSet(id,st){
@@ -1155,7 +1156,9 @@ function invReqSet(id,st){
     if(x){x.qty+=r.qty}else{x={id:uid(),name:r.name,cat:"기타",qty:r.qty,unit:"개",min:0,loc:"",memo:""};D.inv.push(x)}
     invLog(r.name,r.qty,"요청 입고");
   }
-  r.status=st;r.u2=Date.now();save();render();
+  r.status=st;r.u2=Date.now();
+  ntfy(`📦 요청 ${st} · ${r.name} × ${r.qty} @${dn(r.by)}`,curName()||"관리자");
+  save();render();
 }
 views.inventory=()=>{
   const tabs=[["stock","📦 재고"],["req",`📝 요청${invReqN()?` ${invReqN()}`:""}`],["log","🕘 기록"]];
@@ -1222,6 +1225,28 @@ function brandCard(){
   <button class="pill" style="background:var(--mut)" onclick="brandReset()">기본값으로 되돌리기</button></div></div>`;
 }
 
+/* ---------- 알림 연동: 물품 요청·재고 부족·일정·절차 완료를 메신저 '알림' 방에 자동으로 남겨요 ----------
+   id가 정해진 알림(하루 요약 등)은 여러 기기에서 만들어도 한 번만 남아요. 내가 한 일은 내게 '안 읽음'으로 안 떠요. */
+function ntfy(text,actor,id){
+  if(id&&D.msgs.some(m=>m.id===id))return false;
+  D.msgs.push({id:id||uid(),room:"alert",by:"알림",actor:actor||"",t:Date.now(),text:String(text).slice(0,300)});
+  try{mTrim()}catch{}
+  return true;
+}
+const ntfyDate=d=>{const x=new Date(d+"T00:00:00");return (x.getMonth()+1)+"/"+x.getDate()};
+function ntfyDaily(){
+  try{
+    if(!me())return;
+    const t=today(),tm=addDays(1);let ch=false;
+    const todayAll=schItems(t).filter(x=>x.src==="ev");
+    if(todayAll.length&&ntfy(`📅 오늘 일정 ${todayAll.length}건 · ${todayAll.slice(0,3).map(x=>(x.time?x.time+" ":"")+x.title).join(", ")}${todayAll.length>3?" 외":""}`,"","d-sch-"+t))ch=true;
+    D.events.filter(e=>e.date===tm).forEach(e=>{if(ntfy(`📅 내일 일정 · ${e.title}${e.time?" ("+e.time+")":""}`,"","d-evt-"+e.id+"-"+tm))ch=true});
+    if(ch){save();if(page==="messenger"||page==="home")render()}
+  }catch{}
+}
+setInterval(()=>{if(!document.hidden)ntfyDaily()},3600000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)ntfyDaily()});
+
 /* ---------- 홈: 오늘 일정 · 공지 ---------- */
 function homeAddEv(){schSel=today();schM=today().slice(0,7);go("schedule");schNew()}
 function homeSch(){schSel=today();schM=today().slice(0,7);go("schedule")}
@@ -1271,6 +1296,7 @@ function schSave(){
   const rec={title:t.slice(0,80),date,end,time:$("#sTm").value,cat:$("#sC").value,memo:$("#sM").value.trim().slice(0,300)};
   if(schEdit&&schEdit!=="new"){const e=D.events.find(x=>x.id===schEdit);if(e&&schCan(e))Object.assign(e,rec)}
   else D.events.push({id:uid(),by:curName(),...rec});
+  if(rec&&!(schEdit&&schEdit!=="new"))ntfy(`📅 새 일정 · ${ntfyDate(date)} ${rec.title}${rec.time?" ("+rec.time+")":""} (${dn(curName()||"관리자")})`,curName()||"관리자");
   schSel=date;schM=date.slice(0,7);schEdit="";save();render();
 }
 function schDel(id){const e=D.events.find(x=>x.id===id);if(!e||!schCan(e))return;if(!confirm("이 일정을 지울까요?"))return;D.events=D.events.filter(x=>x.id!==id);schEdit="";save();render()}
@@ -1311,14 +1337,14 @@ views.schedule=()=>{
    메시지는 기존 클라우드 동기화(Gist)로 항목 단위로 합쳐져요. 서버가 없는 방식이라
    · 보낸 사람 이름은 로그인 이름이고 PIN은 편의용 잠금이에요(민감한 내용은 쓰지 마세요)
    · 푸시 서버가 없어서, 알림은 앱이 열려 있을 때(15초마다 확인) 와요. */
-const MROOMS0=[{id:"notice",name:"공지사항",ro:1},{id:"talk",name:"업무 소통"}];
+const MROOMS0=[{id:"notice",name:"공지사항",ro:1},{id:"talk",name:"업무 소통"},{id:"alert",name:"알림",ro:1,sys:1}];
 const mrooms=()=>[...MROOMS0,...(D.set.rooms||[])];
 const dn=n=>n==="관리자"?"리노":n;
 const MS=(()=>{try{return JSON.parse(localStorage.getItem("rino-msgr"))||{}}catch{return{}}})();
 MS.read=MS.read||{};MS.mute=MS.mute||{};
 const msSave=()=>{try{localStorage.setItem("rino-msgr",JSON.stringify(MS))}catch{}};
 let mRoom="talk",mDraft="",mImg="",mScroll=0,mStick=true,mForce=true,mFoc=false;
-const mUnread=r=>{const rd=MS.read[r]||0,mn=curName();return D.msgs.filter(m=>m.room===r&&m.t>rd&&m.by!==mn).length};
+const mUnread=r=>{const rd=MS.read[r]||0,mn=curName();return D.msgs.filter(m=>m.room===r&&m.t>rd&&m.by!==mn&&m.actor!==mn).length};
 const mTime=t=>new Date(t).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
 const mDay=t=>new Date(t).toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
 const mRich=s=>esc(s).replace(/@[^\s@<]+/g,x=>"<b>"+x+"</b>").replace(/\n/g,"<br>");
@@ -1364,7 +1390,7 @@ async function mNotifOn(){
   toast(p==="granted"?"이 기기 알림을 켰어요 (앱이 열려 있을 때 와요)":"알림이 차단돼 있어요. 브라우저·기기 설정에서 허용해 주세요");render();
 }
 function msgrScan(prev){
-  const mn=curName(),fresh=D.msgs.filter(m=>!prev.has(m.id)&&m.by!==mn).sort((a,b)=>a.t-b.t);if(!fresh.length)return;
+  const mn=curName(),fresh=D.msgs.filter(m=>!prev.has(m.id)&&m.by!==mn&&m.actor!==mn).sort((a,b)=>a.t-b.t);if(!fresh.length)return;
   const key="@"+dn(mn),vis=!document.hidden;
   const show=fresh.filter(m=>(!MS.mute[m.room]||(m.text||"").includes(key))&&!(page==="messenger"&&m.room===mRoom&&vis));
   if(!show.length)return;
@@ -1395,14 +1421,14 @@ views.messenger=()=>{
     const mine=m.by===mn,hit=!mine&&(m.text||"").includes(key);
     return sep+`<div class="bubble ${mine?"me":"sys"}" ${hit?'style="outline:2px solid var(--make)"':""}>${mine?"":`<div class="mname">${esc(dn(m.by))}</div>`}${m.text?`<div class="m" style="white-space:normal;color:inherit">${mRich(m.text)}</div>`:""}${m.img?`<img class="mimg" src="${m.img}" alt="첨부 사진" onclick="mImgOpen('${m.id}')">`:""}<div class="mtime">${mTime(m.t)}${mine||isAdmin()?` · <a href="#" onclick="mDel('${m.id}');return false">삭제</a>`:""}</div></div>`;
   }).join("")||`<div class="empty" style="text-align:center">아직 메시지가 없어요. 첫 메시지를 남겨 보세요.</div>`;
-  const ro=cur.ro&&!isAdmin();
+  const ro=(cur.ro&&!isAdmin())||cur.sys;
   const nOn=MS.notif&&"Notification"in window&&Notification.permission==="granted";
   return `<h1>메신저</h1><div class="sub">직원들과 대화하고 공지를 확인해요. 15초마다 새 메시지를 확인해요</div>
   <div class="chatgrid"><div class="chatlist glass">${list}</div>
   <div class="chatmain"><div class="chatsel-wrap">${sel}</div>
-  <div class="chathead glass"><button class="pill" style="background:var(--g);float:right" onclick="mMute()">${MS.mute[mRoom]?"🔕 알림 꺼짐":"🔔 알림 켜짐"}</button><b>${esc(cur.name)}</b> <span class="m">${cur.ro?"관리자만 글을 올려요":"참여자 "+mPeople().length+"명"}</span></div>
+  <div class="chathead glass"><button class="pill" style="background:var(--g);float:right" onclick="mMute()">${MS.mute[mRoom]?"🔕 알림 꺼짐":"🔔 알림 켜짐"}</button><b>${esc(cur.name)}</b> <span class="m">${cur.sys?"자동으로 쌓이는 알림":cur.ro?"관리자만 글을 올려요":"참여자 "+mPeople().length+"명"}</span></div>
   <div class="chatlog" id="mlog">${log}</div>
-  <div class="composer glass">${ro?`<div class="empty" style="text-align:center">공지사항은 관리자만 올릴 수 있어요</div>`:`
+  <div class="composer glass">${ro?`<div class="empty" style="text-align:center">${cur.sys?"물품 요청·재고 부족·일정 알림이 여기에 자동으로 쌓여요":"공지사항은 관리자만 올릴 수 있어요"}</div>`:`
    <textarea id="mmsg" rows="2" placeholder="메시지 입력 (Enter 전송 · Shift+Enter 줄바꿈 · @ 멘션)" oninput="mInput(this)" onkeydown="mKey(event)">${esc(mDraft)}</textarea><div id="mhint">${mHintHtml()}</div>
    ${mImg?`<div class="row" style="gap:8px"><img src="${mImg}" alt="" style="height:56px;border-radius:10px"><button class="pill" style="background:var(--mut)" onclick="mImg='';render()">사진 빼기</button></div>`:""}
    <div class="row" style="gap:8px;flex-wrap:wrap"><label class="pill" style="background:var(--g);cursor:pointer">📷 사진<input type="file" accept="image/*" hidden onchange="mPick(this)"></label><button class="btn grow" onclick="mSend()">보내기</button></div>`}
@@ -1908,7 +1934,7 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&s
   try{const q=new URLSearchParams(location.search);if(q.has("chat")||q.has("messenger")){if(me())page="messenger";history.replaceState(null,"",location.pathname)}}catch{}
   render();
   const auto=()=>{if(CFG.repoAuto&&CFG.repoToken&&isAdmin())importRepo(true)};
-  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;render();auto()},()=>{AG_READY=true;render()})}else{AG_READY=true;render();auto()}
+  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;render();auto();ntfyDaily()},()=>{AG_READY=true;render()})}else{AG_READY=true;render();auto();ntfyDaily()}
 })();
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
