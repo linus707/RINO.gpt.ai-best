@@ -266,11 +266,11 @@ const IC={
  more:'<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
 };
 const ic=(k,z=22)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||IC.more}</svg>`;
-IC.messenger=IC.chat;IC.schedule=IC.calendar;
+IC.messenger=IC.chat;IC.schedule=IC.calendar;IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["org","🏛️","조직도"],["sop","📖","나만의 SOP"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도"],["sop","📖","나만의 SOP"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
 const RCH={...CH,etc:"기타"};
 const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -278,7 +278,7 @@ const today=()=>ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],msgs:[],events:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
@@ -301,7 +301,7 @@ function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-const LISTS=["contents","tasks","stock","sop","revenue","msgs","events"];
+const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog"];
 let SNAP={};
 const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
 resnap();
@@ -1028,6 +1028,77 @@ function disconnectSync(){delete CFG.token;saveCfg();setSync("● 자동 저장"
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
 function importJson(f){if(!f)return;f.text().then(t=>{try{D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
 
+/* ---------- 물품·재고 (재고 · 요청 · 기록) ----------
+   품목은 D.inv, 요청은 D.invreq, 입출고 기록은 D.invlog 에 저장되고 기존 클라우드 동기화로 합쳐져요.
+   예전 '가구 재고'(D.stock) 데이터는 처음 한 번 '가구' 분류로 옮겨 와요(원본은 그대로 남아요). */
+(function invMigrate(){
+  try{D.stock.forEach(s=>{const id="s-"+s.id;if(!D.inv.some(x=>x.id===id)&&!D.del[id])D.inv.push({id,name:s.name,cat:"가구",qty:+s.qty||0,unit:"개",min:+s.min||0,loc:"",memo:""})})}catch{}
+})();
+const INV_ST=[["요청","#ff9500"],["주문","#007aff"],["입고","#34c759"],["반려","#8e8e93"]];
+let invTab="stock",invQ="",invCat="",invLow=false,invEdit="";
+const invLowN=()=>D.inv.filter(x=>x.qty<=x.min).length;
+const invReqN=()=>D.invreq.filter(x=>x.status==="요청"||x.status==="주문").length;
+function invLog(item,delta,note){D.invlog.push({id:uid(),item,delta,by:curName()||"관리자",t:Date.now(),note:note||""});if(D.invlog.length>200){D.invlog.sort((a,b)=>a.t-b.t);D.invlog.splice(0,D.invlog.length-200)}}
+function invTabSet(k){invTab=k;invEdit="";render()}
+function invAdj(id,d){const x=D.inv.find(v=>v.id===id);if(!x)return;const n=Math.max(0,x.qty+d);if(n===x.qty)return;invLog(x.name,n-x.qty);x.qty=n;save();render()}
+function invOpen(id){invEdit=id;render();const e=$("#iN");if(e)e.focus()}
+function invCancel(){invEdit="";render()}
+function invSave(){
+  const n=$("#iN").value.trim();if(!n){alert("품목명을 입력해 주세요");return}
+  const rec={name:n.slice(0,60),cat:($("#iC").value.trim()||"기타").slice(0,20),qty:Math.max(0,+$("#iQ").value||0),unit:($("#iU").value.trim()||"개").slice(0,8),min:Math.max(0,+$("#iM").value||0),loc:$("#iL").value.trim().slice(0,30),memo:$("#iMemo").value.trim().slice(0,200)};
+  if(invEdit==="new"){D.inv.push({id:uid(),...rec});if(rec.qty)invLog(rec.name,rec.qty,"처음 등록")}
+  else{const x=D.inv.find(v=>v.id===invEdit);if(x){if(rec.qty!==x.qty)invLog(rec.name,rec.qty-x.qty,"수량 직접 수정");Object.assign(x,rec)}}
+  invEdit="";save();render();
+}
+function invDel(id){if(!isAdmin()){alert("품목 삭제는 관리자만 할 수 있어요");return}const x=D.inv.find(v=>v.id===id);if(!x||!confirm(`'${x.name}'을(를) 지울까요?`))return;D.inv=D.inv.filter(v=>v.id!==id);invEdit="";save();render()}
+function invAsk(name){invTab="req";invEdit="";window._invPre=name||"";render();setTimeout(()=>{const e=$("#rN");if(e){e.value=window._invPre||"";const q=$("#rQ");if(q)q.focus()}},60)}
+function invReqAdd(){
+  const n=$("#rN").value.trim();if(!n){alert("물품명을 입력해 주세요");return}
+  D.invreq.push({id:uid(),name:n.slice(0,60),qty:Math.max(1,+$("#rQ").value||1),note:$("#rM").value.trim().slice(0,200),by:curName()||"관리자",t:Date.now(),status:"요청"});
+  save();render();toast("요청을 올렸어요");
+}
+function invReqSet(id,st){
+  const r=D.invreq.find(v=>v.id===id);if(!r)return;
+  if(st==="취소"){if(r.by!==curName()&&!isAdmin())return;D.invreq=D.invreq.filter(v=>v.id!==id);save();render();return}
+  if(!isAdmin()){alert("상태 변경은 관리자만 할 수 있어요");return}
+  if(st==="입고"&&r.status!=="입고"){
+    let x=D.inv.find(v=>v.name===r.name);
+    if(x){x.qty+=r.qty}else{x={id:uid(),name:r.name,cat:"기타",qty:r.qty,unit:"개",min:0,loc:"",memo:""};D.inv.push(x)}
+    invLog(r.name,r.qty,"요청 입고");
+  }
+  r.status=st;r.u2=Date.now();save();render();
+}
+views.inventory=()=>{
+  const tabs=[["stock","📦 재고"],["req",`📝 요청${invReqN()?` ${invReqN()}`:""}`],["log","🕘 기록"]];
+  const head=`<h1>물품·재고</h1><div class="sub">부족한 물품은 빨간색으로 보여요. 모자라면 바로 요청해요</div>
+  <div class="stats">${stat("전체 품목",D.inv.length)}${stat("부족 품목",invLowN())}${stat("진행 중 요청",invReqN())}</div>
+  <div class="tabs">${tabs.map(([k,n])=>`<button class="${invTab===k?"on":""}" onclick="invTabSet('${k}')">${n}</button>`).join("")}</div>`;
+  if(invTab==="log"){
+    const L=D.invlog.slice().sort((a,b)=>b.t-a.t).slice(0,100);
+    return head+(L.map(l=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(l.item)} <b style="color:${l.delta>0?"#34c759":"#ff3b30"}">${l.delta>0?"+":""}${l.delta}</b></div><div class="m">${esc(dn(l.by))} · ${new Date(l.t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${l.note?" · "+esc(l.note):""}</div></div></div></div>`).join("")||'<div class="empty">아직 입출고 기록이 없어요</div>');
+  }
+  if(invTab==="req"){
+    const R=D.invreq.slice().sort((a,b)=>b.t-a.t);
+    return head+`<div class="form"><input id="rN" list="invl" placeholder="필요한 물품 (필수)"><datalist id="invl">${D.inv.map(x=>`<option value="${esc(x.name)}">`).join("")}</datalist><div class="filters"><input id="rQ" type="number" min="1" placeholder="수량" value="1"><input id="rM" placeholder="메모 (선택)"></div><button class="btn" onclick="invReqAdd()">＋ 요청 올리기</button></div>`+
+    (R.map(r=>{const st=INV_ST.find(s=>s[0]===r.status)||INV_ST[0];return `<div class="item"><div class="row" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(r.name)} × ${r.qty}</div><div class="m">${esc(dn(r.by))} · ${new Date(r.t).toLocaleDateString("ko-KR",{month:"numeric",day:"numeric"})}${r.note?" · "+esc(r.note):""}</div></div><span class="pill" style="background:${st[1]}">${st[0]}</span>
+      ${isAdmin()&&r.status!=="입고"&&r.status!=="반려"?`${r.status==="요청"?`<button class="pill" style="background:var(--g)" onclick="invReqSet('${r.id}','주문')">주문함</button>`:""}<button class="pill" style="background:var(--make)" onclick="invReqSet('${r.id}','입고')">입고 처리</button><button class="pill" style="background:var(--mut)" onclick="invReqSet('${r.id}','반려')">반려</button>`:""}
+      ${(r.by===curName()||isAdmin())&&r.status!=="입고"?`<button class="pill" style="background:var(--mut)" onclick="invReqSet('${r.id}','취소')">취소</button>`:""}</div></div>`}).join("")||'<div class="empty">요청이 없어요</div>');
+  }
+  const cats=[...new Set(D.inv.map(x=>x.cat))].filter(Boolean);
+  const q=invQ.trim().toLowerCase();
+  const list=D.inv.filter(x=>(!q||(x.name+" "+x.loc+" "+x.memo).toLowerCase().includes(q))&&(!invCat||x.cat===invCat)&&(!invLow||x.qty<=x.min)).sort((a,b)=>(b.qty<=b.min)-(a.qty<=a.min)||a.name.localeCompare(b.name,"ko"));
+  const ed=invEdit==="new"?{name:"",cat:invCat||"",qty:0,unit:"개",min:0,loc:"",memo:""}:D.inv.find(x=>x.id===invEdit);
+  const form=ed?`<div class="form"><input id="iN" placeholder="품목명 (필수)" value="${esc(ed.name)}"><div class="filters"><input id="iC" list="invc" placeholder="분류 (예: 소모품)" value="${esc(ed.cat)}"><datalist id="invc">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist><input id="iL" placeholder="위치 (선택)" value="${esc(ed.loc||"")}"></div>
+    <div class="filters"><label class="m">현재 수량<input id="iQ" type="number" min="0" value="${ed.qty}"></label><label class="m">단위<input id="iU" value="${esc(ed.unit||"개")}"></label><label class="m">최소 수량<input id="iM" type="number" min="0" value="${ed.min}"></label></div>
+    <input id="iMemo" placeholder="메모 (선택)" value="${esc(ed.memo||"")}"><div class="row" style="gap:8px"><button class="btn grow" onclick="invSave()">${invEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="invCancel()">취소</button></div></div>`:"";
+  return head+`<div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="invOpen('new')">＋ 품목 추가</button></div>${invEdit?form:""}
+  <div class="filters"><input placeholder="🔍 품목·위치 검색" value="${esc(invQ)}" oninput="invQ=this.value;render(true)"><select onchange="invCat=this.value;render()"><option value="">전체 분류</option>${cats.map(c=>`<option value="${esc(c)}" ${invCat===c?"selected":""}>${esc(c)}</option>`).join("")}</select></div>
+  <div class="chips"><button class="${invLow?"on":""}" onclick="invLow=!invLow;render()">부족한 것만</button></div>
+  ${list.map(x=>{const low=x.qty<=x.min;return `<div class="item"><div class="row" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(x.name)} ${low?'<span class="pill" style="background:#ff3b30">부족</span>':""}</div><div class="m">${esc(x.cat)}${x.loc?" · "+esc(x.loc):""} · 최소 ${x.min}${esc(x.unit)}${x.memo?" · "+esc(x.memo):""}</div></div>
+    <div class="qty"><button onclick="invAdj('${x.id}',-1)" aria-label="하나 줄이기">−</button><b class="${low?"low":""}">${x.qty}${esc(x.unit)}</b><button onclick="invAdj('${x.id}',1)" aria-label="하나 늘리기">＋</button></div></div>
+    <div class="row" style="gap:6px;margin-top:6px">${low?`<button class="pill" style="background:var(--make)" onclick="invAsk(decodeURIComponent('${encodeURIComponent(x.name)}'))">요청하기</button>`:""}<button class="pill" style="background:var(--g)" onclick="invOpen('${x.id}')">수정</button>${isAdmin()?`<button class="pill" style="background:var(--mut)" onclick="invDel('${x.id}')">삭제</button>`:""}</div></div>`}).join("")||'<div class="empty">조건에 맞는 품목이 없어요</div>'}`;
+};
+
 /* ---------- 일정표 (월간 달력 · 날짜별 일정 · 콘텐츠/업무 마감 겹쳐 보기) ----------
    일정은 D.events 에 저장되고 기존 클라우드 동기화로 항목 단위로 합쳐져요. */
 const SCH_CATS=[["event","일정","#007aff"],["meet","회의","#af52de"],["shoot","촬영·여행","#ff9500"],["pub","발행","#34c759"],["leave","휴가","#ff3b30"]];
@@ -1049,7 +1120,7 @@ function schMove(n){const[y,m]=schM.split("-").map(Number),d=new Date(y,m-1+n,1)
 function schNow(){schM=today().slice(0,7);schSel=today();schEdit="";render()}
 function schPick(d){schSel=d;schEdit="";render()}
 function schLayer(k){SS[k]=schLay()[k]?0:1;schSaveSS();render()}
-function schNew(){schEdit="new";render();setTimeout(()=>{const e=$("#sT");if(e)e.focus()},60)}
+function schNew(){schEdit="new";render();const e=$("#sT");if(e)e.focus()}
 function schEditOpen(id){schEdit=id;render()}
 function schCancel(){schEdit="";render()}
 const schCan=e=>isAdmin()||e.by===curName()||!e.by;
