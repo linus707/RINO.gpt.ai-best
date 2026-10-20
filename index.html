@@ -171,6 +171,7 @@ body.photo-on .dhead,body.photo-on .dhead .m{color:#fff;text-shadow:0 1px 12px r
 .chathead{border-radius:16px;padding:10px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
 .chatlog{display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 430px);min-height:220px;overflow:auto;padding:6px 2px 10px}
 .bubble{border-radius:20px;padding:10px 14px;max-width:86%}
+h1,.logo,.idt{font-family:var(--hfont,inherit)}
 .hgrid{display:grid;gap:12px;grid-template-columns:1fr;margin-top:12px}.hgrid .card{margin:0}@media(min-width:760px){.hgrid{grid-template-columns:1fr 1fr}}
 .sgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.swd{text-align:center;font-size:12px;opacity:.6;padding:4px 0}.sun{color:#ff3b30}
 .sday{min-height:58px;border-radius:12px;padding:5px 3px 4px;background:var(--fill);border:2px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit;color:inherit;cursor:pointer;min-width:0}.sday.empty0{background:none;cursor:default}
@@ -310,7 +311,7 @@ const saveCfg=()=>{try{localStorage.setItem("rino-cfg",JSON.stringify(CFG))}catc
 if(FRESH_BOOT&&!CFG.token&&!CFG.fresh){CFG.fresh=1;saveCfg()}
 const askPersist=()=>{try{if(navigator.storage&&navigator.storage.persist&&!CFG.persisted)navigator.storage.persist().then(ok=>{if(ok){CFG.persisted=1;saveCfg()}})}catch{}};
 askPersist();document.addEventListener("click",askPersist,{once:true});
-function applyTheme(){document.documentElement.dataset.theme=CFG.theme||"auto"}
+function applyTheme(){document.documentElement.dataset.theme=CFG.theme||"auto";try{applyBrand()}catch{}}
 applyTheme();
 function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
@@ -1035,6 +1036,7 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경
   <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div>
   <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>
   ${isAdmin()?inboxCard():""}
+  ${isAdmin()?brandCard():""}
   ${isAdmin()?brandLinkCard():""}
   ${themeCard()}
   ${skillCard()}
@@ -1185,6 +1187,40 @@ views.inventory=()=>{
     <div class="qty"><button onclick="invAdj('${x.id}',-1)" aria-label="하나 줄이기">−</button><b class="${low?"low":""}">${x.qty}${esc(x.unit)}</b><button onclick="invAdj('${x.id}',1)" aria-label="하나 늘리기">＋</button></div></div>
     <div class="row" style="gap:6px;margin-top:6px">${low?`<button class="pill" style="background:var(--make)" onclick="invAsk(decodeURIComponent('${encodeURIComponent(x.name)}'))">요청하기</button>`:""}<button class="pill" style="background:var(--g)" onclick="invOpen('${x.id}')">수정</button>${isAdmin()?`<button class="pill" style="background:var(--mut)" onclick="invDel('${x.id}')">삭제</button>`:""}</div></div>`}).join("")||'<div class="empty">조건에 맞는 품목이 없어요</div>'}`;
 };
+
+/* ---------- 브랜드 디자인 (포인트 색 · 제목 글꼴) ----------
+   선택값은 D.set.brand 에 저장돼 클라우드 동기화로 모든 기기에 같이 적용돼요.
+   기본값(블루)이면 아무것도 덮어쓰지 않고, 다크 모드에서는 자동으로 조금 밝게 보정해요. */
+const BRAND_PRESETS=[["블루(기본)","#007aff"],["그린","#1f7a52"],["인디고","#5856d6"],["테라코타","#c8553d"],["로즈","#d6457a"],["슬레이트","#475569"]];
+const brandNow=()=>({c:(D.set.brand&&D.set.brand.c)||"#007aff",h:(D.set.brand&&D.set.brand.h)||"sans"});
+const hex2rgb=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(h));if(!m)return[0,122,255];const n=parseInt(m[1],16);return[n>>16&255,n>>8&255,n&255]};
+const rgb2hex=a=>"#"+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+const lumOf=rgb=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(rgb[0])+.7152*f(rgb[1])+.0722*f(rgb[2])};
+const isDarkNow=()=>{const t=CFG.theme||"auto";return t==="dark"||(t==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme:dark)").matches)};
+function brandFont(){if(document.getElementById("hfont-css"))return;const l=document.createElement("link");l.id="hfont-css";l.rel="stylesheet";l.href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap";document.head.appendChild(l)}
+function applyBrand(){
+  const b=brandNow(),st=document.documentElement.style,rgb=hex2rgb(b.c);
+  if(b.c.toLowerCase()==="#007aff"){["--accent","--g-soft","--make"].forEach(k=>st.removeProperty(k))}
+  else{const c=isDarkNow()?rgb2hex(rgb.map(v=>v+(255-v)*.22)):rgb2hex(rgb);st.setProperty("--accent",c);st.setProperty("--make",c);st.setProperty("--g-soft",`rgba(${rgb.join(",")},.14)`)}
+  if(b.h==="serif"){st.setProperty("--hfont",'"Noto Serif KR","Nanum Myeongjo","AppleMyungjo",serif');brandFont()}else st.removeProperty("--hfont");
+}
+function brandSet(k,v){if(!isAdmin())return;D.set.brand={...brandNow(),[k]:v};D.set.u=Date.now();save();applyBrand();render()}
+function brandReset(){if(!isAdmin())return;D.set.brand=null;D.set.u=Date.now();save();applyBrand();render()}
+try{if(window.matchMedia)matchMedia("(prefers-color-scheme:dark)").addEventListener("change",applyBrand)}catch{}
+function brandCard(){
+  const b=brandNow(),lum=lumOf(hex2rgb(b.c)),warn=lum>.5?`<div class="m low">색이 너무 밝아서 흰 글자가 잘 안 보일 수 있어요. 조금 더 진한 색을 추천해요.</div>`:"";
+  return `<div class="card"><h3>🎨 브랜드 디자인</h3><div class="body">
+  <div class="m sub">포인트 색과 제목 글꼴을 고르면 모든 기기에 같이 적용돼요.</div>
+  <div class="m" style="margin:8px 0 4px">포인트 색</div>
+  <div class="chips">${BRAND_PRESETS.map(([n,c])=>`<button class="${b.c.toLowerCase()===c?"on":""}" onclick="brandSet('c','${c}')"><i style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px;box-shadow:0 0 0 2px rgba(255,255,255,.85)"></i>${n}</button>`).join("")}<label class="m" style="display:inline-flex;gap:6px;align-items:center">직접 고르기 <input type="color" value="${esc(b.c)}" onchange="brandSet('c',this.value)" style="width:40px;height:30px;padding:0;border:0;background:none"></label></div>
+  ${warn}
+  <div class="m" style="margin:10px 0 4px">제목 글꼴</div>
+  <div class="tabs"><button class="${b.h==="sans"?"on":""}" onclick="brandSet('h','sans')">기본 (고딕)</button><button class="${b.h==="serif"?"on":""}" onclick="brandSet('h','serif')">세리프 (명조)</button></div>
+  <div class="m" style="margin:10px 0 4px">미리보기</div>
+  <div class="card" style="margin:0"><div class="body"><div class="logo" style="font-size:22px">Linus Company</div><div class="idt" style="font-size:16px;margin:4px 0 8px">A little comfort for your everyday</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" style="padding:8px 14px">버튼</button><button class="pill" style="background:var(--make)">▶ 시작</button><span class="navbtn on" style="width:auto;display:inline-flex;padding:6px 12px">메뉴 선택됨</span></div></div></div>
+  <div class="m sub" style="margin-top:8px">현재 색 <b>${esc(b.c)}</b> · 앱 아이콘은 이미지 파일이라 자동으로 안 바뀌어요. 색을 정하신 뒤 알려 주시면 같은 색으로 다시 만들어 드려요.</div>
+  <button class="pill" style="background:var(--mut)" onclick="brandReset()">기본값으로 되돌리기</button></div></div>`;
+}
 
 /* ---------- 홈: 오늘 일정 · 공지 ---------- */
 function homeAddEv(){schSel=today();schM=today().slice(0,7);go("schedule");schNew()}
@@ -1840,7 +1876,7 @@ function qty(id,v){const s=D.stock.find(x=>x.id===id);s.qty=Math.max(0,s.qty+v);
 function addSop(){const n=$("#pn").value.trim(),s=$("#ps").value.split("\n").map(x=>x.trim()).filter(Boolean);if(!n||!s.length)return;D.sop.push({id:uid(),title:n,steps:s});save();render()}
 
 function render(keepFocus){
-  const m=me();
+  const m=me();applyBrand();
   document.body.classList.toggle("staff",!!m&&m.role!=="admin");document.body.classList.toggle("out",!m);
   $("#fab").style.display=m?"flex":"none";
   {const cf=$("#chatfab"),n=m&&isAdmin()?D.tasks.filter(t=>!t.done&&agentNames().has(t.who)).length:0;cf.style.display=m&&isAdmin()&&page!=="chat"?"flex":"none";$("#chatbadge").textContent=n?String(n):""}
