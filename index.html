@@ -163,7 +163,7 @@ body.photo-on .dhead,body.photo-on .dhead .m{color:#fff;text-shadow:0 1px 12px r
 .bgt.on{border-color:var(--accent)}.bgt i{position:absolute;right:4px;top:4px;font-style:normal;background:rgba(0,0,0,.55);border-radius:50%;width:20px;height:20px;display:grid;place-items:center;text-shadow:none}
 .bgt.auto{background:var(--fill);color:var(--tx);text-shadow:none;align-items:center;justify-content:center;text-align:center}
 .rng{display:grid;grid-template-columns:70px 1fr 34px;gap:8px;align-items:center;font-size:14px;margin:6px 0}.rng input{padding:0}
-/* 지시 채팅 (iMessage 느낌) */
+/* AI 직원 지시 (iMessage 느낌) */
 .chatgrid{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
 .chatlist{border-radius:20px;padding:8px;max-height:calc(100vh - 170px);overflow:auto;position:sticky;top:70px;box-shadow:var(--shadow)}
 .chatlist .sub{margin:10px 8px 4px;font-size:12px}
@@ -205,6 +205,8 @@ body.staff .del{display:none}
 #tabbar button{background:none;border:0;color:var(--mut);font-size:10px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:4px 0}
 #tabbar button svg{width:25px;height:25px}
 #tabbar button.on{color:var(--accent)}
+#tabbar button{position:relative}.tbb{position:absolute;top:0;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#ff3b30;color:#fff;font:600 10px/16px inherit;font-style:normal;text-align:center}
+.navgrp{font-size:12px;font-weight:600;opacity:.55;padding:12px 10px 4px}.nbadge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#ff3b30;color:#fff;font-size:12px;font-weight:600;line-height:20px;text-align:center}
 @media(max-width:899px){
  #menu{display:none}#tabbar{display:flex}body.out #tabbar{display:none}
  #drawer{z-index:12}
@@ -266,11 +268,23 @@ const IC={
  more:'<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
 };
 const ic=(k,z=22)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||IC.more}</svg>`;
-IC.messenger=IC.chat;IC.schedule=IC.calendar;IC.proto='<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5h5V7h-5zM9 12h6M9 15.5h4"/>';IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
+IC.messenger=IC.chat;IC.chat='<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/>';IC.schedule=IC.calendar;IC.proto='<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5h5V7h-5zM9 12h6M9 15.5h4"/>';IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","🏠","홈"],["contents","🗂️","전체 콘텐츠"],["tasks","✅","업무 관리"],["chat","💬","지시 채팅",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도"],["proto","📋","업무 절차"],["revenue","💰","수익 대시보드",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const PAGES=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도"],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const NAV_GROUPS=[["",["home"]],["일하기",["tasks","schedule","proto","inventory"]],["소통",["messenger","chat"]],["콘텐츠·수익",["contents","revenue"]],["회사",["org","biz","staff"]],["",["settings"]]];
+const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
+function navBadge(k){
+  try{
+    if(k==="messenger")return msgUnreadAll();
+    if(k==="chat")return pendingAI();
+    if(k==="inventory")return invLowN()+(isAdmin()?invReqN():0);
+    if(k==="proto")return ptRuns().length;
+    if(k==="tasks"){const t=today(),n=curName();return D.tasks.filter(x=>!x.done&&x.who===n&&x.due&&x.due<=t).length}
+  }catch{}
+  return 0;
+}
 const RCH={...CH,etc:"기타"};
 const won=n=>Number(n||0).toLocaleString("ko-KR")+"원";
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -426,16 +440,20 @@ const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼
   </div></div>`};
 bgAll().then(l=>{BG.list=l;if(l.length)render()});
 /* 하단 탭 */
-const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"]];
-const tabsNow=()=>isAdmin()?[TABS_BASE[0],TABS_BASE[1],["chat","💬","지시"],TABS_BASE[2]]:TABS_BASE;
+const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["schedule","📅","일정"],["messenger","💬","메신저"],["tasks","✅","업무"]];
+const tabsNow=()=>TABS_BASE;
 function tabbar(){
-  const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span></button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
+  const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
 }
 function go(p){page=p;window.scrollTo(0,0);$("#drawer").classList.remove("open");closeModal();render()}
 function nav(){
   const m=me();
   $("#who").innerHTML=m?`<div class="brandbox"><b>${esc(m.name)}</b><div class="m sub" style="margin:0">${m.role==="admin"?"관리자":"직원"}${m.open?" · PIN 미설정":""}</div>${m.open?"":'<button class="btn ghost" style="margin-top:8px;padding:8px 12px" onclick="logout()">로그아웃</button>'}</div>`:"";
-  $("#navlist").innerHTML=m?PAGES.filter(p=>!p[4]&&(!p[3]||m.role==="admin")).map(([k,i,n])=>`<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${ic(k,21)}<span>${n}</span></button>`).join(""):"";
+  $("#navlist").innerHTML=m?NAV_GROUPS.map(([g,ks])=>{
+    const items=ks.map(k=>PAGES.find(p=>p[0]===k)).filter(p=>p&&!p[4]&&(!p[3]||m.role==="admin"));
+    if(!items.length)return "";
+    return (g?`<div class="navgrp">${g}</div>`:"")+items.map(([k,i,n])=>{const b=navBadge(k);return `<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${ic(k,21)}<span class="grow">${n}</span>${b?`<span class="nbadge">${b>99?"99+":b}</span>`:""}</button>`}).join("");
+  }).join(""):"";
 }
 $("#menu").onclick=()=>{if(!me())return;nav();$("#drawer").classList.add("open")};
 $("#drawer .shade").onclick=()=>$("#drawer").classList.remove("open");
@@ -497,7 +515,7 @@ home(){
 contents(){
   const q=(window._q||"").toLowerCase();
   const list=D.contents.filter(c=>(chF==="all"||c.ch===chF)&&(c.title+c.memo).toLowerCase().includes(q));
-  return `<h1>전체 콘텐츠</h1><div class="sub">단계 버튼을 누르면 다음 단계로 넘어가요</div>
+  return `<h1>콘텐츠</h1><div class="sub">단계 버튼을 누르면 다음 단계로 넘어가요</div>
   <div class="form"><input id="ct" placeholder="콘텐츠 제목 (예: 다낭 3박4일 코스)">
   <div class="filters"><select id="cc">${Object.entries(CH).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><input id="cd" type="date" value="${today()}"></div>
   <input id="cm" placeholder="메모 (선택)"><input id="cx" placeholder="내가 직접 겪은 일 한두 문장 (선택 · AI 초안에 그대로 넣어요)">
@@ -512,7 +530,7 @@ tasks(){
   const f={mine:x=>!x.done&&x.who===curName(),ai:x=>!x.done&&agentNames().has(x.who),open:x=>!x.done,today:x=>!x.done&&x.due===t,week:x=>!x.done&&x.due&&x.due<=wk,done:x=>x.done,all:()=>true}[tab];
   const list=D.tasks.filter(f).sort((a,b)=>(a.due||"9").localeCompare(b.due||"9"));
   const tabs=[["mine","내 업무"],...(D.set.agents.length?[["ai","AI 직원"]]:[]),["open","미완료"],["today","오늘"],["week","이번 주"],["done","완료"],["all","전체"]];
-  return `<h1>업무 관리</h1><div class="sub">하나씩 확인하고, 하나씩 끝내요</div>
+  return `<h1>업무</h1><div class="sub">하나씩 확인하고, 하나씩 끝내요</div>
   <div class="stats">${stat("전체 미완료",D.tasks.filter(x=>!x.done).length)}${stat("오늘 마감",D.tasks.filter(x=>!x.done&&x.due===t).length)}${stat("기한초과",D.tasks.filter(x=>!x.done&&x.due&&x.due<t).length)}${stat("오늘 완료",D.tasks.filter(x=>x.done&&x.doneAt===t).length)}</div>
   <button class="btn" style="width:100%;padding:14px;font-size:16px" onclick="openTaskModal()">＋ 업무 추가</button>
   <div class="tabs">${tabs.map(([k,n])=>`<button class="${tab===k?"on":""}" onclick="tab='${k}';render()">${n}</button>`).join("")}</div>
@@ -577,7 +595,7 @@ views.revenue=()=>{
   const monthAll=all.filter(r=>r.date.startsWith(cur)),totAll=sum(monthAll),none=monthAll.filter(r=>!COs.some(c=>c.tag===r.co));
   const rows=[...COs.map(c=>[c.tag,c.name,sum(monthAll.filter(r=>r.co===c.tag)),sum(all.filter(r=>r.co===c.tag))]),...(none.length?[["none","회사 미지정",sum(none),sum(all.filter(r=>!COs.some(c=>c.tag===r.co)))]]:[])];
   const chip=(k,n)=>`<button class="${revCo===k?"on":""}" onclick="revCo='${k}';render()">${esc(n)}</button>`;
-  return `<h1>수익 대시보드</h1><div class="sub">${cur} · 회사별로 나눠서 기록해요</div>
+  return `<h1>수익</h1><div class="sub">${cur} · 회사별로 나눠서 기록해요</div>
   <div class="stats">${stat("이번 달 전체",won(totAll),1)}${stat("목표 달성률",pct+"%")}${stat("남은 금액",won(Math.max(0,D.set.goal-totAll)))}</div>
   <div class="card"><h3>회사별 (이번 달 · 누적)</h3><div class="body">${rows.map(([k,n,m,t])=>`<div class="row" style="padding:6px 0;cursor:pointer" onclick="revCo='${k}';render()"><span class="grow">${esc(n)}</span><span class="m" style="margin-right:10px">누적 ${won(t)}</span><b>${won(m)}</b></div>`).join("")}<div class="row" style="padding:8px 0 0;border-top:.5px solid var(--sep);margin-top:4px"><span class="grow"><b>합계</b></span><b>${won(totAll)}</b></div></div></div>
   <div class="card"><div class="body" style="padding-top:12px"><div class="m sub">월 목표 (원, 전체 회사 합산)</div><input type="number" min="0" value="${D.set.goal}" onchange="D.set.goal=+this.value||0;D.set.u=Date.now();save();render()">
@@ -972,7 +990,7 @@ async function setPins(){
 const brandLinkCard=()=>`<div class="card"><h3>브랜드 링크</h3><div class="body"><div class="m sub">홈의 브랜드 이름을 누르면 이동할 블로그·인스타 주소예요. 비워 두면 링크 없이 이름만 보여요.</div>
   <div class="form" style="border:0;padding:0">${coList().map(c=>`<div class="m" style="margin-top:6px"><b>${esc(c.name)}</b></div><input value="${esc(brandUrl(c))}" placeholder="https://… 블로그·인스타 주소" inputmode="url" autocapitalize="off" onchange="setBrandUrl(decodeURIComponent('${encodeURIComponent(c.tag)}'),this.value)">`).join("")}</div></div></div>`;
 const inboxCard=()=>`<div class="card"><h3>📨 지시함 연결 ${CFG.repoWToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
-  <div class="m sub">Slack 없이, 지시 채팅에서 보낸 지시가 Linus Company 저장소(<b>${esc(CFG.repo||"저장소 미설정")}</b> · ${esc(CFG.repoBranch||"work")} 브랜치)의 <b>지시/</b> 폴더에 파일로 저장돼요. 직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 일해요. 상태와 결과는 앱이 읽어 와요.</div>
+  <div class="m sub">Slack 없이, AI 직원 지시에서 보낸 지시가 Linus Company 저장소(<b>${esc(CFG.repo||"저장소 미설정")}</b> · ${esc(CFG.repoBranch||"work")} 브랜치)의 <b>지시/</b> 폴더에 파일로 저장돼요. 직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 일해요. 상태와 결과는 앱이 읽어 와요.</div>
   <div class="m sub" style="margin-top:6px">필요한 것: <b>Linus Company 저장소 하나에만</b>, <b>Contents: Read and write</b> 권한의 토큰(github_pat_…), 만료일 지정. 이 기기에만 저장돼요. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만드는 곳</a></div>
   <div class="form" style="border:0;padding:0"><input id="iwt" type="password" placeholder="쓰기 권한 토큰 (github_pat_…)" value="${esc(CFG.repoWToken||"")}" autocomplete="off">
   <button class="btn" onclick="saveInboxToken()">저장하고 확인</button>${CFG.repoWToken?'<button class="btn ghost" onclick="clearInboxToken()">연결 해제</button>':""}</div>
@@ -1447,7 +1465,7 @@ function openTaskModal(pre){
   $("#modal").classList.add("open");setTimeout(()=>{const e=$("#tt");if(e)e.focus()},60);
 }
 function setDue(n){const e=$("#td");if(e)e.value=n===null?"":addDays(n)}
-/* ---------- 지시 채팅 (직원 한 명에게 업무와 마감 지시) ---------- */
+/* ---------- AI 직원 지시 (직원 한 명에게 업무와 마감 지시) ---------- */
 /* 앱은 직원을 직접 깨울 수 없어요(서버 없음). 보내기 = 업무로 저장 + 지시함(지시/)에 파일 저장이고, 직원은 다음 정기 확인에 읽어요. */
 let chatWho="",chatDraft="",chatDue="";
 const CMODES=[["1","지시함으로 보내기 (자동 · 다음 정기 확인)"],["2","복사만 · 이 직원 Claude 세션에 붙여넣기"]];
@@ -1460,7 +1478,7 @@ function chatPick(){
 }
 views.chat=()=>{
   const A=D.set.agents;
-  if(!A.length)return `<h1>지시 채팅</h1><div class="sub">AI 직원에게 업무와 마감을 지시해요</div><div class="card"><div class="body"><div class="empty">AI 직원이 아직 없어요. 조직도에서 Linus Company 직원을 먼저 넣어 주세요.</div><button class="btn" onclick="go('org')">조직도로 가기</button></div></div>`;
+  if(!A.length)return `<h1>AI 직원 지시</h1><div class="sub">AI 직원에게 업무와 마감을 지시해요</div><div class="card"><div class="body"><div class="empty">AI 직원이 아직 없어요. 조직도에서 Linus Company 직원을 먼저 넣어 주세요.</div><button class="btn" onclick="go('org')">조직도로 가기</button></div></div>`;
   const cur=chatPick();chatWho=cur.name;
   const depts=[...new Set(A.map(a=>a.dept))],mode=chatModeNow();
   const tasks=D.tasks.filter(t=>t.who===cur.name).slice().reverse();
@@ -1473,7 +1491,7 @@ views.chat=()=>{
     ${x.res?`<button class="pill" style="background:var(--done);margin-top:6px" onclick="openDoc('${sid(x.res)}')">📄 결과 보기</button>`:(x.out&&!x.done?`<div class="m" style="margin-top:4px">⏳ 결과 대기 중${CFG.repoToken?" · 도착하면 자동으로 올라와요":" · 설정에서 작업 폴더 토큰을 저장하면 자동으로 올라와요"}</div>`:"")}
     ${x.done?"":aiRow(x)}</div>`}).join("")||`<div class="empty" style="text-align:center">아직 ${esc(cur.name)}에게 한 지시가 없어요. 아래에 첫 지시를 써 보세요.</div>`;
   const results=res.map(c=>{const s2=stInfo(c.stage);return `<div class="bubble sys" onclick="${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}" style="cursor:pointer"><div class="m">📥 ${esc(cur.name)}님이 올린 결과</div><div class="t">${esc(c.title)}</div><div class="m">${s2[1]}${c.body?" · 눌러서 초안 보기":""}</div></div>`}).join("");
-  return `<h1>지시 채팅</h1><div class="sub">직원 한 명을 골라 업무와 마감을 지시해요. 보내면 업무로 저장되고 지시함(저장소)에 올라가요</div>
+  return `<h1>AI 직원 지시</h1><div class="sub">직원 한 명을 골라 업무와 마감을 지시해요. 보내면 업무로 저장되고 지시함(저장소)에 올라가요</div>
   <div class="chatgrid"><div class="chatlist glass">${listPc}</div>
   <div class="chatmain"><div class="chatsel-wrap">${sel}</div>
   <div class="chathead glass"><button class="pill" style="background:var(--make);float:right" onclick="pollResults(true)">🔄 결과 확인</button><b>${esc(cur.name)}</b> <span class="m">${esc(cur.title)} · ${esc(cur.dept)} · ${esc(cur.agent)}</span>${active(cur)?"":`<div class="m low">현재 가동 단계(${D.set.stage}단계) 밖의 직원이에요. 지시해도 바로 움직이지 않을 수 있어요.</div>`}</div>
