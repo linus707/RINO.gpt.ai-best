@@ -14,22 +14,22 @@
 <meta name="apple-mobile-web-app-title" content="Linus Company">
 <style>
 :root{color-scheme:light dark;
---accent:#007aff;--g:var(--accent);--g-soft:rgba(0,122,255,.12);
+--accent:#c8553d;--g:var(--accent);--g-soft:rgba(200,85,61,.12);
 --bg:#f2f2f7;--tx:#1c1c1e;--mut:#6c6c70;--sep:rgba(60,60,67,.16);--fill:rgba(120,120,128,.14);--fill2:rgba(120,120,128,.08);
 --mat:rgba(255,255,255,.74);--mat-nav:rgba(249,249,251,.8);--mat-side:rgba(246,246,248,.78);--mat-sheet:rgba(255,255,255,.92);
 --red:#ff3b30;--green:#34c759;--orange:#ff9500;--purple:#af52de;--indigo:#5856d6;
---idea:#ff9500;--make:#007aff;--review:#af52de;--ready:#5856d6;--done:#34c759;
+--idea:#ff9500;--make:#c8553d;--review:#af52de;--ready:#5856d6;--done:#34c759;
 --card:var(--mat);--line:var(--sep);--glass:var(--mat);--glass-b:var(--sep);--serif:inherit;--side:240px;
 --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06)}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){
---accent:#0a84ff;--bg:#000;--tx:#f5f5f7;--mut:#98989f;--sep:rgba(84,84,88,.55);--fill:rgba(120,120,128,.28);--fill2:rgba(120,120,128,.16);
+--accent:#d47a68;--bg:#000;--tx:#f5f5f7;--mut:#98989f;--sep:rgba(84,84,88,.55);--fill:rgba(120,120,128,.28);--fill2:rgba(120,120,128,.16);
 --mat:rgba(28,28,30,.74);--mat-nav:rgba(22,22,24,.8);--mat-side:rgba(28,28,30,.78);--mat-sheet:rgba(36,36,38,.94);
---red:#ff453a;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--indigo:#5e5ce6;--idea:#ff9f0a;--make:#0a84ff;--review:#bf5af2;--ready:#5e5ce6;--done:#30d158;
+--red:#ff453a;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--indigo:#5e5ce6;--idea:#ff9f0a;--make:#d47a68;--review:#bf5af2;--ready:#5e5ce6;--done:#30d158;
 --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.4)}}
 :root[data-theme=dark]{color-scheme:dark;
---accent:#0a84ff;--bg:#000;--tx:#f5f5f7;--mut:#98989f;--sep:rgba(84,84,88,.55);--fill:rgba(120,120,128,.28);--fill2:rgba(120,120,128,.16);
+--accent:#d47a68;--bg:#000;--tx:#f5f5f7;--mut:#98989f;--sep:rgba(84,84,88,.55);--fill:rgba(120,120,128,.28);--fill2:rgba(120,120,128,.16);
 --mat:rgba(28,28,30,.74);--mat-nav:rgba(22,22,24,.8);--mat-side:rgba(28,28,30,.78);--mat-sheet:rgba(36,36,38,.94);
---red:#ff453a;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--indigo:#5e5ce6;--idea:#ff9f0a;--make:#0a84ff;--review:#bf5af2;--ready:#5e5ce6;--done:#30d158;
+--red:#ff453a;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--indigo:#5e5ce6;--idea:#ff9f0a;--make:#d47a68;--review:#bf5af2;--ready:#5e5ce6;--done:#30d158;
 --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.4)}
 :root[data-theme=light]{color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -92,7 +92,7 @@ h1{margin:14px 2px 2px;font-size:34px;line-height:1.12;font-weight:700;letter-sp
 /* 입력 */
 input,select,textarea{width:100%;background:var(--fill);border:0;border-radius:10px;padding:11px 12px;font-size:16px;outline:0;transition:box-shadow .15s}
 input::placeholder,textarea::placeholder{color:var(--mut)}
-input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(0,122,255,.3)}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(200,85,61,.3)}
 select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m1.5 1.5 4.5 4.5 4.5-4.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
 input[type=range]{padding:0;height:28px;accent-color:var(--accent);background:transparent;box-shadow:none}
 input[type=checkbox]{-webkit-appearance:none;appearance:none;width:22px!important;height:22px;flex:none;border-radius:50%;border:1.5px solid rgba(120,120,128,.55);background:transparent;display:inline-grid;place-content:center;padding:0;vertical-align:middle;transition:background .15s,border-color .15s}
@@ -1194,16 +1194,17 @@ views.inventory=()=>{
 /* ---------- 브랜드 디자인 (포인트 색 · 제목 글꼴) ----------
    선택값은 D.set.brand 에 저장돼 클라우드 동기화로 모든 기기에 같이 적용돼요.
    기본값(블루)이면 아무것도 덮어쓰지 않고, 다크 모드에서는 자동으로 조금 밝게 보정해요. */
-const BRAND_PRESETS=[["블루(기본)","#007aff"],["그린","#1f7a52"],["인디고","#5856d6"],["테라코타","#c8553d"],["로즈","#d6457a"],["슬레이트","#475569"]];
-const brandNow=()=>({c:(D.set.brand&&D.set.brand.c)||"#007aff",h:(D.set.brand&&D.set.brand.h)||"sans"});
-const hex2rgb=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(h));if(!m)return[0,122,255];const n=parseInt(m[1],16);return[n>>16&255,n>>8&255,n&255]};
+const BRAND_DEFAULT="#c8553d";
+const BRAND_PRESETS=[["테라코타(기본)","#c8553d"],["블루","#007aff"],["그린","#1f7a52"],["인디고","#5856d6"],["로즈","#d6457a"],["슬레이트","#475569"]];
+const brandNow=()=>({c:(D.set.brand&&D.set.brand.c)||BRAND_DEFAULT,h:(D.set.brand&&D.set.brand.h)||"sans"});
+const hex2rgb=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(h));if(!m)return[200,85,61];const n=parseInt(m[1],16);return[n>>16&255,n>>8&255,n&255]};
 const rgb2hex=a=>"#"+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
 const lumOf=rgb=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(rgb[0])+.7152*f(rgb[1])+.0722*f(rgb[2])};
 const isDarkNow=()=>{const t=CFG.theme||"auto";return t==="dark"||(t==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme:dark)").matches)};
 function brandFont(){if(document.getElementById("hfont-css"))return;const l=document.createElement("link");l.id="hfont-css";l.rel="stylesheet";l.href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap";document.head.appendChild(l)}
 function applyBrand(){
   const b=brandNow(),st=document.documentElement.style,rgb=hex2rgb(b.c);
-  if(b.c.toLowerCase()==="#007aff"){["--accent","--g-soft","--make"].forEach(k=>st.removeProperty(k))}
+  if(b.c.toLowerCase()===BRAND_DEFAULT){["--accent","--g-soft","--make"].forEach(k=>st.removeProperty(k))}
   else{const c=isDarkNow()?rgb2hex(rgb.map(v=>v+(255-v)*.22)):rgb2hex(rgb);st.setProperty("--accent",c);st.setProperty("--make",c);st.setProperty("--g-soft",`rgba(${rgb.join(",")},.14)`)}
   if(b.h==="serif"){st.setProperty("--hfont",'"Noto Serif KR","Nanum Myeongjo","AppleMyungjo",serif');brandFont()}else st.removeProperty("--hfont");
 }
