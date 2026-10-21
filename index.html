@@ -451,10 +451,12 @@ function go(p){page=p;window.scrollTo(0,0);$("#drawer").classList.remove("open")
 function nav(){
   const m=me();
   $("#who").innerHTML=m?`<div class="brandbox"><b>${esc(m.name)}</b><div class="m sub" style="margin:0">${m.role==="admin"?"관리자":"직원"}${m.open?" · PIN 미설정":""}</div>${m.open?"":'<button class="btn ghost" style="margin-top:8px;padding:8px 12px" onclick="logout()">로그아웃</button>'}</div>`:"";
+  let first=true;
   $("#navlist").innerHTML=m?NAV_GROUPS.map(([g,ks])=>{
     const items=ks.map(k=>PAGES.find(p=>p[0]===k)).filter(p=>p&&!p[4]&&(!p[3]||m.role==="admin"));
     if(!items.length)return "";
-    return (g?`<div class="navgrp">${g}</div>`:"")+items.map(([k,i,n])=>{const b=navBadge(k);return `<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${ic(k,21)}<span class="grow">${n}</span>${b?`<span class="nbadge">${b>99?"99+":b}</span>`:""}</button>`}).join("");
+    const gap=first?"":'<div style="height:12px" aria-hidden="true"></div>';first=false;
+    return gap+items.map(([k,i,n])=>{const b=navBadge(k);return `<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${ic(k,21)}<span class="grow">${n}</span>${b?`<span class="nbadge">${b>99?"99+":b}</span>`:""}</button>`}).join("");
   }).join(""):"";
 }
 $("#menu").onclick=()=>{if(!me())return;nav();$("#drawer").classList.add("open")};
