@@ -294,7 +294,7 @@ const today=()=>ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
@@ -317,7 +317,7 @@ function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun"];
+const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs"];
 let SNAP={};
 const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
 resnap();
@@ -1037,6 +1037,7 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경
   <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>
   ${isAdmin()?inboxCard():""}
   ${isAdmin()?brandCard():""}
+  ${isAdmin()?pushCard():""}
   ${isAdmin()?brandLinkCard():""}
   ${themeCard()}
   ${skillCard()}
@@ -1248,6 +1249,72 @@ function ntfyDaily(){
 setInterval(()=>{if(!document.hidden)ntfyDaily()},3600000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)ntfyDaily()});
 
+/* ---------- 푸시 알림 (키 만들기 · 이 기기 구독) ----------
+   앱이 꺼져 있어도 알림이 가도록, GitHub Actions(scripts/push-send.mjs)가 5분마다 새 메시지를 확인해 웹 푸시를 보내요.
+   · 공개 키는 D.set.push.pub 에 저장돼 모든 기기에 동기화돼요. 비공개 키는 앱에 저장하지 않고 만들 때 한 번만 보여 줘요.
+   · 기기 구독 정보(D.pushsubs)는 비공개 동기화 Gist 안에만 있어요. */
+const b64url=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const fromB64url=s=>{s=String(s).replace(/-/g,"+").replace(/_/g,"/");const r=atob(s+"=".repeat((4-s.length%4)%4));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+const pushDevId=()=>{if(!CFG.devId){CFG.devId=uid()+uid();saveCfg()}return CFG.devId};
+const pushPub=()=>(D.set.push&&D.set.push.pub)||"";
+let pushPriv="";
+async function pushMakeKeys(){
+  if(!isAdmin())return;
+  if(pushPub()&&!confirm("이미 푸시 키가 있어요. 새로 만들면 모든 기기에서 '이 기기 알림 켜기'를 다시 해야 하고, GitHub Secrets의 비공개 키도 바꿔야 해요. 새로 만들까요?"))return;
+  try{
+    const kp=await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},true,["sign","verify"]);
+    const pub=b64url(await crypto.subtle.exportKey("raw",kp.publicKey));
+    pushPriv=(await crypto.subtle.exportKey("jwk",kp.privateKey)).d;
+    D.set.push={pub,u:Date.now()};D.pushsubs=[];D.set.u=Date.now();save();render();
+  }catch{alert("이 브라우저에서는 키를 만들 수 없어요. 최신 크롬·사파리로 다시 시도해 주세요")}
+}
+function pushCopy(t){const ok=()=>toast("복사했어요");if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,()=>prompt("복사해 주세요",t));else prompt("복사해 주세요",t)}
+function pushSave(sub,quiet){
+  const rec={id:pushDevId(),name:curName()||"관리자",sub:sub.toJSON(),mute:{...MS.mute},ua:navigator.userAgent.slice(0,60)};
+  const i=D.pushsubs.findIndex(x=>x.id===rec.id);
+  if(i>=0){const{u,...old}=D.pushsubs[i];if(JSON.stringify(old)===JSON.stringify(rec))return;D.pushsubs[i]=rec}else D.pushsubs.push(rec);
+  MS.push=1;msSave();save();if(!quiet)render();
+}
+async function pushOn(){
+  if(!pushPub()){alert("관리자가 먼저 설정에서 푸시 키를 만들어야 해요");return false}
+  if(!("serviceWorker"in navigator&&"PushManager"in window)){alert("이 브라우저는 푸시 알림을 지원하지 않아요. (아이폰은 홈 화면에 추가한 앱에서만 돼요)");return false}
+  try{
+    if(Notification.permission!=="granted"){const p=await Notification.requestPermission();if(p!=="granted"){toast("알림이 차단돼 있어요. 브라우저·기기 설정에서 허용해 주세요");return false}}
+    const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+    if(sub){const k=sub.options&&sub.options.applicationServerKey;if(k&&b64url(k)!==pushPub()){await sub.unsubscribe();sub=null}}
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:fromB64url(pushPub())});
+    pushSave(sub);toast("이 기기 푸시를 켰어요 (최대 5~10분 뒤부터 도착해요)");return true;
+  }catch(e){alert("푸시를 켜지 못했어요: "+(e.message||e));return false}
+}
+async function pushOff(){
+  try{const reg=await navigator.serviceWorker.ready,s=await reg.pushManager.getSubscription();if(s)await s.unsubscribe()}catch{}
+  D.pushsubs=D.pushsubs.filter(x=>x.id!==pushDevId());MS.push=0;msSave();save();render();toast("이 기기 푸시를 껐어요");
+}
+async function pushRefresh(){
+  try{
+    if(!MS.push||!me()||!("serviceWorker"in navigator)||!pushPub())return;
+    const reg=await navigator.serviceWorker.ready,s=await reg.pushManager.getSubscription();
+    if(!s){MS.push=0;msSave();return}
+    pushSave(s,true);
+  }catch{}
+}
+function pushCard(){
+  const key=pushPub(),n=D.pushsubs.length;
+  const priv=pushPriv?`<div class="card" style="margin:8px 0"><div class="body"><b>비공개 키 (지금만 보여요)</b><div class="m sub">이 화면을 벗어나면 다시 볼 수 없어요. 지금 복사해서 아래 2단계의 <b>VAPID_PRIVATE_KEY</b>에 붙여 넣으세요. 다른 곳에는 붙여 넣지 마세요.</div><code style="display:block;word-break:break-all;margin:6px 0;padding:8px;border-radius:10px;background:var(--fill)">${esc(pushPriv)}</code><button class="pill" style="background:var(--make)" onclick="pushCopy(pushPriv)">비공개 키 복사</button></div></div>`:"";
+  return `<div class="card"><h3>🔔 푸시 알림 서버</h3><div class="body">
+  <div class="m sub">앱이 꺼져 있어도 새 메시지·공지·요청 알림이 폰으로 와요. GitHub이 5분마다 새 메시지를 확인해서 보내요(상황에 따라 5~15분 늦을 수 있어요).</div>
+  <div class="m" style="margin:8px 0">상태: 푸시 키 <b>${key?"있음":"없음"}</b> · 알림 켠 기기 <b>${n}대</b>${n?" ("+[...new Set(D.pushsubs.map(x=>dn(x.name)))].map(esc).join(", ")+")":""}</div>
+  <button class="btn" onclick="pushMakeKeys()">${key?"푸시 키 새로 만들기":"1단계 · 푸시 키 만들기"}</button>
+  ${priv}
+  <div class="m" style="margin-top:10px"><b>설정 순서</b></div>
+  <ol class="m" style="margin:4px 0;padding-left:20px;line-height:1.7">
+   <li>위에서 <b>푸시 키 만들기</b>를 누르고 비공개 키를 복사해요.</li>
+   <li>GitHub의 <b>RINO.gpt.ai-best</b> 저장소 → Settings → Secrets and variables → Actions → <b>New repository secret</b>으로 3개를 넣어요.<br>· <b>VAPID_PRIVATE_KEY</b> = 복사한 비공개 키<br>· <b>SYNC_GIST_TOKEN</b> = 앱 동기화에 쓰는 GitHub 토큰(Gist 권한)<br>· <b>SYNC_GIST_ID</b> = ${CFG.gistId?`<code>${esc(CFG.gistId)}</code> <button class="pill" style="background:var(--g)" onclick="pushCopy('${esc(CFG.gistId)}')">복사</button>`:"동기화 연결 후 표시돼요"}</li>
+   <li>각 기기(폰·PC)에서 메신저 → <b>이 기기 알림 켜기</b>를 눌러요. (아이폰은 사파리에서 "홈 화면에 추가"한 앱에서만 돼요)</li>
+   <li>GitHub 저장소 Actions 탭의 <b>Send push notifications</b>에서 실행 기록이 초록색이면 정상이에요.</li></ol>
+  <div class="m sub">토큰과 비공개 키는 채팅이나 문서에 쓰지 말고, GitHub Secrets에만 넣어 주세요.</div></div></div>`;
+}
+
 /* ---------- 홈: 오늘 일정 · 공지 ---------- */
 function homeAddEv(){schSel=today();schM=today().slice(0,7);go("schedule");schNew()}
 function homeSch(){schSel=today();schM=today().slice(0,7);go("schedule")}
@@ -1359,7 +1426,7 @@ function mInput(el){mDraft=el.value;const h=$("#mhint");if(h)h.innerHTML=mHintHt
 function mKey(e){if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();mSend()}}
 function mMention(n){mDraft=mDraft.replace(/@[^\s@]*$/,"@"+n+" ");mFoc=true;render()}
 function mSet(r){const t=$("#mmsg");if(t)mDraft=t.value;if(r==="__add"){mAddRoom();return}mRoom=r;mForce=true;render()}
-function mMute(){MS.mute[mRoom]=MS.mute[mRoom]?0:1;msSave();render()}
+function mMute(){MS.mute[mRoom]=MS.mute[mRoom]?0:1;msSave();if(MS.push)pushRefresh();render()}
 function mAddRoom(){const n=(prompt("새 대화방 이름")||"").trim().slice(0,20);if(!n)return;D.set.rooms=[...(D.set.rooms||[]),{id:uid(),name:n}];D.set.u=Date.now();mRoom=D.set.rooms[D.set.rooms.length-1].id;save();render()}
 function mTrim(){
   if(D.msgs.length>300){D.msgs.sort((a,b)=>a.t-b.t);D.msgs.splice(0,D.msgs.length-300)}
@@ -1388,7 +1455,7 @@ function mImgOpen(id){const m=D.msgs.find(x=>x.id===id);if(!m||!m.img)return;$("
 async function mNotifOn(){
   if(!("Notification"in window)){alert("이 브라우저는 알림을 지원하지 않아요");return}
   const p=await Notification.requestPermission();MS.notif=p==="granted"?1:0;msSave();
-  toast(p==="granted"?"이 기기 알림을 켰어요 (앱이 열려 있을 때 와요)":"알림이 차단돼 있어요. 브라우저·기기 설정에서 허용해 주세요");render();
+  toast(p==="granted"?"이 기기 알림을 켰어요":"알림이 차단돼 있어요. 브라우저·기기 설정에서 허용해 주세요");if(p==="granted"&&pushPub()){await pushOn();return}render();
 }
 function msgrScan(prev){
   const mn=curName(),fresh=D.msgs.filter(m=>!prev.has(m.id)&&m.by!==mn&&m.actor!==mn).sort((a,b)=>a.t-b.t);if(!fresh.length)return;
@@ -1434,7 +1501,7 @@ views.messenger=()=>{
    ${mImg?`<div class="row" style="gap:8px"><img src="${mImg}" alt="" style="height:56px;border-radius:10px"><button class="pill" style="background:var(--mut)" onclick="mImg='';render()">사진 빼기</button></div>`:""}
    <div class="row" style="gap:8px;flex-wrap:wrap"><label class="pill" style="background:var(--g);cursor:pointer">📷 사진<input type="file" accept="image/*" hidden onchange="mPick(this)"></label><button class="btn grow" onclick="mSend()">보내기</button></div>`}
    <div class="m sub">${CFG.token?"클라우드 동기화로 직원들과 주고받아요":"클라우드 동기화가 꺼져 있어서 이 기기에서만 보여요 (설정에서 연결)"} · 보낸 사람 이름은 로그인 이름이에요</div>
-   <button class="pill" style="background:${nOn?"var(--done)":"var(--make)"}" onclick="mNotifOn()">${nOn?"✓ 이 기기 알림 켜짐":"이 기기 알림 켜기"}</button></div></div></div>`;
+   <button class="pill" style="background:${nOn?"var(--done)":"var(--make)"}" onclick="mNotifOn()">${MS.push?"✓ 푸시 켜짐 (앱이 꺼져 있어도 와요)":nOn?"✓ 알림 켜짐 (앱이 열려 있을 때)":"이 기기 알림 켜기"}</button>${MS.push?'<button class="pill" style="background:var(--mut)" onclick="pushOff()">푸시 끄기</button>':""}</div></div></div>`;
 };
 setInterval(()=>{if(!document.hidden&&page==="messenger"&&CFG.token)syncNow()},15000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&page==="messenger"&&CFG.token)syncNow()});
@@ -1932,10 +1999,10 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&s
   /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
   try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
   /* 알림을 눌러 들어오면(?chat=… / ?messenger=1) 메신저로 바로 가요 */
-  try{const q=new URLSearchParams(location.search);if(q.has("chat")||q.has("messenger")){if(me())page="messenger";history.replaceState(null,"",location.pathname)}}catch{}
+  try{const q=new URLSearchParams(location.search);if(q.has("chat")||q.has("messenger")){if(me()){page="messenger";const rq=q.get("room");if(rq&&mrooms().some(r=>r.id===rq)){mRoom=rq;mForce=true}}history.replaceState(null,"",location.pathname)}}catch{}
   render();
   const auto=()=>{if(CFG.repoAuto&&CFG.repoToken&&isAdmin())importRepo(true)};
-  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;render();auto();ntfyDaily()},()=>{AG_READY=true;render()})}else{AG_READY=true;render();auto();ntfyDaily()}
+  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;render();auto();ntfyDaily();pushRefresh()},()=>{AG_READY=true;render()})}else{AG_READY=true;render();auto();ntfyDaily();pushRefresh()}
 })();
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>

@@ -14,7 +14,7 @@ self.addEventListener('push', (event) => {
     const payload = event.data?.json();
     if (payload && typeof payload === 'object' && !Array.isArray(payload)) data = payload;
   } catch {}
-  const room = typeof data.room === 'string' && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(data.room) ? data.room : null;
+  const room = typeof data.room === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(data.room) ? data.room : null;
   const title = previewText(data.preview?.title, 80), body = previewText(data.preview?.body, 180);
   const preview = Boolean(title && body), test = data.test === true;
   event.waitUntil(self.registration.showNotification(test ? '푸시 알림 테스트' : preview ? title : '새 메시지', {
@@ -22,7 +22,7 @@ self.addEventListener('push', (event) => {
     icon: '/icon-192.png',
     tag: test ? 'linus-push-test' : `linus-chat-${room ?? 'new'}`,
     silent: data.silent === true,
-    data: { url: room ? `/?chat=${encodeURIComponent(room)}` : '/?messenger=1' },
+    data: { url: room ? `/?messenger=1&room=${encodeURIComponent(room)}` : '/?messenger=1' },
   }));
 });
 
