@@ -275,7 +275,7 @@ IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
 const PAGES=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도"],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
-const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["콘텐츠·수익",["contents","revenue"]],["회사",["org","biz","staff"]],["",["settings"]]];
+const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["콘텐츠·수익",["contents","revenue"]],["회사",["org","staff"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
   try{
@@ -1591,8 +1591,10 @@ const BIZ_STEPS=[
 /* 업무 절차에 '사업자 설립'을 기본 절차로 넣어요(단계는 위 BIZ_STEPS 그대로). 지워도 다시 생기지 않아요. */
 (function bizProto(){
   try{
-    const id="p-biz-setup";if(D.proto.some(x=>x.id===id)||D.del[id])return;
-    D.proto.push({id,title:"사업자 설립",cat:"사업자 설립",who:"리노 · 세움(전문가)",memo:"자세한 설명과 공식 자료는 메뉴의 '사업자 설립'에서 세움에게 물어보세요. 세무 판단은 세무사 최종 확인이 필요해요.",
+    const id="p-biz-setup",old=D.proto.find(x=>x.id===id);
+    if(old&&/메뉴의 '사업자 설립'/.test(old.memo||"")){old.memo="세무 판단은 세무사 최종 확인이 필요해요.";old.u=Date.now()}
+    if(old||D.del[id])return;
+    D.proto.push({id,title:"사업자 설립",cat:"사업자 설립",who:"리노 · 세움(전문가)",memo:"세무 판단은 세무사 최종 확인이 필요해요.",
       steps:BIZ_STEPS.flatMap(st=>st.c.map(c=>`[${st.t}] ${c}`)).slice(0,40),ver:1,by:"관리자"});
   }catch{}
 })();
