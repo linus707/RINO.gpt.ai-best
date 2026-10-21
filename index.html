@@ -400,12 +400,20 @@ function applyBg(){
   const el=$("#bgph");if(!el)return;
   const c=bgDef(),img=el.querySelector(".bgimg"),dim=el.querySelector(".bgdim");
   const show=!me()||c.scope==="all"||page==="home"||page==="settings";
-  const it=bgPick(c);BG.label=it.country||it.name||"";
-  const k=(it.sample?"s:":"u:")+it.id;
-  if(img.dataset.k!==k){if(it.sample){img.innerHTML=it.svg();img.style.backgroundImage=""}else{img.innerHTML="";img.style.backgroundImage=`url(${bgUrl(it)})`}img.dataset.k=k}
-  img.style.filter=c.blur?`blur(${c.blur}px)`:"";img.style.opacity=show?1:0;el.classList.toggle("show",!!show);document.body.classList.toggle("photo-on",!!show&&!!me());
-  dim.style.background=`rgba(10,6,24,${show?c.dim/100:0})`;
+  const none=c.sel==="none",solid=c.sel==="color",col=/^#[0-9a-f]{6}$/i.test(c.color||"")?c.color:"#c8553d";
+  const show2=show&&!none;
+  if(solid){const k="c:"+col;if(img.dataset.k!==k){img.innerHTML="";img.style.backgroundImage="";img.style.background=`linear-gradient(160deg,${col},${bgShade(col,-.35)})`;img.dataset.k=k}}
+  else if(!none){
+    const it=bgPick(c);BG.label=it.country||it.name||"";
+    const k=(it.sample?"s:":"u:")+it.id;
+    if(img.dataset.k!==k){img.style.background="";if(it.sample){img.innerHTML=it.svg();img.style.backgroundImage=""}else{img.innerHTML="";img.style.backgroundImage=`url(${bgUrl(it)})`}img.dataset.k=k}
+  }
+  img.style.filter=c.blur?`blur(${c.blur}px)`:"";img.style.opacity=show2?1:0;el.classList.toggle("show",!!show2);document.body.classList.toggle("photo-on",!!show2&&!!me());
+  dim.style.background=`rgba(10,6,24,${show2?c.dim/100:0})`;
 }
+const bgShade=(h,f)=>{const m=/^#?([0-9a-f]{6})$/i.exec(h);if(!m)return h;const n=parseInt(m[1],16),a=[n>>16&255,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(f<0?v*(1+f):v+(255-v)*f))));return "#"+a.map(v=>v.toString(16).padStart(2,"0")).join("")};
+const BG_COLORS=[["테라코타","#c8553d"],["네이비","#1f3a5f"],["포레스트","#2f5d50"],["플럼","#5b3a6b"],["차콜","#2b2b30"],["샌드","#c9b79c"]];
+function bgSolid(c){CFG.bg={...bgDef(),sel:"color",color:c};saveCfg();applyBg();render()}
 function bgSet(k,v){CFG.bg={...bgDef(),[k]:v};saveCfg();applyBg()}
 function bgSel(id){bgSet("sel",id);render()}
 const BIG=6000;/* 이보다 큰 사진은 화면 표시용 복사본(최대 4096px, 고화질)을 따로 만들고 원본도 그대로 보관해요 */
@@ -432,10 +440,12 @@ async function bgDelete(id){
   if(bgDef().sel===id)CFG.bg={...bgDef(),sel:"auto"},saveCfg();
   const img=$("#bgph .bgimg");img.dataset.k="";BG.list=await bgAll();render();
 }
-const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼️ 배경 사진</h3><div class="body">
+const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼️ 배경 (사진 · 단색)</h3><div class="body">
   <div class="m sub">${BG.list.length?`내 사진 ${BG.list.length}장 · 원본 화질 그대로, 이 기기에만 저장돼요.`:"지금은 예시 일러스트예요. 직접 찍은 여행 사진을 올리면 바뀌어요. 사진은 원본 그대로 이 기기에만 저장돼요."} 저작권이 확실한 내 사진만 쓰세요.</div>
   <div class="form" style="border:0;padding:0;background:none;box-shadow:none"><input id="bgc" placeholder="나라·장소 (예: 일본 교토) — 이번에 올리는 사진에 붙어요"><input id="bgf" type="file" accept="image/*" multiple onchange="bgUpload(this)"></div>
-  <div class="bgthumbs"><button class="bgt auto ${c.sel==="auto"?"on":""}" onclick="bgSel('auto')">자동<br>(매일 바뀜)</button>${a.map(x=>`<button class="bgt ${c.sel===x.id?"on":""}" style="${x.sample?"":`background-image:url(${bgUrl(x)})`}" onclick="bgSel('${sid(x.id)}')">${esc(x.country||x.name)}${x.sample?"":`<i onclick="event.stopPropagation();bgDelete('${sid(x.id)}')" aria-label="삭제">✕</i>`}</button>`).join("")}</div>
+  <div class="bgthumbs"><button class="bgt auto ${c.sel==="none"?"on":""}" onclick="bgSel('none')">배경 없음<br>(기본 색)</button><button class="bgt auto ${c.sel==="auto"?"on":""}" onclick="bgSel('auto')">자동<br>(매일 바뀜)</button>${a.map(x=>`<button class="bgt ${c.sel===x.id?"on":""}" style="${x.sample?"":`background-image:url(${bgUrl(x)})`}" onclick="bgSel('${sid(x.id)}')">${esc(x.country||x.name)}${x.sample?"":`<i onclick="event.stopPropagation();bgDelete('${sid(x.id)}')" aria-label="삭제">✕</i>`}</button>`).join("")}</div>
+  <div class="m" style="margin:8px 0 4px">단색 배경</div>
+  <div class="chips">${BG_COLORS.map(([n,h])=>`<button class="${c.sel==="color"&&(c.color||"").toLowerCase()===h?"on":""}" onclick="bgSolid('${h}')"><i style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${h};margin-right:6px;vertical-align:-1px"></i>${n}</button>`).join("")}<label class="pill" style="background:var(--g);cursor:pointer">직접 고르기<input type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(c.color||"")?c.color:"#c8553d")}" onchange="bgSolid(this.value)" style="width:0;height:0;padding:0;border:0;opacity:0;position:absolute"></label></div>
   <div class="rng"><span>어둡기</span><input type="range" min="0" max="85" value="${c.dim}" oninput="bgSet('dim',+this.value);this.nextElementSibling.textContent=this.value">${"<b>"+c.dim+"</b>"}</div>
   <div class="rng"><span>흐림</span><input type="range" min="0" max="20" value="${c.blur}" oninput="bgSet('blur',+this.value);this.nextElementSibling.textContent=this.value">${"<b>"+c.blur+"</b>"}</div>
   <select onchange="bgSet('scope',this.value)"><option value="home" ${c.scope==="home"?"selected":""}>배경 사진: 홈 화면에만</option><option value="all" ${c.scope==="all"?"selected":""}>배경 사진: 모든 화면에</option></select>
@@ -503,19 +513,14 @@ function setBrandUrl(tag,v){
 }
 const views={
 home(){
-  const t=today(),items=bgItems(),cur=bgPick(bgDef());
-  const tile=it=>{const on=it.id===cur.id,nm=it.country||it.name||"";
-    const bgs=it.sample?"":`style="background-image:url(${bgUrl(it)})"`;
-    return `<button class="dest ${on?"on":""}" onclick="bgSel('${sid(it.id)}')" aria-label="${esc(nm)}"><span class="dimg" ${bgs}>${it.sample?it.svg():""}</span><span class="dnm">${esc(nm)}</span></button>`};
+  const t=today();
   return `<div class="hero idn"><div><div class="sub">Linus Company</div></div></div>
   ${syncCard()}
   <div class="card idcard"><div class="body"><div class="idl">Linus personal academy</div>
   <div class="idt">A little comfort for your everyday — 지친 하루에 작은 위로를 가치로 하는 브랜드 컴퍼니</div>
   <div class="idb">${coList().filter(c=>c.tag!=="공통").map(c=>{const u=brandUrl(c);return u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}<i>↗</i></a>`:`<span ${isAdmin()?`onclick="go('settings')" style="cursor:pointer" title="설정에서 링크 넣기"`:""}>${esc(c.name)}</span>`}).join("")}</div>
   </div></div>
-  ${homeToday()}
-  <div class="dhead">대표 여행지<span class="m">${items.length}곳 · 누르면 배경이 바뀌어요</span></div>
-  <div class="dgrid">${items.map(tile).join("")}</div>`;
+  ${homeToday()}`;
 },
 contents(){
   const q=(window._q||"").toLowerCase();
@@ -1018,7 +1023,7 @@ async function saveInboxToken(){
   }catch(e){alert("연결하지 못했어요: "+(e.message||e))}
 }
 function clearInboxToken(){if(!confirm("지시함 쓰기 토큰을 지울까요? (이미 보낸 지시는 그대로예요)"))return;delete CFG.repoWToken;saveCfg();render()}
-views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경 사진, 백업, AI 연결</div>
+views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경(사진·단색), 백업, AI 연결</div>
   <div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
   <div class="m sub">내 GitHub 비공개 Gist에 데이터를 저장해요. <a href="https://github.com/settings/tokens/new?scopes=gist&description=rino-workspace" target="_blank" rel="noopener">여기</a>에서 <b>gist 권한만</b> 있는 토큰을 만들어 붙여넣으세요.</div>
   <div class="form" style="border:0;padding:0"><input id="tk" type="password" placeholder="GitHub 토큰 (ghp_…)" value="${esc(CFG.token||"")}" autocomplete="off">
