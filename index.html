@@ -612,7 +612,6 @@ views.revenue=()=>{
   <div class="chips" style="margin:6px 0 10px">${chip("all","전체")}${COs.map(c=>chip(c.tag,c.name)).join("")}${none.length||all.some(r=>!COs.some(c=>c.tag===r.co))?chip("none","미지정"):""}</div>
   ${yearCard(pool,COs,sum)}
   <div class="card"><h3>최근 6개월 · ${revCo==="all"?"전체":esc(revCo==="none"?"회사 미지정":coName(revCo))}</h3><div class="body"><div style="display:flex;gap:8px;align-items:flex-end;height:120px">${months.map(([n,v])=>`<div style="flex:1;text-align:center"><div style="height:${Math.round(v/mx*90)}px;background:var(--g);border-radius:6px 6px 0 0;min-height:2px"></div><div class="m">${n}</div></div>`).join("")}</div></div></div>
-  <div class="card"><h3>채널별 (이번 달 · ${revCo==="all"?"전체":esc(revCo==="none"?"회사 미지정":coName(revCo))})</h3><div class="body">${Object.entries(RCH).map(([k,n])=>`<div class="row" style="padding:4px 0"><span class="grow">${n}</span><b>${won(sum(month.filter(r=>r.ch===k)))}</b></div>`).join("")}</div></div>
   <div class="form"><div class="filters"><select id="rco">${COs.map(c=>`<option value="${esc(c.tag)}" ${revCo===c.tag?"selected":""}>${esc(c.name)}</option>`).join("")}</select><input id="rd" type="date" value="${today()}"></div>
   <select id="rc">${Object.entries(RCH).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select>
   <input id="ra" type="number" min="0" placeholder="금액 (원)"><input id="rm" placeholder="출처 메모 (예: 애드센스, 쿠팡파트너스, 가구 판매)"><button class="btn" onclick="addRev()">＋ 수익 기록</button></div>
