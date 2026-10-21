@@ -5,7 +5,7 @@ import webpush from 'web-push';
 import { createHash } from 'node:crypto';
 
 const API = 'https://api.github.com';
-const ROOM_NAMES = { notice: '공지사항', talk: '업무 소통', alert: '알림' };
+const ROOM_NAMES = { notice: '공지사항', talk: '업무 대화', alert: '알림' };
 const dn = (n) => (n === '관리자' ? '리노' : n || '');
 const hash = (s) => createHash('sha256').update(String(s)).digest('hex').slice(0, 16);
 const clip = (s, n) => Array.from(String(s || '').replace(/\s+/g, ' ').trim()).slice(0, n).join('');

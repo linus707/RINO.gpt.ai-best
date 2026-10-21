@@ -275,7 +275,7 @@ IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
 const PAGES=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도"],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
-const NAV_GROUPS=[["",["home"]],["일하기",["tasks","schedule","proto","inventory"]],["소통",["messenger","chat"]],["콘텐츠·수익",["contents","revenue"]],["회사",["org","biz","staff"]],["",["settings"]]];
+const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["콘텐츠·수익",["contents","revenue"]],["회사",["org","biz","staff"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
   try{
@@ -1443,7 +1443,7 @@ views.schedule=()=>{
    메시지는 기존 클라우드 동기화(Gist)로 항목 단위로 합쳐져요. 서버가 없는 방식이라
    · 보낸 사람 이름은 로그인 이름이고 PIN은 편의용 잠금이에요(민감한 내용은 쓰지 마세요)
    · 푸시 서버가 없어서, 알림은 앱이 열려 있을 때(15초마다 확인) 와요. */
-const MROOMS0=[{id:"notice",name:"공지사항",ro:1},{id:"talk",name:"업무 소통"},{id:"alert",name:"알림",ro:1,sys:1}];
+const MROOMS0=[{id:"notice",name:"공지사항",ro:1},{id:"talk",name:"업무 대화"},{id:"alert",name:"알림",ro:1,sys:1}];
 const mrooms=()=>[...MROOMS0,...(D.set.rooms||[])];
 const dn=n=>n==="관리자"?"리노":n;
 const MS=(()=>{try{return JSON.parse(localStorage.getItem("rino-msgr"))||{}}catch{return{}}})();
@@ -1465,7 +1465,20 @@ function mKey(e){if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefau
 function mMention(n){mDraft=mDraft.replace(/@[^\s@]*$/,"@"+n+" ");mFoc=true;render()}
 function mSet(r){const t=$("#mmsg");if(t)mDraft=t.value;if(r==="__add"){mAddRoom();return}mRoom=r;mForce=true;render()}
 function mMute(){MS.mute[mRoom]=MS.mute[mRoom]?0:1;msSave();if(MS.push)pushRefresh();render()}
-function mAddRoom(){const n=(prompt("새 대화방 이름")||"").trim().slice(0,20);if(!n)return;D.set.rooms=[...(D.set.rooms||[]),{id:uid(),name:n}];D.set.u=Date.now();mRoom=D.set.rooms[D.set.rooms.length-1].id;save();render()}
+function mAddRoom(){
+  const A=D.set.agents||[],depts=[...new Set(A.map(a=>a.dept))];
+  $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="대화방 만들기"><div class="row"><b class="grow">대화방 만들기</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
+  <div class="form" style="border:0;padding:0"><input id="rnm" maxlength="20" placeholder="방 이름 (비우면 직원 이름으로)" autocomplete="off">
+  <select id="rst"><option value="">직원들과 대화하는 방</option>${depts.map(d=>`<optgroup label="${esc(d)}">${A.filter(a=>a.dept===d).map(a=>`<option value="${esc(a.name)}">AI 직원 ${esc(a.name)}에게 지시하는 방 · ${esc(a.title)}</option>`).join("")}</optgroup>`).join("")}</select>
+  <div class="m sub">직원 지시 방에서는 내가 보낸 글이 그 직원에게 지시로 전달돼요. 보고는 같은 방에 도착해요.</div>
+  <button class="btn" onclick="mRoomMake()">만들기</button></div></div>`;
+  $("#modal").classList.add("open");const e=$("#rnm");if(e)e.focus();
+}
+function mRoomMake(){
+  const st=($("#rst")||{}).value||"",n=(($("#rnm")||{}).value||st).trim().slice(0,20);if(!n){toast("방 이름을 써 주세요");return}
+  const r={id:uid(),name:n};if(st)r.staff=st;
+  D.set.rooms=[...(D.set.rooms||[]),r];D.set.u=Date.now();mRoom=r.id;closeModal();mForce=true;save();render();
+}
 function mTrim(){
   if(D.msgs.length>300){D.msgs.sort((a,b)=>a.t-b.t);D.msgs.splice(0,D.msgs.length-300)}
   let n=0;D.msgs.slice().sort((a,b)=>b.t-a.t).forEach(m=>{if(m.img&&++n>40)m.img=""});
@@ -1475,7 +1488,14 @@ function mSend(){
   const cur=mrooms().find(r=>r.id===mRoom);
   if(cur&&cur.ro&&!isAdmin()){toast("공지사항은 관리자만 올릴 수 있어요");return}
   const m={id:uid(),room:mRoom,by:curName()||"관리자",t:Date.now(),text:t.slice(0,2000)};if(mImg)m.img=mImg;
+  let x=null;
+  if(cur&&cur.staff&&isAdmin()&&agentOf(cur.staff)&&t){
+    const ls=t.split("\n");
+    x={id:uid(),title:ls[0].trim().slice(0,200),due:"",pri:"중요도 보통",done:0,who:cur.staff,memo:ls.slice(1).join("\n").trim().slice(0,1500),brand:"",by:curName(),as:"sent",at:Date.now(),out:CFG.chatOut!==0?1:0};
+    D.tasks.unshift(x);m.task=x.id;
+  }
   D.msgs.push(m);pushQueue(m.id);mTrim();mDraft="";mImg="";mForce=true;MS.read[mRoom]=Date.now();msSave();save();render();
+  if(x){if(CFG.repoWToken&&instrRepo())sendInbox(x.id);else toast("지시로 저장했어요. 설정 > 지시함 연결을 하면 직원에게 자동으로 전달돼요")}
 }
 function mDel(id){if(!confirm("이 메시지를 지울까요?"))return;const i=D.msgs.findIndex(x=>x.id===id);if(i>=0)D.msgs.splice(i,1);save();render()}
 async function mPick(inp){
@@ -1516,28 +1536,30 @@ function msgrAfter(){
 }
 views.messenger=()=>{
   const R=mrooms();if(!R.some(r=>r.id===mRoom))mRoom=R[0].id;
-  const cur=R.find(r=>r.id===mRoom),mn=curName(),key="@"+dn(mn);
+  const cur=R.find(r=>r.id===mRoom),mn=curName(),key="@"+dn(mn),sg=cur.staff&&isAdmin()?agentOf(cur.staff):null;
   const unread={};R.forEach(r=>{unread[r.id]=mUnread(r.id)});
   if(!document.hidden){MS.read[mRoom]=Date.now();msSave()}
-  const list=R.map(r=>`<button class="navbtn ${r.id===mRoom?"on":""}" onclick="mSet('${r.id}')"><span class="grow" style="text-align:left">${esc(r.name)}</span>${MS.mute[r.id]?'<span class="m">🔕</span>':""}${unread[r.id]&&r.id!==mRoom?`<span class="pill" style="background:var(--make)">${unread[r.id]}</span>`:""}</button>`).join("")+(isAdmin()?`<button class="navbtn" onclick="mAddRoom()"><span class="grow" style="text-align:left">＋ 대화방 만들기</span></button>`:"");
+  const list=R.map(r=>`<button class="navbtn ${r.id===mRoom?"on":""}" onclick="mSet('${r.id}')"><span class="grow" style="text-align:left">${r.staff?"🤖 ":""}${esc(r.name)}</span>${MS.mute[r.id]?'<span class="m">🔕</span>':""}${unread[r.id]&&r.id!==mRoom?`<span class="pill" style="background:var(--make)">${unread[r.id]}</span>`:""}</button>`).join("")+(isAdmin()?`<button class="navbtn" onclick="mAddRoom()"><span class="grow" style="text-align:left">＋ 대화방 만들기</span></button>`:"");
   const sel=`<select class="chatsel" onchange="mSet(this.value)">${R.map(r=>`<option value="${r.id}" ${r.id===mRoom?"selected":""}>${esc(r.name)}${unread[r.id]&&r.id!==mRoom?` (${unread[r.id]})`:""}</option>`).join("")}${isAdmin()?'<option value="__add">＋ 대화방 만들기</option>':""}</select>`;
   const ms=D.msgs.filter(m=>m.room===mRoom).sort((a,b)=>a.t-b.t);let lastDay="";
   const log=ms.map(m=>{
     const d=mDay(m.t),sep=d!==lastDay?`<div class="mday">${esc(d)}</div>`:"";lastDay=d;
-    const mine=m.by===mn,hit=!mine&&(m.text||"").includes(key);
-    return sep+`<div class="bubble ${mine?"me":"sys"}" ${hit?'style="outline:2px solid var(--make)"':""}>${mine?"":`<div class="mname">${esc(dn(m.by))}</div>`}${m.text?`<div class="m" style="white-space:normal;color:inherit">${mRich(m.text)}</div>`:""}${m.img?`<img class="mimg" src="${m.img}" alt="첨부 사진" onclick="mImgOpen('${m.id}')">`:""}<div class="mtime">${mTime(m.t)}${mine||isAdmin()?` · <a href="#" onclick="mDel('${m.id}');return false">삭제</a>`:""}</div></div>`;
+    const mine=m.by===mn,hit=!mine&&(m.text||"").includes(key),tk=m.task&&D.tasks.find(t=>t.id===m.task);
+    const tkRow=tk?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="pill">${asInfo(tk.as)[1]}${tk.rej?" · 반려됨":""}${tk.done?" · 완료":""}</span>${tk.res?`<button class="pill" onclick="openDoc('${sid(tk.res)}')">📄 결과 보기</button>`:""}</div>`:"";
+    const rep=tk&&tk.rep?`<div class="bubble sys"><div class="mname">${esc(tk.who)} 보고</div><div class="m" style="white-space:pre-wrap;color:inherit">${esc(tk.rep)}</div></div>`:"";
+    return sep+`<div class="bubble ${mine?"me":"sys"}" ${hit?'style="outline:2px solid var(--make)"':""}>${mine?"":`<div class="mname">${esc(dn(m.by))}</div>`}${m.text?`<div class="m" style="white-space:normal;color:inherit">${mRich(m.text)}</div>`:""}${m.img?`<img class="mimg" src="${m.img}" alt="첨부 사진" onclick="mImgOpen('${m.id}')">`:""}${tkRow}<div class="mtime">${mTime(m.t)}${mine||isAdmin()?` · <a href="#" onclick="mDel('${m.id}');return false">삭제</a>`:""}</div></div>${rep}`;
   }).join("")||`<div class="empty" style="text-align:center">아직 메시지가 없어요. 첫 메시지를 남겨 보세요.</div>`;
   const ro=(cur.ro&&!isAdmin())||cur.sys;
   const nOn=MS.notif&&"Notification"in window&&Notification.permission==="granted";
-  return `<h1>메신저</h1><div class="sub">직원들과 대화하고 공지를 확인해요. 15초마다 새 메시지를 확인해요</div>
+  return `<h1>메신저</h1><div class="sub">직원들과 대화하고 공지를 확인하고, AI 직원 방을 만들어 바로 지시해요. 15초마다 새 메시지를 확인해요</div>
   <div class="chatgrid"><div class="chatlist glass">${list}</div>
   <div class="chatmain"><div class="chatsel-wrap">${sel}</div>
-  <div class="chathead glass"><button class="pill" style="background:var(--g);float:right" onclick="mMute()">${MS.mute[mRoom]?"🔕 알림 꺼짐":"🔔 알림 켜짐"}</button><b>${esc(cur.name)}</b> <span class="m">${cur.sys?"자동으로 쌓이는 알림":cur.ro?"관리자만 글을 올려요":"참여자 "+mPeople().length+"명"}</span></div>
+  <div class="chathead glass"><button class="pill" style="background:var(--g);float:right" onclick="mMute()">${MS.mute[mRoom]?"🔕 알림 꺼짐":"🔔 알림 켜짐"}</button><b>${esc(cur.name)}</b> <span class="m">${cur.sys?"자동으로 쌓이는 알림":cur.ro?"관리자만 글을 올려요":sg?esc(sg.title)+" · 이 방에 쓰면 "+esc(cur.staff)+"에게 지시로 전달돼요":"참여자 "+mPeople().length+"명"}</span>${sg?`<div class="m ${CFG.repoWToken&&instrRepo()?"":"low"}">${CFG.repoWToken&&instrRepo()?"지시함에 연결됨 · 다음 정기 확인 때 착수해요":"지시함 연결 전이에요. 설정 > 지시함 연결을 하면 자동으로 전달돼요"} · <a href="#" onclick="chatWho=decodeURIComponent('${encodeURIComponent(cur.staff)}');go('chat');return false">마감·브랜드까지 자세히 지시 ›</a></div>`:""}</div>
   <div class="chatlog" id="mlog">${log}</div>
   <div class="composer glass">${ro?`<div class="empty" style="text-align:center">${cur.sys?"물품 요청·재고 부족·일정 알림이 여기에 자동으로 쌓여요":"공지사항은 관리자만 올릴 수 있어요"}</div>`:`
-   <textarea id="mmsg" rows="2" placeholder="메시지 입력 (Enter 전송 · Shift+Enter 줄바꿈 · @ 멘션)" oninput="mInput(this)" onkeydown="mKey(event)">${esc(mDraft)}</textarea><div id="mhint">${mHintHtml()}</div>
+   <textarea id="mmsg" rows="2" placeholder="${sg?esc(cur.staff)+"에게 지시할 내용 (첫 줄은 제목 · Enter 전송 · Shift+Enter 줄바꿈)":"메시지 입력 (Enter 전송 · Shift+Enter 줄바꿈 · @ 멘션)"}" oninput="mInput(this)" onkeydown="mKey(event)">${esc(mDraft)}</textarea><div id="mhint">${mHintHtml()}</div>
    ${mImg?`<div class="row" style="gap:8px"><img src="${mImg}" alt="" style="height:56px;border-radius:10px"><button class="pill" style="background:var(--mut)" onclick="mImg='';render()">사진 빼기</button></div>`:""}
-   <div class="row" style="gap:8px;flex-wrap:wrap"><label class="pill" style="background:var(--g);cursor:pointer">📷 사진<input type="file" accept="image/*" hidden onchange="mPick(this)"></label><button class="btn grow" onclick="mSend()">보내기</button></div>`}
+   <div class="row" style="gap:8px;flex-wrap:wrap"><label class="pill" style="background:var(--g);cursor:pointer">📷 사진<input type="file" accept="image/*" hidden onchange="mPick(this)"></label><button class="btn grow" onclick="mSend()">${sg?"지시 보내기":"보내기"}</button></div>`}
    <div class="m sub">${CFG.token?"클라우드 동기화로 직원들과 주고받아요":"클라우드 동기화가 꺼져 있어서 이 기기에서만 보여요 (설정에서 연결)"} · 보낸 사람 이름은 로그인 이름이에요</div>
    <button class="pill" style="background:${nOn?"var(--done)":"var(--make)"}" onclick="mNotifOn()">${MS.push?"✓ 푸시 켜짐 (앱이 꺼져 있어도 와요)":nOn?"✓ 알림 켜짐 (앱이 열려 있을 때)":"이 기기 알림 켜기"}</button>${MS.push?'<button class="pill" style="background:var(--mut)" onclick="pushOff()">푸시 끄기</button>':""}</div></div></div>`;
 };
@@ -1743,7 +1765,7 @@ async function pollResults(force){
   if(!force&&(!pendingAI()||Date.now()-_lastPoll<60000))return;
   _lastPoll=Date.now();await syncInbox();await importRepo(!force);
 }
-setInterval(()=>{if(!document.hidden&&["home","chat","contents","tasks"].includes(page))pollResults(false)},180000);
+setInterval(()=>{if(!document.hidden&&["home","chat","contents","tasks","messenger"].includes(page))pollResults(false)},180000);
 /* 새 기기 / 동기화 안내 카드 (홈) */
 function connectQuick(){
   const tk=$("#qtk").value.trim(),gi=$("#qgi").value.trim();
@@ -2022,7 +2044,7 @@ function render(keepFocus){
   $("#app").innerHTML=views[page]();
   if(page==="messenger")msgrAfter();
   if(page==="chat"){const lg=$("#chatlog");if(lg)lg.scrollTop=lg.scrollHeight}
-  if(page==="chat"||page==="home")pollResults(false);
+  if(page==="chat"||page==="home"||page==="messenger")pollResults(false);
   if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
 }
 /* 애플 느낌: 제목·버튼 앞의 이모지는 지우고 글자만 보여줘요 */
