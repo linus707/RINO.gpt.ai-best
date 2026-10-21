@@ -7,7 +7,7 @@
 
 const API = 'https://api.github.com';
 const te = new TextEncoder();
-const ROOM_NAMES = { notice: '공지사항', talk: '업무 소통', alert: '알림' };
+const ROOM_NAMES = { notice: '공지사항', talk: '업무 대화', alert: '알림' };
 const dn = (n) => (n === '관리자' ? '리노' : n || '');
 const clip = (s, n) => Array.from(String(s || '').replace(/\s+/g, ' ').trim()).slice(0, n).join('');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
