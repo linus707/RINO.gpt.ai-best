@@ -86,6 +86,9 @@ h1{margin:14px 2px 2px;font-size:34px;line-height:1.12;font-weight:700;letter-sp
 .rvgoal{margin-top:16px;padding-top:14px;border-top:.5px solid var(--sep)}.rvbar{height:10px;background:var(--fill);border-radius:99px;margin-top:8px;overflow:hidden}.rvbar i{display:block;height:100%;background:var(--accent);border-radius:99px}
 .rvchart{display:flex;gap:8px;align-items:flex-end;height:160px}.rvcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%}.rvcol i{width:100%;max-width:44px;background:var(--fill);border-radius:8px 8px 3px 3px}.rvcol i.cur{background:var(--accent)}.rvcol .m{font-size:11px}
 .rvdet summary{cursor:pointer;padding:14px 16px;font-weight:600}.rvdet>.card{box-shadow:none;margin:0}
+.setTabs button{white-space:nowrap}
+.setsec{margin:18px 4px 6px;font-size:15px;color:var(--mut);font-weight:600}
+body.photo-on .setsec{color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.4)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
 .stat{border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
 .stat small{color:var(--mut);font-size:13px}.stat b{display:block;font-size:clamp(20px,5.2vw,28px);font-weight:700;letter-spacing:-.03em;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
@@ -289,7 +292,7 @@ IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
 const PAGES=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
-const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["콘텐츠·수익",["contents","revenue"]],["회사",["org","staff"]],["",["settings"]]];
+const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["콘텐츠·수익",["contents","revenue"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
   try{
@@ -471,7 +474,7 @@ const tabsNow=()=>TABS_BASE;
 function tabbar(){
   const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
 }
-function go(p){page=p;window.scrollTo(0,0);$("#drawer").classList.remove("open");closeModal();render()}
+function go(p){if(p==="org"||p==="staff"){setTabK="people";p="settings"}page=p;window.scrollTo(0,0);$("#drawer").classList.remove("open");closeModal();render()}
 function nav(){
   const m=me();
   $("#who").innerHTML=m?`<div class="brandbox"><b>${esc(m.name)}</b><div class="m sub" style="margin:0">${m.role==="admin"?"관리자":"직원"}${m.open?" · PIN 미설정":""}</div>${m.open?"":'<button class="btn ghost" style="margin-top:8px;padding:8px 12px" onclick="logout()">로그아웃</button>'}</div>`:"";
@@ -1023,27 +1026,28 @@ const lockView=()=>{
   <button class="btn" type="submit">로그인</button></form></div>`;
 };
 
-views.staff=()=>{
+const staffParts=()=>{
   const p=D.set.pins,link=(CFG.token&&CFG.gistId)?location.origin+location.pathname+"#invite="+btoa(JSON.stringify({t:CFG.token,g:CFG.gistId})):"";
-  return `<h1>직원 관리</h1><div class="sub">직원 명단, 로그인 PIN, 초대 링크</div>
-  <div class="card"><h3>👥 직원 명단</h3><div class="body">
+  return {
+  roster:`  <div class="card"><h3>👥 직원 명단</h3><div class="body">
   ${D.set.staff.map((n,i)=>`<div class="chk"><div class="grow">${esc(n)}</div><button class="icon" style="width:32px;height:32px" onclick="rmStaff(${i})">✕</button></div>`).join("")||'<div class="empty">아직 등록된 직원이 없어요</div>'}
-  <div class="row" style="margin-top:8px"><input id="sname" placeholder="직원 이름"><button class="btn" onclick="addStaff()">추가</button></div></div></div>
-  <div class="card"><h3>🤖 Linus Company AI 직원 ${D.set.agents.length?'<span class="m sub" style="margin:0">'+D.set.agents.length+'명</span>':""}</h3><div class="body">
+  <div class="row" style="margin-top:8px"><input id="sname" placeholder="직원 이름"><button class="btn" onclick="addStaff()">추가</button></div></div></div>`,
+  agents:`  <div class="card"><h3>🤖 Linus Company AI 직원 ${D.set.agents.length?'<span class="m sub" style="margin:0">'+D.set.agents.length+'명</span>':""}</h3><div class="body">
   <div class="m sub">Linus Company 저장소에서 만든 <b>solamen-staff.json</b> 파일을 올리면 AI 직원이 조직도와 업무 담당자 목록에 들어와요. 데이터는 내 비공개 저장소(Gist)에만 저장돼요. 같은 사번은 덮어써요.</div>
   <div class="form" style="border:0;padding:0"><button class="btn" onclick="seedAgents()">기본 명단 ${SOL_ROSTER.agents.length}명 넣기</button><button class="btn ghost" onclick="refreshAgents()">저장소 기준으로 새로고침</button><input type="file" accept="application/json" onchange="importAgents(this.files[0]);this.value=''">
-  ${D.set.agents.length?`<select onchange="setStage(this.value)">${[...Array(Math.max(1,...D.set.agents.map(a=>+a.stage||0))).keys()].map(i=>i+1).map(n=>`<option value="${n}" ${D.set.stage===n?"selected":""}>가동 단계 ${n}단계 (이 단계까지 가동)</option>`).join("")}</select><button class="btn ghost" onclick="clearAgents()">AI 직원 명단 지우기</button>`:""}</div></div></div>
-  <div class="card"><h3>🔑 로그인 설정 ${p?'<span class="m sub" style="margin:0">설정됨</span>':'<span class="m sub low" style="margin:0">미설정 (누구나 관리자)</span>'}</h3><div class="body">
+  ${D.set.agents.length?`<select onchange="setStage(this.value)">${[...Array(Math.max(1,...D.set.agents.map(a=>+a.stage||0))).keys()].map(i=>i+1).map(n=>`<option value="${n}" ${D.set.stage===n?"selected":""}>가동 단계 ${n}단계 (이 단계까지 가동)</option>`).join("")}</select><button class="btn ghost" onclick="clearAgents()">AI 직원 명단 지우기</button>`:""}</div></div></div>`,
+  login:`  <div class="card"><h3>🔑 로그인 설정 ${p?'<span class="m sub" style="margin:0">설정됨</span>':'<span class="m sub low" style="margin:0">미설정 (누구나 관리자)</span>'}</h3><div class="body">
   <div class="m sub">관리자는 <b>아이디 + 비밀번호</b>(6자 이상), 직원은 <b>이름 + PIN</b>(숫자 4~8자리)으로 로그인해요. ${p?"바꾸지 않을 칸은 비워 두세요. ":""}관리자 비밀번호나 직원 PIN을 바꾸면 해당 기기들이 다시 로그인해야 해요.</div>
   <div class="form" style="border:0;padding:0"><input id="paid" placeholder="관리자 아이디 (영문·숫자 4~20자)" value="${esc(p&&p.aid||"")}" autocomplete="username" autocapitalize="off" spellcheck="false">
   <input id="pa" type="password" placeholder="${p&&p.av===2?"관리자 비밀번호 (바꿀 때만 입력)":"관리자 비밀번호 (6자 이상)"}" autocomplete="new-password">
   <input id="ps2" type="password" inputmode="numeric" placeholder="${p?"직원 PIN (바꿀 때만 입력)":"직원 PIN (숫자 4~8자리)"}" autocomplete="off"><button class="btn" onclick="setPins()">저장</button></div>
-  <div class="m sub" style="margin-top:8px">※ 서버 없이 동작하는 앱이라 이 로그인은 화면 접근을 막는 잠금이에요. 계정 비밀번호처럼 강한 보안은 아니니, 민감한 개인정보는 넣지 마세요.</div></div></div>
-  <div class="card"><h3>🔗 직원 초대 링크</h3><div class="body">
+  <div class="m sub" style="margin-top:8px">※ 서버 없이 동작하는 앱이라 이 로그인은 화면 접근을 막는 잠금이에요. 계정 비밀번호처럼 강한 보안은 아니니, 민감한 개인정보는 넣지 마세요.</div></div></div>`,
+  invite:`  <div class="card"><h3>🔗 직원 초대 링크</h3><div class="body">
   ${!p?'<div class="empty">먼저 위에서 PIN을 설정해 주세요.</div>':!link?'<div class="empty">먼저 설정 메뉴에서 클라우드 동기화를 연결해 주세요.</div>':
   `<div class="m sub">이 링크를 열면 직원 기기가 자동으로 연결돼요. <b>링크 안에 저장소 접근 키가 들어 있어요.</b> 카카오톡 1:1처럼 믿을 수 있는 곳으로만 보내고, 이 앱 전용 GitHub 계정의 토큰을 쓰세요.</div>
-  <div class="form" style="border:0;padding:0"><input id="inv" readonly value="${esc(link)}" onfocus="this.select()"><button class="btn" onclick="navigator.clipboard.writeText($('#inv').value).then(()=>alert('복사했어요'))">링크 복사</button></div>`}</div></div>`;
+  <div class="form" style="border:0;padding:0"><input id="inv" readonly value="${esc(link)}" onfocus="this.select()"><button class="btn" onclick="navigator.clipboard.writeText($('#inv').value).then(()=>alert('복사했어요'))">링크 복사</button></div>`}</div></div>`};
 };
+views.staff=()=>{const x=staffParts();return `<h1>직원 관리</h1><div class="sub">직원 명단, 로그인 PIN, 초대 링크</div>${x.roster}${x.agents}${x.login}${x.invite}`};
 function addStaff(){if(!isAdmin())return;const n=$("#sname").value.trim();if(!n||D.set.staff.includes(n))return;D.set.staff.push(n);D.set.u=Date.now();save();render()}
 function rmStaff(i){if(!isAdmin())return;if(!confirm("명단에서 뺄까요?"))return;D.set.staff.splice(i,1);D.set.u=Date.now();save();render()}
 async function setPins(){
@@ -1143,15 +1147,14 @@ async function saveInboxToken(){
   }catch(e){alert("연결하지 못했어요: "+(e.message||e))}
 }
 function clearInboxToken(){if(!confirm("지시함 쓰기 토큰을 지울까요? (이미 보낸 지시는 그대로예요)"))return;delete CFG.repoWToken;saveCfg();render()}
-views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경(사진·단색), 백업, AI 연결</div>
-  <div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
+const syncCardUi=()=>`<div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
   <div class="m sub">내 GitHub 비공개 Gist에 데이터를 저장해요. <a href="https://github.com/settings/tokens/new?scopes=gist&description=rino-workspace" target="_blank" rel="noopener">여기</a>에서 <b>gist 권한만</b> 있는 토큰을 만들어 붙여넣으세요.</div>
   <div class="form" style="border:0;padding:0"><input id="tk" type="password" placeholder="GitHub 토큰 (ghp_…)" value="${esc(CFG.token||"")}" autocomplete="off">
   <input id="gi" placeholder="Gist ID (두 번째 기기에서만 입력)" value="${esc(CFG.gistId||"")}">
   <button class="btn" onclick="connectSync()">연결 / 지금 동기화</button>
   ${CFG.token?'<button class="btn ghost" onclick="disconnectSync()">연결 해제</button>':""}</div>
-  <div class="m sub">${CFG.gistId?"내 Gist ID: <b>"+esc(CFG.gistId)+"</b> — 다른 기기에 같은 토큰과 이 ID를 입력하면 같은 데이터가 보여요.":"첫 연결 시 Gist가 자동으로 만들어져요."}</div></div></div>
-  <div class="card"><h3>📂 Linus Company 작업 폴더 불러오기 ${CFG.repoToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
+  <div class="m sub">${CFG.gistId?"내 Gist ID: <b>"+esc(CFG.gistId)+"</b> — 다른 기기에 같은 토큰과 이 ID를 입력하면 같은 데이터가 보여요.":"첫 연결 시 Gist가 자동으로 만들어져요."}</div></div></div>`;
+const repoCardUi=()=>`<div class="card"><h3>📂 Linus Company 작업 폴더 불러오기 ${CFG.repoToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
   <div class="m sub">직원들이 Linus Company의 <b>작업 폴더</b>에 저장한 글(draft.md, copyedit.md 등)을 읽어 와서 전체 콘텐츠에 넣어요. 직원이 따로 할 일은 없어요. <b>읽기 전용 토큰</b>을 쓰고, 이 토큰은 <b>이 기기에만</b> 저장돼요(직원 초대 링크에 들어가지 않아요). 불러온 글은 직원도 볼 수 있어요.</div>
   <div class="form" style="border:0;padding:0"><input id="wr" placeholder="저장소 (예: linus707/solamen)" value="${esc(CFG.repo||"linus707/solamen")}">
   <input id="wb" placeholder="브랜치 (직원 작업대: work)" value="${esc(CFG.repoBranch||"work")}">
@@ -1160,22 +1163,33 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경
   <button class="btn" onclick="saveRepo()">저장하고 지금 불러오기</button>
   ${CFG.repoToken?'<button class="btn ghost" onclick="importRepo(false)">지금 다시 불러오기</button><button class="btn ghost" onclick="clearRepo()">토큰 지우기</button>':""}</div>
   <div class="m sub">토큰 만드는 곳: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained token</a> (Linus Company 저장소 소유 계정으로 로그인) · Repository access는 <b>Only select repositories → SOLAMEN</b> · Permissions는 <b>Contents: Read-only</b> 하나만</div>
-  ${CFG.repoLast?`<div class="m sub">마지막으로 불러온 시각: ${new Date(CFG.repoLast).toLocaleString("ko-KR")}</div>`:""}</div></div>
-  <div class="card"><h3>📄 콘텐츠 초안 가져오기</h3><div class="body"><div class="m sub">초안·보고가 담긴 콘텐츠 파일(rino-content-*.json)을 올리면 전체 콘텐츠에 들어가요. 같은 제목과 작성자는 덮어써요.</div>
-  <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>
-  <div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div>
-  <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>
-  ${isAdmin()?inboxCard():""}
-  ${isAdmin()?brandCard():""}
-  ${isAdmin()?pushCard():""}
-  ${isAdmin()?brandLinkCard():""}
-  ${themeCard()}
-  ${skillCard()}
-  ${bioCard()}
-  ${bgCard()}
-  <div class="card"><h3>✨ AI 연결</h3><div class="body"><div class="m sub">Anthropic API 키를 넣으면 콘텐츠 아이디어를 받을 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</div>
+  ${CFG.repoLast?`<div class="m sub">마지막으로 불러온 시각: ${new Date(CFG.repoLast).toLocaleString("ko-KR")}</div>`:""}</div></div>`;
+const importCardUi=()=>`<div class="card"><h3>📄 콘텐츠 초안 가져오기</h3><div class="body"><div class="m sub">초안·보고가 담긴 콘텐츠 파일(rino-content-*.json)을 올리면 전체 콘텐츠에 들어가요. 같은 제목과 작성자는 덮어써요.</div>
+  <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>`;
+const backupCardUi=()=>`<div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div>
+  <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>`;
+const aiCardUi=()=>`<div class="card"><h3>✨ AI 연결</h3><div class="body"><div class="m sub">Anthropic API 키를 넣으면 콘텐츠 아이디어를 받을 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</div>
   <div class="form" style="border:0;padding:0"><input id="ak" type="password" placeholder="sk-ant-…" value="${esc(CFG.aiKey||"")}" autocomplete="off"><input id="aw" placeholder="워크스페이스 ID (선택) wrkspc_…" value="${esc(CFG.aiWs||"")}" autocomplete="off"><button class="btn" onclick="CFG.aiKey=$('#ak').value.trim();CFG.aiWs=$('#aw').value.trim();saveCfg();alert('저장했어요')">저장</button></div>
   <div class="m sub" style="margin-top:6px">"키가 워크스페이스에 속하지 않았다"는 오류가 나면, 콘솔 → 워크스페이스에서 Default의 ID(wrkspc_…)를 두 번째 칸에 넣어 주세요. 평소에는 비워 둬도 돼요.</div></div></div>`;
+/* 설정은 5개 분류 탭으로 나눠 보여요. 조직도·직원 관리도 여기 '직원·조직' 탭 안에 있어요. */
+let setTabK="account";
+const SET_TABS=[["account","🔑 계정·보안"],["people","👥 직원·조직"],["link","☁ 연결·동기화"],["look","🎨 화면"],["data","💾 데이터·스킬"]];
+function setTabSet(k){setTabK=k;render();window.scrollTo(0,0)}
+const orgBody=()=>views.org().replace("<h1>조직도</h1>","");
+function setSection(k){
+  const adm=isAdmin(),x=staffParts();
+  if(k==="people")return `<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
+  if(k==="link")return `${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${aiCardUi()}`;
+  if(k==="look")return `${bgCard()}${adm?brandCard():""}${themeCard()}${adm?brandLinkCard():""}`;
+  if(k==="data")return `${backupCardUi()}${importCardUi()}${skillCard()}`;
+  return `${x.login}${bioCard()}`;
+}
+views.settings=()=>{
+  if(!SET_TABS.some(t=>t[0]===setTabK))setTabK="account";
+  return `<h1>설정</h1><div class="sub">분류를 눌러 필요한 설정만 보세요</div>
+  <div class="tabs setTabs">${SET_TABS.map(([k,n])=>`<button class="${setTabK===k?"on":""}" onclick="setTabSet('${k}')">${n}</button>`).join("")}</div>
+  ${setSection(setTabK)}`;
+};
 const aiHeaders=()=>{const h={"content-type":"application/json","x-api-key":CFG.aiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};if(CFG.aiWs)h["anthropic-workspace-id"]=CFG.aiWs;return h};
 function connectSync(){CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value.trim()||CFG.gistId||"";saveCfg();if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
 function disconnectSync(){delete CFG.token;saveCfg();setSync("● 자동 저장");render()}
