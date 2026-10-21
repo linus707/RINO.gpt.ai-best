@@ -1,0 +1,11 @@
+# 명령줄로 올릴 때: cd worker && npx wrangler deploy
+# 비밀값은 파일에 적지 말고 아래 명령으로 넣어요 (각각 실행하면 값을 물어봐요)
+#   npx wrangler secret put GIST_TOKEN
+#   npx wrangler secret put GIST_ID
+#   npx wrangler secret put VAPID_PRIVATE_KEY
+name = "linus-push"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://linuscompany.co.kr"
