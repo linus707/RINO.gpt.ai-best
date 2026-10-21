@@ -99,6 +99,8 @@ h1{margin:14px 2px 2px;font-size:34px;line-height:1.12;font-weight:700;letter-sp
 .doc h3{margin:16px 0 4px;font-size:17px;font-weight:600}.doc hr{border:0;border-top:.5px solid var(--sep);margin:14px 0}
 .doc code{background:var(--fill);border-radius:6px;padding:1px 5px;font-size:.92em}.doc a{color:var(--accent)}
 .ph{background:rgba(255,204,0,.32);border-radius:6px;padding:0 4px}
+#lockov{position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;padding:24px}
+#lockov .lockbox{width:100%;max-width:340px;text-align:center}#lockov .btn{width:100%}
 .lock{max-width:400px;margin:56px auto;border-radius:24px;padding:22px;box-shadow:var(--shadow)}
 .logo{font-size:22px;font-weight:700;letter-spacing:-.03em;white-space:nowrap}.logo i{color:var(--accent);font-style:normal}
 /* 입력 */
@@ -968,6 +970,13 @@ async function hashPin(pin,salt){
   try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
   catch{let h=5381;for(const c of t)h=((h<<5)+h+c.charCodeAt(0))>>>0;return"w"+h}
 }
+/* 관리자 비밀번호는 PBKDF2(15만 회)로 저장해요. 예전 PIN(av 없음)도 그대로 로그인돼요. */
+async function hashPw(pw,salt){
+  const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveBits"]);
+  const b=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:new TextEncoder().encode("linus:"+salt),iterations:150000},k,256);
+  return "p2"+[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+const hashAdmin=(pw,p)=>p.av===2?hashPw(pw,p.asalt):hashPin(pw,p.salt);
 function me(){
   const p=D.set.pins;
   if(!p)return CFG.invited?null:{role:"admin",name:"관리자",open:true};
@@ -976,26 +985,42 @@ function me(){
 }
 const isAdmin=()=>{const m=me();return !!m&&m.role==="admin"};
 const curName=()=>{const m=me();return m?m.name:""};
+const LF_KEY="rino-lf";
+function loginFails(){try{return JSON.parse(localStorage.getItem(LF_KEY))||{n:0,t:0}}catch{return{n:0,t:0}}}
 async function login(){
-  const role=$("#lr").value,name=role==="admin"?"관리자":$("#ln").value.trim(),pin=$("#lp").value.trim(),p=D.set.pins;
+  const role=$("#lr").value,name=role==="admin"?"관리자":$("#ln").value.trim(),pin=$("#lp").value,p=D.set.pins;
   if(!p)return;
   if(!name){alert("이름을 입력해 주세요");return}
-  const h=await hashPin(pin,p.salt);
-  if(h!==(role==="admin"?p.a:p.s)){alert("PIN이 맞지 않아요");$("#lp").value="";return}
+  const f=loginFails(),wait=f.n>=5?Math.ceil((f.t+30000-Date.now())/1000):0;
+  if(wait>0){alert("실패가 많아서 잠시 막혀 있어요. "+wait+"초 뒤에 다시 시도해 주세요");return}
+  const needId=role==="admin"&&!!p.aid,id=(($("#li")||{}).value||"").trim().toLowerCase();
+  const h=role==="admin"?await hashAdmin(pin,p):await hashPin(pin.trim(),p.salt);
+  if((needId&&id!==p.aid)||h!==(role==="admin"?p.a:p.s)){
+    try{localStorage.setItem(LF_KEY,JSON.stringify({n:f.n>=5?1:f.n+1,t:Date.now()}))}catch{}
+    alert(needId?"아이디 또는 비밀번호가 맞지 않아요":"PIN이 맞지 않아요");$("#lp").value="";return;
+  }
+  try{localStorage.removeItem(LF_KEY);localStorage.setItem("rino-lr",role)}catch{}
   ME={role,name,h};
   const store=$("#lk").checked?localStorage:sessionStorage;
   try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY);store.setItem(ME_KEY,JSON.stringify(ME))}catch{}
   page="home";render();
 }
 function logout(){ME=null;try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY)}catch{}$("#drawer").classList.remove("open");render()}
+function lockRole(v){
+  $("#lnw").style.display=v==="admin"?"none":"block";$("#liw").style.display=v==="admin"&&D.set.pins&&D.set.pins.aid?"block":"none";
+  const e=$("#lp");e.placeholder=v==="admin"?(D.set.pins&&D.set.pins.aid?"비밀번호":"비밀번호 또는 PIN"):"PIN";e.inputMode=v==="admin"?"text":"numeric";e.autocomplete=v==="admin"?"current-password":"off";
+}
 const lockView=()=>{
   if(!D.set.pins)return `<div class="card lock"><h3>불러오는 중…</h3><div class="body"><div class="empty">관리자가 보낸 초대 링크로 접속하셨어요. 데이터를 가져오는 중이에요. 계속 이 화면이면 관리자에게 링크를 다시 받아 주세요.</div></div></div>`;
+  const p=D.set.pins;let lr="";try{lr=localStorage.getItem("rino-lr")||""}catch{}if(!lr)lr=p.aid?"admin":"staff";
+  const adm=lr==="admin";
   return `<div class="lock"><h1>Linus Company</h1><div class="sub">로그인해 주세요</div>
-  <div class="form"><select id="lr" onchange="$('#lnw').style.display=this.value==='admin'?'none':'block'"><option value="staff">직원</option><option value="admin">관리자</option></select>
-  <div id="lnw"><input id="ln" list="stl" placeholder="내 이름" autocomplete="off"><datalist id="stl">${D.set.staff.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
-  <input id="lp" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off" onkeydown="if(event.key==='Enter')login()">
+  <form class="form" onsubmit="login();return false"><select id="lr" onchange="lockRole(this.value)"><option value="staff" ${adm?"":"selected"}>직원</option><option value="admin" ${adm?"selected":""}>관리자</option></select>
+  <div id="lnw" style="display:${adm?"none":"block"}"><input id="ln" list="stl" placeholder="내 이름" autocomplete="off"><datalist id="stl">${D.set.staff.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+  <div id="liw" style="display:${adm&&p.aid?"block":"none"}"><input id="li" placeholder="아이디" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+  <input id="lp" type="password" ${adm?'':'inputmode="numeric"'} placeholder="${adm?(p.aid?"비밀번호":"비밀번호 또는 PIN"):"PIN"}" autocomplete="${adm?"current-password":"off"}">
   <label class="m"><input id="lk" type="checkbox" style="width:auto"> 이 기기에서 로그인 상태 유지</label>
-  <button class="btn" onclick="login()">로그인</button></div></div>`;
+  <button class="btn" type="submit">로그인</button></form></div>`;
 };
 
 views.staff=()=>{
@@ -1008,9 +1033,12 @@ views.staff=()=>{
   <div class="m sub">Linus Company 저장소에서 만든 <b>solamen-staff.json</b> 파일을 올리면 AI 직원이 조직도와 업무 담당자 목록에 들어와요. 데이터는 내 비공개 저장소(Gist)에만 저장돼요. 같은 사번은 덮어써요.</div>
   <div class="form" style="border:0;padding:0"><button class="btn" onclick="seedAgents()">기본 명단 ${SOL_ROSTER.agents.length}명 넣기</button><button class="btn ghost" onclick="refreshAgents()">저장소 기준으로 새로고침</button><input type="file" accept="application/json" onchange="importAgents(this.files[0]);this.value=''">
   ${D.set.agents.length?`<select onchange="setStage(this.value)">${[...Array(Math.max(1,...D.set.agents.map(a=>+a.stage||0))).keys()].map(i=>i+1).map(n=>`<option value="${n}" ${D.set.stage===n?"selected":""}>가동 단계 ${n}단계 (이 단계까지 가동)</option>`).join("")}</select><button class="btn ghost" onclick="clearAgents()">AI 직원 명단 지우기</button>`:""}</div></div></div>
-  <div class="card"><h3>🔑 로그인 PIN ${p?'<span class="m sub" style="margin:0">설정됨</span>':'<span class="m sub low" style="margin:0">미설정 (누구나 관리자)</span>'}</h3><div class="body">
-  <div class="m sub">숫자 4~8자리. 바꾸면 모든 기기가 다시 로그인해야 해요.</div>
-  <div class="form" style="border:0;padding:0"><input id="pa" type="password" inputmode="numeric" placeholder="관리자 PIN"><input id="ps2" type="password" inputmode="numeric" placeholder="직원 PIN"><button class="btn" onclick="setPins()">PIN 저장</button></div></div></div>
+  <div class="card"><h3>🔑 로그인 설정 ${p?'<span class="m sub" style="margin:0">설정됨</span>':'<span class="m sub low" style="margin:0">미설정 (누구나 관리자)</span>'}</h3><div class="body">
+  <div class="m sub">관리자는 <b>아이디 + 비밀번호</b>(6자 이상), 직원은 <b>이름 + PIN</b>(숫자 4~8자리)으로 로그인해요. ${p?"바꾸지 않을 칸은 비워 두세요. ":""}관리자 비밀번호나 직원 PIN을 바꾸면 해당 기기들이 다시 로그인해야 해요.</div>
+  <div class="form" style="border:0;padding:0"><input id="paid" placeholder="관리자 아이디 (영문·숫자 4~20자)" value="${esc(p&&p.aid||"")}" autocomplete="username" autocapitalize="off" spellcheck="false">
+  <input id="pa" type="password" placeholder="${p&&p.av===2?"관리자 비밀번호 (바꿀 때만 입력)":"관리자 비밀번호 (6자 이상)"}" autocomplete="new-password">
+  <input id="ps2" type="password" inputmode="numeric" placeholder="${p?"직원 PIN (바꿀 때만 입력)":"직원 PIN (숫자 4~8자리)"}" autocomplete="off"><button class="btn" onclick="setPins()">저장</button></div>
+  <div class="m sub" style="margin-top:8px">※ 서버 없이 동작하는 앱이라 이 로그인은 화면 접근을 막는 잠금이에요. 계정 비밀번호처럼 강한 보안은 아니니, 민감한 개인정보는 넣지 마세요.</div></div></div>
   <div class="card"><h3>🔗 직원 초대 링크</h3><div class="body">
   ${!p?'<div class="empty">먼저 위에서 PIN을 설정해 주세요.</div>':!link?'<div class="empty">먼저 설정 메뉴에서 클라우드 동기화를 연결해 주세요.</div>':
   `<div class="m sub">이 링크를 열면 직원 기기가 자동으로 연결돼요. <b>링크 안에 저장소 접근 키가 들어 있어요.</b> 카카오톡 1:1처럼 믿을 수 있는 곳으로만 보내고, 이 앱 전용 GitHub 계정의 토큰을 쓰세요.</div>
@@ -1019,14 +1047,77 @@ views.staff=()=>{
 function addStaff(){const n=$("#sname").value.trim();if(!n||D.set.staff.includes(n))return;D.set.staff.push(n);D.set.u=Date.now();save();render()}
 function rmStaff(i){if(!confirm("명단에서 뺄까요?"))return;D.set.staff.splice(i,1);D.set.u=Date.now();save();render()}
 async function setPins(){
-  const a=$("#pa").value.trim(),b=$("#ps2").value.trim(),ok=/^\d{4,8}$/;
-  if(!ok.test(a)||!ok.test(b)){alert("PIN은 숫자 4~8자리로 입력해 주세요");return}
-  if(a===b){alert("관리자 PIN과 직원 PIN은 서로 달라야 해요");return}
-  const salt=uid()+uid();
-  D.set.pins={salt,a:await hashPin(a,salt),s:await hashPin(b,salt)};D.set.u=Date.now();save();
-  ME={role:"admin",name:"관리자",h:D.set.pins.a};try{sessionStorage.setItem(ME_KEY,JSON.stringify(ME))}catch{}
+  if(!isAdmin())return;
+  const old=D.set.pins,aid=$("#paid").value.trim().toLowerCase(),pw=$("#pa").value,sp=$("#ps2").value.trim();
+  if(!/^[a-z0-9._-]{4,20}$/.test(aid)){alert("관리자 아이디는 영문 소문자·숫자·._- 4~20자로 입력해 주세요");return}
+  if(!old||old.av!==2||pw){if(pw.length<6){alert("관리자 비밀번호는 6자 이상으로 입력해 주세요");return}}
+  if(!old||sp){if(!/^\d{4,8}$/.test(sp)){alert("직원 PIN은 숫자 4~8자리로 입력해 주세요");return}}
+  if(pw&&sp&&pw===sp){alert("관리자 비밀번호와 직원 PIN은 서로 달라야 해요");return}
+  const salt=old?old.salt:uid()+uid(),np={salt,aid,av:2,asalt:old&&old.av===2?old.asalt:uid()+uid(),a:old?old.a:"",s:old?old.s:""};
+  try{
+    if(!old||old.av!==2||pw){np.asalt=uid()+uid();np.a=await hashPw(pw,np.asalt)}
+    if(!old||sp)np.s=await hashPin(sp,salt);
+  }catch{alert("이 브라우저에서는 비밀번호를 안전하게 저장할 수 없어요. https 주소에서 최신 브라우저로 열어 주세요");return}
+  D.set.pins=np;D.set.u=Date.now();save();
+  ME={role:"admin",name:"관리자",h:np.a};try{sessionStorage.setItem(ME_KEY,JSON.stringify(ME))}catch{}
   alert("저장했어요");render();
 }
+
+/* ---------- Face ID(생체 인증) 잠금: 이 기기에서만 쓰는 화면 잠금 ----------
+   기기의 패스키(WebAuthn) 기능으로 Face ID·지문·얼굴 인식을 불러와요. 인증 정보는 기기 안에만 있고 서버로 가지 않아요.
+   앱을 열 때와 일정 시간 뒤 다시 돌아올 때 잠기고, 인식이 안 되면 비밀번호로 다시 로그인할 수 있어요. */
+const bioOn=()=>!!(CFG.bio&&CFG.bio.id);
+let BIO_SUP=null,LOCKED=false,hiddenAt=0;
+async function bioCheck(){
+  try{BIO_SUP=!!(window.PublicKeyCredential&&navigator.credentials&&(location.protocol==="https:"||location.hostname==="localhost")&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch{BIO_SUP=false}
+  if(page==="settings")render();
+}
+async function bioEnable(){
+  const m=me();if(!m||m.open||!D.set.pins){alert("먼저 로그인 설정(직원 관리)에서 비밀번호를 만들고 로그인해 주세요");return}
+  try{
+    const cred=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"Linus Company",id:location.hostname},
+      user:{id:crypto.getRandomValues(new Uint8Array(16)),name:m.name||"linus",displayName:m.name||"Linus Company"},
+      pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"},timeout:60000,attestation:"none"}});
+    CFG.bio={id:b64url(cred.rawId),secs:CFG.bio&&CFG.bio.secs!=null?CFG.bio.secs:60,t:Date.now()};saveCfg();render();toast("이 기기에서 Face ID 잠금을 켰어요");
+  }catch(e){if(e&&e.name==="NotAllowedError")toast("인증을 취소했거나 허용되지 않았어요");else alert("Face ID 잠금을 켜지 못했어요: "+((e&&e.message)||e))}
+}
+function bioDisable(){if(!confirm("이 기기의 Face ID 잠금을 끌까요?"))return;delete CFG.bio;saveCfg();lockHide();render()}
+function bioSecs(v){CFG.bio={...CFG.bio,secs:+v};saveCfg()}
+async function bioUnlock(silent){
+  try{
+    const c=await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rpId:location.hostname,
+      allowCredentials:[{type:"public-key",id:fromB64url(CFG.bio.id),transports:["internal"]}],userVerification:"required",timeout:60000}});
+    if(c){lockHide();return true}
+  }catch(e){if(!silent)toast("인식하지 못했어요. 다시 시도하거나 비밀번호로 로그인해 주세요")}
+  return false;
+}
+function lockShow(){
+  LOCKED=true;let el=$("#lockov");
+  if(!el){el=document.createElement("div");el.id="lockov";document.body.appendChild(el)}
+  el.innerHTML=`<div class="lockbox"><div class="logo" style="font-size:26px">Linus Company</div><div class="m sub" style="margin:6px 0 22px">잠겨 있어요</div>
+  <button class="btn" onclick="bioUnlock()">Face ID · 생체 인증으로 열기</button>
+  <button class="btn ghost" style="margin-top:10px" onclick="lockOut()">비밀번호로 로그인</button></div>`;
+  el.style.display="flex";document.body.style.overflow="hidden";
+  bioUnlock(true);
+}
+function lockHide(){LOCKED=false;const el=$("#lockov");if(el)el.style.display="none";document.body.style.overflow=""}
+function lockOut(){lockHide();logout()}
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){hiddenAt=Date.now();return}
+  const m=me();if(!bioOn()||LOCKED||!m||m.open)return;
+  const sec=CFG.bio.secs;if(sec>=0&&hiddenAt&&Date.now()-hiddenAt>=sec*1000)lockShow();
+});
+const bioCard=()=>{
+  const on=bioOn(),sec=on?CFG.bio.secs:60;
+  return `<div class="card"><h3>🔐 Face ID 잠금 (이 기기) ${on?'<span class="m sub" style="margin:0">켜짐</span>':""}</h3><div class="body">
+  <div class="m sub">스마트폰에서 앱을 열 때 Face ID(안드로이드는 지문·얼굴)로 잠금을 풀어요. 이 기기에서만 적용되고, 인식 정보는 기기 밖으로 나가지 않아요.</div>
+  ${BIO_SUP===false?'<div class="m low" style="margin:8px 0">이 기기·브라우저는 생체 인증을 지원하지 않아요. https 주소(linuscompany.co.kr)에서 최신 브라우저로 열어 주세요. 아이폰은 iOS 16 이상이에요.</div>':""}
+  ${on?`<div class="m" style="margin:8px 0 4px">다시 잠그는 시점</div><select onchange="bioSecs(this.value)">${[[0,"앱을 벗어나면 바로"],[60,"1분 뒤"],[300,"5분 뒤"],[-1,"앱을 새로 열 때만"]].map(([v,n])=>`<option value="${v}" ${sec===v?"selected":""}>${n}</option>`).join("")}</select>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" onclick="lockShow()">지금 잠그기</button><button class="btn ghost" onclick="bioDisable()">잠금 끄기</button></div>`
+  :`<button class="btn" style="margin-top:8px" onclick="bioEnable()" ${BIO_SUP===false?"disabled":""}>Face ID 잠금 켜기</button>`}
+  <div class="m sub" style="margin-top:8px">※ 이 기기의 화면 잠금이에요. 인식이 안 될 때는 "비밀번호로 로그인"으로 들어올 수 있어요.</div></div></div>`;
+};
 
 /* ---------- 설정 (동기화·백업·AI 키) ---------- */
 const brandLinkCard=()=>`<div class="card"><h3>브랜드 링크</h3><div class="body"><div class="m sub">홈의 브랜드 이름을 누르면 이동할 블로그·인스타 주소예요. 비워 두면 링크 없이 이름만 보여요.</div>
@@ -1080,6 +1171,7 @@ views.settings=()=>`<h1>설정</h1><div class="sub">기기 간 동기화, 배경
   ${isAdmin()?brandLinkCard():""}
   ${themeCard()}
   ${skillCard()}
+  ${bioCard()}
   ${bgCard()}
   <div class="card"><h3>✨ AI 연결</h3><div class="body"><div class="m sub">Anthropic API 키를 넣으면 콘텐츠 아이디어를 받을 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</div>
   <div class="form" style="border:0;padding:0"><input id="ak" type="password" placeholder="sk-ant-…" value="${esc(CFG.aiKey||"")}" autocomplete="off"><input id="aw" placeholder="워크스페이스 ID (선택) wrkspc_…" value="${esc(CFG.aiWs||"")}" autocomplete="off"><button class="btn" onclick="CFG.aiKey=$('#ak').value.trim();CFG.aiWs=$('#aw').value.trim();saveCfg();alert('저장했어요')">저장</button></div>
@@ -2105,6 +2197,8 @@ function stripEmoji(root){
 }
 new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&stripEmoji(n)))).observe(document.body,{childList:true,subtree:true});
 (function boot(){
+  try{const m0=me();if(CFG.bio&&CFG.bio.id&&m0&&!m0.open)lockShow()}catch{}
+  bioCheck();
   /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
   try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
   /* 알림을 눌러 들어오면(?chat=… / ?messenger=1) 메신저로 바로 가요 */
