@@ -640,14 +640,21 @@ views.revenue=()=>{
     <label class="m" style="display:flex;align-items:center;gap:8px">목표(원)<input type="number" min="0" value="${D.set.goal}" style="width:150px" onchange="D.set.goal=+this.value||0;D.set.u=Date.now();save();render()"></label></div></div>`:"";
   return `<div class="rvhead"><div><h1>수익</h1><div class="sub">${cur.replace("-","년 ")}월 · 브랜드별 매출 현황</div></div><button class="btn" onclick="revOpen()">＋ 수익 기록</button></div>
   <div class="rvtabs">${tabs.map(tabBtn).join("")}</div>
+  <div class="tabs setTabs">${REV_TABS.map(([k,n])=>`<button class="${revTab===k?"on":""}" onclick="revTab='${k}';render()">${n}</button>`).join("")}</div>
+  ${revTab==="sum"?`
   <div class="card rvhero"><div class="body"><div class="m sub">${esc(name)} · 이번 달 매출</div>
     <div class="rvbig">${won(mSum)}</div>${revDeltaPill(revDelta(mSum,pSum))}${goal}</div></div>
   <div class="stats"><div class="stat"><small>올해 누적</small><b>${won(ySum)}</b></div><div class="stat"><small>지난달 매출</small><b>${won(pSum)}</b></div><div class="stat"><small>이번 달 기록</small><b>${cnt}건</b></div></div>
+  `:""}
+  ${revTab==="stat"?`
   <div class="card"><h3>최근 6개월 매출</h3><div class="body"><div class="rvchart">${months.map(([n,v,c])=>`<div class="rvcol"><span class="m">${v?revShort(v):""}</span><i class="${c?"cur":""}" style="height:${Math.max(3,Math.round(v/mx*100))}px"></i><span class="m">${n}</span></div>`).join("")}</div></div></div>
-  <details class="card rvdet" ${revMore?"open":""} ontoggle="revMore=this.open"><summary>연도별 현황 보기</summary>${yearCard(pool,[],sum)}</details>
-  <div class="card"><h3>최근 기록</h3><div class="body">${recent.map(r=>`<div class="row" style="padding:8px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t">${won(r.amount)}</div><div class="m">${esc(r.date)} · ${RCH[r.ch]||"기타"}${r.memo?" · "+esc(r.memo):""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('revenue','${r.id}')" aria-label="삭제">✕</button></div>`).join("")||'<div class="empty">아직 기록이 없어요. 오른쪽 위 ＋ 수익 기록으로 첫 기록을 남겨 보세요.</div>'}</div></div>`;
+  ${yearCard(pool,[],sum)}
+  `:""}
+  ${revTab==="rec"?`
+  <div class="card"><h3>최근 기록</h3><div class="body">${recent.map(r=>`<div class="row" style="padding:8px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t">${won(r.amount)}</div><div class="m">${esc(r.date)} · ${RCH[r.ch]||"기타"}${r.memo?" · "+esc(r.memo):""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('revenue','${r.id}')" aria-label="삭제">✕</button></div>`).join("")||'<div class="empty">아직 기록이 없어요. 오른쪽 위 ＋ 수익 기록으로 첫 기록을 남겨 보세요.</div>'}</div></div>  `:""}`;
 };
-let revMore=false;
+let revMore=false,revTab="sum";
+const REV_TABS=[["sum","📊 요약"],["stat","📈 통계"],["rec","🧾 기록"]];
 function revOpen(){
   const COs=revCos();
   $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="수익 기록"><div class="row"><b class="grow" style="font-size:18px">＋ 수익 기록</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
