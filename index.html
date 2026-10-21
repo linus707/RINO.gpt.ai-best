@@ -1378,7 +1378,7 @@ function homeToday(){
 
 /* ---------- 일정표 (월간 달력 · 날짜별 일정 · 콘텐츠/업무 마감 겹쳐 보기) ----------
    일정은 D.events 에 저장되고 기존 클라우드 동기화로 항목 단위로 합쳐져요. */
-const SCH_CATS=[["event","일정","#007aff"],["meet","회의","#af52de"],["shoot","촬영·여행","#ff9500"],["pub","발행","#34c759"],["leave","휴가","#ff3b30"]];
+const SCH_CATS=[["event","일정","#007aff"],["meet","회의","#af52de"],["consult","고객상담","#30b0c7"],["delivery","제품배송","#a2845e"],["shoot","촬영·여행","#ff9500"],["pub","발행","#34c759"],["leave","휴가","#ff3b30"]];
 const schCat=k=>SCH_CATS.find(c=>c[0]===k)||SCH_CATS[0];
 const SS=(()=>{try{return JSON.parse(localStorage.getItem("rino-sch"))||{}}catch{return{}}})();
 const schSaveSS=()=>{try{localStorage.setItem("rino-sch",JSON.stringify(SS))}catch{}};
