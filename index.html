@@ -511,7 +511,7 @@ home(){
   ${syncCard()}
   <div class="card idcard"><div class="body"><div class="idl">Linus personal academy</div>
   <div class="idt">A little comfort for your everyday — 지친 하루에 작은 위로를 가치로 하는 브랜드 컴퍼니</div>
-  <div class="idb">${coList().map(c=>{const u=brandUrl(c);return u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}<i>↗</i></a>`:`<span ${isAdmin()?`onclick="go('settings')" style="cursor:pointer" title="설정에서 링크 넣기"`:""}>${esc(c.name)}</span>`}).join("")}</div>
+  <div class="idb">${coList().filter(c=>c.tag!=="공통").map(c=>{const u=brandUrl(c);return u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}<i>↗</i></a>`:`<span ${isAdmin()?`onclick="go('settings')" style="cursor:pointer" title="설정에서 링크 넣기"`:""}>${esc(c.name)}</span>`}).join("")}</div>
   </div></div>
   ${homeToday()}
   <div class="dhead">대표 여행지<span class="m">${items.length}곳 · 누르면 배경이 바뀌어요</span></div>
