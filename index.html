@@ -74,6 +74,18 @@ h1{margin:14px 2px 2px;font-size:34px;line-height:1.12;font-weight:700;letter-sp
 .item{border:0;border-bottom:.5px solid var(--sep);border-radius:0;padding:11px 0;margin:0;background:transparent}
 .item:last-child{border-bottom:0}
 .item .t{font-weight:600}.item .m{font-size:13px}
+.rvhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}.rvhead .btn{width:auto;padding:10px 16px}
+.rvtabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.rvtab{text-align:left;border:2px solid transparent;border-radius:16px;padding:12px 14px;background:var(--card,var(--fill));box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px}
+.rvtab span{font-size:13px;color:var(--mut)}.rvtab b{font-size:18px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.rvtab small{font-size:12px;color:var(--mut)}
+.rvtab.on{border-color:var(--accent)}.rvtab.on span{color:var(--accent);font-weight:600}
+.rvhero .body{padding-top:18px}
+.rvbig{font-size:clamp(30px,8vw,44px);font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin:4px 0 8px;overflow-wrap:anywhere}
+.rvdelta{display:inline-block;border-radius:99px;padding:4px 10px;font-size:13px;font-weight:600}.rvdelta small{font-weight:400;opacity:.8}
+.rvdelta.up{background:rgba(52,199,89,.16);color:#1f8a3c}.rvdelta.down{background:rgba(255,59,48,.14);color:#d4352b}.rvdelta.flat{background:var(--fill);color:var(--mut);font-weight:400}
+.rvgoal{margin-top:16px;padding-top:14px;border-top:.5px solid var(--sep)}.rvbar{height:10px;background:var(--fill);border-radius:99px;margin-top:8px;overflow:hidden}.rvbar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.rvchart{display:flex;gap:8px;align-items:flex-end;height:160px}.rvcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%}.rvcol i{width:100%;max-width:44px;background:var(--fill);border-radius:8px 8px 3px 3px}.rvcol i.cur{background:var(--accent)}.rvcol .m{font-size:11px}
+.rvdet summary{cursor:pointer;padding:14px 16px;font-weight:600}.rvdet>.card{box-shadow:none;margin:0}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
 .stat{border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
 .stat small{color:var(--mut);font-size:13px}.stat b{display:block;font-size:clamp(20px,5.2vw,28px);font-weight:700;letter-spacing:-.03em;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
@@ -570,7 +582,7 @@ routine(){
 }};
 
 /* ---------- 수익 대시보드 ---------- */
-let revCo="all",revYear="";
+let revCo="슬립",revYear="";
 const coList=()=>{const b=(D.set.brands||[]).filter(x=>x.tag&&x.name);return b.length?b.map(x=>({tag:x.tag,name:x.name,url:x.url})):[{tag:"트립",name:"얼뚱트립"},{tag:"슬립",name:"에이스침대 정림동점"},{tag:"포토",name:"퍼스널브랜딩 (스트릿포토)"},{tag:"공통",name:"Linus Company"}]};
 /* 수익 화면은 얼뚱트립·에이스침대만 보여요(공통·포토 기록은 지우지 않고 화면에서만 숨겨요). 월 목표는 에이스침대(슬립) 수익 기준이에요. */
 const REV_HIDE=new Set(["공통","포토"]),REV_GOAL="슬립";
@@ -590,39 +602,56 @@ const yearCard=(pool,COs,sum)=>{
   <div class="row" style="padding:2px 0"><span class="grow m">작년 대비</span><span>${diff===null?"비교할 작년 기록 없음":(diff>=0?"+":"")+diff+"%"}</span></div>
   ${Math.max(...mo)>0?`<div class="row" style="padding:2px 0"><span class="grow m">가장 많이 번 달</span><span>${best+1}월 · ${won(mo[best])}</span></div>`:""}
   <div style="display:flex;gap:4px;align-items:flex-end;height:110px;margin-top:12px">${mo.map((v,i)=>`<div style="flex:1;text-align:center"><div style="height:${Math.round(v/mx*80)}px;background:var(--g);border-radius:4px 4px 0 0;min-height:2px"></div><div class="m" style="font-size:10px">${i+1}</div></div>`).join("")}</div>
-  <div class="m" style="margin:14px 0 4px">회사별 (${y}년)</div>
+  ${COs.length?`<div class="m" style="margin:14px 0 4px">회사별 (${y}년)</div>`:""}
   ${COs.map(c=>`<div class="row" style="padding:3px 0"><span class="grow">${esc(c.name)}</span><b>${won(sum(yp.filter(r=>r.co===c.tag)))}</b></div>`).join("")}
-  ${(()=>{const n=sum(yp.filter(r=>!COs.some(c=>c.tag===r.co)));return n?`<div class="row" style="padding:3px 0"><span class="grow">회사 미지정</span><b>${won(n)}</b></div>`:""})()}
+  ${(()=>{const n=COs.length?sum(yp.filter(r=>!COs.some(c=>c.tag===r.co))):0;return n?`<div class="row" style="padding:3px 0"><span class="grow">회사 미지정</span><b>${won(n)}</b></div>`:""})()}
   ${ys.length>1?`<div class="m" style="margin:14px 0 4px">연도별 합계</div>${yrs.map(([k,v])=>`<div class="row" style="padding:3px 0;gap:10px"><span style="width:44px">${k}</span><div style="flex:1;height:8px;background:var(--fill);border-radius:99px"><div style="height:8px;width:${Math.round(v/ym*100)}%;background:var(--g);border-radius:99px"></div></div><b style="min-width:96px;text-align:right">${won(v)}</b></div>`).join("")}`:""}
   </div></div>`;
 };
+const revShort=n=>n>=10000?(n%10000?(n/10000).toFixed(1):n/10000)+"만":String(n);
+const revDelta=(a,b)=>b>0?Math.round((a-b)/b*100):null;
+const revDeltaPill=d=>d===null?`<span class="rvdelta flat">지난달 기록 없음</span>`:`<span class="rvdelta ${d>=0?"up":"down"}">${d>=0?"▲":"▼"} ${Math.abs(d)}% <small>전월 대비</small></span>`;
+function revTabs(all){
+  const t=revCos().map(c=>[c.tag,c.name]).sort((a,b)=>(b[0]===REV_GOAL)-(a[0]===REV_GOAL));
+  if(all.some(r=>!revCos().some(c=>c.tag===r.co)))t.push(["none","회사 미지정"]);
+  return t;
+}
 views.revenue=()=>{
-  const now=new Date(),cur=monthKey(now.getFullYear(),now.getMonth()),COs=revCos();
+  const now=new Date(),cur=monthKey(now.getFullYear(),now.getMonth()),pm=new Date(now.getFullYear(),now.getMonth()-1,1),prev=monthKey(pm.getFullYear(),pm.getMonth());
   const sum=a=>a.reduce((s,r)=>s+r.amount,0);
-  const all=D.revenue.filter(r=>!REV_HIDE.has(r.co)),pool=revCo==="all"?all:all.filter(r=>(r.co||"")===(revCo==="none"?"":revCo));
-  const month=pool.filter(r=>r.date.startsWith(cur)),total=sum(month);
-  const goalCo=coName(REV_GOAL),goalSum=sum(all.filter(r=>r.co===REV_GOAL&&r.date.startsWith(cur)));
-  const pct=D.set.goal>0?Math.min(100,Math.round(goalSum/D.set.goal*100)):0;
-  const months=[...Array(6)].map((_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-(5-i),1);const k=monthKey(d.getFullYear(),d.getMonth());return[k.slice(5)+"월",sum(pool.filter(r=>r.date.startsWith(k)))]});
-  const mx=Math.max(1,...months.map(m=>m[1]));
-  const recent=[...pool].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
-  const monthAll=all.filter(r=>r.date.startsWith(cur)),totAll=sum(monthAll),none=monthAll.filter(r=>!COs.some(c=>c.tag===r.co));
-  const rows=[...COs.map(c=>[c.tag,c.name,sum(monthAll.filter(r=>r.co===c.tag)),sum(all.filter(r=>r.co===c.tag))]),...(none.length?[["none","회사 미지정",sum(none),sum(all.filter(r=>!COs.some(c=>c.tag===r.co)))]]:[])];
-  const chip=(k,n)=>`<button class="${revCo===k?"on":""}" onclick="revCo='${k}';render()">${esc(n)}</button>`;
-  return `<h1>수익</h1><div class="sub">${cur} · 회사별로 나눠서 기록해요</div>
-  <div class="stats">${stat("이번 달 "+esc(goalCo),won(goalSum),1)}${stat("목표 달성률",pct+"%")}${stat("남은 금액",won(Math.max(0,D.set.goal-goalSum)))}</div>
-  <div class="card"><h3>회사별 (이번 달 · 누적)</h3><div class="body">${rows.map(([k,n,m,t])=>`<div class="row" style="padding:6px 0;cursor:pointer" onclick="revCo='${k}';render()"><span class="grow">${esc(n)}</span><span class="m" style="margin-right:10px">누적 ${won(t)}</span><b>${won(m)}</b></div>`).join("")}<div class="row" style="padding:8px 0 0;border-top:.5px solid var(--sep);margin-top:4px"><span class="grow"><b>합계</b></span><b>${won(totAll)}</b></div></div></div>
-  <div class="card"><div class="body" style="padding-top:12px"><div class="m sub">월 목표 (원, ${esc(goalCo)} 수익 기준)</div><input type="number" min="0" value="${D.set.goal}" onchange="D.set.goal=+this.value||0;D.set.u=Date.now();save();render()">
-  <div style="height:10px;background:var(--line);border-radius:99px;margin-top:10px"><div style="height:10px;width:${pct}%;background:var(--g);border-radius:99px"></div></div></div></div>
-  <div class="chips" style="margin:6px 0 10px">${chip("all","전체")}${COs.map(c=>chip(c.tag,c.name)).join("")}${none.length||all.some(r=>!COs.some(c=>c.tag===r.co))?chip("none","미지정"):""}</div>
-  ${yearCard(pool,COs,sum)}
-  <div class="card"><h3>최근 6개월 · ${revCo==="all"?"전체":esc(revCo==="none"?"회사 미지정":coName(revCo))}</h3><div class="body"><div style="display:flex;gap:8px;align-items:flex-end;height:120px">${months.map(([n,v])=>`<div style="flex:1;text-align:center"><div style="height:${Math.round(v/mx*90)}px;background:var(--g);border-radius:6px 6px 0 0;min-height:2px"></div><div class="m">${n}</div></div>`).join("")}</div></div></div>
-  <div class="form"><div class="filters"><select id="rco">${COs.map(c=>`<option value="${esc(c.tag)}" ${revCo===c.tag?"selected":""}>${esc(c.name)}</option>`).join("")}</select><input id="rd" type="date" value="${today()}"></div>
-  <select id="rc">${Object.entries(RCH).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select>
-  <input id="ra" type="number" min="0" placeholder="금액 (원)"><input id="rm" placeholder="출처 메모 (예: 애드센스, 쿠팡파트너스, 가구 판매)"><button class="btn" onclick="addRev()">＋ 수익 기록</button></div>
-  ${recent.map(r=>`<div class="item"><div class="row"><div class="grow"><div class="t">${won(r.amount)}</div><div class="m">${esc(r.date)} · ${esc(r.co?coName(r.co):"회사 미지정")} · ${RCH[r.ch]||"기타"}${r.memo?" · "+esc(r.memo):""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('revenue','${r.id}')">✕</button></div></div>`).join("")||'<div class="empty">아직 기록이 없어요</div>'}`;
+  const all=D.revenue.filter(r=>!REV_HIDE.has(r.co)),tabs=revTabs(all);
+  if(!tabs.some(t=>t[0]===revCo))revCo=tabs[0]?tabs[0][0]:"";
+  const inCo=r=>revCo==="none"?!revCos().some(c=>c.tag===r.co):r.co===revCo;
+  const pool=all.filter(inCo),name=(tabs.find(t=>t[0]===revCo)||["",""])[1];
+  const mSum=sum(pool.filter(r=>r.date.startsWith(cur))),pSum=sum(pool.filter(r=>r.date.startsWith(prev)));
+  const yr=String(now.getFullYear()),ySum=sum(pool.filter(r=>r.date.startsWith(yr))),cnt=pool.filter(r=>r.date.startsWith(cur)).length;
+  const months=[...Array(6)].map((_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-(5-i),1),k=monthKey(d.getFullYear(),d.getMonth());return[(d.getMonth()+1)+"월",sum(pool.filter(r=>r.date.startsWith(k))),k===cur]});
+  const mx=Math.max(1,...months.map(m=>m[1])),recent=[...pool].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
+  const isGoal=revCo===REV_GOAL,pct=D.set.goal>0?Math.min(100,Math.round(mSum/D.set.goal*100)):0;
+  const tabBtn=([k,n])=>{const v=sum(all.filter(r=>k==="none"?!revCos().some(c=>c.tag===r.co):r.co===k).filter(r=>r.date.startsWith(cur)));return `<button class="rvtab ${revCo===k?"on":""}" onclick="revCo='${k}';render()"><span>${esc(n)}</span><b>${won(v)}</b><small>이번 달</small></button>`};
+  const goal=isGoal?`<div class="rvgoal"><div class="row" style="gap:10px"><span class="grow m">월 목표 달성률</span><b>${pct}%</b></div>
+    <div class="rvbar"><i style="width:${pct}%"></i></div>
+    <div class="row" style="gap:10px;margin-top:8px;flex-wrap:wrap"><span class="m grow">남은 금액 <b style="color:var(--tx)">${won(Math.max(0,D.set.goal-mSum))}</b></span>
+    <label class="m" style="display:flex;align-items:center;gap:8px">목표(원)<input type="number" min="0" value="${D.set.goal}" style="width:150px" onchange="D.set.goal=+this.value||0;D.set.u=Date.now();save();render()"></label></div></div>`:"";
+  return `<div class="rvhead"><div><h1>수익</h1><div class="sub">${cur.replace("-","년 ")}월 · 브랜드별 매출 현황</div></div><button class="btn" onclick="revOpen()">＋ 수익 기록</button></div>
+  <div class="rvtabs">${tabs.map(tabBtn).join("")}</div>
+  <div class="card rvhero"><div class="body"><div class="m sub">${esc(name)} · 이번 달 매출</div>
+    <div class="rvbig">${won(mSum)}</div>${revDeltaPill(revDelta(mSum,pSum))}${goal}</div></div>
+  <div class="stats"><div class="stat"><small>올해 누적</small><b>${won(ySum)}</b></div><div class="stat"><small>지난달 매출</small><b>${won(pSum)}</b></div><div class="stat"><small>이번 달 기록</small><b>${cnt}건</b></div></div>
+  <div class="card"><h3>최근 6개월 매출</h3><div class="body"><div class="rvchart">${months.map(([n,v,c])=>`<div class="rvcol"><span class="m">${v?revShort(v):""}</span><i class="${c?"cur":""}" style="height:${Math.max(3,Math.round(v/mx*100))}px"></i><span class="m">${n}</span></div>`).join("")}</div></div></div>
+  <details class="card rvdet" ${revMore?"open":""} ontoggle="revMore=this.open"><summary>연도별 현황 보기</summary>${yearCard(pool,[],sum)}</details>
+  <div class="card"><h3>최근 기록</h3><div class="body">${recent.map(r=>`<div class="row" style="padding:8px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t">${won(r.amount)}</div><div class="m">${esc(r.date)} · ${RCH[r.ch]||"기타"}${r.memo?" · "+esc(r.memo):""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('revenue','${r.id}')" aria-label="삭제">✕</button></div>`).join("")||'<div class="empty">아직 기록이 없어요. 오른쪽 위 ＋ 수익 기록으로 첫 기록을 남겨 보세요.</div>'}</div></div>`;
 };
-function addRev(){const a=+$("#ra").value;if(!a)return;D.revenue.push({id:uid(),date:$("#rd").value||today(),co:$("#rco").value,ch:$("#rc").value,amount:a,memo:$("#rm").value.trim()});save();render()}
+let revMore=false;
+function revOpen(){
+  const COs=revCos();
+  $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="수익 기록"><div class="row"><b class="grow" style="font-size:18px">＋ 수익 기록</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
+  <div class="form" style="border:0;padding:0"><div class="filters"><select id="rco">${COs.map(c=>`<option value="${esc(c.tag)}" ${revCo===c.tag?"selected":""}>${esc(c.name)}</option>`).join("")}</select><input id="rd" type="date" value="${today()}"></div>
+  <select id="rc">${Object.entries(RCH).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select>
+  <input id="ra" type="number" min="0" placeholder="금액 (원)" onkeydown="if(event.key==='Enter')addRev()"><input id="rm" placeholder="출처 메모 (예: 애드센스, 쿠팡파트너스, 가구 판매)" onkeydown="if(event.key==='Enter')addRev()"><button class="btn" onclick="addRev()">기록하기</button></div></div>`;
+  $("#modal").classList.add("open");const e=$("#ra");if(e)e.focus();
+}
+function addRev(){const a=+$("#ra").value;if(!a)return;const co=$("#rco").value;D.revenue.push({id:uid(),date:$("#rd").value||today(),co,ch:$("#rc").value,amount:a,memo:$("#rm").value.trim()});revCo=co;closeModal();save();render();toast("수익을 기록했어요")}
 
 /* ---------- Linus Company AI 직원 (가져오기·조직도) ---------- */
 const agentNames=()=>new Set(D.set.agents.map(a=>a.name));
