@@ -288,7 +288,7 @@ IC.messenger=IC.chat;IC.chat='<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도"],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const PAGES=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
 const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["콘텐츠·수익",["contents","revenue"]],["회사",["org","staff"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
@@ -1044,8 +1044,8 @@ views.staff=()=>{
   `<div class="m sub">이 링크를 열면 직원 기기가 자동으로 연결돼요. <b>링크 안에 저장소 접근 키가 들어 있어요.</b> 카카오톡 1:1처럼 믿을 수 있는 곳으로만 보내고, 이 앱 전용 GitHub 계정의 토큰을 쓰세요.</div>
   <div class="form" style="border:0;padding:0"><input id="inv" readonly value="${esc(link)}" onfocus="this.select()"><button class="btn" onclick="navigator.clipboard.writeText($('#inv').value).then(()=>alert('복사했어요'))">링크 복사</button></div>`}</div></div>`;
 };
-function addStaff(){const n=$("#sname").value.trim();if(!n||D.set.staff.includes(n))return;D.set.staff.push(n);D.set.u=Date.now();save();render()}
-function rmStaff(i){if(!confirm("명단에서 뺄까요?"))return;D.set.staff.splice(i,1);D.set.u=Date.now();save();render()}
+function addStaff(){if(!isAdmin())return;const n=$("#sname").value.trim();if(!n||D.set.staff.includes(n))return;D.set.staff.push(n);D.set.u=Date.now();save();render()}
+function rmStaff(i){if(!isAdmin())return;if(!confirm("명단에서 뺄까요?"))return;D.set.staff.splice(i,1);D.set.u=Date.now();save();render()}
 async function setPins(){
   if(!isAdmin())return;
   const old=D.set.pins,aid=$("#paid").value.trim().toLowerCase(),pw=$("#pa").value,sp=$("#ps2").value.trim();
