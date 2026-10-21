@@ -311,7 +311,7 @@ const today=()=>ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],ledger:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],ledger:[],prices:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
@@ -334,7 +334,7 @@ function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs","ledger"];
+const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs","ledger","prices"];
 let SNAP={};
 const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
 resnap();
@@ -626,7 +626,7 @@ views.revenue=()=>{
   const sum=a=>a.reduce((s,r)=>s+r.amount,0);
   const all=D.revenue.filter(r=>!REV_HIDE.has(r.co)),tabs=revTabs(all);
   if(!tabs.some(t=>t[0]===revCo))revCo=tabs[0]?tabs[0][0]:"";
-  if(revTab==="led"&&revCo!==REV_GOAL)revTab="sum";
+  if((revTab==="led"||revTab==="prc")&&revCo!==REV_GOAL)revTab="sum";
   const inCo=r=>revCo==="none"?!revCos().some(c=>c.tag===r.co):r.co===revCo;
   const pool=all.filter(inCo),name=(tabs.find(t=>t[0]===revCo)||["",""])[1];
   const mSum=sum(pool.filter(r=>r.date.startsWith(cur))),pSum=sum(pool.filter(r=>r.date.startsWith(prev)));
@@ -641,7 +641,7 @@ views.revenue=()=>{
     <label class="m" style="display:flex;align-items:center;gap:8px">목표(원)<input type="number" min="0" value="${D.set.goal}" style="width:150px" onchange="D.set.goal=+this.value||0;D.set.u=Date.now();save();render()"></label></div></div>`:"";
   return `<div class="rvhead"><div><h1>수익</h1><div class="sub">${cur.replace("-","년 ")}월 · 브랜드별 매출 현황</div></div><button class="btn" onclick="revOpen()">＋ 수익 기록</button></div>
   <div class="rvtabs">${tabs.map(tabBtn).join("")}</div>
-  <div class="tabs setTabs">${(revCo===REV_GOAL?REV_TABS:REV_TABS.filter(t=>t[0]!=="led")).map(([k,n])=>`<button class="${revTab===k?"on":""}" onclick="revTab='${k}';render()">${n}</button>`).join("")}</div>
+  <div class="tabs setTabs">${(revCo===REV_GOAL?REV_TABS:REV_TABS.filter(t=>t[0]!=="led"&&t[0]!=="prc")).map(([k,n])=>`<button class="${revTab===k?"on":""}" onclick="revTab='${k}';render()">${n}</button>`).join("")}</div>
   ${revTab==="sum"?`
   <div class="card rvhero"><div class="body"><div class="m sub">${esc(name)} · 이번 달 매출</div>
     <div class="rvbig">${won(mSum)}</div>${revDeltaPill(revDelta(mSum,pSum))}${goal}</div></div>
@@ -653,10 +653,11 @@ views.revenue=()=>{
   `:""}
   ${revTab==="rec"?`
   <div class="card"><h3>최근 기록</h3><div class="body">${recent.map(r=>`<div class="row" style="padding:8px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t">${won(r.amount)}</div><div class="m">${esc(r.date)} · ${RCH[r.ch]||"기타"}${r.memo?" · "+esc(r.memo):""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('revenue','${r.id}')" aria-label="삭제">✕</button></div>`).join("")||'<div class="empty">아직 기록이 없어요. 오른쪽 위 ＋ 수익 기록으로 첫 기록을 남겨 보세요.</div>'}</div></div>  `:""}
-  ${revTab==="led"?ledView(cur):""}`;
+  ${revTab==="led"?ledView(cur):""}
+  ${revTab==="prc"?prcView():""}`;
 };
 let revMore=false,revTab="sum";
-const REV_TABS=[["sum","📊 요약"],["stat","📈 통계"],["rec","🧾 기록"],["led","📒 장부"]];
+const REV_TABS=[["sum","📊 요약"],["stat","📈 통계"],["rec","🧾 기록"],["led","📒 장부"],["prc","💲 단가표"]];
 function revOpen(){
   const COs=revCos();
   $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="수익 기록"><div class="row"><b class="grow" style="font-size:18px">＋ 수익 기록</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
@@ -675,7 +676,7 @@ function ledOpen(id){
   ledEdit=id||"";const e=id?D.ledger.find(x=>x.id===id):null;if(id&&!e)return;
   const v=e||{date:today(),item:"",price:"",disc:"",ship:"",cost:"",memo:""};
   $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="장부 기록"><div class="row"><b class="grow" style="font-size:18px">${e?"장부 고치기":"＋ 장부 기록"}</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
-  <div class="form" style="border:0;padding:0"><div class="filters"><input id="ledd" type="date" value="${esc(v.date)}"><input id="ledi" placeholder="제품·고객 (예: 퀸 매트리스)" value="${esc(v.item)}"></div>
+  <div class="form" style="border:0;padding:0"><div class="filters"><input id="ledd" type="date" value="${esc(v.date)}"><input id="ledi" list="prclist" placeholder="제품·고객 (단가표에서 고르면 가격이 채워져요)" value="${esc(v.item)}" oninput="ledPick(this.value)" autocomplete="off"><datalist id="prclist">${D.prices.map(x=>`<option value="${esc(x.name)}">`).join("")}</datalist></div>
   <label class="m">판매가 (원)<input id="ledp" type="number" min="0" inputmode="numeric" value="${esc(v.price)}" oninput="ledPv()"></label>
   <div class="filters"><label class="m">할인율 (%)<input id="ledr" type="number" min="0" max="100" step="0.1" inputmode="decimal" value="${esc(v.disc)}" oninput="ledPv()"></label><label class="m">배송료 (원)<input id="ledh" type="number" min="0" inputmode="numeric" value="${esc(v.ship)}" oninput="ledPv()"></label></div>
   <label class="m">회사에 납부할 물건대금 (원)<input id="ledc" type="number" min="0" inputmode="numeric" value="${esc(v.cost||"")}" oninput="ledPv()"></label>
@@ -683,6 +684,10 @@ function ledOpen(id){
   <div class="card" style="margin:6px 0"><div class="body" id="ledpv"></div></div>
   <button class="btn" onclick="ledSave()">${e?"저장":"기록하기"}</button></div></div>`;
   $("#modal").classList.add("open");ledPv();const f=$("#ledp");if(f)f.focus();
+}
+function ledPick(n){
+  const x=D.prices.find(q=>q.name===String(n).trim());if(!x)return;
+  const P=$("#ledp"),C=$("#ledc");if(P)P.value=x.price||"";if(C)C.value=x.cost||"";ledPv();
 }
 function ledPv(){
   const c=ledCalc({price:($("#ledp")||{}).value,disc:($("#ledr")||{}).value,ship:($("#ledh")||{}).value,cost:($("#ledc")||{}).value}),el=$("#ledpv");if(!el)return;
@@ -716,6 +721,76 @@ function ledView(cur){
     <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>
   <div class="m sub" style="margin:8px 4px">남는 금액 = 판매가 − 할인액 − 배송료 − 회사에 납부할 물건대금이에요. 수수료는 빼지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요.</div>`;
+}
+/* ---------- 단가표 (에이스침대 제품별 판매가·납부 단가) ----------
+   AMS 같은 외부 화면은 앱이 직접 읽지 않아요. 표를 복사해 붙여 넣거나 CSV 파일로 가져와요(D.prices, 동기화). */
+let prcQ="";
+const prcNum=v=>{const n=parseInt(String(v==null?"":v).replace(/[^\d-]/g,""),10);return isFinite(n)?n:0};
+function prcSplit(line,d){
+  if(d==="\t")return line.split("\t");
+  const o=[];let cur="",q=false;
+  for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++}else q=!q}else if(c===","&&!q){o.push(cur);cur=""}else cur+=c}
+  o.push(cur);return o;
+}
+function prcParse(text){
+  const lines=String(text||"").replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean).slice(0,3000);
+  if(!lines.length)return[];
+  const d=lines.some(l=>l.includes("\t"))?"\t":",",rows=lines.map(l=>prcSplit(l,d).map(c=>c.trim()));
+  let ix={name:0,price:1,cost:2,cat:3},start=0;const h=rows[0];
+  const find=re=>h.findIndex(c=>re.test(c));
+  if(h.some(c=>/제품|품명|상품|모델|품목/.test(c))||h.some(c=>/가격|판매가|소비자|정가/.test(c))){
+    start=1;const n=find(/제품|품명|상품|모델|품목/),pr=find(/판매가|소비자|정가|가격/),co=find(/납부|납품|공급|도매|원가|매입|단가/),ca=find(/분류|카테고리|구분|종류/);
+    ix={name:n>=0?n:0,price:pr>=0?pr:1,cost:co>=0&&co!==pr?co:-1,cat:ca>=0?ca:-1};
+  }
+  return rows.slice(start).map(r=>({name:(r[ix.name]||"").slice(0,60),price:prcNum(r[ix.price]),cost:ix.cost>=0?prcNum(r[ix.cost]):0,cat:ix.cat>=0?(r[ix.cat]||"").slice(0,20):""})).filter(x=>x.name&&x.price>0);
+}
+function prcOpenImport(){
+  $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="단가표 가져오기"><div class="row"><b class="grow" style="font-size:18px">단가표 가져오기</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
+  <div class="m sub">AMS 등의 제품 표를 드래그해 복사한 뒤 아래에 붙여 넣으세요. 첫 줄이 제목(제품명·판매가·납부단가·분류)이면 자동으로 열을 찾고, 제목이 없으면 <b>제품명, 판매가, 납부단가, 분류</b> 순서로 읽어요. 같은 제품명은 값이 갱신돼요.</div>
+  <div class="form" style="border:0;padding:0"><textarea id="prci" rows="8" placeholder="제품명&#9;판매가&#9;납부단가&#10;퀸 매트리스&#9;1,500,000&#9;900,000" oninput="prcPrev()"></textarea>
+  <div class="m" id="prcpv"></div>
+  <label class="m">또는 CSV 파일 <input type="file" accept=".csv,.txt,text/csv,text/plain" onchange="prcFile(this)"></label>
+  <button class="btn" onclick="prcImport()">가져오기</button></div></div>`;
+  $("#modal").classList.add("open");
+}
+function prcPrev(){const r=prcParse(($("#prci")||{}).value),el=$("#prcpv");if(el)el.textContent=r.length?`제품 ${r.length}개를 읽었어요 · 첫 줄: ${r[0].name} / 판매가 ${won(r[0].price)}${r[0].cost?" / 납부 "+won(r[0].cost):""}`:"읽을 수 있는 제품이 아직 없어요"}
+async function prcFile(inp){
+  const f=inp.files&&inp.files[0];inp.value="";if(!f)return;
+  const buf=await f.arrayBuffer();let t=new TextDecoder("utf-8").decode(buf);
+  if(t.includes("�")){try{t=new TextDecoder("euc-kr").decode(buf)}catch{}}
+  const e=$("#prci");if(e){e.value=t.replace(/^﻿/,"");prcPrev()}
+}
+function prcImport(){
+  const rows=prcParse(($("#prci")||{}).value);if(!rows.length){alert("읽을 수 있는 제품이 없어요. 제품명과 판매가 열이 있는지 확인해 주세요");return}
+  let add=0,upd=0;
+  rows.forEach(r=>{const x=D.prices.find(q=>q.name===r.name);if(x){x.price=r.price;if(r.cost)x.cost=r.cost;if(r.cat)x.cat=r.cat;upd++}else{D.prices.push({id:uid(),...r});add++}});
+  closeModal();save();render();toast(`새 제품 ${add}개, 갱신 ${upd}개`);
+}
+function prcEdit(id){
+  const x=id?D.prices.find(q=>q.id===id):{name:"",price:"",cost:"",cat:"",memo:""};if(!x)return;
+  $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="제품"><div class="row"><b class="grow" style="font-size:18px">${id?"제품 고치기":"＋ 제품 추가"}</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
+  <div class="form" style="border:0;padding:0"><input id="pn" placeholder="제품명" value="${esc(x.name)}"><input id="pc" placeholder="분류 (선택, 예: 매트리스)" value="${esc(x.cat||"")}">
+  <label class="m">판매가 (원)<input id="pp" type="number" min="0" inputmode="numeric" value="${esc(x.price)}"></label><label class="m">회사에 납부할 단가 (원)<input id="pk" type="number" min="0" inputmode="numeric" value="${esc(x.cost||"")}"></label>
+  <button class="btn" onclick="prcSave('${id||""}')">저장</button></div></div>`;
+  $("#modal").classList.add("open");
+}
+function prcSave(id){
+  const name=$("#pn").value.trim().slice(0,60),price=Math.round(+$("#pp").value||0);if(!name||price<=0){alert("제품명과 판매가를 입력해 주세요");return}
+  const rec={name,cat:$("#pc").value.trim().slice(0,20),price,cost:Math.max(0,Math.round(+$("#pk").value||0))};
+  if(id){const x=D.prices.find(q=>q.id===id);if(x)Object.assign(x,rec)}else D.prices.push({id:uid(),...rec});
+  closeModal();save();render();
+}
+function prcDel(id){if(!isAdmin()||!confirm("이 제품을 단가표에서 지울까요?"))return;D.prices=D.prices.filter(x=>x.id!==id);save();render()}
+function prcClear(){if(!isAdmin()||!confirm(`단가표 ${D.prices.length}개를 모두 지울까요? (장부 기록은 그대로예요)`))return;D.prices=[];save();render()}
+function prcView(){
+  const q=prcQ.trim().toLowerCase(),rows=D.prices.filter(x=>!q||(x.name+" "+(x.cat||"")).toLowerCase().includes(q)).sort((a,b)=>(a.cat||"").localeCompare(b.cat||"","ko")||a.name.localeCompare(b.name,"ko"));
+  return `<div class="row" style="gap:8px;margin:4px 0 8px;flex-wrap:wrap"><button class="btn grow" onclick="prcOpenImport()">표 붙여넣기 · CSV 가져오기</button><button class="btn ghost" onclick="prcEdit()">＋ 제품</button></div>
+  <input placeholder="제품 검색 (${D.prices.length}개)" value="${esc(prcQ)}" oninput="prcQ=this.value;render(true)" style="margin-bottom:8px">
+  <div class="card"><h3>제품 단가표 <span class="m sub" style="margin:0">판매가 · 납부 단가 · 차액</span></h3><div class="body">${rows.map(x=>`<div class="row" style="gap:8px;padding:8px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t">${esc(x.name)}</div><div class="m">${x.cat?esc(x.cat)+" · ":""}판매가 ${won(x.price)} · 납부 ${x.cost?won(x.cost):"미입력"}</div></div>
+    <div style="text-align:right"><b>${x.cost?won(x.price-x.cost):"-"}</b><div class="m">차액</div></div>
+    <button class="icon" style="width:32px;height:32px" onclick="prcEdit('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="prcDel('${x.id}')" aria-label="삭제">✕</button></div>`).join("")||'<div class="empty">'+(D.prices.length?"검색 결과가 없어요":"단가표가 비어 있어요. AMS의 제품 표를 복사해 붙여 넣거나 ＋ 제품으로 하나씩 넣어 보세요.")+'</div>'}
+  ${D.prices.length?'<button class="btn ghost" style="margin-top:10px" onclick="prcClear()">단가표 모두 지우기</button>':""}</div></div>
+  <div class="m sub" style="margin:8px 4px">장부 기록에서 제품명을 고르면 판매가와 납부 단가가 자동으로 채워져요. 차액은 판매가 − 납부 단가이고, 할인·배송료는 장부에서 건마다 반영해요.</div>`;
 }
 function addRev(){const a=+$("#ra").value;if(!a)return;const co=$("#rco").value;D.revenue.push({id:uid(),date:$("#rd").value||today(),co,ch:$("#rc").value,amount:a,memo:$("#rm").value.trim()});revCo=co;closeModal();save();render();toast("수익을 기록했어요")}
 
