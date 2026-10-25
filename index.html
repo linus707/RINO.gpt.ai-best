@@ -1432,7 +1432,7 @@ const orgBody=()=>views.org().replace("<h1>조직도</h1>","");
 function setSection(k){
   const adm=isAdmin(),x=staffParts();
   if(k==="people")return `<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
-  if(k==="link")return `${connCard()}${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${aiCardUi()}`;
+  if(k==="link")return `${connCard()}${vaultCard()}${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${aiCardUi()}`;
   if(k==="look")return `${bgCard()}${adm?brandCard():""}${themeCard()}${adm?brandLinkCard():""}`;
   if(k==="data")return `${backupCardUi()}${importCardUi()}${skillCard()}`;
   return `${x.login}${bioCard()}`;
@@ -1492,6 +1492,52 @@ const connCard=()=>{
   <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" onclick="connCheck()">저장 상태 다시 확인</button>${lk?`<button class="btn ghost" onclick="connUnlockOpen()">잠금 풀기</button>`:`<button class="btn" onclick="connLock()">지금 저장하고 잠그기</button>`}</div>
   ${lk?`<div class="m sub" style="margin-top:6px">잠근 시각: ${new Date(CFG.connLock).toLocaleString("ko-KR")} · 잠겨 있어도 동기화와 불러오기는 계속 작동해요.</div>`:""}</div></div>`;
 };
+/* ---------- 다른 기기(스마트폰)와 공유: 암호화 보관 ----------
+   저장소 토큰·지시함 토큰·AI 키 등을 관리자 비밀번호로 암호화(AES-256-GCM)해서 동기화 데이터(D.set.vault)에 넣어요.
+   깃허브 저장소에 커밋하지 않고, 평문은 어디에도 올라가지 않아요. 새 기기에서는 같은 비밀번호로 풀어 복원해요.
+   (동기화 토큰·Gist ID는 이 보관본을 읽기 위한 열쇠라서 초대 링크나 직접 입력으로 먼저 연결해야 해요.) */
+const VAULT_KEYS=["repo","repoBranch","repoAuto","repoToken","repoWToken","aiKey","aiWs"];
+const vb64=u=>btoa(String.fromCharCode(...u)),vb64d=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+async function vaultKey(pw,salt){const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",hash:"SHA-256",salt,iterations:200000},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+const vaultData=()=>{const o={};VAULT_KEYS.forEach(k=>{if(CFG[k]!==undefined&&CFG[k]!=="")o[k]=CFG[k]});return o};
+const vaultFp=(o)=>{let h=5381;for(const c of JSON.stringify(o||vaultData()))h=((h<<5)+h+c.charCodeAt(0))>>>0;return h};
+async function vaultSeal(pw){
+  const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await vaultKey(pw,salt);
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(vaultData()))));
+  return {v:1,salt:vb64(salt),iv:vb64(iv),ct:vb64(ct),u:Date.now()};
+}
+async function vaultOpen(pw,v){const key=await vaultKey(pw,vb64d(v.salt));return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:vb64d(v.iv)},key,vb64d(v.ct))))}
+function vaultAsk(mode){
+  $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="암호화 보관"><div class="row"><b class="grow" style="font-size:18px">${mode==="seal"?"암호화해서 보관":"보관본에서 복원"}</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
+  <div class="form" style="border:0;padding:0"><div class="m sub">${mode==="seal"?"관리자 비밀번호(8자 이상)로 암호화해 동기화 데이터에 보관해요. 평문은 올라가지 않아요.":"보관할 때 쓴 관리자 비밀번호를 입력하면 이 기기에 없는 연결 정보를 채워요(이미 있는 값은 그대로 둬요)."}</div>
+  <input id="vpw" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" onkeydown="if(event.key==='Enter')vaultGo('${mode}')"><button class="btn" onclick="vaultGo('${mode}')">${mode==="seal"?"암호화해서 보관":"복원"}</button></div></div>`;
+  $("#modal").classList.add("open");const e=$("#vpw");if(e)e.focus();
+}
+async function vaultGo(mode){
+  const pw=($("#vpw")||{}).value||"",p=D.set.pins;
+  try{
+    if(mode==="seal"){
+      if(!isAdmin())return;
+      if(pw.length<8){alert("비밀번호가 8자 이상이어야 안전하게 보관할 수 있어요. 설정 > 계정·보안에서 8자 이상으로 바꿔 주세요");return}
+      if(p&&(await hashAdmin(pw,p))!==p.a){alert("관리자 비밀번호가 맞지 않아요");return}
+      if(!Object.keys(vaultData()).length){alert("보관할 연결 정보가 아직 없어요");return}
+      D.set.vault=await vaultSeal(pw);D.set.u=Date.now();CFG.vaultFp=vaultFp();saveCfg();save();closeModal();render();toast("암호화해서 보관했어요. 다른 기기에서 같은 비밀번호로 복원할 수 있어요");
+    }else{
+      const v=D.set.vault;if(!v){alert("보관본이 없어요. 먼저 연결된 기기에서 암호화 보관을 해 주세요");return}
+      let o;try{o=await vaultOpen(pw,v)}catch{alert("비밀번호가 맞지 않거나 보관본을 읽을 수 없어요");return}
+      let n=0;VAULT_KEYS.forEach(k=>{if(o[k]!==undefined&&(CFG[k]===undefined||CFG[k]==="")){CFG[k]=o[k];n++}});
+      CFG.vaultFp=vaultFp(o);saveCfg();closeModal();render();toast(n?`연결 정보 ${n}개를 복원했어요`:"이미 모두 채워져 있어요");
+    }
+  }catch(e){alert("처리하지 못했어요: "+(e.message||e))}
+}
+function vaultCard(){
+  const v=D.set.vault,stale=v&&CFG.vaultFp&&CFG.vaultFp!==vaultFp(),missing=v&&VAULT_KEYS.some(k=>["repoToken","repoWToken","aiKey"].includes(k)&&!CFG[k]);
+  return `<div class="card"><h3>📱 스마트폰·다른 기기와 공유 ${v?'<span class="m sub" style="margin:0">보관됨</span>':""}</h3><div class="body">
+  <div class="m sub">연결 정보를 <b>관리자 비밀번호로 암호화</b>해서 동기화 데이터에 보관해요. 깃허브 저장소에 올리는 것이 아니라서(토큰을 저장소에 커밋하면 노출돼요) 안전하고, 폰에서는 비밀번호만 입력하면 복원돼요.</div>
+  <div class="m" style="margin:8px 0;line-height:1.7">${v?`✅ 마지막 보관: ${new Date(v.u).toLocaleString("ko-KR")}${stale?'<br>⚠️ 그 뒤로 연결 정보가 바뀌었어요. 다시 보관해 주세요':""}`:"아직 보관하지 않았어요"}${missing?'<br>📥 이 기기에는 빠진 연결 정보가 있어요. 복원할 수 있어요':""}</div>
+  <div class="row" style="gap:8px;flex-wrap:wrap">${isAdmin()?`<button class="btn" onclick="vaultAsk('seal')">${v?"다시 암호화해서 보관":"암호화해서 보관"}</button>`:""}${v?`<button class="btn ghost" onclick="vaultAsk('restore')">보관본에서 복원</button>`:""}</div>
+  <div class="m sub" style="margin-top:8px"><b>폰에서 쓰는 순서</b> ① 폰에서 앱을 열고 초대 링크(설정 › 직원·조직)나 동기화 토큰+Gist ID로 먼저 연결 ② 관리자 로그인 ③ 이 카드에서 <b>보관본에서 복원</b> ④ 연결 정보 보호의 <b>잠그기</b></div></div></div>`;
+}
 function connectSync(){if(connGuard())return;CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value.trim()||CFG.gistId||"";saveCfg();sdClear("tk","gi");if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
 function disconnectSync(){if(connGuard())return;delete CFG.token;saveCfg();sdClear("tk");setSync("● 자동 저장");render()}
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
