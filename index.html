@@ -840,6 +840,13 @@ function applyRoster(list,map){
   return n;
 }
 const needOrgMig=()=>D.set.agents.some(a=>/^SOL-\d+$/.test(String(a.emp))&&+String(a.emp).slice(4)>6);
+/* 직원 이름 뒤 명칭을 팀명으로 바꿔요(2026-10-25). 이미 저장된 명단도 한 번 자동으로 맞춰요. */
+function teamMigrate(){
+  if(!isAdmin()||!D.set.agents.length)return;
+  let ch=0;const TEAM_OF=Object.fromEntries(SOL_ROSTER.agents.map(a=>[a.agent,{title:a.title,dept:a.dept,role:a.role}]));
+  D.set.agents.forEach(a=>{const t=TEAM_OF[a.agent];if(t&&(a.title!==t.title||a.dept!==t.dept||a.role!==t.role||a.channel)){a.title=t.title;a.dept=t.dept;a.role=t.role;a.channel="";ch++}});
+  if(ch){D.set.u=Date.now();save()}
+}
 function orgMigrate(){
   if(!isAdmin()||!needOrgMig())return;
   if(!confirm("조직이 6명 체제(부대표 영환 · 민아 · 기호 · 유진 · 지수 · 시연)로 개편됐어요.\n앱의 AI 직원 명단을 6명으로 바꿀까요?\n(이전 이름으로 배정된 업무는 이어받은 직원으로 자동 변경돼요)")){toast("설정 > AI 직원에서 언제든 바꿀 수 있어요");return}
@@ -855,12 +862,12 @@ views.org=()=>{
   const on=A.filter(active).length;
   return `<h1>조직도</h1><div class="sub">AI 직원 ${A.length}명 · ${depts.length}개 팀 · 가동 중 ${on}명 (현재 ${D.set.stage}단계)</div>
   <div class="stats">${stat("전체 AI 직원",A.length+"명",1)}${stat("가동 중",on+"명")}${stat("대기",(A.length-on)+"명")}${stat("진행 업무",D.tasks.filter(t=>!t.done&&agentNames().has(t.who)).length)}</div>`+
-  depts.map(d=>{const m=A.filter(a=>a.dept===d);return `<div class="card"><h3>${esc(d)}<span class="m sub" style="margin:0">${m.length}명 · ${esc(m[0].channel)}</span></h3><div class="body">`+
-    m.map(a=>`<div class="item" style="${active(a)?"":"opacity:.6"}"><div class="row"><div class="grow"><div class="t">${esc(a.name)} <span class="m">${esc(a.title)}</span></div><div class="m">${esc(a.emp)} · ${esc(a.model)} · 보고 ${esc(a.boss)}</div></div>
+  depts.map(d=>{const m=A.filter(a=>a.dept===d);return `<div class="card"><h3>${esc(d)}<span class="m sub" style="margin:0">${m.length}명</span></h3><div class="body">`+
+    m.map(a=>`<div class="item" style="${active(a)?"":"opacity:.6"}"><div class="row"><div class="grow"><div class="t">${esc(a.name)} <span class="m">${esc(a.title)}</span></div><div class="m">${esc(a.role||"")}</div><div class="m">${esc(a.emp)} · ${esc(a.model)} · 보고 ${esc(a.boss)}</div></div>
     ${openCnt(a.name)?`<span class="pill" style="background:var(--make)">업무 ${openCnt(a.name)}</span>`:""}<span class="pill" style="background:var(${active(a)?"--done":"--idea"})">${active(a)?"가동":a.stage+"단계"}</span></div></div>`).join("")+`</div></div>`}).join("");
 };
 /* Linus Company AI 직원 기본 명단 (2026-10-14 개편: 6명, SOLAMEN tools/staff_registry.json 기준) */
-const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"Linus Company"}],"agents":[{"emp":"SOL-001","agent":"younghwan","name":"영환","title":"부대표","dept":"부대표실","channel":"#sol-대표실","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"mina","name":"민아","title":"운영 시스템","dept":"운영시스템","channel":"#sol-경영지원","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-003","agent":"giho","name":"기호","title":"현장 신뢰","dept":"현장신뢰","channel":"#sol-콘텐츠본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-004","agent":"yujin","name":"유진","title":"수익 상품","dept":"수익상품","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-005","agent":"jisu","name":"지수","title":"채널 실험","dept":"채널실험","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-006","agent":"siyeon","name":"시연","title":"커뮤니티","dept":"커뮤니티","channel":"#sol-성장본부","stage":1,"boss":"영환","model":"Sonnet"}]};
+const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"Linus Company"}],"agents":[{"emp":"SOL-001","agent":"younghwan","name":"영환","title":"기획총괄팀","dept":"기획총괄팀","role":"부대표 · 접수·배분·검증·기획·전산","channel":"","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"mina","name":"민아","title":"경영지원팀","dept":"경영지원팀","role":"회계·세무·법무·규칙·템플릿","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-003","agent":"giho","name":"기호","title":"콘텐츠팀","dept":"콘텐츠팀","role":"에이스침대 현장 글 작성·교열","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-004","agent":"yujin","name":"유진","title":"수익사업팀","dept":"수익사업팀","role":"e-book·스토어·제휴 상품 · 수익 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-005","agent":"jisu","name":"지수","title":"마케팅팀","dept":"마케팅팀","role":"채널 실험·SEO·카피·비주얼·영상·성과 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-006","agent":"siyeon","name":"시연","title":"고객응대팀","dept":"고객응대팀","role":"댓글·DM 응대 · FAQ·VOC","channel":"","stage":1,"boss":"영환","model":"Sonnet"}]};
 /* 이전 34명 이름 → 이어받은 직원 (업무 담당자 이름 자동 변경용) */
 const OLD2NEW={"아우렐리우스":"영환","아그리파":"영환","아티쿠스":"유진","마에케나스":"지수","티로":"영환","퀸틸리아누스":"기호","세네카":"기호","바로":"지수","오비디우스":"지수","겔리우스":"기호","하드리아누스":"지수","켈레르":"영환","헤르모게네스":"민아","스투디우스":"지수","로스키우스":"지수","플라우투스":"지수","필라데스":"지수","베르길리우스":"유진","플리니우스":"지수","호라티우스":"영환","마르티알리스":"지수","콜루멜라":"지수","소시우스":"유진","트리폰":"유진","스카우루스":"유진","필레몬":"시연","바우키스":"시연","비트루비우스":"영환","아폴로도로스":"영환","파불루스":"영환","프론티누스":"영환","카토":"민아","팔라스":"민아","가이우스":"민아"};
 let AG_READY=false;
@@ -902,7 +909,7 @@ function importAgents(f){
   f.text().then(t=>{try{
     const j=JSON.parse(t);if(j.kind!=="solamen-staff"||!Array.isArray(j.agents))throw 0;
     const by=new Map(D.set.agents.map(a=>[a.emp,a]));
-    j.agents.forEach(a=>{if(a&&a.emp&&a.name)by.set(a.emp,{emp:String(a.emp),agent:String(a.agent||""),name:String(a.name),title:String(a.title||""),dept:String(a.dept||"기타"),channel:String(a.channel||""),stage:+a.stage||0,boss:String(a.boss||""),model:String(a.model||"")})});
+    j.agents.forEach(a=>{if(a&&a.emp&&a.name)by.set(a.emp,{emp:String(a.emp),agent:String(a.agent||""),name:String(a.name),title:String(a.title||""),dept:String(a.dept||"기타"),channel:String(a.channel||""),stage:+a.stage||0,boss:String(a.boss||""),model:String(a.model||""),role:String(a.role||"")})});
     D.set.agents=[...by.values()];if(j.activeStage)D.set.stage=+j.activeStage;if(Array.isArray(j.brands)){const old=Object.fromEntries((D.set.brands||[]).map(b=>[b.tag,b.url]));D.set.brands=j.brands.filter(b=>b&&b.tag).map(b=>({tag:String(b.tag),name:String(b.name||""),...(old[String(b.tag)]?{url:old[String(b.tag)]}:{})}))}D.set.u=Date.now();save();render();alert(j.agents.length+"명을 가져왔어요")
   }catch{alert("Linus Company 직원 파일이 아니에요")}});
 }
@@ -2422,7 +2429,7 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&s
   try{const q=new URLSearchParams(location.search);if(q.has("chat")||q.has("messenger")){if(me()){page="messenger";const rq=q.get("room");if(rq&&mrooms().some(r=>r.id===rq)){mRoom=rq;mForce=true}}history.replaceState(null,"",location.pathname)}}catch{}
   render();
   const auto=()=>{if(CFG.repoAuto&&CFG.repoToken&&isAdmin())importRepo(true)};
-  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;render();auto();ntfyDaily();pushRefresh()},()=>{AG_READY=true;render()})}else{AG_READY=true;render();auto();ntfyDaily();pushRefresh()}
+  if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;try{teamMigrate()}catch{}render();auto();ntfyDaily();pushRefresh()},()=>{AG_READY=true;render()})}else{AG_READY=true;try{teamMigrate()}catch{}render();auto();ntfyDaily();pushRefresh()}
 })();
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
