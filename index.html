@@ -666,37 +666,98 @@ function revOpen(){
   <input id="ra" type="number" min="0" placeholder="금액 (원)" onkeydown="if(event.key==='Enter')addRev()"><input id="rm" placeholder="출처 메모 (예: 애드센스, 쿠팡파트너스, 가구 판매)" onkeydown="if(event.key==='Enter')addRev()"><button class="btn" onclick="addRev()">기록하기</button></div></div>`;
   $("#modal").classList.add("open");const e=$("#ra");if(e)e.focus();
 }
-/* ---------- 장부 (에이스침대 전용: 판매가에서 할인·배송료를 뺀 남는 금액) ----------
-   남는 금액 = 판매가 − 할인액(판매가 × 할인율) − 배송료 − 회사에 납부할 물건대금. 수수료는 넣지 않아요. 기록은 D.ledger 에 저장되고 동기화돼요. */
-let ledM="",ledEdit="";
-const ledCalc=e=>{const price=Math.max(0,+e.price||0),disc=Math.min(100,Math.max(0,+e.disc||0)),ship=Math.max(0,+e.ship||0),cost=Math.max(0,+e.cost||0),da=Math.round(price*disc/100),real=price-da,net=real-ship-cost;return{price,disc,ship,cost,da,real,net,rate:price>0?Math.round(net/price*1000)/10:0}};
+/* ---------- 장부 (에이스침대 전용: 판매가에서 할인·배송료·세금·수수료·기타를 뺀 남는 금액) ----------
+   남는 금액 = 할인 후 판매액 − 배송료 − 물건대금 − 기타비용 − 부가세(할인 후 판매액의 10/110, 선택) − 카드수수료(%) − 기타 세율(%).
+   부가세·수수료·세율은 '할인 후 판매액'(고객이 실제로 낸 금액) 기준이에요. 매입 부가세 공제는 반영하지 않아요.
+   기록은 D.ledger 에 저장되고 동기화돼요. 물품·재고 → 장부 탭과 수익 → 장부 탭이 같은 데이터를 보여 줘요.
+   제품 검색은 가격표(prices.json, 판매가)와 이 기기에 불러온 내부 단가(IndexedDB linus-price: 출고가·공급가), 단가표(D.prices)를 함께 써요. */
+let ledM="",ledEdit="",ledHits=[];
+const ledCalc=e=>{
+  const n=v=>Math.max(0,+v||0),pct=v=>Math.min(100,n(v));
+  const price=n(e.price),disc=pct(e.disc),ship=n(e.ship),cost=n(e.cost),etc=n(e.etc),card=pct(e.card),tax=pct(e.tax),vat=!!e.vat;
+  const da=Math.round(price*disc/100),real=price-da;
+  const va=vat?Math.round(real*10/110):0,ca=Math.round(real*card/100),ta=Math.round(real*tax/100);
+  const net=real-ship-cost-etc-va-ca-ta;
+  return{price,disc,ship,cost,etc,card,tax,vat,da,real,va,ca,ta,fees:va+ca+ta,net,rate:price>0?Math.round(net/price*1000)/10:0};
+};
 const ledSigned=n=>(n<0?"−":"")+won(Math.abs(n));
+const ledBasis=()=>{try{return localStorage.getItem("rino-led-basis")||"sup"}catch{return"sup"}};
 function ledNav(d){const[y,m]=(ledM||today().slice(0,7)).split("-").map(Number),dt=new Date(y,m-1+d,1);ledM=monthKey(dt.getFullYear(),dt.getMonth());render()}
+/* 가격표 카탈로그: 처음 장부 창을 열 때 한 번만 불러와요 */
+let LED_CAT=null,LED_CAT_P=null;
+function ledCatLoad(){
+  if(LED_CAT_P)return LED_CAT_P;
+  LED_CAT_P=(async()=>{
+    const out=[];let priv={};
+    try{priv=await new Promise(ok=>{const r=indexedDB.open("linus-price",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onerror=()=>ok({});r.onsuccess=()=>{try{const g=r.result.transaction("kv").objectStore("kv").get("priv");g.onsuccess=()=>ok(g.result||{});g.onerror=()=>ok({})}catch{ok({})}}})}catch{}
+    try{const d=await (await fetch("prices.json",{cache:"no-cache"})).json();d.items.forEach(x=>{const p=priv[x[0]]||[0,0];out.push({code:x[0],cat:d.cats[x[1]],name:x[2],price:x[3],out:p[0],sup:p[1],k:(x[0]+" "+x[2]+" "+d.cats[x[1]]).toLowerCase()})})}catch{}
+    LED_CAT=out;return out;
+  })();
+  return LED_CAT_P;
+}
 function ledOpen(id){
   ledEdit=id||"";const e=id?D.ledger.find(x=>x.id===id):null;if(id&&!e)return;
-  const v=e||{date:today(),item:"",price:"",disc:"",ship:"",cost:"",memo:""};
+  const last=D.ledger.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""))[0]||{};
+  const v=e||{date:today(),item:"",price:"",disc:"",ship:"",cost:"",etc:"",etcNote:"",vat:last.vat!==undefined?last.vat:true,card:last.card||"",tax:last.tax||"",memo:"",out:0,sup:0};
+  const B=ledBasis();
   $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="장부 기록"><div class="row"><b class="grow" style="font-size:18px">${e?"장부 고치기":"＋ 장부 기록"}</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
-  <div class="form" style="border:0;padding:0"><div class="filters"><input id="ledd" type="date" value="${esc(v.date)}"><input id="ledi" list="prclist" placeholder="제품·고객 (단가표에서 고르면 가격이 채워져요)" value="${esc(v.item)}" oninput="ledPick(this.value)" autocomplete="off"><datalist id="prclist">${D.prices.map(x=>`<option value="${esc(x.name)}">`).join("")}</datalist></div>
+  <div class="form" style="border:0;padding:0"><div class="filters"><input id="ledd" type="date" value="${esc(v.date)}"><input id="ledi" placeholder="제품 검색 (상품명·코드) 또는 고객" value="${esc(v.item)}" oninput="ledFind(this.value)" autocomplete="off"></div>
+  <div id="ledhits"></div>
+  <div class="m" id="ledref">${v.out||v.sup?ledRef(v):""}</div>
   <label class="m">판매가 (원)<input id="ledp" type="number" min="0" inputmode="numeric" value="${esc(v.price)}" oninput="ledPv()"></label>
   <div class="filters"><label class="m">할인율 (%)<input id="ledr" type="number" min="0" max="100" step="0.1" inputmode="decimal" value="${esc(v.disc)}" oninput="ledPv()"></label><label class="m">배송료 (원)<input id="ledh" type="number" min="0" inputmode="numeric" value="${esc(v.ship)}" oninput="ledPv()"></label></div>
-  <label class="m">회사에 납부할 물건대금 (원)<input id="ledc" type="number" min="0" inputmode="numeric" value="${esc(v.cost||"")}" oninput="ledPv()"></label>
+  <label class="m">회사에 납부할 물건대금 (원) <span id="ledbasis">${v.out||v.sup?"":`<span class="m">· 제품을 고르면 ${B==="out"?"출고가":"공급가"}로 채워져요</span>`}</span><input id="ledc" type="number" min="0" inputmode="numeric" value="${esc(v.cost||"")}" oninput="ledPv()"></label>
+  <div class="filters"><label class="m">기타 비용 (원)<input id="lede" type="number" min="0" inputmode="numeric" value="${esc(v.etc||"")}" oninput="ledPv()"></label><label class="m">기타 내용<input id="ledn" maxlength="60" placeholder="예: 설치비, 사은품" value="${esc(v.etcNote||"")}"></label></div>
+  <div class="chips" style="margin:2px 0"><label style="display:flex;gap:6px;align-items:center"><input id="ledv" type="checkbox" ${v.vat?"checked":""} onchange="ledPv()" style="width:auto"> 부가세 빼기 (할인 후 금액의 10/110)</label></div>
+  <div class="filters"><label class="m">카드수수료 (%)<input id="ledk" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="예: 1.5" value="${esc(v.card||"")}" oninput="ledPv()"></label><label class="m">기타 세율 (%)<input id="ledt" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="예: 3.3" value="${esc(v.tax||"")}" oninput="ledPv()"></label></div>
   <input id="ledm" placeholder="메모 (선택)" value="${esc(v.memo||"")}">
   <div class="card" style="margin:6px 0"><div class="body" id="ledpv"></div></div>
   <button class="btn" onclick="ledSave()">${e?"저장":"기록하기"}</button></div></div>`;
-  $("#modal").classList.add("open");ledPv();const f=$("#ledp");if(f)f.focus();
+  window._ledRef={out:+v.out||0,sup:+v.sup||0,code:v.code||""};
+  $("#modal").classList.add("open");ledPv();ledCatLoad();const f=$("#ledi");if(f&&!e)f.focus();
 }
-function ledPick(n){
-  const x=D.prices.find(q=>q.name===String(n).trim());if(!x)return;
-  const P=$("#ledp"),C=$("#ledc");if(P)P.value=x.price||"";if(C)C.value=x.cost||"";ledPv();
+const ledRef=v=>`판매가 <b>${won(v.price)}</b> · 출고가 <b>${v.out?won(v.out):"–"}</b> · 공급가 <b>${v.sup?won(v.sup):"–"}</b>`+
+  (v.out||v.sup?` <span style="white-space:nowrap">· 물건대금: <button class="pill" style="background:var(--g)" onclick="ledUse('out')">출고가</button> <button class="pill" style="background:var(--g)" onclick="ledUse('sup')">공급가</button></span>`:"");
+async function ledFind(q){
+  q=String(q||"").trim().toLowerCase();const box=$("#ledhits");if(!box)return;
+  if(q.length<1){box.innerHTML="";return}
+  const cat=LED_CAT||await ledCatLoad();
+  const terms=q.split(/\s+/);
+  const own=D.prices.filter(x=>terms.every(t=>((x.code||"")+" "+x.name+" "+(x.cat||"")).toLowerCase().includes(t))).map(x=>({code:x.code||"",cat:x.cat||"단가표",name:x.name,price:+x.price||0,out:+x.out||0,sup:+x.sup||+x.cost||0}));
+  ledHits=own.concat(cat.filter(x=>terms.every(t=>x.k.includes(t)))).slice(0,8);
+  if(($("#ledi")||{}).value.trim().toLowerCase()!==q)return;
+  box.innerHTML=ledHits.length?`<div class="card" style="margin:0 0 6px"><div class="body" style="padding:4px 10px">${ledHits.map((x,i)=>`<div onclick="ledPick(${i})" style="padding:8px 0;border-top:${i?".5px solid var(--sep)":"0"};cursor:pointer"><div class="t" style="font-size:14px">${esc(x.name)}</div><div class="m">${esc(x.cat)}${x.code?" · "+esc(x.code):""} · 판매가 ${won(x.price)} · 출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"}</div></div>`).join("")}</div></div>`
+    :(cat.length?"":`<div class="m">가격표를 불러오지 못했어요. 직접 입력해 주세요.</div>`);
 }
+function ledPick(i){
+  const x=ledHits[i];if(!x)return;
+  const I=$("#ledi"),P=$("#ledp"),C=$("#ledc");
+  if(I)I.value=x.name.slice(0,60);if(P)P.value=x.price||"";
+  window._ledRef={out:x.out,sup:x.sup,code:x.code};
+  const b=ledBasis(),c=b==="out"?(x.out||x.sup):(x.sup||x.out);if(C&&c)C.value=c;
+  $("#ledhits").innerHTML="";$("#ledref").innerHTML=ledRef(x);$("#ledbasis").innerHTML=c?`<span class="m">· ${b==="out"&&x.out||!x.sup?"출고가":"공급가"}로 채웠어요</span>`:"";
+  ledPv();
+}
+function ledUse(b){
+  const r=window._ledRef||{},v=b==="out"?r.out:r.sup;if(!v)return;
+  try{localStorage.setItem("rino-led-basis",b)}catch{}
+  $("#ledc").value=v;$("#ledbasis").innerHTML=`<span class="m">· ${b==="out"?"출고가":"공급가"}로 채웠어요</span>`;ledPv();
+}
+const ledForm=()=>({price:($("#ledp")||{}).value,disc:($("#ledr")||{}).value,ship:($("#ledh")||{}).value,cost:($("#ledc")||{}).value,etc:($("#lede")||{}).value,vat:!!($("#ledv")||{}).checked,card:($("#ledk")||{}).value,tax:($("#ledt")||{}).value});
 function ledPv(){
-  const c=ledCalc({price:($("#ledp")||{}).value,disc:($("#ledr")||{}).value,ship:($("#ledh")||{}).value,cost:($("#ledc")||{}).value}),el=$("#ledpv");if(!el)return;
-  el.innerHTML=`<div class="m">할인액 ${won(c.da)} · 할인 후 ${won(c.real)} · 배송료 ${won(c.ship)} · 물건대금 ${won(c.cost)}</div><div style="font-size:20px;font-weight:700;margin-top:4px;${c.net<0?"color:var(--red)":""}">남는 금액 ${ledSigned(c.net)} <span class="m">(판매가의 ${c.rate}%)</span></div>`;
+  const c=ledCalc(ledForm()),el=$("#ledpv");if(!el)return;
+  const ln=(k,v)=>`<div class="row" style="justify-content:space-between"><span class="m">${k}</span><span class="m">${v}</span></div>`;
+  el.innerHTML=ln("판매가",won(c.price))+ln(`할인 ${c.disc}%`,"− "+won(c.da))+ln("<b>할인 후 판매액</b>","<b>"+won(c.real)+"</b>")+ln("배송료","− "+won(c.ship))+ln("물건대금","− "+won(c.cost))+(c.etc?ln("기타 비용","− "+won(c.etc)):"")+
+    (c.vat?ln("부가세 (10/110)","− "+won(c.va)):"")+(c.card?ln(`카드수수료 ${c.card}%`,"− "+won(c.ca)):"")+(c.tax?ln(`기타 세율 ${c.tax}%`,"− "+won(c.ta)):"")+
+    `<div style="font-size:20px;font-weight:700;margin-top:6px;${c.net<0?"color:var(--red)":""}">남는 금액 ${ledSigned(c.net)} <span class="m">(판매가의 ${c.rate}%)</span></div>`;
 }
 function ledSave(){
   const price=+$("#ledp").value;if(!(price>0)){alert("판매가를 입력해 주세요");return}
   const disc=+$("#ledr").value||0;if(disc<0||disc>100){alert("할인율은 0~100 사이로 입력해 주세요");return}
-  const rec={date:$("#ledd").value||today(),item:$("#ledi").value.trim().slice(0,60),price:Math.round(price),disc,ship:Math.max(0,Math.round(+$("#ledh").value||0)),cost:Math.max(0,Math.round(+$("#ledc").value||0)),memo:$("#ledm").value.trim().slice(0,200)};
+  const pc=v=>Math.min(100,Math.max(0,Math.round((+v||0)*100)/100)),wn=v=>Math.max(0,Math.round(+v||0)),r=window._ledRef||{};
+  const rec={date:$("#ledd").value||today(),item:$("#ledi").value.trim().slice(0,60),price:Math.round(price),disc,ship:wn($("#ledh").value),cost:wn($("#ledc").value),
+    etc:wn($("#lede").value),etcNote:$("#ledn").value.trim().slice(0,60),vat:!!$("#ledv").checked,card:pc($("#ledk").value),tax:pc($("#ledt").value),
+    code:(r.code||"").slice(0,30),out:wn(r.out),sup:wn(r.sup),memo:$("#ledm").value.trim().slice(0,200)};
   if(ledEdit){const e=D.ledger.find(x=>x.id===ledEdit);if(e)Object.assign(e,rec)}else D.ledger.push({id:uid(),by:curName(),...rec});
   ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요");
 }
@@ -704,8 +765,8 @@ function ledDel(id){if(!isAdmin()||!confirm("이 장부 기록을 지울까요?"
 function ledCsv(){
   const m=ledM||today().slice(0,7),rows=D.ledger.filter(x=>x.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
   const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
-  const out=[["날짜","제품·고객","판매가","할인율(%)","할인액","배송료","물건대금","남는 금액","남는 비율(%)","메모"].map(q).join(",")];
-  rows.forEach(x=>{const c=ledCalc(x);out.push([x.date,x.item,c.price,c.disc,c.da,c.ship,c.cost,c.net,c.rate,x.memo].map(q).join(","))});
+  const out=[["날짜","제품·고객","코드","판매가","출고가","공급가","할인율(%)","할인액","할인 후 판매액","배송료","물건대금","기타 비용","기타 내용","부가세","카드수수료(%)","카드수수료","기타 세율(%)","기타 세금","남는 금액","남는 비율(%)","메모"].map(q).join(",")];
+  rows.forEach(x=>{const c=ledCalc(x);out.push([x.date,x.item,x.code||"",c.price,x.out||"",x.sup||"",c.disc,c.da,c.real,c.ship,c.cost,c.etc,x.etcNote||"",c.va,c.card,c.ca,c.tax,c.ta,c.net,c.rate,x.memo].map(q).join(","))});
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+out.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="에이스침대-장부-"+m+".csv";a.click();
 }
 function ledView(cur){
@@ -713,14 +774,15 @@ function ledView(cur){
   const rows=D.ledger.filter(x=>x.date.startsWith(m)).sort((a,b)=>b.date.localeCompare(a.date)),cs=rows.map(ledCalc);
   const sum=k=>cs.reduce((a,c)=>a+c[k],0),P=sum("price"),N=sum("net"),rate=P>0?Math.round(N/P*1000)/10:0;
   return `<div class="row" style="gap:8px;margin:4px 0 8px;flex-wrap:wrap"><button class="icon" onclick="ledNav(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center">${y}년 ${mo}월 장부</b><button class="icon" onclick="ledNav(1)" aria-label="다음 달">›</button></div>
-  <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><button class="btn ghost" onclick="ledCsv()">CSV</button></div>
-  <div class="stats"><div class="stat hl"><small>남는 금액 (할인·배송료·물건대금 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>남는 비율</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
-  <div class="stats"><div class="stat"><small>판매가 합계</small><b>${won(P)}</b></div><div class="stat"><small>할인액 합계</small><b>${won(sum("da"))}</b></div><div class="stat"><small>배송료 합계</small><b>${won(sum("ship"))}</b></div><div class="stat"><small>물건대금 합계</small><b>${won(sum("cost"))}</b></div></div>
+  <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><button class="btn ghost" onclick="ledCsv()">CSV</button><a class="btn ghost" href="price.html" style="text-decoration:none">💲 가격표</a></div>
+  <div class="stats"><div class="stat hl"><small>남는 금액 (할인·배송·물건대금·세금·수수료·기타 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>남는 비율</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
+  <div class="stats"><div class="stat"><small>판매가 합계</small><b>${won(P)}</b></div><div class="stat"><small>할인액 합계</small><b>${won(sum("da"))}</b></div><div class="stat"><small>배송료 합계</small><b>${won(sum("ship"))}</b></div><div class="stat"><small>물건대금 합계</small><b>${won(sum("cost"))}</b></div><div class="stat"><small>세금·수수료 합계</small><b>${won(sum("fees"))}</b></div><div class="stat"><small>기타 비용 합계</small><b>${won(sum("etc"))}</b></div></div>
   <div class="card"><h3>판매 기록</h3><div class="body">${rows.map((x,i)=>{const c=cs[i];return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(x.date.slice(5))}</span></div>
-    <div class="m">판매가 ${won(c.price)} − 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}</div>${x.memo?`<div class="m">${esc(x.memo)}</div>`:""}</div>
+    <div class="m">판매가 ${won(c.price)}${x.out||x.sup?` (출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"})`:""}</div>
+    <div class="m">− 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.memo?`<div class="m">${esc(x.memo)}</div>`:""}</div>
     <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>
-  <div class="m sub" style="margin:8px 4px">남는 금액 = 판매가 − 할인액 − 배송료 − 회사에 납부할 물건대금이에요. 수수료는 빼지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요.</div>`;
+  <div class="m sub" style="margin:8px 4px">남는 금액 = 할인 후 판매액 − 배송료 − 물건대금 − 기타 비용 − 부가세(선택) − 카드수수료 − 기타 세율이에요. 세금·수수료는 할인 후 판매액 기준이며, 매입 부가세 공제는 반영하지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요.</div>`;
 }
 /* ---------- 단가표 (에이스침대 제품별 판매가·납부 단가) ----------
    AMS 같은 외부 화면은 앱이 직접 읽지 않아요. 표를 복사해 붙여 넣거나 CSV 파일로 가져와요(D.prices, 동기화). */
@@ -1479,10 +1541,11 @@ function invReqSet(id,st){
   save();render();
 }
 views.inventory=()=>{
-  const tabs=[["stock","📦 재고"],["req",`📝 요청${invReqN()?` ${invReqN()}`:""}`],["log","🕘 기록"]];
+  const tabs=[["stock","📦 재고"],["req",`📝 요청${invReqN()?` ${invReqN()}`:""}`],["log","🕘 기록"],["led","📒 장부"]];
   const head=`<h1>물품·재고</h1><div class="sub">부족한 물품은 빨간색으로 보여요. 모자라면 바로 요청해요</div>
   <div class="stats">${stat("전체 품목",D.inv.length)}${stat("부족 품목",invLowN())}${stat("진행 중 요청",invReqN())}</div>
   <div class="tabs">${tabs.map(([k,n])=>`<button class="${invTab===k?"on":""}" onclick="invTabSet('${k}')">${n}</button>`).join("")}</div>`;
+  if(invTab==="led")return head+ledView(today().slice(0,7));
   if(invTab==="log"){
     const L=D.invlog.slice().sort((a,b)=>b.t-a.t).slice(0,100);
     return head+(L.map(l=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(l.item)} <b style="color:${l.delta>0?"#34c759":"#ff3b30"}">${l.delta>0?"+":""}${l.delta}</b></div><div class="m">${esc(dn(l.by))} · ${new Date(l.t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${l.note?" · "+esc(l.note):""}</div></div></div></div>`).join("")||'<div class="empty">아직 입출고 기록이 없어요</div>');
