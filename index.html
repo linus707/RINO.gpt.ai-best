@@ -805,7 +805,7 @@ function ledView(cur){
 }
 /* ---------- 단가표 (에이스침대 제품별 판매가·납부 단가) ----------
    AMS 같은 외부 화면은 앱이 직접 읽지 않아요. 표를 복사해 붙여 넣거나 CSV 파일로 가져와요(D.prices, 동기화). */
-let prcQ="";
+let prcQ="",prcLim=100;
 const prcNum=v=>{const n=parseInt(String(v==null?"":v).replace(/[^\d-]/g,""),10);return isFinite(n)?n:0};
 function prcSplit(line,d){
   if(d==="\t")return line.split("\t");
@@ -891,12 +891,14 @@ function prcSave(id){
 function prcDel(id){if(!isAdmin()||!confirm("이 제품을 단가표에서 지울까요?"))return;D.prices=D.prices.filter(x=>x.id!==id);save();render()}
 function prcClear(){if(!isAdmin()||!confirm(`단가표 ${D.prices.length}개를 모두 지울까요? (장부 기록은 그대로예요)`))return;D.prices=[];save();render()}
 function prcView(){
-  const q=prcQ.trim().toLowerCase(),rows=D.prices.filter(x=>!q||(x.name+" "+(x.cat||"")).toLowerCase().includes(q)).sort((a,b)=>(a.cat||"").localeCompare(b.cat||"","ko")||a.name.localeCompare(b.name,"ko"));
+  /* 제품이 수천 개라 한 번에 다 그리면 화면이 멈춰요. 100개씩만 그리고 '더 보기'로 늘려요. */
+  const q=prcQ.trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean),all=D.prices.filter(x=>!terms.length||terms.every(t=>((x.code||"")+" "+x.name+" "+(x.cat||"")).toLowerCase().includes(t))).sort((a,b)=>(a.cat||"").localeCompare(b.cat||"","ko")||a.name.localeCompare(b.name,"ko")),rows=all.slice(0,prcLim);
   return `<div class="row" style="gap:8px;margin:4px 0 8px;flex-wrap:wrap"><button class="btn grow" onclick="prcOpenImport()">표 붙여넣기 · CSV 가져오기</button><button class="btn ghost" onclick="prcEdit()">＋ 제품</button></div>
-  <input placeholder="제품 검색 (${D.prices.length}개)" value="${esc(prcQ)}" oninput="prcQ=this.value;render(true)" style="margin-bottom:8px">
+  <input placeholder="제품 검색 (${D.prices.length}개)" value="${esc(prcQ)}" oninput="prcQ=this.value;prcLim=100;clearTimeout(window._prcT);window._prcT=setTimeout(()=>render(true),200)" style="margin-bottom:8px">${q?`<div class="m" style="margin:0 4px 8px">검색 결과 ${all.length.toLocaleString("ko-KR")}개</div>`:""}
   <div class="card"><h3>제품 단가표 <span class="m sub" style="margin:0">판매가 · 납부 단가 · 차액</span></h3><div class="body">${rows.map(x=>`<div class="row" style="gap:8px;padding:8px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t">${esc(x.name)}</div><div class="m">${x.code?esc(x.code)+" · ":""}${x.cat?esc(x.cat)+" · ":""}판매가 ${won(x.price)} · 납부 ${x.cost?won(x.cost):"미입력"}</div></div>
     <div style="text-align:right"><b>${x.cost?won(x.price-x.cost):"-"}</b><div class="m">차액</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="prcEdit('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="prcDel('${x.id}')" aria-label="삭제">✕</button></div>`).join("")||'<div class="empty">'+(D.prices.length?"검색 결과가 없어요":"단가표가 비어 있어요. AMS의 제품 표를 복사해 붙여 넣거나 ＋ 제품으로 하나씩 넣어 보세요.")+'</div>'}
+  ${all.length>rows.length?`<button class="btn ghost" style="margin-top:10px;width:100%" onclick="prcLim+=200;render()">더 보기 (${(all.length-rows.length).toLocaleString("ko-KR")}개 남음)</button>`:""}
   ${D.prices.length?'<button class="btn ghost" style="margin-top:10px" onclick="prcClear()">단가표 모두 지우기</button>':""}</div></div>
   <div class="m sub" style="margin:8px 4px">장부 기록에서 제품명을 고르면 판매가와 납부 단가가 자동으로 채워져요. 차액은 판매가 − 납부 단가이고, 할인·배송료는 장부에서 건마다 반영해요.</div>`;
 }
