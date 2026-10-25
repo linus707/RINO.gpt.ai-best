@@ -1760,7 +1760,7 @@ views.schedule=()=>{
    메시지는 기존 클라우드 동기화(Gist)로 항목 단위로 합쳐져요. 서버가 없는 방식이라
    · 보낸 사람 이름은 로그인 이름이고 PIN은 편의용 잠금이에요(민감한 내용은 쓰지 마세요)
    · 푸시 서버가 없어서, 알림은 앱이 열려 있을 때(15초마다 확인) 와요. */
-const MROOMS0=[{id:"notice",name:"공지사항",ro:1},{id:"talk",name:"업무 대화"},{id:"alert",name:"알림",ro:1,sys:1}];
+const MROOMS0=[{id:"notice",name:"공지사항",ro:1},{id:"alert",name:"알림",ro:1,sys:1}];
 /* 대화방: 이름만 정하고, 방 안에서 사람(직원)과 AI 직원을 초대해요. members가 있는 방은 참여자·관리자에게만 보여요. */
 const roomNorm=r=>{const o={...r};o.ai=Array.isArray(r.ai)?r.ai.slice():(r.staff?[r.staff]:[]);if(r.staff&&!Array.isArray(r.members))o.members=[];return o};
 const roomHas=(r,n)=>!Array.isArray(r.members)||isAdmin()||r.members.includes(n);
@@ -1772,7 +1772,7 @@ const dn=n=>n==="관리자"?"리노":n;
 const MS=(()=>{try{return JSON.parse(localStorage.getItem("rino-msgr"))||{}}catch{return{}}})();
 MS.read=MS.read||{};MS.mute=MS.mute||{};
 const msSave=()=>{try{localStorage.setItem("rino-msgr",JSON.stringify(MS))}catch{}};
-let mRoom="talk",mDraft="",mImg="",mScroll=0,mStick=true,mForce=true,mFoc=false;
+let mRoom="notice",mDraft="",mImg="",mScroll=0,mStick=true,mForce=true,mFoc=false;
 const mUnread=r=>{const rd=MS.read[r]||0,mn=curName();return D.msgs.filter(m=>m.room===r&&m.t>rd&&m.by!==mn&&m.actor!==mn).length};
 const mTime=t=>new Date(t).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
 const mDay=t=>new Date(t).toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
@@ -1823,7 +1823,7 @@ function mRoomSave(id){
 function mRoomDel(id){
   if(!isAdmin()||!confirm("이 대화방과 안의 메시지를 모두 지울까요?"))return;
   D.set.rooms=(D.set.rooms||[]).filter(r=>r.id!==id);D.msgs=D.msgs.filter(m=>m.room!==id);D.set.u=Date.now();
-  if(mRoom===id)mRoom="talk";closeModal();mForce=true;save();render();
+  if(mRoom===id)mRoom="notice";closeModal();mForce=true;save();render();
 }
 function mTrim(){
   if(D.msgs.length>300){D.msgs.sort((a,b)=>a.t-b.t);D.msgs.splice(0,D.msgs.length-300)}
@@ -1908,7 +1908,7 @@ views.messenger=()=>{
   <div class="chatgrid"><div class="chatlist glass">${list}</div>
   <div class="chatmain"><div class="chatsel-wrap">${sel}</div>
   <div class="chathead glass"><button class="pill" style="background:var(--g);float:right" onclick="mMute()">${MS.mute[mRoom]?"🔕 알림 꺼짐":"🔔 알림 켜짐"}</button><b>${esc(cur.name)}</b> <span class="m">${cur.sys?"자동으로 쌓이는 알림":cur.ro?"관리자만 글을 올려요":"참여자 "+(Array.isArray(cur.members)?cur.members.length+1+cur.ai.length:mPeople().length)+"명"}</span>
-    ${canManage?`<button class="pill" style="background:var(--make);margin-left:6px" onclick="mRoomForm('${cur.id}')">＋ 초대·관리</button>`:""}
+    ${canManage?`<button class="pill" style="background:var(--make);margin-left:6px" onclick="mRoomForm('${cur.id}')">＋ 초대·관리</button><button class="pill" style="background:var(--mut);margin-left:4px" onclick="mRoomDel('${cur.id}')">🗑 방 지우기</button>`:""}
     ${roomCustom(cur)?`<div class="m" style="margin-top:4px">${roomWho(cur).map(esc).join(" · ")}</div>`:""}
     ${aiIn.length?`<div class="m ${CFG.repoWToken&&instrRepo()?"":"low"}">${solo?esc(aiIn[0])+"에게 쓰는 글은 모두 지시로 전달돼요":"@"+esc(aiIn[0])+" 처럼 AI 직원을 부르면 지시로 전달돼요"} · ${CFG.repoWToken&&instrRepo()?"지시함 연결됨":"지시함 연결 전(설정 > 연결·동기화)"} · <a href="#" onclick="chatWho=decodeURIComponent('${encodeURIComponent(aiIn[0])}');go('chat');return false">마감·브랜드까지 자세히 지시 ›</a></div>`:""}</div>
   <div class="chatlog" id="mlog">${log}</div>
