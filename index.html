@@ -1206,7 +1206,7 @@ async function importRepo(silent){
     setSync(back&&!back.startsWith("📂")?back:(CFG.token?"☁ 동기화됨":"● 자동 저장"));
   }catch(e){setSync("⚠ 불러오기 실패");say("불러오지 못했어요. 인터넷 연결과 토큰을 확인해 주세요")}
 }
-function saveRepo(){
+function saveRepo(){if(connGuard())return;
   if(!isAdmin())return;
   const repo=$("#wr").value.trim(),br=$("#wb").value.trim()||"work",tk=$("#wt").value.trim();
   if(!repoOk(repo)){alert("저장소는 '주인/이름' 형태로 입력해 주세요 (예: linus707/solamen)");return}
@@ -1214,7 +1214,7 @@ function saveRepo(){
   if(/^ghp_/.test(tk)&&!confirm("이 토큰(ghp_…)은 권한이 넓을 수 있어요. 가능하면 Linus Company 저장소 하나만, 읽기 전용(Contents: Read-only)으로 만든 토큰(github_pat_…)을 쓰세요. 그래도 계속할까요?"))return;
   CFG.repo=repo;CFG.repoBranch=br;CFG.repoToken=tk;CFG.repoAuto=$("#wa").checked?1:0;saveCfg();sdClear("wr","wb","wt");importRepo(false);
 }
-function clearRepo(){if(!confirm("이 기기에 저장된 읽기 전용 토큰을 지울까요? (불러온 글은 그대로 남아요)"))return;delete CFG.repoToken;CFG.repoAuto=0;saveCfg();sdClear("wt");render()}
+function clearRepo(){if(connGuard())return;if(!confirm("이 기기에 저장된 읽기 전용 토큰을 지울까요? (불러온 글은 그대로 남아요)"))return;delete CFG.repoToken;CFG.repoAuto=0;saveCfg();sdClear("wt");render()}
 
 /* ---------- 로그인·권한 (PIN) ---------- */
 /* ※ 서버가 없는 방식이라 PIN은 화면 접근을 막는 '편의용 잠금'이에요. 민감한 개인정보는 넣지 마세요. */
@@ -1385,7 +1385,7 @@ const inboxCard=()=>`<div class="card"><h3>📨 지시함 연결 ${CFG.repoWToke
   <div class="form" style="border:0;padding:0"><input id="iwt" type="password" placeholder="쓰기 권한 토큰 (github_pat_…)" value="${esc(CFG.repoWToken||"")}" autocomplete="off">
   <button class="btn" onclick="saveInboxToken()">저장하고 확인</button>${CFG.repoWToken?'<button class="btn ghost" onclick="clearInboxToken()">연결 해제</button>':""}</div>
   <div class="m sub" style="margin-top:6px">상태를 읽으려면 위쪽 「Linus Company 작업 폴더 불러오기」의 읽기 전용 토큰도 저장돼 있어야 해요.</div></div></div>`;
-async function saveInboxToken(){
+async function saveInboxToken(){if(connGuard())return;
   if(!isAdmin())return;
   const tk=$("#iwt").value.trim(),repo=instrRepo();
   if(!repo){alert("먼저 「Linus Company 작업 폴더 불러오기」에서 저장소를 저장해 주세요");return}
@@ -1399,7 +1399,7 @@ async function saveInboxToken(){
     CFG.repoWToken=tk;saveCfg();sdClear("iwt");render();toast("지시함에 연결했어요");
   }catch(e){alert("연결하지 못했어요: "+(e.message||e))}
 }
-function clearInboxToken(){if(!confirm("지시함 쓰기 토큰을 지울까요? (이미 보낸 지시는 그대로예요)"))return;delete CFG.repoWToken;saveCfg();sdClear("iwt");render()}
+function clearInboxToken(){if(connGuard())return;if(!confirm("지시함 쓰기 토큰을 지울까요? (이미 보낸 지시는 그대로예요)"))return;delete CFG.repoWToken;saveCfg();sdClear("iwt");render()}
 const syncCardUi=()=>`<div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
   <div class="m sub">내 GitHub 비공개 Gist에 데이터를 저장해요. <a href="https://github.com/settings/tokens/new?scopes=gist&description=rino-workspace" target="_blank" rel="noopener">여기</a>에서 <b>gist 권한만</b> 있는 토큰을 만들어 붙여넣으세요.</div>
   <div class="form" style="border:0;padding:0"><input id="tk" type="password" placeholder="GitHub 토큰 (ghp_…)" value="${esc(CFG.token||"")}" autocomplete="off">
@@ -1422,17 +1422,17 @@ const importCardUi=()=>`<div class="card"><h3>📄 콘텐츠 초안 가져오기
 const backupCardUi=()=>`<div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div>
   <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>`;
 const aiCardUi=()=>`<div class="card"><h3>✨ AI 연결</h3><div class="body"><div class="m sub">Anthropic API 키를 넣으면 콘텐츠 아이디어를 받을 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</div>
-  <div class="form" style="border:0;padding:0"><input id="ak" type="password" placeholder="sk-ant-…" value="${esc(CFG.aiKey||"")}" autocomplete="off"><input id="aw" placeholder="워크스페이스 ID (선택) wrkspc_…" value="${esc(CFG.aiWs||"")}" autocomplete="off"><button class="btn" onclick="CFG.aiKey=$('#ak').value.trim();CFG.aiWs=$('#aw').value.trim();saveCfg();sdClear('ak','aw');alert('저장했어요')">저장</button></div>
+  <div class="form" style="border:0;padding:0"><input id="ak" type="password" placeholder="sk-ant-…" value="${esc(CFG.aiKey||"")}" autocomplete="off"><input id="aw" placeholder="워크스페이스 ID (선택) wrkspc_…" value="${esc(CFG.aiWs||"")}" autocomplete="off"><button class="btn" onclick="if(connGuard())return;CFG.aiKey=$('#ak').value.trim();CFG.aiWs=$('#aw').value.trim();saveCfg();sdClear('ak','aw');alert('저장했어요')">저장</button></div>
   <div class="m sub" style="margin-top:6px">"키가 워크스페이스에 속하지 않았다"는 오류가 나면, 콘솔 → 워크스페이스에서 Default의 ID(wrkspc_…)를 두 번째 칸에 넣어 주세요. 평소에는 비워 둬도 돼요.</div></div></div>`;
 /* 설정은 5개 분류 탭으로 나눠 보여요. 조직도·직원 관리도 여기 '직원·조직' 탭 안에 있어요. */
 let setTabK="account";
 const SET_TABS=[["account","🔑 계정·보안"],["people","👥 직원·조직"],["link","☁ 연결·동기화"],["look","🎨 화면"],["data","💾 데이터·스킬"]];
-function setTabSet(k){setTabK=k;render();window.scrollTo(0,0)}
+function setTabSet(k){setTabK=k;render();window.scrollTo(0,0);if(k==="link")connCheck()}
 const orgBody=()=>views.org().replace("<h1>조직도</h1>","");
 function setSection(k){
   const adm=isAdmin(),x=staffParts();
   if(k==="people")return `<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
-  if(k==="link")return `${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${aiCardUi()}`;
+  if(k==="link")return `${connCard()}${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${aiCardUi()}`;
   if(k==="look")return `${bgCard()}${adm?brandCard():""}${themeCard()}${adm?brandLinkCard():""}`;
   if(k==="data")return `${backupCardUi()}${importCardUi()}${skillCard()}`;
   return `${x.login}${bioCard()}`;
@@ -1444,8 +1444,56 @@ views.settings=()=>{
   ${setSection(setTabK)}`;
 };
 const aiHeaders=()=>{const h={"content-type":"application/json","x-api-key":CFG.aiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};if(CFG.aiWs)h["anthropic-workspace-id"]=CFG.aiWs;return h};
-function connectSync(){CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value.trim()||CFG.gistId||"";saveCfg();sdClear("tk","gi");if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
-function disconnectSync(){delete CFG.token;saveCfg();sdClear("tk");setSync("● 자동 저장");render()}
+/* ---------- 연결 정보 보호: 저장 점검 + 잠금 ----------
+   잠그면 토큰·저장소·키 칸을 고치거나 지울 수 없어요(실수로 지우거나 덮어쓰는 것 방지). 풀려면 관리자 비밀번호가 필요해요. */
+const CONN_IDS=["tk","gi","wr","wb","wt","iwt","ak","aw"];
+const CONN_FN=["connectSync(","disconnectSync(","saveRepo(","clearRepo(","saveInboxToken(","clearInboxToken(","CFG.aiKey="];
+const connLocked=()=>!!CFG.connLock;
+function connGuard(){if(!connLocked())return false;toast("연결 정보가 잠겨 있어요. 설정 > 연결·동기화에서 잠금을 풀어 주세요");return true}
+let CONN_ST=null;
+function idbGet(){return new Promise(res=>{try{cfgDb(db=>{const q=db.transaction("k").objectStore("k").get("cfg");q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)});setTimeout(()=>res(null),1500)}catch{res(null)}})}
+async function connCheck(){
+  let ls=false,idb=false,per=false;
+  try{const o=JSON.parse(localStorage.getItem("rino-cfg")||"null");ls=hasConn(o)&&o.token===CFG.token&&(o.repoToken||"")===(CFG.repoToken||"")}catch{}
+  try{const v=await idbGet();const o=v&&JSON.parse(v);idb=hasConn(o)&&o.token===CFG.token&&(o.repoToken||"")===(CFG.repoToken||"")}catch{}
+  try{per=!!(navigator.storage&&navigator.storage.persisted&&await navigator.storage.persisted())}catch{}
+  CONN_ST={ls,idb,per,t:Date.now()};if(page==="settings"&&setTabK==="link")render();
+}
+async function connLock(){
+  if(!isAdmin())return;
+  if(!hasConn(CFG)){toast("먼저 연결 정보(동기화 토큰 등)를 저장해 주세요");return}
+  saveCfg();cfgMirror();sdSave();
+  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch{}
+  await new Promise(r=>setTimeout(r,500));await connCheck();
+  if(!(CONN_ST&&CONN_ST.ls&&CONN_ST.idb)){alert("저장 점검에서 두 곳 모두 확인되지 않아 잠그지 않았어요. 다시 시도해 주세요");return}
+  CFG.connLock=Date.now();saveCfg();render();toast("연결 정보를 저장하고 잠갔어요");
+}
+function connUnlockOpen(){
+  $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="잠금 풀기"><div class="row"><b class="grow" style="font-size:18px">연결 정보 잠금 풀기</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
+  <div class="form" style="border:0;padding:0"><div class="m sub">관리자 비밀번호를 입력하면 연결 정보를 고치거나 지울 수 있어요.</div><input id="culp" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" onkeydown="if(event.key==='Enter')connUnlock()"><button class="btn" onclick="connUnlock()">잠금 풀기</button></div></div>`;
+  $("#modal").classList.add("open");const e=$("#culp");if(e)e.focus();
+}
+async function connUnlock(){
+  const p=D.set.pins,pw=($("#culp")||{}).value||"";
+  if(p){let h="";try{h=await hashAdmin(pw,p)}catch{}if(h!==p.a){alert("비밀번호가 맞지 않아요");return}}
+  delete CFG.connLock;saveCfg();closeModal();render();toast("잠금을 풀었어요");
+}
+function connApplyLock(){
+  if(!connLocked())return;
+  CONN_IDS.forEach(id=>{const el=document.getElementById(id);if(el){el.readOnly=true;el.style.opacity=".7"}});
+  document.querySelectorAll("#app button[onclick]").forEach(b=>{const o=b.getAttribute("onclick")||"";if(CONN_FN.some(f=>o.includes(f))){b.disabled=true;b.title="잠겨 있어요";b.style.opacity=".5"}});
+  const wa=document.getElementById("wa");if(wa)wa.disabled=true;
+}
+const connCard=()=>{
+  const st=CONN_ST,mark=v=>v?"✅":"⚠️",lk=connLocked();
+  return `<div class="card"><h3>🔒 연결 정보 보호 ${lk?'<span class="m sub" style="margin:0">잠김</span>':""}</h3><div class="body">
+  <div class="m sub">동기화·작업 폴더·지시함·AI 연결 값을 이 기기의 두 저장소에 따로 보관하고, 잠가서 실수로 지우거나 덮어쓰는 것을 막아요.</div>
+  <div class="m" style="margin:8px 0;line-height:1.8">${st?`${mark(st.ls)} 기본 저장소(localStorage) ${st.ls?"저장됨":"확인 안 됨"}<br>${mark(st.idb)} 보조 저장소(IndexedDB) ${st.idb?"저장됨":"확인 안 됨"}<br>${mark(st.per)} 브라우저 자동 삭제 방지 ${st.per?"허용됨":"아직 허용 전 (홈 화면 앱으로 쓰면 허용되는 경우가 많아요)"}`:"저장 상태를 확인하는 중이에요…"}</div>
+  <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" onclick="connCheck()">저장 상태 다시 확인</button>${lk?`<button class="btn ghost" onclick="connUnlockOpen()">잠금 풀기</button>`:`<button class="btn" onclick="connLock()">지금 저장하고 잠그기</button>`}</div>
+  ${lk?`<div class="m sub" style="margin-top:6px">잠근 시각: ${new Date(CFG.connLock).toLocaleString("ko-KR")} · 잠겨 있어도 동기화와 불러오기는 계속 작동해요.</div>`:""}</div></div>`;
+};
+function connectSync(){if(connGuard())return;CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value.trim()||CFG.gistId||"";saveCfg();sdClear("tk","gi");if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
+function disconnectSync(){if(connGuard())return;delete CFG.token;saveCfg();sdClear("tk");setSync("● 자동 저장");render()}
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
 function importJson(f){if(!f)return;f.text().then(t=>{try{D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
 
@@ -2490,7 +2538,7 @@ function render(keepFocus){
   $("#crumb").textContent=PAGES.find(p=>p[0]===page)[2];
   if(page==="messenger")msgrBefore();
   $("#app").innerHTML=views[page]();
-  if(page==="settings")sdRestore();
+  if(page==="settings"){sdRestore();connApplyLock()}
   if(page==="messenger")msgrAfter();
   if(page==="chat"){const lg=$("#chatlog");if(lg)lg.scrollTop=lg.scrollHeight}
   if(page==="chat"||page==="home"||page==="messenger")pollResults(false);
