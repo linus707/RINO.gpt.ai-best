@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Linus Company",
+  "version": "1.0.0",
+  "description": "Linus Company 워크스페이스를 크롬에서 바로 열고, AMS 제품 표를 단가표로 보내요.",
+  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
+  "action": {
+    "default_title": "Linus Company",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png" }
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://linuscompany.co.kr/*", "https://ams.acebed.co.kr/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    { "matches": ["https://ams.acebed.co.kr/*"], "js": ["ams.js"], "all_frames": true, "run_at": "document_idle" },
+    { "matches": ["https://linuscompany.co.kr/*"], "js": ["bridge.js"], "run_at": "document_idle" }
+  ]
+}

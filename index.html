@@ -757,6 +757,20 @@ function prcParse(text){
     return {name,code:ix.code>=0?(r[ix.code]||"").slice(0,30):"",price:prcNum(r[ix.price]),cost:ix.cost>=0?prcNum(r[ix.cost]):0,cat:ix.cat>=0?(r[ix.cat]||"").slice(0,20):""};
   }).filter(x=>x.name&&x.price>0);
 }
+/* 크롬 확장 프로그램이 AMS에서 담은 표를 보내오면 가져오기 창에 미리 채워 보여 줘요(저장은 내가 '가져오기'를 눌러야 해요). */
+let PENDING_PRC="";
+window.addEventListener("message",e=>{
+  if(e.source!==window||e.origin!==location.origin)return;
+  const d=e.data;if(!d||d.source!=="linus-ext"||d.type!=="price-import"||typeof d.text!=="string")return;
+  PENDING_PRC=d.text.slice(0,2000000);prcPending();
+});
+function prcPending(){
+  if(!PENDING_PRC)return;
+  if(!isAdmin()||LOCKED){toast("관리자로 로그인하면 확장 프로그램에서 받은 표가 열려요");return}
+  const t=PENDING_PRC;PENDING_PRC="";revCo=REV_GOAL;revTab="prc";page="revenue";render();prcOpenImport();
+  const e=$("#prci");if(e){e.value=t;prcPrev()}
+  toast("확장 프로그램에서 표를 받았어요. 미리보기를 확인하고 가져오기를 눌러 주세요");
+}
 function prcOpenImport(){
   $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="단가표 가져오기"><div class="row"><b class="grow" style="font-size:18px">단가표 가져오기</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
   <div class="m sub">AMS의 <b>엑셀 변환 → TAB 포맷 변환</b> 결과(또는 제품 표)를 복사해 아래에 붙여 넣으세요. (CSV 포맷도 읽어요) 첫 줄이 제목(제품명·판매가·납부단가·분류)이면 자동으로 열을 찾고, 제목이 없으면 <b>제품명, 판매가, 납부단가, 분류</b> 순서로 읽어요. 같은 제품명은 값이 갱신돼요.</div>
@@ -776,7 +790,7 @@ async function prcFile(inp){
 function prcImport(){
   const rows=prcParse(($("#prci")||{}).value);if(!rows.length){alert("읽을 수 있는 제품이 없어요. 제품명과 판매가 열이 있는지 확인해 주세요");return}
   let add=0,upd=0;
-  rows.forEach(r=>{const x=(r.code&&D.prices.find(q=>q.code===r.code))||D.prices.find(q=>q.name===r.name);if(x){x.name=r.name;x.price=r.price;if(r.cost)x.cost=r.cost;if(r.cat)x.cat=r.cat;if(r.code)x.code=r.code;upd++}else{D.prices.push({id:uid(),...r});add++}});
+  rows.forEach(r=>{const x=r.code?(D.prices.find(q=>q.code===r.code)||D.prices.find(q=>!q.code&&q.name===r.name)):D.prices.find(q=>q.name===r.name);if(x){x.name=r.name;x.price=r.price;if(r.cost)x.cost=r.cost;if(r.cat)x.cat=r.cat;if(r.code)x.code=r.code;upd++}else{D.prices.push({id:uid(),...r});add++}});
   closeModal();save();render();toast(`새 제품 ${add}개, 갱신 ${upd}개`);
 }
 function prcEdit(id){
@@ -2350,6 +2364,7 @@ function render(keepFocus){
   if(page==="chat"){const lg=$("#chatlog");if(lg)lg.scrollTop=lg.scrollHeight}
   if(page==="chat"||page==="home"||page==="messenger")pollResults(false);
   if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
+  if(PENDING_PRC&&isAdmin()&&!LOCKED)setTimeout(prcPending,0);
 }
 /* 애플 느낌: 제목·버튼 앞의 이모지는 지우고 글자만 보여줘요 */
 const EMO=/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,EMO_SEL=".card h3,.btn,.pill,.sheet b,.hero .mono,.chathead,.bubble .m,.stchips span,h1";
