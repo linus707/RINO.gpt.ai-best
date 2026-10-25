@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Linus Company</title>
+<style>
+  :root{color-scheme:light dark;--accent:#c8553d;--bg:#fff;--tx:#1c1c1e;--mut:#6c6c70;--fill:rgba(120,120,128,.14)}
+  @media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--tx:#f5f5f7;--mut:#98989f;--accent:#d47a68}}
+  body{margin:0;width:320px;padding:16px;background:var(--bg);color:var(--tx);font:14px/1.5 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+  h1{font-size:18px;margin:0 0 2px;letter-spacing:-.02em}.sub{color:var(--mut);margin-bottom:12px}
+  button{display:block;width:100%;border:0;border-radius:12px;padding:11px 14px;margin:6px 0;font:600 14px inherit;font-family:inherit;cursor:pointer;background:var(--fill);color:var(--tx);text-align:left}
+  button.main{background:var(--accent);color:#fff}
+  button:disabled{opacity:.5;cursor:default}
+  .card{border-radius:14px;background:var(--fill);padding:12px 14px;margin-top:12px}
+  .card b{font-size:15px}.m{color:var(--mut);font-size:12px;margin-top:2px}
+  #msg{min-height:18px;margin-top:8px;color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+  <h1>Linus Company</h1>
+  <div class="sub">워크스페이스 · 에이스침대 단가표</div>
+  <button class="main" id="win">앱 창으로 열기</button>
+  <button id="tab">새 탭으로 열기</button>
+  <div class="card">
+    <b>AMS 제품 표 <span id="n">0개</span></b>
+    <div class="m">AMS에서 검색한 뒤 화면 오른쪽 아래 「📋 단가표에 담기」를 누르면 여기에 쌓여요. 페이지를 넘기며 계속 담을 수 있어요.</div>
+    <button id="send" disabled>앱 단가표로 보내기</button>
+    <button id="clear" disabled>담은 목록 비우기</button>
+  </div>
+  <div id="msg"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
