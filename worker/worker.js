@@ -108,13 +108,16 @@ export async function notify(id, env, deps = {}) {
   const dead = state.dead || {};
   const save = () => doFetch(`${API}/gists/${env.GIST_ID}`, { method: 'PATCH', headers: { ...g.headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ files: { 'push-state.json': { content: JSON.stringify({ ...state, dead }) } } }) });
   await save(); // 먼저 '보냄'으로 기록해 두 군데서 동시에 보내도 중복을 줄여요
-  const roomName = ((g.D.set && g.D.set.rooms) || []).find((r) => r.id === msg.room)?.name || ROOM_NAMES[msg.room] || '메신저';
+  const rm = ((g.D.set && g.D.set.rooms) || []).find((r) => r.id === msg.room);
+  const allow = rm && (Array.isArray(rm.members) || rm.staff) ? new Set(['관리자', ...(rm.members || [])]) : null; // 참여자가 정해진 방은 참여자·관리자에게만
+  const roomName = rm?.name || ROOM_NAMES[msg.room] || '메신저';
   const payload = { room: msg.room, preview: { title: `${roomName} · ${dn(msg.by)}`, body: clip(msg.text || '[사진]', 120) || '[사진]' } };
   let sent = 0, failed = 0;
   for (const s of (g.D.pushsubs || []).filter((x) => x && x.sub && x.sub.endpoint)) {
     const eh = await hash16(s.sub.endpoint);
     if (dead[eh]) continue;
     if (msg.by === s.name || msg.actor === s.name) continue;
+    if (allow && !allow.has(s.name)) continue;
     if (s.mute && s.mute[msg.room] && !(msg.text || '').includes('@' + dn(s.name))) continue;
     try {
       const r = await sendPush(s.sub, payload, env, pub, doFetch);

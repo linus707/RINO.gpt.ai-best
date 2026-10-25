@@ -46,6 +46,12 @@ export async function run(env = process.env, deps = {}) {
   const fresh = msgs.filter((m) => !seen.has(m.id) && m.t > now - 2 * 864e5).sort((a, b) => a.t - b.t).slice(-30);
   if (!fresh.length) { log('새 메시지 없음'); return { sent: 0 }; }
   const subs = (D.pushsubs || []).filter((s) => s && s.sub && s.sub.endpoint);
+  // 참여자가 정해진 방(members 또는 예전 직원 지시 방)은 참여자와 관리자에게만 보내요
+  const canSee = (id, name) => {
+    const r = ((D.set && D.set.rooms) || []).find((x) => x.id === id);
+    if (!r || !(Array.isArray(r.members) || r.staff)) return true;
+    return name === '관리자' || (r.members || []).includes(name);
+  };
   const roomName = (id) => ((D.set && D.set.rooms) || []).find((r) => r.id === id)?.name || ROOM_NAMES[id] || '메신저';
   wp.setVapidDetails(subject, pub, VAPID_PRIVATE_KEY);
   const dead = state.dead || {};
@@ -54,7 +60,7 @@ export async function run(env = process.env, deps = {}) {
     const eh = hash(s.sub.endpoint);
     if (dead[eh]) continue;
     const key = '@' + dn(s.name);
-    const mine = fresh.filter((m) => m.by !== s.name && m.actor !== s.name && (!(s.mute && s.mute[m.room]) || (m.text || '').includes(key)));
+    const mine = fresh.filter((m) => m.by !== s.name && m.actor !== s.name && canSee(m.room, s.name) && (!(s.mute && s.mute[m.room]) || (m.text || '').includes(key)));
     if (!mine.length) continue;
     const last = mine[mine.length - 1];
     const payload = mine.length === 1
