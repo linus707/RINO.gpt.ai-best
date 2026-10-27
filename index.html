@@ -1889,6 +1889,29 @@ function schItems(date){
 }
 function schMove(n){const[y,m]=schM.split("-").map(Number),d=new Date(y,m-1+n,1);schM=d.getFullYear()+"-"+p2(d.getMonth()+1);schEdit="";render()}
 function schNow(){schM=today().slice(0,7);schSel=today();schEdit="";render()}
+function schDetail(src,id){
+  let t="",when="",label="",color="#8e8e93",body="",meta=[],btns="";
+  const nid=String(id);
+  if(src==="ev"){
+    const e=D.events.find(x=>String(x.id)===nid);if(!e)return;const c=schCat(e.cat);
+    t=e.title;color=c[2];label=c[1];when=e.date+(e.end&&e.end>e.date?" ~ "+e.end:"")+(e.time?" "+e.time:"");body=e.memo||"";if(e.by)meta.push("작성 "+dn(e.by));
+    if(schCan(e))btns=`<button class="btn" onclick="closeModal();schPick('${esc(e.date)}');schEditOpen('${e.id}')">수정</button><button class="btn ghost" onclick="closeModal();schDel('${e.id}')">삭제</button>`;
+  }else if(src==="ct"){
+    const c=D.contents.find(x=>String(x.id)===nid);if(!c)return;
+    t=c.title;color="#5ac8fa";label="콘텐츠 마감";when=c.due||"";body=c.memo||"";const st=stInfo(c.stage);if(st)meta.push("단계 "+st[1]);if(c.by)meta.push("담당 "+dn(c.by));if(c.brand)meta.push(c.brand);
+    btns=`<button class="btn" onclick="closeModal();${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}">콘텐츠 열기</button>`;
+  }else{
+    const k=D.tasks.find(x=>String(x.id)===nid);if(!k)return;
+    t=k.title;label="업무 마감";when=k.due||"";body=k.memo||"";if(k.who)meta.push("담당 "+dn(k.who));if(k.pri)meta.push(k.pri);
+    btns=`<button class="btn" onclick="closeModal();go('tasks')">업무로 이동</button>`;
+  }
+  $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="일정 상세"><div class="row"><span class="pill" style="background:${color}">${esc(label)}</span><span class="grow"></span><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
+  <h2 style="font-size:20px;line-height:1.4;margin:10px 0 6px;overflow-wrap:anywhere">${esc(t)}</h2>
+  <div class="m">${when?"📅 "+esc(when):""}${meta.length?" · "+meta.map(esc).join(" · "):""}</div>
+  ${body?`<div class="card" style="margin:10px 0"><div class="body" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(body)}</div></div>`:'<div class="m sub" style="margin:10px 0">자세한 내용이 없어요</div>'}
+  <div class="row" style="gap:8px;flex-wrap:wrap">${btns}</div></div>`;
+  $("#modal").classList.add("open");
+}
 function schPick(d){schSel=d;schEdit="";render()}
 function schLayer(k){SS[k]=schLay()[k]?0:1;schSaveSS();render()}
 function schNew(){schEdit="new";render();const e=$("#sT");if(e)e.focus()}
@@ -1913,24 +1936,19 @@ views.schedule=()=>{
     if(!date)return '<div class="sday empty0"></div>';
     const it=schItems(date);total+=it.filter(x=>x.src==="ev"&&date===x.e.date).length;
     const dots=it.slice(0,4).map(x=>`<i style="background:${x.color}"></i>`).join("");
-    const chips=it.slice(0,2).map(x=>`<span class="sch" style="--c:${x.color}">${esc(x.title)}</span>`).join("")+(it.length>2?`<span class="schmore">+${it.length-2}</span>`:"");
+    const chips=it.slice(0,3).map(x=>`<span class="sch" style="--c:${x.color}" title="${esc(x.title)}" onclick="event.stopPropagation();schDetail('${x.src}','${sid(x.id)}')">${x.time?esc(x.time)+" ":""}${esc(x.title)}</span>`).join("")+(it.length>3?`<span class="schmore">+${it.length-3}개 더</span>`:"");
     const dow=new Date(date+"T00:00:00").getDay();
     return `<button class="sday ${date===td?"td":""} ${date===schSel?"sel":""}" onclick="schPick('${date}')" aria-label="${date}${it.length?` 일정 ${it.length}건`:""}"><span class="sn ${dow===0?"sun":""}">${+date.slice(8)}</span><span class="sdots">${dots}</span><span class="schs">${chips}</span></button>`;
   }).join("");
   const L=schLay(),sel=schItems(schSel),sd=new Date(schSel+"T00:00:00");
-  const row=x=>{
-    const base=`<div class="schrow"><i class="schbar" style="background:${x.color}"></i><div class="grow"><div class="t">${esc(x.title)}</div><div class="m">${x.time?esc(x.time)+" · ":""}${esc(x.label)}${x.src==="ev"?(x.e.end?` · ${x.e.date.slice(5)} ~ ${x.e.end.slice(5)}`:""):""}${x.src==="ev"&&x.e.by?` · ${esc(dn(x.e.by))}`:""}</div>${x.src==="ev"&&x.e.memo?`<div class="m" style="white-space:pre-wrap">${esc(x.e.memo)}</div>`:""}</div>`;
-    if(x.src==="ev")return base+(schCan(x.e)?`<button class="pill" style="background:var(--g)" onclick="schEditOpen('${x.id}')">수정</button><button class="pill" style="background:var(--mut)" onclick="schDel('${x.id}')">삭제</button>`:"")+"</div>";
-    if(x.src==="ct")return base+`<button class="pill" style="background:var(--g)" onclick="${x.c.body?`openDoc('${sid(x.id)}')`:"go('contents')"}">보기</button></div>`;
-    return base+`<button class="pill" style="background:var(--g)" onclick="go('tasks')">보기</button></div>`;
-  };
+  const row=x=>`<div class="schrow" style="cursor:pointer" onclick="schDetail('${x.src}','${sid(x.id)}')"><i class="schbar" style="background:${x.color}"></i><div class="grow" style="min-width:0"><div class="t" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.title)}</div><div class="m">${x.time?esc(x.time)+" · ":""}${esc(x.label)}${x.src==="ev"&&x.e.end?` · ${x.e.date.slice(5)} ~ ${x.e.end.slice(5)}`:""}</div></div><span class="m" aria-hidden="true">›</span></div>`;
   const ed=schEdit==="new"?{date:schSel,end:"",time:"",cat:"event",title:"",memo:""}:D.events.find(x=>x.id===schEdit);
   const form=ed?`<div class="form"><input id="sT" placeholder="일정 제목 (필수)" value="${esc(ed.title)}" onkeydown="if(event.key==='Enter')schSave()">
     <div class="filters"><label class="m">시작일<input id="sD" type="date" value="${esc(ed.date)}"></label><label class="m">종료일 (선택)<input id="sE" type="date" value="${esc(ed.end||"")}"></label></div>
     <div class="filters"><label class="m">시간 (선택)<input id="sTm" type="time" value="${esc(ed.time||"")}"></label><label class="m">종류<select id="sC">${SCH_CATS.map(c=>`<option value="${c[0]}" ${ed.cat===c[0]?"selected":""}>${c[1]}</option>`).join("")}</select></label></div>
     <textarea id="sM" rows="2" placeholder="메모 (선택)">${esc(ed.memo||"")}</textarea>
     <div class="row" style="gap:8px"><button class="btn grow" onclick="schSave()">${schEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="schCancel()">취소</button></div></div>`:"";
-  return `<h1>일정표</h1><div class="sub">날짜를 눌러 그날 일정을 보고, 새 일정을 추가해요</div>
+  return `<h1>일정표</h1><div class="sub">날짜에는 제목만 보여요. 일정을 누르면 내용을 자세히 볼 수 있어요</div>
   <div class="row" style="gap:8px;margin:6px 0 10px"><button class="icon" onclick="schMove(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center;font-size:18px">${y}년 ${m}월</b><button class="icon" onclick="schMove(1)" aria-label="다음 달">›</button><button class="pill" style="background:var(--make)" onclick="schNow()">이번 달</button></div>
   <div class="chips">겹쳐 보기 <button class="${L.content?"on":""}" onclick="schLayer('content')">콘텐츠 마감</button><button class="${L.task?"on":""}" onclick="schLayer('task')">업무 마감</button></div>
   <div class="sgrid">${WD.map((w,i)=>`<div class="swd ${i===0?"sun":""}">${w}</div>`).join("")}${grid}</div>
