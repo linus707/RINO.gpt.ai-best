@@ -570,13 +570,7 @@ home(){
 contents(){
   const q=(window._q||"").toLowerCase();
   const list=D.contents.filter(c=>(chF==="all"||c.ch===chF)&&(c.title+c.memo).toLowerCase().includes(q));
-  return `<h1>콘텐츠</h1><div class="sub">단계 버튼을 누르면 다음 단계로 넘어가요</div>
-  <div class="form"><input id="ct" placeholder="콘텐츠 제목 (예: 다낭 3박4일 코스)">
-  <div class="filters"><select id="cc">${Object.entries(CH).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><input id="cd" type="date" value="${today()}"></div>
-  <input id="cm" placeholder="메모 (선택)"><input id="cx" placeholder="내가 직접 겪은 일 한두 문장 (선택 · AI 초안에 그대로 넣어요)">
-  <button class="btn" onclick="addContent()">＋ 등록</button><button class="btn" style="background:var(--make)" onclick="addContent(true)">✍️ 등록하고 AI 초안 바로 쓰기</button><button class="btn ghost" onclick="copyPromptForm()">📋 프롬프트 복사</button><button class="btn ghost" onclick="aiIdeas()">✨ AI 아이디어 받기 (선택한 채널)</button>
-  <div class="m sub" style="margin:0">AI 기능은 이 기기에 저장된 API 키로 호출해요. 사용량이 발생하고, 웹 검색 없이 쓰기 때문에 가격·시간 같은 사실은 직접 확인해야 해요.</div></div>
-  <div id="ai">${ideasHtml()}</div>
+  return `<h1>콘텐츠</h1><div class="sub">제목·메모로 검색하고, 글을 눌러 초안을 확인해요</div>
   <div class="filters"><input placeholder="🔍 제목·메모 검색" value="${esc(window._q||"")}" oninput="window._q=this.value;render(true)"><select onchange="chF=this.value;render()"><option value="all">전체 채널</option>${Object.entries(CH).map(([k,v])=>`<option value="${k}" ${chF===k?"selected":""}>${v}</option>`).join("")}</select></div>
   ${list.map(contentItem).join("")||'<div class="empty">콘텐츠가 없어요</div>'}`;
 },
