@@ -194,8 +194,14 @@ h1,.logo,.idt{font-family:var(--hfont,inherit)}
 .sday{min-height:58px;border-radius:12px;padding:5px 3px 4px;background:var(--fill);border:2px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit;color:inherit;cursor:pointer;min-width:0}.sday.empty0{background:none;cursor:default}
 .sday.sel{border-color:var(--accent)}.sday .sn{font-size:13px;font-weight:600;width:24px;height:24px;border-radius:50%;display:grid;place-items:center}.sday.td .sn{background:var(--accent);color:#fff}
 .sdots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}.sdots i{width:6px;height:6px;border-radius:50%;display:block}.schs{display:none;width:100%;gap:2px;flex-direction:column}
+.schmore.mob{display:none}
 .sch{display:block;font-size:11px;line-height:1.3;padding:1px 5px;border-radius:6px;background:color-mix(in srgb,var(--c) 20%,transparent);color:inherit;border-left:3px solid var(--c);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.schmore{font-size:11px;opacity:.6}
 @media(min-width:760px){.sday{min-height:92px;align-items:stretch}.sday .sn{align-self:flex-start}.sdots{display:none}.schs{display:flex}}
+/* 폰: 칸이 좁아서 제목을 작게 두 줄까지, 최대 2개 + 나머지는 +N */
+@media(max-width:759px){.sday{min-height:84px;padding:4px 2px 3px;align-items:stretch;gap:2px}.sday .sn{align-self:center;width:22px;height:22px;font-size:12px}.sdots{display:none}.schs{display:flex;gap:2px}
+.sch{font-size:10px;line-height:1.25;padding:1px 2px;border-left-width:2px;border-radius:4px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all}
+.sch:nth-of-type(n+3){display:none}.schmore.dsk{display:none}.schmore.mob{display:block;text-align:center;font-size:10px}
+.sch .tm{display:none}}
 .schrow{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}.schrow:last-of-type{border-bottom:0}.schbar{width:4px;align-self:stretch;border-radius:2px;flex:none}
 .mname{font-size:12px;font-weight:600;margin-bottom:2px;opacity:.75}.mtime{font-size:11px;opacity:.6;margin-top:3px}.mtime a{color:inherit}.mday{align-self:center;font-size:12px;opacity:.55;margin:6px 0 2px}.mimg{max-width:min(240px,100%);border-radius:12px;display:block;margin-top:6px;cursor:zoom-in}
 .bubble.me{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:6px}
@@ -1936,7 +1942,7 @@ views.schedule=()=>{
     if(!date)return '<div class="sday empty0"></div>';
     const it=schItems(date);total+=it.filter(x=>x.src==="ev"&&date===x.e.date).length;
     const dots=it.slice(0,4).map(x=>`<i style="background:${x.color}"></i>`).join("");
-    const chips=it.slice(0,3).map(x=>`<span class="sch" style="--c:${x.color}" title="${esc(x.title)}" onclick="event.stopPropagation();schDetail('${x.src}','${sid(x.id)}')">${x.time?esc(x.time)+" ":""}${esc(x.title)}</span>`).join("")+(it.length>3?`<span class="schmore">+${it.length-3}개 더</span>`:"");
+    const chips=it.slice(0,3).map(x=>`<span class="sch" style="--c:${x.color}" title="${esc(x.title)}" onclick="event.stopPropagation();schDetail('${x.src}','${sid(x.id)}')">${x.time?`<span class="tm">${esc(x.time)} </span>`:""}${esc(x.title)}</span>`).join("")+(it.length>3?`<span class="schmore dsk">+${it.length-3}개 더</span>`:"")+(it.length>2?`<span class="schmore mob">+${it.length-2}</span>`:"");
     const dow=new Date(date+"T00:00:00").getDay();
     return `<button class="sday ${date===td?"td":""} ${date===schSel?"sel":""}" onclick="schPick('${date}')" aria-label="${date}${it.length?` 일정 ${it.length}건`:""}"><span class="sn ${dow===0?"sun":""}">${+date.slice(8)}</span><span class="sdots">${dots}</span><span class="schs">${chips}</span></button>`;
   }).join("");
