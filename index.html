@@ -1148,8 +1148,50 @@ views.doc=()=>{
   <div class="tabs"><button class="${docTab==="body"?"on":""}" onclick="docTab='body';render()">초안</button>${has?`<button class="${docTab==="report"?"on":""}" onclick="docTab='report';render()">보고</button>`:""}</div>
   <div class="row" style="margin-bottom:10px;flex-wrap:wrap"><button class="btn" onclick="copyDoc('${c.id}')">📋 ${docTab==="report"?"보고":"초안"} 복사</button><button class="btn ghost" onclick="copyTitle('${c.id}')">제목 복사</button></div>
   <div class="m sub">노란 칸은 아직 확인하지 못했거나 직접 채워야 하는 부분이에요.</div>
-  <div class="doc">${md(docTab==="report"?c.report:c.body)}</div>`;
+  ${docEdit===c.id&&docTab==="body"?`<textarea id="docEd" style="width:100%;min-height:360px;font:inherit;padding:10px;border:1px solid var(--line,#ddd);border-radius:10px" oninput="docEdTxt=this.value">${esc(docEdTxt)}</textarea>
+  <div class="row" style="margin:8px 0;gap:6px"><button class="btn" onclick="docEditSave('${c.id}')">💾 저장</button><button class="btn ghost" onclick="docEdit='';render()">취소</button></div>`
+  :`<div class="doc">${md(docTab==="report"?c.report:c.body)}</div>
+  ${docTab==="body"&&isAdmin()?`<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn ghost" onclick="docEditStart('${c.id}')">✏️ 본문 직접 고치기</button>${c.edited?`<button class="btn ghost" onclick="docEditReset('${c.id}')" title="저장소(작업 폴더) 버전으로 되돌려요">↺ 저장소 버전으로</button>`:""}</div>`:""}`}
+  ${docNotesHtml(c)}`;
 };
+let docEdit="",docEdTxt="",noteDraft="",noteWho="기호";
+function docEditStart(id){const c=D.contents.find(x=>x.id===id);if(!c)return;docEdit=id;docEdTxt=c.body||"";render()}
+function docEditSave(id){const c=D.contents.find(x=>x.id===id);if(!c)return;c.body=docEdTxt.slice(0,100000);c.edited=1;c.u=Date.now();docEdit="";save();render();toast("본문을 저장했어요 (이 앱에만 반영돼요. 저장소 파일은 그대로예요)")}
+function docEditReset(id){const c=D.contents.find(x=>x.id===id);if(!c||!confirm("앱에서 고친 본문을 버리고, 다음 불러오기 때 작업 폴더의 글로 바꿀까요?"))return;c.edited=0;c.srcSig="";c.u=Date.now();save();render();toast("설정 > 작업 폴더 불러오기를 누르면 저장소 버전으로 바뀌어요")}
+/* 초안 아래 대화창: 메모를 남기거나 직원에게 수정 지시로 보내요 */
+function docNotesHtml(c){
+  const ns=c.notes||[],names=[...agentNames()];
+  if(!names.includes(noteWho))noteWho=names.includes("기호")?"기호":(names[0]||"");
+  const row=n=>{
+    const t=n.tk&&D.tasks.find(x=>x.id===n.tk),st=t?asInfo(t.as)[1]:"";
+    return `<div style="margin:8px 0;padding:10px 12px;border-radius:12px;background:${n.to?"var(--card2,#f4efe9)":"var(--card,#fff)"};border:1px solid var(--line,#e5e5e5)">
+    <div class="m sub">${esc(n.by||"")} · ${new Date(n.at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${n.to?" · 📨 "+esc(n.to)+"에게 수정 지시":""}${st?" · "+st:""}</div>
+    <div style="white-space:pre-wrap;margin-top:4px">${esc(n.txt)}</div>
+    ${t&&t.rep?`<div class="m" style="margin-top:6px;white-space:pre-wrap">📝 ${esc(t.rep)}</div>`:""}
+    ${t&&!t.done?`<div class="row" style="margin-top:6px;gap:6px"><button class="pill" style="background:var(--ready)" onclick="runNow('${t.id}')">⚡ 지금 바로 실행</button></div>`:""}</div>`};
+  return `<h3 style="margin:22px 0 6px">💬 수정 요청·메모</h3>
+  <div class="m sub">원하는 수정을 적어서 직원에게 보내면, 그 직원이 작업 폴더의 글을 고쳐요. 고친 글은 「작업 폴더 불러오기」로 다시 가져오면 위에 반영돼요. 혜택 내용처럼 직접 아는 내용은 위의 ‘본문 직접 고치기’가 가장 빨라요.</div>
+  <div id="notes">${ns.length?ns.map(row).join(""):`<div class="m sub" style="margin:8px 0">아직 대화가 없어요.</div>`}</div>
+  <textarea id="noteTxt" placeholder="예) 혜택 ① 프로모션 내용을 이렇게 바꿔줘 …" style="width:100%;min-height:84px;font:inherit;padding:10px;border:1px solid var(--line,#ddd);border-radius:10px" oninput="noteDraft=this.value">${esc(noteDraft)}</textarea>
+  <div class="row" style="margin:8px 0 24px;gap:6px;flex-wrap:wrap">
+    <select onchange="noteWho=this.value" style="padding:8px;border-radius:10px">${names.map(n=>`<option ${n===noteWho?"selected":""}>${esc(n)}</option>`).join("")}</select>
+    <button class="btn" onclick="noteSend('${c.id}',1)">📨 직원에게 수정 지시</button>
+    <button class="btn ghost" onclick="noteSend('${c.id}',0)">메모만 남기기</button></div>`;
+}
+function noteSend(id,toStaff){
+  const c=D.contents.find(x=>x.id===id),txt=(noteDraft||"").trim();
+  if(!c||!txt){toast("내용을 먼저 적어 주세요");return}
+  const n={id:uid(),at:Date.now(),by:curName(),txt:txt.slice(0,2000)};
+  if(toStaff){
+    if(!agentOf(noteWho)){alert("담당 직원이 명단에 없어요");return}
+    n.to=noteWho;
+    const folder=c.src?`작업/${c.src}/draft.md`:"(작업 폴더 없음 — 앱 본문 기준)";
+    const body=`수정 요청 · ${c.title}`.slice(0,80)+"\n- 대상 글: "+folder+(c.src?"\n- draft.md의 `## 본문`을 수정하고 work 브랜치에 커밋·푸시해 주세요. 제목·서식(`## 제목`/`## 본문`/`## 해시태그`)은 유지.":"")+"\n- 대표 요청: "+txt+(c.edited?"\n- 참고: 대표가 앱에서 본문을 직접 고쳐 둔 상태예요. 아래가 앱의 현재 본문이에요.\n\n"+(c.body||"").slice(0,1000):"");
+    dispatchTask(noteWho,body,"",c.brand||"",1,0);
+    n.tk=D.tasks[0]&&D.tasks[0].id;
+  }
+  (c.notes=c.notes||[]).push(n);c.u=Date.now();noteDraft="";save();render();
+}
 function clip(txt,okMsg){
   const fb=()=>prompt("복사해서 사용해 주세요",txt);
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>alert(okMsg),fb);else fb();
@@ -1228,7 +1270,7 @@ async function importRepo(silent){
       if(ex){
         if(ex.title===ex.srcTitle)ex.title=title;
         if(ex.stage===ex.srcStage)ex.stage=stage;
-        Object.assign(ex,{body:cut(sp.body,100000),report:cut(report,100000),memo,brand,srcSig:sig,srcStage:stage,srcTitle:title});updated++;
+        Object.assign(ex,{report:cut(report,100000),memo,brand,srcSig:sig,srcStage:stage,srcTitle:title});if(!ex.edited)ex.body=cut(sp.body,100000);updated++;
       }else{
         D.contents.unshift({id:uid(),title,ch:REPO_CH[brand]||"blog",stage,due:"",memo,by,body:cut(sp.body,100000),report:cut(report,100000),brand,src:name,srcSig:sig,srcStage:stage,srcTitle:title});added++;
       }
