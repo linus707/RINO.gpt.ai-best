@@ -218,7 +218,8 @@ h1,.logo,.idt{font-family:var(--hfont,inherit)}
 .fab.chat i{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:10px;background:var(--red);color:#fff;font:600 12px/20px -apple-system,sans-serif;font-style:normal;text-align:center;padding:0 6px}
 .fab.chat i:empty{display:none}
 .fab.chat{transition:opacity .4s,transform .4s}
-.fab.chat.idle{opacity:0;transform:scale(.8);pointer-events:none}
+.fab{transition:opacity .4s,transform .4s}
+.fab.idle,.fab.chat.idle{opacity:0;transform:scale(.8);pointer-events:none}
 /* 시트 · 토스트 */
 #modal{position:fixed;inset:0;z-index:20;display:none}#modal.open{display:block}
 .shade2{position:absolute;inset:0;background:rgba(0,0,0,.36)}
@@ -1946,6 +1947,9 @@ function homeToday(){
    일정은 D.events 에 저장되고 기존 클라우드 동기화로 항목 단위로 합쳐져요. */
 const SCH_CATS=[["event","일정","#007aff"],["meet","회의","#af52de"],["consult","고객상담","#30b0c7"],["delivery","제품배송","#a2845e"],["shoot","촬영·여행","#ff9500"],["pub","발행","#34c759"],["leave","휴가","#ff3b30"]];
 const schCat=k=>SCH_CATS.find(c=>c[0]===k)||SCH_CATS[0];
+const SCH_PAL=["#007aff","#5856d6","#af52de","#ff2d55","#ff3b30","#ff9500","#ffcc00","#34c759","#30b0c7","#a2845e","#8e8e93","#1c1c1e"];
+const evColor=e=>/^#[0-9a-f]{6}$/i.test(e.color||"")?e.color:schCat(e.cat)[2];
+let schColor="";
 const SS=(()=>{try{return JSON.parse(localStorage.getItem("rino-sch"))||{}}catch{return{}}})();
 const schSaveSS=()=>{try{localStorage.setItem("rino-sch",JSON.stringify(SS))}catch{}};
 let schM=today().slice(0,7),schSel=today(),schEdit="";
@@ -1954,7 +1958,7 @@ const p2=n=>String(n).padStart(2,"0");
 const WD=["일","월","화","수","목","금","토"];
 function schItems(date){
   const out=[],L=schLay();
-  D.events.forEach(e=>{const end=e.end&&e.end>=e.date?e.end:e.date;if(date>=e.date&&date<=end)out.push({src:"ev",id:e.id,title:e.title,time:e.time||"",color:schCat(e.cat)[2],label:schCat(e.cat)[1],e})});
+  D.events.forEach(e=>{const end=e.end&&e.end>=e.date?e.end:e.date;if(date>=e.date&&date<=end)out.push({src:"ev",id:e.id,title:e.title,time:e.time||"",color:evColor(e),label:schCat(e.cat)[1],e})});
   if(L.content)D.contents.forEach(c=>{if(c.due===date)out.push({src:"ct",id:c.id,title:c.title,time:"",color:"#5ac8fa",label:"콘텐츠 마감",c})});
   if(L.task)D.tasks.forEach(t=>{if(!t.done&&t.due===date)out.push({src:"tk",id:t.id,title:t.title,time:"",color:"#8e8e93",label:"업무 마감"})});
   return out.sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
@@ -1966,7 +1970,7 @@ function schDetail(src,id){
   const nid=String(id);
   if(src==="ev"){
     const e=D.events.find(x=>String(x.id)===nid);if(!e)return;const c=schCat(e.cat);
-    t=e.title;color=c[2];label=c[1];when=e.date+(e.end&&e.end>e.date?" ~ "+e.end:"")+(e.time?" "+e.time:"");body=e.memo||"";if(e.by)meta.push("작성 "+dn(e.by));
+    t=e.title;color=evColor(e);label=c[1];when=e.date+(e.end&&e.end>e.date?" ~ "+e.end:"")+(e.time?" "+e.time:"");body=e.memo||"";if(e.by)meta.push("작성 "+dn(e.by));
     if(schCan(e))btns=`<button class="btn" onclick="closeModal();schPick('${esc(e.date)}');schEditOpen('${e.id}')">수정</button><button class="btn ghost" onclick="closeModal();schDel('${e.id}')">삭제</button>`;
   }else if(src==="ct"){
     const c=D.contents.find(x=>String(x.id)===nid);if(!c)return;
@@ -1986,14 +1990,16 @@ function schDetail(src,id){
 }
 function schPick(d){schSel=d;schEdit="";render()}
 function schLayer(k){SS[k]=schLay()[k]?0:1;schSaveSS();render()}
-function schNew(){schEdit="new";render();const e=$("#sT");if(e)e.focus()}
-function schEditOpen(id){schEdit=id;render()}
-function schCancel(){schEdit="";render()}
+function schNew(){schEdit="new";schColor="";render();const e=$("#sT");if(e)e.focus()}
+function schEditOpen(id){schEdit=id;const e=D.events.find(x=>x.id===id);schColor=(e&&e.color)||"";render()}
+function schSetColor(c){schColor=c;const t=$("#sT"),v=t?t.value:"",d=$("#sD"),en=$("#sE"),tm=$("#sTm"),cc=$("#sC"),m=$("#sM");const keep={t:v,d:d&&d.value,e:en&&en.value,tm:tm&&tm.value,c:cc&&cc.value,m:m&&m.value};schDraft=keep;render()}
+let schDraft=null;
+function schCancel(){schEdit="";schColor="";schDraft=null;render()}
 const schCan=e=>isAdmin()||e.by===curName()||!e.by;
 function schSave(){
   const t=$("#sT").value.trim();if(!t){alert("제목을 입력해 주세요");return}
   const date=$("#sD").value||schSel;let end=$("#sE").value;if(end&&end<=date)end="";
-  const rec={title:t.slice(0,80),date,end,time:$("#sTm").value,cat:$("#sC").value,memo:$("#sM").value.trim().slice(0,300)};
+  const rec={title:t.slice(0,80),date,end,time:$("#sTm").value,cat:$("#sC").value,color:/^#[0-9a-f]{6}$/i.test(schColor)?schColor:"",memo:$("#sM").value.trim().slice(0,300)};
   if(schEdit&&schEdit!=="new"){const e=D.events.find(x=>x.id===schEdit);if(e&&schCan(e))Object.assign(e,rec)}
   else D.events.push({id:uid(),by:curName(),...rec});
   if(rec&&!(schEdit&&schEdit!=="new"))ntfy(`📅 새 일정 · ${ntfyDate(date)} ${rec.title}${rec.time?" ("+rec.time+")":""} (${dn(curName()||"관리자")})`,curName()||"관리자");
@@ -2014,10 +2020,14 @@ views.schedule=()=>{
   }).join("");
   const L=schLay(),sel=schItems(schSel),sd=new Date(schSel+"T00:00:00");
   const row=x=>`<div class="schrow" style="cursor:pointer" onclick="schDetail('${x.src}','${sid(x.id)}')"><i class="schbar" style="background:${x.color}"></i><div class="grow" style="min-width:0"><div class="t" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.title)}</div><div class="m">${x.time?esc(x.time)+" · ":""}${esc(x.label)}${x.src==="ev"&&x.e.end?` · ${x.e.date.slice(5)} ~ ${x.e.end.slice(5)}`:""}</div></div><span class="m" aria-hidden="true">›</span></div>`;
-  const ed=schEdit==="new"?{date:schSel,end:"",time:"",cat:"event",title:"",memo:""}:D.events.find(x=>x.id===schEdit);
+  let ed=schEdit==="new"?{date:schSel,end:"",time:"",cat:"event",title:"",memo:""}:D.events.find(x=>x.id===schEdit);
+  if(ed&&schDraft){ed={...ed,title:schDraft.t,date:schDraft.d||ed.date,end:schDraft.e,time:schDraft.tm,cat:schDraft.c||ed.cat,memo:schDraft.m};schDraft=null}
+  const curCol=/^#[0-9a-f]{6}$/i.test(schColor)?schColor:(ed?schCat(ed.cat)[2]:"#007aff");
   const form=ed?`<div class="form"><input id="sT" placeholder="일정 제목 (필수)" value="${esc(ed.title)}" onkeydown="if(event.key==='Enter')schSave()">
     <div class="filters"><label class="m">시작일<input id="sD" type="date" value="${esc(ed.date)}"></label><label class="m">종료일 (선택)<input id="sE" type="date" value="${esc(ed.end||"")}"></label></div>
     <div class="filters"><label class="m">시간 (선택)<input id="sTm" type="time" value="${esc(ed.time||"")}"></label><label class="m">종류<select id="sC">${SCH_CATS.map(c=>`<option value="${c[0]}" ${ed.cat===c[0]?"selected":""}>${c[1]}</option>`).join("")}</select></label></div>
+    <div class="m" style="margin:4px 0 2px">색상 <span class="m sub">${schColor?"직접 고른 색":"종류 색(기본)"}</span></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${SCH_PAL.map(c=>`<button type="button" aria-label="색 ${c}" onclick="schSetColor('${c}')" style="width:28px;height:28px;border-radius:50%;border:${c===curCol?"3px solid var(--text,#000)":"2px solid transparent"};background:${c};padding:0"></button>`).join("")}<label class="m" style="display:flex;align-items:center;gap:4px">직접<input type="color" value="${curCol}" onchange="schSetColor(this.value)" style="width:34px;height:28px;padding:0;border:0;background:none"></label>${schColor?`<button type="button" class="btn ghost" style="padding:4px 10px" onclick="schSetColor('')">기본색</button>`:""}</div>
     <textarea id="sM" rows="2" placeholder="메모 (선택)">${esc(ed.memo||"")}</textarea>
     <div class="row" style="gap:8px"><button class="btn grow" onclick="schSave()">${schEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="schCancel()">취소</button></div></div>`:"";
   return `<h1>일정표</h1><div class="sub">날짜에는 제목만 보여요. 일정을 누르면 내용을 자세히 볼 수 있어요</div>
@@ -2695,10 +2705,10 @@ function stripEmoji(root){
   els.forEach(e=>{const n=e.firstChild;if(n&&n.nodeType===3&&EMO.test(n.data)){const t=n.data.replace(EMO,"");if(t.trim())n.data=t}});
 }
 new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&stripEmoji(n)))).observe(document.body,{childList:true,subtree:true});
-/* 💬 지시 버튼은 쓰지 않으면 몇 초 뒤 스스로 사라져요. 화면을 만지거나 스크롤하거나 마우스를 움직이면 다시 나타났다가 또 사라져요 */
+/* 오른쪽 아래 💬·＋ 버튼은 쓰지 않으면 몇 초 뒤 스스로 사라져요. 화면을 만지거나 스크롤하거나 마우스를 움직이면 다시 나타났다가 또 사라져요 */
 (function fabIdle(){
-  let t=0;const cf=()=>document.getElementById("chatfab");
-  const wake=()=>{const f=cf();if(!f)return;f.classList.remove("idle");clearTimeout(t);t=setTimeout(()=>{const g=cf();if(g)g.classList.add("idle")},4000)};
+  let t=0;const fs=()=>document.querySelectorAll(".fab");
+  const wake=()=>{const a=fs();if(!a.length)return;a.forEach(f=>f.classList.remove("idle"));clearTimeout(t);t=setTimeout(()=>fs().forEach(g=>g.classList.add("idle")),4000)};
   ["pointerdown","touchstart","scroll","keydown","mousemove"].forEach(ev=>window.addEventListener(ev,wake,{passive:true,capture:true}));
   wake();window.fabWake=wake;
 })();
