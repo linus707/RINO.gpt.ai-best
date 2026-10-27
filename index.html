@@ -1619,20 +1619,25 @@ views.proto=()=>{
   try{D.stock.forEach(s=>{const id="s-"+s.id;if(!D.inv.some(x=>x.id===id)&&!D.del[id])D.inv.push({id,name:s.name,cat:"가구",qty:+s.qty||0,unit:"개",min:+s.min||0,loc:"",memo:""})})}catch{}
 })();
 const INV_ST=[["요청","#ff9500"],["주문","#007aff"],["입고","#34c759"],["반려","#8e8e93"]];
-let invTab="stock",invQ="",invCat="",invLow=false,invEdit="";
+/* 에이스침대 매장 재고: 프레임 · 매트리스 · 기타 가구 · 사은품 (분류는 4개로 고정) */
+const INV_TABS=[["frame","프레임"],["mat","매트리스"],["furn","기타 가구"],["gift","사은품"]];
+const invCatOf=x=>{const c=String(x.cat||"");return /사은|증정/.test(c)?"사은품":/프레임|침대틀/.test(c)?"프레임":/매트리스|메트리스/.test(c)?"매트리스":/^기타 가구$/.test(c)?"기타 가구":"기타 가구"};
+const invTabCat=k=>(INV_TABS.find(t=>t[0]===k)||INV_TABS[0])[1];
+const invCnt=k=>D.inv.filter(x=>invCatOf(x)===invTabCat(k)).length;
+let invTab="frame",invQ="",invLow=false,invEdit="";
 const invLowN=()=>D.inv.filter(x=>x.qty<=x.min).length;
-const invReqN=()=>D.invreq.filter(x=>x.status==="요청"||x.status==="주문").length;
+const invReqN=()=>0;
 function invLog(item,delta,note){D.invlog.push({id:uid(),item,delta,by:curName()||"관리자",t:Date.now(),note:note||""});if(D.invlog.length>200){D.invlog.sort((a,b)=>a.t-b.t);D.invlog.splice(0,D.invlog.length-200)}}
 function invTabSet(k){invTab=k;invEdit="";render()}
-function invAdj(id,d){const x=D.inv.find(v=>v.id===id);if(!x)return;const n=Math.max(0,x.qty+d);if(n===x.qty)return;invLog(x.name,n-x.qty);const was=x.qty;x.qty=n;if(was>x.min&&n<=x.min)ntfy(`⚠️ 재고 부족 · ${x.name} ${n}${x.unit} 남음 (최소 ${x.min}${x.unit})`,curName()||"관리자");save();render()}
+function invAdj(id,d){const x=D.inv.find(v=>v.id===id);if(!x)return;const n=Math.max(0,x.qty+d);if(n===x.qty)return;invLog(x.name,n-x.qty,d<0?(invCatOf(x)==="사은품"?"지급":"판매·출고"):"입고");const was=x.qty;x.qty=n;if(was>x.min&&n<=x.min)ntfy(`⚠️ 재고 부족 · ${x.name} ${n}${x.unit} 남음 (최소 ${x.min}${x.unit})`,curName()||"관리자");save();render()}
 function invOpen(id){invEdit=id;render();const e=$("#iN");if(e)e.focus()}
 function invCancel(){invEdit="";render()}
 function invSave(){
   const n=$("#iN").value.trim();if(!n){alert("품목명을 입력해 주세요");return}
-  const rec={name:n.slice(0,60),cat:($("#iC").value.trim()||"기타").slice(0,20),qty:Math.max(0,+$("#iQ").value||0),unit:($("#iU").value.trim()||"개").slice(0,8),min:Math.max(0,+$("#iM").value||0),loc:$("#iL").value.trim().slice(0,30),memo:$("#iMemo").value.trim().slice(0,200)};
+  const rec={name:n.slice(0,60),cat:$("#iC").value,spec:$("#iS").value.trim().slice(0,30),color:$("#iK").value.trim().slice(0,30),qty:Math.max(0,+$("#iQ").value||0),unit:($("#iU").value.trim()||"개").slice(0,8),min:Math.max(0,+$("#iM").value||0),loc:$("#iL").value.trim().slice(0,30),memo:$("#iMemo").value.trim().slice(0,200)};
   if(invEdit==="new"){D.inv.push({id:uid(),...rec});if(rec.qty)invLog(rec.name,rec.qty,"처음 등록")}
   else{const x=D.inv.find(v=>v.id===invEdit);if(x){if(rec.qty!==x.qty)invLog(rec.name,rec.qty-x.qty,"수량 직접 수정");Object.assign(x,rec)}}
-  invEdit="";save();render();
+  invEdit="";if(INV_TABS.some(t=>t[1]===rec.cat))invTab=INV_TABS.find(t=>t[1]===rec.cat)[0];save();render();
 }
 function invDel(id){if(!isAdmin()){alert("품목 삭제는 관리자만 할 수 있어요");return}const x=D.inv.find(v=>v.id===id);if(!x||!confirm(`'${x.name}'을(를) 지울까요?`))return;D.inv=D.inv.filter(v=>v.id!==id);invEdit="";save();render()}
 function invAsk(name){invTab="req";invEdit="";window._invPre=name||"";render();setTimeout(()=>{const e=$("#rN");if(e){e.value=window._invPre||"";const q=$("#rQ");if(q)q.focus()}},60)}
@@ -1656,35 +1661,32 @@ function invReqSet(id,st){
   save();render();
 }
 views.inventory=()=>{
-  const tabs=[["stock","📦 재고"],["req",`📝 요청${invReqN()?` ${invReqN()}`:""}`],["log","🕘 기록"],["led","📒 장부"]];
-  const head=`<h1>물품·재고</h1><div class="sub">부족한 물품은 빨간색으로 보여요. 모자라면 바로 요청해요</div>
-  <div class="stats">${stat("전체 품목",D.inv.length)}${stat("부족 품목",invLowN())}${stat("진행 중 요청",invReqN())}</div>
-  <div class="tabs">${tabs.map(([k,n])=>`<button class="${invTab===k?"on":""}" onclick="invTabSet('${k}')">${n}</button>`).join("")}</div>`;
+  if(!INV_TABS.some(t=>t[0]===invTab)&&invTab!=="log"&&invTab!=="led")invTab="frame";
+  const gift=D.inv.filter(x=>invCatOf(x)==="사은품"),giftN=gift.reduce((a,x)=>a+x.qty,0);
+  const tabs=[...INV_TABS.map(([k,n])=>[k,`${n} ${invCnt(k)}`]),["log","기록"],["led","장부"]];
+  const head=`<h1>물품·재고</h1><div class="sub">에이스침대 매장의 프레임·매트리스·기타 가구와 사은품 재고예요. 부족하면 빨간색으로 보여요</div>
+  <div class="stats">${stat("전체 품목",D.inv.length)}${stat("부족 품목",invLowN())}${stat("사은품 재고",giftN+"개")}</div>
+  <div class="tabs setTabs">${tabs.map(([k,n])=>`<button class="${invTab===k?"on":""}" onclick="invTabSet('${k}')">${n}</button>`).join("")}</div>`;
   if(invTab==="led")return head+ledView(today().slice(0,7));
   if(invTab==="log"){
     const L=D.invlog.slice().sort((a,b)=>b.t-a.t).slice(0,100);
-    return head+(L.map(l=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(l.item)} <b style="color:${l.delta>0?"#34c759":"#ff3b30"}">${l.delta>0?"+":""}${l.delta}</b></div><div class="m">${esc(dn(l.by))} · ${new Date(l.t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${l.note?" · "+esc(l.note):""}</div></div></div></div>`).join("")||'<div class="empty">아직 입출고 기록이 없어요</div>');
+    return head+(L.map(l=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(l.item)} <b style="color:${l.delta>0?"#34c759":"#ff3b30"}">${l.delta>0?"+":""}${l.delta}</b></div><div class="m">${esc(dn(l.by))} · ${new Date(l.t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${l.note?" · "+esc(l.note):""}</div></div></div></div>`).join("")||'<div class="empty">아직 기록이 없어요. 수량을 늘리거나 줄이면 입고·판매·지급 기록이 남아요</div>');
   }
-  if(invTab==="req"){
-    const R=D.invreq.slice().sort((a,b)=>b.t-a.t);
-    return head+`<div class="form"><input id="rN" list="invl" placeholder="필요한 물품 (필수)"><datalist id="invl">${D.inv.map(x=>`<option value="${esc(x.name)}">`).join("")}</datalist><div class="filters"><input id="rQ" type="number" min="1" placeholder="수량" value="1"><input id="rM" placeholder="메모 (선택)"></div><button class="btn" onclick="invReqAdd()">＋ 요청 올리기</button></div>`+
-    (R.map(r=>{const st=INV_ST.find(s=>s[0]===r.status)||INV_ST[0];return `<div class="item"><div class="row" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(r.name)} × ${r.qty}</div><div class="m">${esc(dn(r.by))} · ${new Date(r.t).toLocaleDateString("ko-KR",{month:"numeric",day:"numeric"})}${r.note?" · "+esc(r.note):""}</div></div><span class="pill" style="background:${st[1]}">${st[0]}</span>
-      ${isAdmin()&&r.status!=="입고"&&r.status!=="반려"?`${r.status==="요청"?`<button class="pill" style="background:var(--g)" onclick="invReqSet('${r.id}','주문')">주문함</button>`:""}<button class="pill" style="background:var(--make)" onclick="invReqSet('${r.id}','입고')">입고 처리</button><button class="pill" style="background:var(--mut)" onclick="invReqSet('${r.id}','반려')">반려</button>`:""}
-      ${(r.by===curName()||isAdmin())&&r.status!=="입고"?`<button class="pill" style="background:var(--mut)" onclick="invReqSet('${r.id}','취소')">취소</button>`:""}</div></div>`}).join("")||'<div class="empty">요청이 없어요</div>');
-  }
-  const cats=[...new Set(D.inv.map(x=>x.cat))].filter(Boolean);
-  const q=invQ.trim().toLowerCase();
-  const list=D.inv.filter(x=>(!q||(x.name+" "+x.loc+" "+x.memo).toLowerCase().includes(q))&&(!invCat||x.cat===invCat)&&(!invLow||x.qty<=x.min)).sort((a,b)=>(b.qty<=b.min)-(a.qty<=a.min)||a.name.localeCompare(b.name,"ko"));
-  const ed=invEdit==="new"?{name:"",cat:invCat||"",qty:0,unit:"개",min:0,loc:"",memo:""}:D.inv.find(x=>x.id===invEdit);
-  const form=ed?`<div class="form"><input id="iN" placeholder="품목명 (필수)" value="${esc(ed.name)}"><div class="filters"><input id="iC" list="invc" placeholder="분류 (예: 소모품)" value="${esc(ed.cat)}"><datalist id="invc">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist><input id="iL" placeholder="위치 (선택)" value="${esc(ed.loc||"")}"></div>
-    <div class="filters"><label class="m">현재 수량<input id="iQ" type="number" min="0" value="${ed.qty}"></label><label class="m">단위<input id="iU" value="${esc(ed.unit||"개")}"></label><label class="m">최소 수량<input id="iM" type="number" min="0" value="${ed.min}"></label></div>
-    <input id="iMemo" placeholder="메모 (선택)" value="${esc(ed.memo||"")}"><div class="row" style="gap:8px"><button class="btn grow" onclick="invSave()">${invEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="invCancel()">취소</button></div></div>`:"";
-  return head+`<div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="invOpen('new')">＋ 품목 추가</button></div>${invEdit?form:""}
-  <div class="filters"><input placeholder="🔍 품목·위치 검색" value="${esc(invQ)}" oninput="invQ=this.value;render(true)"><select onchange="invCat=this.value;render()"><option value="">전체 분류</option>${cats.map(c=>`<option value="${esc(c)}" ${invCat===c?"selected":""}>${esc(c)}</option>`).join("")}</select></div>
+  const cat=invTabCat(invTab),q=invQ.trim().toLowerCase(),isGift=cat==="사은품";
+  const list=D.inv.filter(x=>invCatOf(x)===cat&&(!q||(x.name+" "+(x.spec||"")+" "+(x.color||"")+" "+(x.loc||"")+" "+(x.memo||"")).toLowerCase().includes(q))&&(!invLow||x.qty<=x.min)).sort((a,b)=>(b.qty<=b.min)-(a.qty<=a.min)||a.name.localeCompare(b.name,"ko"));
+  const ed=invEdit==="new"?{name:"",cat,spec:"",color:"",qty:0,unit:isGift?"개":"개",min:isGift?5:0,loc:"",memo:""}:D.inv.find(x=>x.id===invEdit);
+  const form=ed?`<div class="form"><div class="filters"><select id="iC">${INV_TABS.map(t=>`<option ${invCatOf(ed)===t[1]?"selected":""}>${t[1]}</option>`).join("")}</select><input id="iN" placeholder="${isGift?"사은품 이름 (필수)":"모델명·제품명 (필수)"}" value="${esc(ed.name)}"></div>
+    ${isGift?'<input id="iS" type="hidden" value=""><input id="iK" type="hidden" value="">':`<div class="filters"><input id="iS" placeholder="규격·사이즈 (예: Q, K, SS)" value="${esc(ed.spec||"")}"><input id="iK" placeholder="색상 (선택)" value="${esc(ed.color||"")}"></div>`}
+    <div class="filters"><input id="iL" placeholder="${isGift?"보관 위치 (선택)":"위치 (예: 1층 전시, 창고)"}" value="${esc(ed.loc||"")}"><input id="iMemo" placeholder="메모 (선택)" value="${esc(ed.memo||"")}"></div>
+    <div class="filters"><label class="m">현재 수량<input id="iQ" type="number" min="0" value="${ed.qty}"></label><label class="m">단위<input id="iU" value="${esc(ed.unit||"개")}"></label><label class="m">부족 기준(최소 수량)<input id="iM" type="number" min="0" value="${ed.min}"></label></div>
+    <div class="row" style="gap:8px"><button class="btn grow" onclick="invSave()">${invEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="invCancel()">취소</button></div></div>`:"";
+  const plus=isGift?"입고":"입고",minus=isGift?"지급":"판매·출고";
+  return head+`<div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="invOpen('new')">＋ ${cat} 추가</button></div>${invEdit?form:""}
+  <div class="filters"><input placeholder="${cat} 검색" value="${esc(invQ)}" oninput="invQ=this.value;render(true)"></div>
   <div class="chips"><button class="${invLow?"on":""}" onclick="invLow=!invLow;render()">부족한 것만</button></div>
-  ${list.map(x=>{const low=x.qty<=x.min;return `<div class="item"><div class="row" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(x.name)} ${low?'<span class="pill" style="background:#ff3b30">부족</span>':""}</div><div class="m">${esc(x.cat)}${x.loc?" · "+esc(x.loc):""} · 최소 ${x.min}${esc(x.unit)}${x.memo?" · "+esc(x.memo):""}</div></div>
-    <div class="qty"><button onclick="invAdj('${x.id}',-1)" aria-label="하나 줄이기">−</button><b class="${low?"low":""}">${x.qty}${esc(x.unit)}</b><button onclick="invAdj('${x.id}',1)" aria-label="하나 늘리기">＋</button></div></div>
-    <div class="row" style="gap:6px;margin-top:6px">${low?`<button class="pill" style="background:var(--make)" onclick="invAsk(decodeURIComponent('${encodeURIComponent(x.name)}'))">요청하기</button>`:""}<button class="pill" style="background:var(--g)" onclick="invOpen('${x.id}')">수정</button>${isAdmin()?`<button class="pill" style="background:var(--mut)" onclick="invDel('${x.id}')">삭제</button>`:""}</div></div>`}).join("")||'<div class="empty">조건에 맞는 품목이 없어요</div>'}`;
+  ${list.map(x=>{const low=x.qty<=x.min;return `<div class="item"><div class="row" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(x.name)} ${low?'<span class="pill" style="background:#ff3b30">부족</span>':""}</div><div class="m">${[x.spec,x.color,x.loc].filter(Boolean).map(esc).join(" · ")}${x.spec||x.color||x.loc?" · ":""}부족 기준 ${x.min}${esc(x.unit)}${x.memo?" · "+esc(x.memo):""}</div></div>
+    <div class="qty"><button onclick="invAdj('${x.id}',-1)" aria-label="${minus} 1">−</button><b class="${low?"low":""}">${x.qty}${esc(x.unit)}</b><button onclick="invAdj('${x.id}',1)" aria-label="${plus} 1">＋</button></div></div>
+    <div class="row" style="gap:6px;margin-top:6px"><span class="m" style="margin:0">− ${minus} · ＋ ${plus}</span><span class="grow"></span><button class="pill" style="background:var(--g)" onclick="invOpen('${x.id}')">수정</button>${isAdmin()?`<button class="pill" style="background:var(--mut)" onclick="invDel('${x.id}')">삭제</button>`:""}</div></div>`}).join("")||`<div class="empty">${q||invLow?"조건에 맞는 품목이 없어요":`등록된 ${cat} 품목이 없어요. 위의 추가 버튼으로 시작해 보세요`}</div>`}`;
 };
 
 /* ---------- 브랜드 디자인 (포인트 색 · 제목 글꼴) ----------
