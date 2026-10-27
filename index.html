@@ -1023,6 +1023,7 @@ function aiRow(x){
   <button class="pill" style="background:var(${s[2]})" onclick="cycleAs('${x.id}')" title="누르면 다음 상태로">${s[1]}${x.rej?" · 반려됨":""} ▸</button>
   ${x.inbox?"":`<button class="pill" style="background:var(--g)" onclick="${can?`sendInbox('${x.id}')`:`copyCmd('${x.id}',0)`}">${can?"📨 지시함에 보내기":"📋 지시문 복사"}</button>`}
   ${x.inbox&&instrRepo()?`<a class="m" href="${esc(instrUrl(x))}" target="_blank" rel="noopener">지시 파일 열기</a>`:""}
+  <button class="pill" style="background:var(--ready)" onclick="runNow('${x.id}')" title="예약을 기다리지 않고 지금 그 직원 세션을 열어 바로 시켜요">⚡ 지금 바로 실행</button>
   <button class="pill" style="background:var(--review)" onclick="copyCmd('${x.id}',2)">🤖 이 직원만 깨우기</button></div>
   ${x.rep?`<div class="m" style="margin-top:6px;white-space:pre-wrap">📝 ${esc(x.rep)}</div>`:""}`;
 }
@@ -1046,8 +1047,31 @@ async function sendInbox(id){
       body:JSON.stringify({message:`지시 ${fid}: ${x.who} — ${x.title.slice(0,50)}`,content:b64enc(instrMd(x)),branch:br})});
     if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")":r.status===422?"같은 번호의 지시가 이미 있어요":(j.message||"저장하지 못했어요 ("+r.status+")"))}
     x.inbox=1;x.as="sent";x.u=Date.now();save();render();
-    toast("지시함에 저장했어요 · "+x.who+"이(가) 다음 정기 확인(매일 08:00)에 착수해요");
+    toast("지시함에 저장했어요 · 바로 시키려면 ‘⚡ 지금 바로 실행’, 아니면 다음 정기 확인(매일 08:00)에 착수해요");
   }catch(e){alert("지시함에 보내지 못했어요: "+(e.message||e)+"\n\n(‘지시문 복사’나 ‘이 직원만 깨우기’로 직접 전달할 수도 있어요)")}
+}
+/* 예약을 기다리지 않고 바로 실행: 지시함에 저장 → 직원 개인 세션을 열고 "지금 확인" 문구를 복사해요 */
+let _sess=null;
+async function staffSessions(){
+  if(_sess)return _sess;
+  try{_sess=JSON.parse(localStorage.getItem("rino-sess")||"null")}catch{}
+  const repo=instrRepo();
+  if(repo&&CFG.repoToken){
+    try{const r=await ghRepo(`/repos/${repo}/contents/tools/staff_sessions.json?ref=${encodeURIComponent((CFG.repoBranch||"work").trim()||"work")}`);
+      if(r.ok){const j=JSON.parse(b64text((await r.json()).content));_sess=Object.fromEntries((j.staff||[]).map(s=>[s.agent,s.session_id]));try{localStorage.setItem("rino-sess",JSON.stringify(_sess))}catch{}}}catch{}
+  }
+  return _sess||{};
+}
+async function runNow(id){
+  const x=D.tasks.find(t=>t.id===id);if(!x)return;
+  if(!x.inbox&&CFG.repoWToken&&instrRepo()){await sendInbox(id);if(!x.inbox)return}
+  const a=agentOf(x.who)||{},ag=a.agent==="bizsetup"?"younghwan":a.agent;
+  const sid=(await staffSessions())[ag];
+  const txt=x.inbox?`지시함 확인해서 지금 바로 착수해줘. 업무번호 ${x.id}${a.agent==="bizsetup"?" (세움 대행)":""}`:cmdText(x,2);
+  if(!x.as){x.as="sent";save();render()}
+  try{await navigator.clipboard.writeText(txt)}catch{}
+  if(sid){window.open("https://claude.ai/code/"+encodeURIComponent(sid),"_blank","noopener");toast("직원 세션을 열었어요 · 복사된 문구를 붙여넣고 보내면 바로 시작해요")}
+  else alert("직원 세션 주소를 찾지 못했어요. 지시함 연결(읽기 토큰)을 저장하면 자동으로 열려요.\n\n복사된 문구를 그 직원의 Claude 세션에 붙여넣어 주세요:\n\n"+txt);
 }
 const AS_FROM={"지시됨":"sent","착수":"work","보고":"rep","검증완료":"ok","반려":"sent"};
 async function syncInbox(){
