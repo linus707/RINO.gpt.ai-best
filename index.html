@@ -211,6 +211,8 @@ h1,.logo,.idt{font-family:var(--hfont,inherit)}
 .fab.chat{background:var(--mat-sheet);color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,.18);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
 .fab.chat i{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:10px;background:var(--red);color:#fff;font:600 12px/20px -apple-system,sans-serif;font-style:normal;text-align:center;padding:0 6px}
 .fab.chat i:empty{display:none}
+.fab.chat{transition:opacity .4s,transform .4s}
+.fab.chat.idle{opacity:0;transform:scale(.8);pointer-events:none}
 /* 시트 · 토스트 */
 #modal{position:fixed;inset:0;z-index:20;display:none}#modal.open{display:block}
 .shade2{position:absolute;inset:0;background:rgba(0,0,0,.36)}
@@ -493,7 +495,7 @@ const tabsNow=()=>TABS_BASE;
 function tabbar(){
   const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
 }
-function go(p){if(p==="org"||p==="staff"){setTabK="people";p="settings"}page=p;window.scrollTo(0,0);$("#drawer").classList.remove("open");closeModal();render()}
+function go(p){if(p==="org"||p==="staff"){setTabK="people";p="settings"}page=p;try{window.fabWake&&window.fabWake()}catch{}window.scrollTo(0,0);$("#drawer").classList.remove("open");closeModal();render()}
 function nav(){
   const m=me();
   $("#who").innerHTML=m?`<div class="brandbox"><b>${esc(m.name)}</b><div class="m sub" style="margin:0">${m.role==="admin"?"관리자":"직원"}${m.open?" · PIN 미설정":""}</div>${m.open?"":'<button class="btn ghost" style="margin-top:8px;padding:8px 12px" onclick="logout()">로그아웃</button>'}</div>`:"";
@@ -2603,6 +2605,13 @@ function stripEmoji(root){
   els.forEach(e=>{const n=e.firstChild;if(n&&n.nodeType===3&&EMO.test(n.data)){const t=n.data.replace(EMO,"");if(t.trim())n.data=t}});
 }
 new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&stripEmoji(n)))).observe(document.body,{childList:true,subtree:true});
+/* 💬 지시 버튼은 쓰지 않으면 몇 초 뒤 스스로 사라져요. 화면을 만지거나 스크롤하거나 마우스를 움직이면 다시 나타났다가 또 사라져요 */
+(function fabIdle(){
+  let t=0;const cf=()=>document.getElementById("chatfab");
+  const wake=()=>{const f=cf();if(!f)return;f.classList.remove("idle");clearTimeout(t);t=setTimeout(()=>{const g=cf();if(g)g.classList.add("idle")},4000)};
+  ["pointerdown","touchstart","scroll","keydown","mousemove"].forEach(ev=>window.addEventListener(ev,wake,{passive:true,capture:true}));
+  wake();window.fabWake=wake;
+})();
 (function boot(){
   cfgRestore();
   try{const m0=me();if(CFG.bio&&CFG.bio.id&&m0&&!m0.open)lockShow()}catch{}
