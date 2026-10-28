@@ -1069,6 +1069,15 @@ async function runNow(id){
   else alert("직원 세션 주소를 찾지 못했어요. 지시함 연결(읽기 토큰)을 저장하면 자동으로 열려요.\n\n복사된 문구를 그 직원의 Claude 세션에 붙여넣어 주세요:\n\n"+txt);
 }
 const AS_FROM={"지시됨":"sent","착수":"work","보고":"rep","검증완료":"ok","반려":"sent"};
+/* 직원이 착수·보고하면 메신저에 직원 이름으로 새 메시지를 남겨요(안 읽은 수·푸시 알림이 같이 가요).
+   지시를 보낸 방이 있으면 그 방에, 없으면 「알림」 방에 올려요. */
+function staffNote(x,st,rej){
+  const room=x.room&&roomVisible(x.room)?x.room:"alert";
+  const head=st==="work"?`🔄 ${x.who} 착수했어요`:rej?`↩️ ${x.who} 작업이 반려로 돌아왔어요`:`📝 ${x.who} 보고가 도착했어요`;
+  const body=st==="rep"&&x.rep?"\n"+x.rep.split("\n").slice(0,3).join("\n").slice(0,240):"";
+  const m={id:uid(),room,by:x.who,t:Date.now(),text:(head+" · "+x.title+body).slice(0,600),ai:1,tk:x.id,st};
+  D.msgs.push(m);pushQueue(m.id);mTrim();
+}
 async function syncInbox(){
   const repo=instrRepo();if(!repo||!CFG.repoToken)return 0;
   const br=(CFG.repoBranch||"work").trim()||"work";let ch=0;
@@ -1080,7 +1089,9 @@ async function syncInbox(){
       if(!to)continue;
       const rep=((txt.split("\n## 보고")[1]||"").trim().split("\n").filter(l=>l.trim()&&!l.startsWith("###")).slice(0,6).join("\n")).slice(0,500);
       const rej=st==="반려"?1:0;
-      if(x.as!==to||(x.rep||"")!==rep||!!x.rej!==!!rej){x.as=to;x.rep=rep;x.rej=rej;x.u=Date.now();ch++}
+      const moved=x.as!==to,key=to+"|"+rej;
+      if(moved||(x.rep||"")!==rep||!!x.rej!==!!rej){x.as=to;x.rep=rep;x.rej=rej;x.u=Date.now();ch++}
+      if(moved&&(to==="work"||to==="rep")&&x.nk!==key){x.nk=key;staffNote(x,to,rej)}else if(!x.nk)x.nk=key;
       if(to==="ok"&&!x.done){x.done=1;x.doneAt=today();x.doneBy="영환(검증)";ch++}
     }catch{}
   }
@@ -1932,6 +1943,7 @@ function pushCard(){
    <li>GitHub의 <b>RINO.gpt.ai-best</b> 저장소 → Settings → Secrets and variables → Actions → <b>New repository secret</b>으로 3개를 넣어요.<br>· <b>VAPID_PRIVATE_KEY</b> = 복사한 비공개 키<br>· <b>SYNC_GIST_TOKEN</b> = 앱 동기화에 쓰는 GitHub 토큰(Gist 권한)<br>· <b>SYNC_GIST_ID</b> = ${CFG.gistId?`<code>${esc(CFG.gistId)}</code> <button class="pill" style="background:var(--g)" onclick="pushCopy('${esc(CFG.gistId)}')">복사</button>`:"동기화 연결 후 표시돼요"}</li>
    <li>각 기기(폰·PC)에서 메신저 → <b>이 기기 알림 켜기</b>를 눌러요. (아이폰은 사파리에서 "홈 화면에 추가"한 앱에서만 돼요)</li>
    <li>GitHub 저장소 Actions 탭의 <b>Send push notifications</b>에서 실행 기록이 초록색이면 정상이에요.</li></ol>
+  <div class="m sub"><b>AI 직원 진행 알림(선택)</b>: 직원이 착수·보고하면 앱을 열지 않아도 알림이 오게 하려면 Secret <b>SOLAMEN_READ_TOKEN</b>(Linus Company 저장소 Contents <b>읽기 전용</b> 토큰)을 같은 방식으로 하나 더 넣어요. 앱을 열면 직원 이름으로 메신저에도 메시지가 남아요.</div>
   <div class="m sub">토큰과 비공개 키는 채팅이나 문서에 쓰지 말고, GitHub Secrets에만 넣어 주세요.</div>
   <div style="border-top:1px solid var(--line,#0001);margin-top:12px;padding-top:10px"><b>⚡ 즉시 푸시 (Cloudflare 워커, 선택)</b>
   <div class="m sub" style="margin:4px 0">메시지를 보내자마자 몇 초 안에 알림이 가요. 연결하지 않아도 위의 5분 간격 방식은 계속 작동해요.</div>
@@ -2142,7 +2154,7 @@ function mSend(){
     const esc2=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),strip=new RegExp(who.map(n=>"@"+esc2(n)+"\\s*").join("|"),"g");
     who.forEach(n=>{
       const body=t.replace(strip,"").trim()||t,ls=body.split("\n");
-      tasks.push({id:uid(),title:ls[0].trim().slice(0,200),due:"",pri:"중요도 보통",done:0,who:n,memo:ls.slice(1).join("\n").trim().slice(0,1500),brand:"",by:curName(),as:"sent",at:Date.now(),out:CFG.chatOut!==0?1:0});
+      tasks.push({id:uid(),title:ls[0].trim().slice(0,200),due:"",pri:"중요도 보통",done:0,who:n,memo:ls.slice(1).join("\n").trim().slice(0,1500),brand:"",by:curName(),as:"sent",at:Date.now(),out:CFG.chatOut!==0?1:0,room:mRoom});
     });
     if(tasks.length){tasks.forEach(x=>D.tasks.unshift(x));m.tasks=tasks.map(x=>x.id)}
   }
@@ -2199,7 +2211,7 @@ views.messenger=()=>{
     const mine=m.by===mn,hit=!mine&&(m.text||"").includes(key),tks=(m.tasks||(m.task?[m.task]:[])).map(id=>D.tasks.find(t=>t.id===id)).filter(Boolean);
     const tkRow=tks.map(tk=>`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="pill">${esc(tk.who)} · ${asInfo(tk.as)[1]}${tk.rej?" · 반려됨":""}${tk.done?" · 완료":""}</span>${tk.res?`<button class="pill" onclick="openDoc('${sid(tk.res)}')">📄 결과 보기</button>`:""}</div>`).join("");
     const rep=tks.filter(tk=>tk.rep).map(tk=>`<div class="bubble sys"><div class="mname">🤖 ${esc(tk.who)} 보고</div><div class="m" style="white-space:pre-wrap;color:inherit">${esc(tk.rep)}</div></div>`).join("");
-    return sep+`<div class="bubble ${mine?"me":"sys"}" ${hit?'style="outline:2px solid var(--make)"':""}>${mine?"":`<div class="mname">${esc(dn(m.by))}</div>`}${m.text?`<div class="m" style="white-space:normal;color:inherit">${mRich(m.text)}</div>`:""}${m.img?`<img class="mimg" src="${m.img}" alt="첨부 사진" onclick="mImgOpen('${m.id}')">`:""}${tkRow}<div class="mtime">${mTime(m.t)}${mine||isAdmin()?` · <a href="#" onclick="mDel('${m.id}');return false">삭제</a>`:""}</div></div>${rep}`;
+    return sep+`<div class="bubble ${mine?"me":"sys"}" ${hit?'style="outline:2px solid var(--make)"':""}>${mine?"":`<div class="mname">${m.ai?"🤖 ":""}${esc(dn(m.by))}</div>`}${m.text?`<div class="m" style="white-space:normal;color:inherit">${mRich(m.text)}</div>`:""}${m.img?`<img class="mimg" src="${m.img}" alt="첨부 사진" onclick="mImgOpen('${m.id}')">`:""}${tkRow}<div class="mtime">${mTime(m.t)}${mine||isAdmin()?` · <a href="#" onclick="mDel('${m.id}');return false">삭제</a>`:""}</div></div>${rep}`;
   }).join("")||`<div class="empty" style="text-align:center">아직 메시지가 없어요. 첫 메시지를 남겨 보세요.</div>`;
   const ro=(cur.ro&&!isAdmin())||cur.sys;
   const nOn=MS.notif&&"Notification"in window&&Notification.permission==="granted";
