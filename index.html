@@ -1078,9 +1078,40 @@ function staffNote(x,st,rej){
   const m={id:uid(),room,by:x.who,t:Date.now(),text:(head+" · "+x.title+body).slice(0,600),ai:1,tk:x.id,st};
   D.msgs.push(m);pushQueue(m.id);mTrim();
 }
+/* 채팅(Claude)에서 리노가 직접 시킨 지시는 저장소 지시/ 폴더에만 있어요. 그걸 업무 탭의 업무로 가져와요.
+   (보낸이가 대표인 진행 중 지시만 · 지운 업무는 다시 가져오지 않아요 · 같은 파일은 한 번만 확인해요) */
+const INSEEN=(()=>{try{return JSON.parse(localStorage.getItem("rino-inseen"))||{}}catch{return{}}})();
+const inseenSave=()=>{try{const k=Object.keys(INSEEN);if(k.length>300)k.sort().slice(0,k.length-300).forEach(x=>delete INSEEN[x]);localStorage.setItem("rino-inseen",JSON.stringify(INSEEN))}catch{}};
+async function importInstr(){
+  const repo=instrRepo();if(!repo||!CFG.repoToken||!isAdmin())return 0;
+  const br=(CFG.repoBranch||"work").trim()||"work";let n=0;
+  try{
+    const r=await ghRepo(`/repos/${repo}/contents/${encodeURI("지시")}?ref=${encodeURIComponent(br)}`);if(!r.ok)return 0;
+    const list=(await r.json()).filter(x=>x&&x.type==="file"&&/^\d{12}-[a-z]+\.md$/.test(x.name)).sort((a,b)=>b.name.localeCompare(a.name)).slice(0,40);
+    for(const it of list){
+      const id=it.name.replace(/\.md$/,"");
+      if(D.tasks.some(t=>String(t.id)===id)||(D.del&&D.del[id]))continue;
+      if(INSEEN[id]===it.sha)continue;
+      const x=await ghRepo(`/repos/${repo}/contents/${encodeURI("지시/"+it.name)}?ref=${encodeURIComponent(br)}`);if(!x.ok)continue;
+      const txt=b64text((await x.json()).content),f=k=>((txt.match(new RegExp("^- "+k+":\\s*(.+)$","m"))||[])[1]||"").trim();
+      INSEEN[id]=it.sha;
+      const st=f("상태"),to=AS_FROM[st];
+      if(!f("보낸이").startsWith("대표")||!to||to==="ok")continue;
+      const who=f("담당이름")||f("담당"),title=((txt.split("\n## 제목")[1]||"").trim().split("\n").find(l=>l.trim())||"").trim();
+      if(!title)continue;
+      const memo=((txt.split("\n## 내용")[1]||"").split("\n## ")[0]||"").trim().slice(0,1500);
+      const due=/^\d{4}-\d\d-\d\d$/.test(f("마감"))?f("마감"):"",brand=f("브랜드")==="-"?"":f("브랜드");
+      const rep=((txt.split("\n## 보고")[1]||"").trim().split("\n").filter(l=>l.trim()&&!l.startsWith("###")).slice(0,6).join("\n")).slice(0,500);
+      const rej=st==="반려"?1:0;
+      D.tasks.unshift({id,title:title.slice(0,200),due,pri:"중요도 보통",done:0,who,memo,brand,by:"리노(채팅)",as:to,inbox:1,rep,rej,nk:to+"|"+rej,at:Date.now(),u:Date.now()});n++;
+    }
+  }catch{}
+  inseenSave();
+  return n;
+}
 async function syncInbox(){
   const repo=instrRepo();if(!repo||!CFG.repoToken)return 0;
-  const br=(CFG.repoBranch||"work").trim()||"work";let ch=0;
+  const br=(CFG.repoBranch||"work").trim()||"work";let ch=await importInstr();
   for(const x of D.tasks.filter(t=>t.inbox&&t.as!=="ok"&&!t.done)){
     try{
       const r=await ghRepo(`/repos/${repo}/contents/${encodeURI("지시/"+String(x.id).replace(/[^\w-]/g,"")+".md")}?ref=${encodeURIComponent(br)}`);
@@ -2439,7 +2470,7 @@ const pendingAI=()=>D.tasks.filter(t=>((t.out&&!t.res)||t.inbox)&&!t.done&&agent
 let _lastPoll=0;
 async function pollResults(force){
   if(!isAdmin()||!CFG.repoToken||!repoOk((CFG.repo||"").trim()))return;
-  if(!force&&(!pendingAI()||Date.now()-_lastPoll<60000))return;
+  if(!force&&(Date.now()-_lastPoll<60000||(!pendingAI()&&!["tasks","home","messenger","chat","contents"].includes(page))))return;
   _lastPoll=Date.now();await syncInbox();await importRepo(!force);
 }
 setInterval(()=>{if(!document.hidden&&["home","chat","contents","tasks","messenger"].includes(page))pollResults(false)},180000);
