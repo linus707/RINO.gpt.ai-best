@@ -300,8 +300,8 @@ IC.messenger=IC.chat;IC.chat='<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
-const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["콘텐츠·수익",["contents","revenue"]],["",["settings"]]];
+const PAGES=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
   try{
@@ -323,7 +323,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],ledger:[],prices:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
-  routine:{date:today(),items:[["아침 스트레칭",0],["콘텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
+  routine:{date:today(),items:[["아침 스트레칭",0],["컨텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
 const norm=d=>{const s=seed();d={...s,...d};d.set={...s.set,...(d.set||{})};d.del=d.del||{};if(typeof d.goal==="number"){if(!d.set.u)d.set.goal=d.goal;delete d.goal}if(!d.routine||d.routine.date!==today())d.routine={date:today(),items:(d.routine||s.routine).items.map(([n])=>[n,0])};return d};
 let FRESH_BOOT=false;try{FRESH_BOOT=!localStorage.getItem("rino-ws")}catch{}
 let D;try{D=norm(JSON.parse(localStorage.getItem("rino-ws"))||{})}catch{D=norm({})}
@@ -497,7 +497,7 @@ const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼
   </div></div>`};
 bgAll().then(l=>{BG.list=l;if(l.length)render()});
 /* 하단 탭 */
-const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","콘텐츠"],["schedule","📅","일정"],["messenger","💬","메신저"],["tasks","✅","업무"]];
+const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["schedule","📅","일정"],["messenger","💬","메신저"],["tasks","✅","업무"]];
 const tabsNow=()=>TABS_BASE;
 function tabbar(){
   const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
@@ -531,7 +531,7 @@ function linkTile(l,ed){
   const u=linkOk(l.url),ch=CH[l.ch]?l.ch:"",n=ch?D.contents.filter(c=>c.ch===ch&&c.stage!=="done").length:0,id=sid(l.id);
   return `<div class="tile">${u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;display:block"><b>${esc(l.name)} ↗</b><small>${esc(hostOf(u))}</small></a>`:`<b>${esc(l.name)}</b><small class="low">주소가 올바르지 않아요</small>`}${ch?`<button class="pill" style="background:var(--g);margin-top:8px" onclick="chF='${ch}';go('contents')">글 ${n}건 ›</button>`:""}${ed?`<div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="pill" style="background:var(--mut)" onclick="editLink('${id}')">✏️ 수정</button><button class="pill" style="background:#c0392b" onclick="delLink('${id}')">✕ 삭제</button></div>`:""}</div>`;
 }
-const linkForm=()=>`<div class="form" style="margin-top:10px"><b>＋ 채널 추가</b><input id="lkn" placeholder="이름 (예: 얼뚱트립 인스타)"><input id="lku" type="url" inputmode="url" placeholder="주소 (예: instagram.com/ellttoong.trip)"><select id="lkc"><option value="">연결할 콘텐츠 채널 (선택)</option>${Object.entries(CH).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join("")}</select><button class="btn" onclick="addLink()">추가</button></div>`;
+const linkForm=()=>`<div class="form" style="margin-top:10px"><b>＋ 채널 추가</b><input id="lkn" placeholder="이름 (예: 얼뚱트립 인스타)"><input id="lku" type="url" inputmode="url" placeholder="주소 (예: instagram.com/ellttoong.trip)"><select id="lkc"><option value="">연결할 컨텐츠 채널 (선택)</option>${Object.entries(CH).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join("")}</select><button class="btn" onclick="addLink()">추가</button></div>`;
 function addLink(){
   if(!isAdmin())return;const n=$("#lkn").value.trim(),u=linkOk($("#lku").value);
   if(!n){alert("채널 이름을 입력해 주세요");return}
@@ -570,9 +570,9 @@ home(){
 contents(){
   const q=(window._q||"").toLowerCase();
   const list=D.contents.filter(c=>(chF==="all"||c.ch===chF)&&(c.title+c.memo).toLowerCase().includes(q));
-  return `<h1>콘텐츠</h1><div class="sub">제목·메모로 검색하고, 글을 눌러 초안을 확인해요</div>
+  return `<h1>컨텐츠</h1><div class="sub">제목·메모로 검색하고, 글을 눌러 초안을 확인해요</div>
   <div class="filters"><input placeholder="🔍 제목·메모 검색" value="${esc(window._q||"")}" oninput="window._q=this.value;render(true)"><select onchange="chF=this.value;render()"><option value="all">전체 채널</option>${Object.entries(CH).map(([k,v])=>`<option value="${k}" ${chF===k?"selected":""}>${v}</option>`).join("")}</select></div>
-  ${list.map(contentItem).join("")||'<div class="empty">콘텐츠가 없어요</div>'}`;
+  ${list.map(contentItem).join("")||'<div class="empty">컨텐츠가 없어요</div>'}`;
 },
 tasks(){
   const t=today(),wk=addDays(7);
@@ -588,8 +588,8 @@ tasks(){
 calendar(){
   const list=D.contents.filter(c=>c.due).sort((a,b)=>a.due.localeCompare(b.due));
   const by={};list.forEach(c=>(by[c.due]=by[c.due]||[]).push(c));
-  return `<h1>콘텐츠 캘린더</h1><div class="sub">마감일이 있는 콘텐츠를 날짜순으로 보여줘요</div>`+
-  (Object.keys(by).map(d=>`<div class="card" style="border-color:${d===today()?"var(--g)":"var(--line)"}"><h3>${d}${d===today()?" · 오늘":""}</h3><div class="body">${by[d].map(contentItem).join("")}</div></div>`).join("")||'<div class="empty">마감일이 있는 콘텐츠를 먼저 등록해 주세요</div>');
+  return `<h1>컨텐츠 캘린더</h1><div class="sub">마감일이 있는 컨텐츠를 날짜순으로 보여줘요</div>`+
+  (Object.keys(by).map(d=>`<div class="card" style="border-color:${d===today()?"var(--g)":"var(--line)"}"><h3>${d}${d===today()?" · 오늘":""}</h3><div class="body">${by[d].map(contentItem).join("")}</div></div>`).join("")||'<div class="empty">마감일이 있는 컨텐츠를 먼저 등록해 주세요</div>');
 },
 stock(){
   return `<h1>가구 재고</h1><div class="sub">최소 수량 이하이면 빨간색으로 표시돼요</div>
@@ -955,7 +955,7 @@ views.org=()=>{
     ${openCnt(a.name)?`<span class="pill" style="background:var(--make)">업무 ${openCnt(a.name)}</span>`:""}<span class="pill" style="background:var(${active(a)?"--done":"--idea"})">${active(a)?"가동":a.stage+"단계"}</span></div></div>`).join("")+`</div></div>`}).join("");
 };
 /* Linus Company AI 직원 기본 명단 (2026-10-14 개편: 6명, SOLAMEN tools/staff_registry.json 기준) */
-const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"Linus Company"}],"agents":[{"emp":"SOL-001","agent":"younghwan","name":"영환","title":"기획총괄팀","dept":"기획총괄팀","role":"부대표 · 접수·배분·검증·기획·전산","channel":"","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"mina","name":"민아","title":"경영지원팀","dept":"경영지원팀","role":"회계·세무·법무·규칙·템플릿","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-003","agent":"giho","name":"기호","title":"콘텐츠팀","dept":"콘텐츠팀","role":"에이스침대 현장 글 작성·교열","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-004","agent":"yujin","name":"유진","title":"수익사업팀","dept":"수익사업팀","role":"e-book·스토어·제휴 상품 · 수익 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-005","agent":"jisu","name":"지수","title":"마케팅팀","dept":"마케팅팀","role":"채널 실험·SEO·카피·비주얼·영상·성과 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-006","agent":"siyeon","name":"시연","title":"고객응대팀","dept":"고객응대팀","role":"댓글·DM 응대 · FAQ·VOC","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-007","agent":"bizsetup","name":"세움","title":"신사업·법규팀","dept":"신사업·법규팀","role":"신사업 법규·인허가·정책 분석 · 개인사업자 설립 (호출형: 영환이 대행)","channel":"","stage":1,"boss":"영환","model":"Sonnet"}]};
+const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"Linus Company"}],"agents":[{"emp":"SOL-001","agent":"younghwan","name":"영환","title":"기획총괄팀","dept":"기획총괄팀","role":"부대표 · 접수·배분·검증·기획·전산","channel":"","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"mina","name":"민아","title":"경영지원팀","dept":"경영지원팀","role":"회계·세무·법무·규칙·템플릿","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-003","agent":"giho","name":"기호","title":"컨텐츠팀","dept":"컨텐츠팀","role":"에이스침대 현장 글 작성·교열","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-004","agent":"yujin","name":"유진","title":"수익사업팀","dept":"수익사업팀","role":"e-book·스토어·제휴 상품 · 수익 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-005","agent":"jisu","name":"지수","title":"마케팅팀","dept":"마케팅팀","role":"채널 실험·SEO·카피·비주얼·영상·성과 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-006","agent":"siyeon","name":"시연","title":"고객응대팀","dept":"고객응대팀","role":"댓글·DM 응대 · FAQ·VOC","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-007","agent":"bizsetup","name":"세움","title":"신사업·법규팀","dept":"신사업·법규팀","role":"신사업 법규·인허가·정책 분석 · 개인사업자 설립 (호출형: 영환이 대행)","channel":"","stage":1,"boss":"영환","model":"Sonnet"}]};
 /* 이전 34명 이름 → 이어받은 직원 (업무 담당자 이름 자동 변경용) */
 const OLD2NEW={"아우렐리우스":"영환","아그리파":"영환","아티쿠스":"유진","마에케나스":"지수","티로":"영환","퀸틸리아누스":"기호","세네카":"기호","바로":"지수","오비디우스":"지수","겔리우스":"기호","하드리아누스":"지수","켈레르":"영환","헤르모게네스":"민아","스투디우스":"지수","로스키우스":"지수","플라우투스":"지수","필라데스":"지수","베르길리우스":"유진","플리니우스":"지수","호라티우스":"영환","마르티알리스":"지수","콜루멜라":"지수","소시우스":"유진","트리폰":"유진","스카우루스":"유진","필레몬":"시연","바우키스":"시연","비트루비우스":"영환","아폴로도로스":"영환","파불루스":"영환","프론티누스":"영환","카토":"민아","팔라스":"민아","가이우스":"민아"};
 let AG_READY=false;
@@ -1089,7 +1089,7 @@ async function syncInbox(){
 }
 const outSpec=x=>{
   const tag=x.brand?`[${x.brand}]`:"[트립|슬립|포토|공통 중 하나]";
-  return [`- 결과 저장: Linus Company \`작업/YYYY-MM-DD_${tag}_제목/draft.md\` 에 저장하고 \`work\` 브랜치에 커밋·푸시 (편집규칙 6-1 · 앱이 이 폴더를 읽어 전체 콘텐츠에 올려요)`,
+  return [`- 결과 저장: Linus Company \`작업/YYYY-MM-DD_${tag}_제목/draft.md\` 에 저장하고 \`work\` 브랜치에 커밋·푸시 (편집규칙 6-1 · 앱이 이 폴더를 읽어 전체 컨텐츠에 올려요)`,
     `- draft.md 서식: 맨 위 \`# [작성 정보]\` 아래 \`- 작성: ${x.who}\` 줄, 제목은 \`## 제목\`, 본문은 \`## 본문\`, 해시태그는 \`## 해시태그\``];
 };
 function cmdText(x,imm){
@@ -1205,12 +1205,12 @@ function importContent(f){
       if(ex)Object.assign(ex,o);else D.contents.unshift({id:uid(),...o});
       n++;
     });
-    save();render();alert(n+"건을 가져왔어요. 전체 콘텐츠에서 확인하세요.");
-  }catch{alert("콘텐츠 파일이 아니에요")}});
+    save();render();alert(n+"건을 가져왔어요. 전체 컨텐츠에서 확인하세요.");
+  }catch{alert("컨텐츠 파일이 아니에요")}});
 }
 
 /* ---------- Linus Company 작업 폴더 불러오기 (읽기 전용 토큰, 관리자 기기에만 저장) ---------- */
-/* 직원들이 Linus Company 저장소의 작업 폴더(작업/날짜_[태그]_제목/)에 저장한 글을 읽어 전체 콘텐츠에 넣어요.
+/* 직원들이 Linus Company 저장소의 작업 폴더(작업/날짜_[태그]_제목/)에 저장한 글을 읽어 전체 컨텐츠에 넣어요.
    클라우드 직원 세션은 Gist 같은 계정 API를 쓸 수 없어서, 이미 하던 대로 레포에 저장하게 두고 앱이 읽어 와요. */
 const PARSER_V="p2";
 const WORK_RE=/^작업\/([^/]+)\/(brief|plan|draft|final|copyedit)\.md$/;
@@ -1479,7 +1479,7 @@ const syncCardUi=()=>`<div class="card"><h3>☁ 클라우드 동기화 ${CFG.tok
   ${CFG.token?'<button class="btn ghost" onclick="disconnectSync()">연결 해제</button>':""}</div>
   <div class="m sub">${CFG.gistId?"내 Gist ID: <b>"+esc(CFG.gistId)+"</b> — 다른 기기에 같은 토큰과 이 ID를 입력하면 같은 데이터가 보여요.":"첫 연결 시 Gist가 자동으로 만들어져요."}</div></div></div>`;
 const repoCardUi=()=>`<div class="card"><h3>📂 Linus Company 작업 폴더 불러오기 ${CFG.repoToken?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
-  <div class="m sub">직원들이 Linus Company의 <b>작업 폴더</b>에 저장한 글(draft.md, copyedit.md 등)을 읽어 와서 전체 콘텐츠에 넣어요. 직원이 따로 할 일은 없어요. <b>읽기 전용 토큰</b>을 쓰고, 이 토큰은 <b>이 기기에만</b> 저장돼요(직원 초대 링크에 들어가지 않아요). 불러온 글은 직원도 볼 수 있어요.</div>
+  <div class="m sub">직원들이 Linus Company의 <b>작업 폴더</b>에 저장한 글(draft.md, copyedit.md 등)을 읽어 와서 전체 컨텐츠에 넣어요. 직원이 따로 할 일은 없어요. <b>읽기 전용 토큰</b>을 쓰고, 이 토큰은 <b>이 기기에만</b> 저장돼요(직원 초대 링크에 들어가지 않아요). 불러온 글은 직원도 볼 수 있어요.</div>
   <div class="form" style="border:0;padding:0"><input id="wr" placeholder="저장소 (예: linus707/solamen)" value="${esc(CFG.repo||"linus707/solamen")}">
   <input id="wb" placeholder="브랜치 (직원 작업대: work)" value="${esc(CFG.repoBranch||"work")}">
   <input id="wt" type="password" placeholder="읽기 전용 토큰 (github_pat_…)" value="${esc(CFG.repoToken||"")}" autocomplete="off">
@@ -1488,11 +1488,11 @@ const repoCardUi=()=>`<div class="card"><h3>📂 Linus Company 작업 폴더 불
   ${CFG.repoToken?'<button class="btn ghost" onclick="importRepo(false)">지금 다시 불러오기</button><button class="btn ghost" onclick="clearRepo()">토큰 지우기</button>':""}</div>
   <div class="m sub">토큰 만드는 곳: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained token</a> (Linus Company 저장소 소유 계정으로 로그인) · Repository access는 <b>Only select repositories → SOLAMEN</b> · Permissions는 <b>Contents: Read-only</b> 하나만</div>
   ${CFG.repoLast?`<div class="m sub">마지막으로 불러온 시각: ${new Date(CFG.repoLast).toLocaleString("ko-KR")}</div>`:""}</div></div>`;
-const importCardUi=()=>`<div class="card"><h3>📄 콘텐츠 초안 가져오기</h3><div class="body"><div class="m sub">초안·보고가 담긴 콘텐츠 파일(rino-content-*.json)을 올리면 전체 콘텐츠에 들어가요. 같은 제목과 작성자는 덮어써요.</div>
+const importCardUi=()=>`<div class="card"><h3>📄 컨텐츠 초안 가져오기</h3><div class="body"><div class="m sub">초안·보고가 담긴 컨텐츠 파일(rino-content-*.json)을 올리면 전체 컨텐츠에 들어가요. 같은 제목과 작성자는 덮어써요.</div>
   <div class="form" style="border:0;padding:0"><input type="file" accept="application/json" onchange="importContent(this.files[0]);this.value=''"></div></div></div>`;
 const backupCardUi=()=>`<div class="card"><h3>💾 백업</h3><div class="body"><div class="form" style="border:0;padding:0"><button class="btn ghost" onclick="exportJson()">JSON 내보내기</button><input type="file" accept="application/json" onchange="importJson(this.files[0])"></div>
   <div class="m sub" style="margin:10px 0 0">저장 공간 보호: ${CFG.persisted?"켜짐 (브라우저가 자동으로 지우지 않아요)":"브라우저가 아직 허락하지 않았어요. 홈 화면에 추가해 쓰면 허락될 가능성이 높아요"}</div></div></div>`;
-const aiCardUi=()=>`<div class="card"><h3>✨ AI 연결</h3><div class="body"><div class="m sub">Anthropic API 키를 넣으면 콘텐츠 아이디어를 받을 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</div>
+const aiCardUi=()=>`<div class="card"><h3>✨ AI 연결</h3><div class="body"><div class="m sub">Anthropic API 키를 넣으면 컨텐츠 아이디어를 받을 수 있어요. 키는 이 기기의 브라우저에만 저장돼요.</div>
   <div class="form" style="border:0;padding:0"><input id="ak" type="password" placeholder="sk-ant-…" value="${esc(CFG.aiKey||"")}" autocomplete="off"><input id="aw" placeholder="워크스페이스 ID (선택) wrkspc_…" value="${esc(CFG.aiWs||"")}" autocomplete="off"><button class="btn" onclick="if(connGuard())return;CFG.aiKey=$('#ak').value.trim();CFG.aiWs=$('#aw').value.trim();saveCfg();sdClear('ak','aw');alert('저장했어요')">저장</button></div>
   <div class="m sub" style="margin-top:6px">"키가 워크스페이스에 속하지 않았다"는 오류가 나면, 콘솔 → 워크스페이스에서 Default의 ID(wrkspc_…)를 두 번째 칸에 넣어 주세요. 평소에는 비워 둬도 돼요.</div></div></div>`;
 /* 설정은 5개 분류 탭으로 나눠 보여요. 조직도·직원 관리도 여기 '직원·조직' 탭 안에 있어요. */
@@ -1671,7 +1671,7 @@ views.proto=()=>{
   const cats=[...new Set(D.proto.map(x=>x.cat))].filter(Boolean),q=ptQ.trim().toLowerCase();
   const list=D.proto.filter(p=>(!q||(p.title+" "+p.steps.join(" ")+" "+(p.memo||"")).toLowerCase().includes(q))&&(!ptCat||p.cat===ptCat)).sort((a,b)=>a.cat.localeCompare(b.cat,"ko")||a.title.localeCompare(b.title,"ko"));
   const ed=ptEdit==="new"?{title:"",cat:ptCat||"",who:"",steps:[],memo:""}:D.proto.find(x=>x.id===ptEdit);
-  const form=ed?`<div class="form"><input id="pT" placeholder="절차 이름 (예: 블로그 발행)" value="${esc(ed.title)}"><div class="filters"><input id="pC" list="ptc" placeholder="분류 (예: 콘텐츠)" value="${esc(ed.cat)}"><datalist id="ptc">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist><input id="pW" placeholder="담당 (선택)" value="${esc(ed.who||"")}"></div>
+  const form=ed?`<div class="form"><input id="pT" placeholder="절차 이름 (예: 블로그 발행)" value="${esc(ed.title)}"><div class="filters"><input id="pC" list="ptc" placeholder="분류 (예: 컨텐츠)" value="${esc(ed.cat)}"><datalist id="ptc">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist><input id="pW" placeholder="담당 (선택)" value="${esc(ed.who||"")}"></div>
     <textarea id="pS" rows="6" placeholder="단계를 한 줄에 하나씩 적어요&#10;키워드 선정&#10;초안 작성&#10;발행">${esc(ed.steps.join("\n"))}</textarea><input id="pM" placeholder="메모 (선택)" value="${esc(ed.memo||"")}">
     <div class="row" style="gap:8px"><button class="btn grow" onclick="ptSave()">${ptEdit==="new"?"만들기":"저장"}</button><button class="btn ghost" onclick="ptCancel()">취소</button></div></div>`:"";
   return head+`<button class="btn" style="width:100%;margin-bottom:8px" onclick="ptNew()">＋ 절차 만들기</button>${form}
@@ -1960,7 +1960,7 @@ function homeToday(){
   return `<div class="hgrid">${sch}${nt2}</div>`;
 }
 
-/* ---------- 일정표 (월간 달력 · 날짜별 일정 · 콘텐츠/업무 마감 겹쳐 보기) ----------
+/* ---------- 일정표 (월간 달력 · 날짜별 일정 · 컨텐츠/업무 마감 겹쳐 보기) ----------
    일정은 D.events 에 저장되고 기존 클라우드 동기화로 항목 단위로 합쳐져요. */
 const SCH_CATS=[["event","일정","#007aff"],["meet","회의","#af52de"],["consult","고객상담","#30b0c7"],["delivery","제품배송","#a2845e"],["shoot","촬영·여행","#ff9500"],["pub","발행","#34c759"],["leave","휴가","#ff3b30"]];
 const schCat=k=>SCH_CATS.find(c=>c[0]===k)||SCH_CATS[0];
@@ -1976,7 +1976,7 @@ const WD=["일","월","화","수","목","금","토"];
 function schItems(date){
   const out=[],L=schLay();
   D.events.forEach(e=>{const end=e.end&&e.end>=e.date?e.end:e.date;if(date>=e.date&&date<=end)out.push({src:"ev",id:e.id,title:e.title,time:e.time||"",color:evColor(e),label:schCat(e.cat)[1],e})});
-  if(L.content)D.contents.forEach(c=>{if(c.due===date)out.push({src:"ct",id:c.id,title:c.title,time:"",color:"#5ac8fa",label:"콘텐츠 마감",c})});
+  if(L.content)D.contents.forEach(c=>{if(c.due===date)out.push({src:"ct",id:c.id,title:c.title,time:"",color:"#5ac8fa",label:"컨텐츠 마감",c})});
   if(L.task)D.tasks.forEach(t=>{if(!t.done&&t.due===date)out.push({src:"tk",id:t.id,title:t.title,time:"",color:"#8e8e93",label:"업무 마감"})});
   return out.sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
 }
@@ -1991,8 +1991,8 @@ function schDetail(src,id){
     if(schCan(e))btns=`<button class="btn" onclick="closeModal();schPick('${esc(e.date)}');schEditOpen('${e.id}')">수정</button><button class="btn ghost" onclick="closeModal();schDel('${e.id}')">삭제</button>`;
   }else if(src==="ct"){
     const c=D.contents.find(x=>String(x.id)===nid);if(!c)return;
-    t=c.title;color="#5ac8fa";label="콘텐츠 마감";when=c.due||"";body=c.memo||"";const st=stInfo(c.stage);if(st)meta.push("단계 "+st[1]);if(c.by)meta.push("담당 "+dn(c.by));if(c.brand)meta.push(c.brand);
-    btns=`<button class="btn" onclick="closeModal();${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}">콘텐츠 열기</button>`;
+    t=c.title;color="#5ac8fa";label="컨텐츠 마감";when=c.due||"";body=c.memo||"";const st=stInfo(c.stage);if(st)meta.push("단계 "+st[1]);if(c.by)meta.push("담당 "+dn(c.by));if(c.brand)meta.push(c.brand);
+    btns=`<button class="btn" onclick="closeModal();${c.body?`openDoc('${sid(c.id)}')`:"go('contents')"}">컨텐츠 열기</button>`;
   }else{
     const k=D.tasks.find(x=>String(x.id)===nid);if(!k)return;
     t=k.title;label="업무 마감";when=k.due||"";body=k.memo||"";if(k.who)meta.push("담당 "+dn(k.who));if(k.pri)meta.push(k.pri);
@@ -2049,7 +2049,7 @@ views.schedule=()=>{
     <div class="row" style="gap:8px"><button class="btn grow" onclick="schSave()">${schEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="schCancel()">취소</button></div></div>`:"";
   return `<h1>일정표</h1><div class="sub">날짜에는 제목만 보여요. 일정을 누르면 내용을 자세히 볼 수 있어요</div>
   <div class="row" style="gap:8px;margin:6px 0 10px"><button class="icon" onclick="schMove(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center;font-size:18px">${y}년 ${m}월</b><button class="icon" onclick="schMove(1)" aria-label="다음 달">›</button><button class="pill" style="background:var(--make)" onclick="schNow()">이번 달</button></div>
-  <div class="chips">겹쳐 보기 <button class="${L.content?"on":""}" onclick="schLayer('content')">콘텐츠 마감</button><button class="${L.task?"on":""}" onclick="schLayer('task')">업무 마감</button></div>
+  <div class="chips">겹쳐 보기 <button class="${L.content?"on":""}" onclick="schLayer('content')">컨텐츠 마감</button><button class="${L.task?"on":""}" onclick="schLayer('task')">업무 마감</button></div>
   <div class="sgrid">${WD.map((w,i)=>`<div class="swd ${i===0?"sun":""}">${w}</div>`).join("")}${grid}</div>
   <div class="m sub" style="margin:6px 2px 10px">이번 달 일정 ${total}건 · ${SCH_CATS.map(c=>`<span style="color:${c[2]}">●</span> ${c[1]}`).join("  ")}</div>
   <div class="card" style="border-color:${schSel===td?"var(--g)":"var(--line)"}"><h3>${sd.getMonth()+1}월 ${sd.getDate()}일 (${WD[sd.getDay()]})${schSel===td?" · 오늘":""} <button class="pill" style="background:var(--make);float:right" onclick="schNew()">＋ 일정 추가</button></h3><div class="body">${sel.map(row).join("")||'<div class="empty">이 날 일정이 없어요</div>'}${form}</div></div>`;
@@ -2307,7 +2307,7 @@ views.biz=()=>{
   <button class="pill" style="background:var(--mut)" onclick="bizClear()">대화 기록 지우기</button></div>`;
 };
 
-/* ---------- AI 콘텐츠 아이디어 ---------- */
+/* ---------- AI 컨텐츠 아이디어 ---------- */
 window._ideas=[];
 const ideasHtml=()=>_ideas.map((x,i)=>`<div class="item"><div class="row" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(x.title)}</div><div class="m">${esc(x.memo)}</div></div><button class="pill" style="background:var(--g)" onclick="addIdea(${i})">＋ 추가</button><button class="pill" style="background:var(--make)" onclick="addIdea(${i},true)">✍️ 초안 쓰기</button><button class="pill" style="background:var(--g)" onclick="copyPromptIdea(${i})">📋 프롬프트</button></div></div>`).join("");
 async function aiIdeas(){
@@ -2315,14 +2315,14 @@ async function aiIdeas(){
   const ch=$("#cc").value,box=$("#ai");box.innerHTML='<div class="empty">아이디어 생각 중… ✨</div>';
   try{
     const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:aiHeaders(),
-      body:JSON.stringify({model:"claude-haiku-5-5",max_tokens:700,messages:[{role:"user",content:`30대 1인 퍼스널 브랜드 운영자의 "${CH[ch]}" 채널에 올릴 콘텐츠 아이디어 5개를 제안해줘. 초보자도 따라 만들 수 있게 구체적으로. 이미 있는 제목은 피해줘: ${D.contents.slice(0,15).map(c=>c.title).join(", ")||"없음"}. 한 줄에 하나, 형식은 "제목 | 한 줄 설명". 번호나 다른 말은 쓰지 마.`}]})});
+      body:JSON.stringify({model:"claude-haiku-5-5",max_tokens:700,messages:[{role:"user",content:`30대 1인 퍼스널 브랜드 운영자의 "${CH[ch]}" 채널에 올릴 컨텐츠 아이디어 5개를 제안해줘. 초보자도 따라 만들 수 있게 구체적으로. 이미 있는 제목은 피해줘: ${D.contents.slice(0,15).map(c=>c.title).join(", ")||"없음"}. 한 줄에 하나, 형식은 "제목 | 한 줄 설명". 번호나 다른 말은 쓰지 마.`}]})});
     const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||r.status);
     _ideas=j.content[0].text.split("\n").map(l=>l.trim()).filter(l=>l.includes("|")).map(l=>{const[t,...m]=l.replace(/^[-*\d.\s]+/,"").split("|");return{title:t.trim(),memo:m.join("|").trim(),ch}}).slice(0,5);
     box.innerHTML=ideasHtml()||'<div class="empty">결과를 읽지 못했어요. 다시 눌러 주세요</div>';
   }catch(e){box.innerHTML='<div class="empty low">AI 요청 실패: '+esc(e.message)+'</div>'}
 }
 function addIdea(i,draft){const x=_ideas.splice(i,1)[0];if(!x)return;const id=uid();D.contents.unshift({id,title:x.title,ch:x.ch,due:"",memo:x.memo,stage:"idea",by:curName()});save();render();if(draft)aiDraft(id)}
-function addContent(draft){const t=$("#ct").value.trim();if(!t){alert("콘텐츠 제목을 입력해 주세요");return}const id=uid();D.contents.unshift({id,title:t,ch:$("#cc").value,due:$("#cd").value,memo:$("#cm").value.trim(),exp:($("#cx")?$("#cx").value:"").trim().slice(0,500),stage:"idea",by:curName()});save();render();if(draft)aiDraft(id)}
+function addContent(draft){const t=$("#ct").value.trim();if(!t){alert("컨텐츠 제목을 입력해 주세요");return}const id=uid();D.contents.unshift({id,title:t,ch:$("#cc").value,due:$("#cd").value,memo:$("#cm").value.trim(),exp:($("#cx")?$("#cx").value:"").trim().slice(0,500),stage:"idea",by:curName()});save();render();if(draft)aiDraft(id)}
 
 /* ---------- 빠른 업무 추가 (떠 있는 + 버튼 · 팝업) ---------- */
 function toast(m){const e=$("#toast");e.textContent=m;e.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(()=>{e.style.display="none"},2200)}
@@ -2374,7 +2374,7 @@ views.chat=()=>{
   <div class="composer glass"><textarea id="cmsg" rows="3" placeholder="${esc(cur.name)}에게 지시할 내용을 써 주세요" oninput="chatInput(this)">${esc(chatDraft)}</textarea><div id="chint">${hintHtml(cur.name,chatDraft,"chatSet")}</div>
    <div class="chips">마감 <button onclick="chatDueSet(0)">오늘</button><button onclick="chatDueSet(1)">내일</button><button onclick="chatDueSet(3)">3일 뒤</button><button onclick="chatDueSet(7)">1주 뒤</button><input id="cdue" type="date" value="${esc(chatDue)}" onchange="chatDue=this.value" style="width:auto"></div>
    <div class="filters">${brands.length?`<select id="cbr"><option value="">브랜드 선택 안 함</option>${brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}${b.name?" · "+esc(b.name):""}</option>`).join("")}</select>`:"<span></span>"}<select id="cmode" onchange="CFG.chatMode=this.value;saveCfg()">${CMODES.map(m=>`<option value="${m[0]}" ${m[0]===mode?"selected":""}>보낼 곳: ${m[1]}</option>`).join("")}</select></div>
-   <label class="m"><input id="cout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 콘텐츠에 올리기 (글·초안 지시)</label>
+   <label class="m"><input id="cout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 컨텐츠에 올리기 (글·초안 지시)</label>
    <button class="btn" onclick="sendChat()">보내기 (업무 저장 + 지시함)</button></div></div></div>`;
 };
 function chatSet(n){chatDraft=($("#cmsg")||{value:chatDraft}).value;chatWho=n;render()}
@@ -2471,7 +2471,7 @@ const quickCard=()=>{
   <textarea id="qmsg" rows="2" placeholder="지시할 내용을 써 주세요" style="margin-top:8px" oninput="qInput()"></textarea><div id="qhint"></div>
   <div class="chips" style="margin:8px 0">마감 <button onclick="qDueSet(0)">오늘</button><button onclick="qDueSet(1)">내일</button><button onclick="qDueSet(3)">3일 뒤</button><button onclick="qDueSet(7)">1주 뒤</button><input id="qdue" type="date" value="${esc(qDue)}" onchange="qDue=this.value" style="width:auto"></div>
   <div class="filters">${brands.length?`<select id="qbr"><option value="">브랜드 선택 안 함</option>${brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}</option>`).join("")}</select>`:"<span></span>"}<select onchange="CFG.chatMode=this.value;saveCfg()">${CMODES.map(m=>`<option value="${m[0]}" ${m[0]===(CFG.chatMode||"1")?"selected":""}>보낼 곳: ${m[1]}</option>`).join("")}</select></div>
-  <label class="m" style="display:block;margin-bottom:8px"><input id="qout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 콘텐츠에 올리기 (글·초안 지시)</label>
+  <label class="m" style="display:block;margin-bottom:8px"><input id="qout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 컨텐츠에 올리기 (글·초안 지시)</label>
   <button class="btn" onclick="qSend()">보내기 (업무 저장 + 지시함)</button></div></div>`;
 };
 function addTask(more){
@@ -2620,7 +2620,7 @@ function pmInfo(){const sk=pmSkill(),t=promptText(_pm,sk,($("#pex").value||"").t
 function pmCopy(){const sk=pmSkill(),t=promptText(_pm,sk,($("#pex").value||"").trim().slice(0,300));CFG.lastSkill=sk?sk.name:"";saveCfg();closeModal();clip(t,PROMPT_OK)}
 function copyPrompt(id){openPromptModal(id)}
 function copyPromptIdea(i){const x=_ideas[i];if(x)openPromptModal(x)}
-function copyPromptForm(){const t=$("#ct").value.trim();if(!t){alert("콘텐츠 제목을 입력해 주세요");return}openPromptModal({title:t,ch:$("#cc").value,memo:$("#cm").value.trim(),exp:($("#cx")?$("#cx").value:"").trim().slice(0,500)})}
+function copyPromptForm(){const t=$("#ct").value.trim();if(!t){alert("컨텐츠 제목을 입력해 주세요");return}openPromptModal({title:t,ch:$("#cc").value,memo:$("#cm").value.trim(),exp:($("#cx")?$("#cx").value:"").trim().slice(0,500)})}
 function openPaste(id){
   const c=D.contents.find(x=>x.id===id);if(!c)return;
   $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="초안 붙여넣기">
