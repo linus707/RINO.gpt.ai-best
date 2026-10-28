@@ -1882,7 +1882,11 @@ async function pushWorkerCheck(){
     if(!r.ok){toast("워커 주소는 열리지만 응답이 이상해요 ("+r.status+"). Cloudflare에서 이 이름의 워커가 배포됐는지 확인해 주세요");return}
     const j=await r.json();
     toast(j.ok?(j.configured?"✅ 워커 연결됨 · 설정 완료":"⚠ 워커는 떠 있지만 비밀값(GIST_TOKEN·GIST_ID·VAPID_PRIVATE_KEY)이 아직 없어요"):"워커 응답이 이상해요")
-  }catch{toast("워커를 찾지 못했어요. 저장된 주소 ("+w.replace(/^https:\/\//,"")+") 의 철자와 Cloudflare 워커 이름을 확인해 주세요")}
+  }catch{
+    let up=false;try{await fetch(w+"/health",{mode:"no-cors"});up=true}catch{}
+    if(up){alert("워커는 살아 있어요! 다만 이 사이트 주소가 워커의 허용 목록에 없어서 브라우저가 응답을 막았어요.\n\n지금 이 앱 주소: "+location.origin+"\n\n해결: Cloudflare 워커 → Settings → Variables 에 ALLOWED_ORIGIN = "+location.origin+" 를 추가하고 Deploy 하거나, 최신 worker.js로 다시 배포해 주세요. (https://linuscompany.co.kr 로 접속하면 기본값으로 바로 돼요)")}
+    else toast("워커를 찾지 못했어요. 저장된 주소 ("+w.replace(/^https:\/\//,"")+") 의 철자, Cloudflare 워커 이름, 계정 서브도메인을 확인해 주세요")
+  }
 }
 function pushCopy(t){const ok=()=>toast("복사했어요");if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,()=>prompt("복사해 주세요",t));else prompt("복사해 주세요",t)}
 function pushSave(sub,quiet){
