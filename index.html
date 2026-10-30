@@ -2284,8 +2284,8 @@ async function mSend(){
   if(direct&&mFiles.length&&mCan()){mUpload(m.id,aiFiles).then(r=>{m.files=r;save();render()}).catch(()=>{})}
   else if(mFiles.length&&mCan()){
     mBusy=true;toast("첨부파일을 올리는 중이에요… ("+mFiles.length+"개)");render();
-    try{m.files=await mUpload(m.id,mFiles)}catch(e){mBusy=false;mDraft=t;render();alert("첨부파일을 올리지 못했어요: "+(e.message||e)+"\n\n(보낸 글은 그대로 남아 있어요. 다시 눌러 주세요)");return}
-    mBusy=false;
+    try{m.files=await mUpload(m.id,mFiles)}catch(e){m.fileErr=String(e.message||e).slice(0,200);m.fileNames=mFiles.map(x=>x.f.name).slice(0,10)}
+    mBusy=false;if(m.fileErr)alert("첨부파일을 저장소에 올리지 못했어요: "+m.fileErr+"\n\n글은 그대로 보냈어요. 파일 이름은 지시 내용에 적어 둘게요.\n(⚡ 바로 처리를 쓰면 올리지 않아도 AI가 사진·PDF를 읽어요)");
   }
   /* AI 직원이 있는 방: @이름으로 부른 직원에게 지시로 전달해요. AI 한 명뿐인 나만의 방은 @ 없이도 지시예요. */
   const tasks=[];
@@ -2297,7 +2297,7 @@ async function mSend(){
     who.forEach(n=>{
       const body=t.replace(strip,"").trim()||t||"첨부 자료를 보고 일해 주세요",ls=body.split("\n");
       const tk={id:uid(),title:ls[0].trim().slice(0,200),due:"",pri:"중요도 보통",done:0,who:n,memo:ls.slice(1).join("\n").trim().slice(0,1500),brand:"",by:curName(),as:"sent",at:Date.now(),out:CFG.chatOut!==0?1:0,room:mRoom};
-      if(m.files)tk.files=m.files;tasks.push(tk);
+      if(m.files)tk.files=m.files;if(m.fileErr)tk.memo=((tk.memo||"")+"\n(첨부파일 업로드 실패, 파일: "+(m.fileNames||[]).join(", ")+")").trim().slice(0,1500);tasks.push(tk);
     });
     if(tasks.length){tasks.forEach(x=>D.tasks.unshift(x));m.tasks=tasks.map(x=>x.id)}
   }
@@ -2472,7 +2472,7 @@ views.messenger=()=>{
     const mine=m.by===mn,hit=!mine&&(m.text||"").includes(key),tks=(m.tasks||(m.task?[m.task]:[])).map(id=>D.tasks.find(t=>t.id===id)).filter(Boolean);
     const tkRow=tks.map(tk=>`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="pill">${esc(tk.who)} · ${asInfo(tk.as)[1]}${tk.rej?" · 반려됨":""}${tk.done?" · 완료":""}</span>${tk.res?`<button class="pill" onclick="openDoc('${sid(tk.res)}')">📄 결과 보기</button>`:""}</div>`).join("");
     const rep=tks.filter(tk=>tk.rep).map(tk=>`<div class="bubble sys"><div class="mname">🤖 ${esc(tk.who)} 보고</div><div class="m" style="white-space:pre-wrap;color:inherit">${esc(tk.rep)}</div></div>`).join("");
-    return sep+`<div class="bubble ${mine?"me":"sys"}" ${hit?'style="outline:2px solid var(--make)"':""}>${mine?"":`<div class="mname">${m.ai?"🤖 ":""}${esc(dn(m.by))}</div>`}${m.text?`<div class="m" id="mt-${m.id}" style="white-space:normal;color:inherit">${mRich(m.text)}</div>`:""}${m.ai&&m.st==="direct"&&!m.err&&m.text&&m.text.length>30?`<div class="row" style="gap:6px;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="mAiToContent('${m.id}')">📄 컨텐츠로 저장</button></div>`:""}${m.img?`<img class="mimg" src="${m.img}" alt="첨부 사진" onclick="mImgOpen('${m.id}')">`:""}${mFilesHtml(m)}${tkRow}<div class="mtime">${mTime(m.t)}${mine||isAdmin()?` · <a href="#" onclick="mDel('${m.id}');return false">삭제</a>`:""}</div></div>${rep}`;
+    return sep+`<div class="bubble ${mine?"me":"sys"}" ${hit?'style="outline:2px solid var(--make)"':""}>${mine?"":`<div class="mname">${m.ai?"🤖 ":""}${esc(dn(m.by))}</div>`}${m.text?`<div class="m" id="mt-${m.id}" style="white-space:normal;color:inherit">${mRich(m.text)}</div>`:""}${m.ai&&m.st==="direct"&&!m.err&&m.text&&m.text.length>30?`<div class="row" style="gap:6px;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="mAiToContent('${m.id}')">📄 컨텐츠로 저장</button></div>`:""}${m.img?`<img class="mimg" src="${m.img}" alt="첨부 사진" onclick="mImgOpen('${m.id}')">`:""}${mFilesHtml(m)}${m.fileErr?`<div class="m low">📎 ${esc((m.fileNames||[]).join(", "))} — 저장소에 올리지 못했어요</div>`:""}${tkRow}<div class="mtime">${mTime(m.t)}${mine||isAdmin()?` · <a href="#" onclick="mDel('${m.id}');return false">삭제</a>`:""}</div></div>${rep}`;
   }).join("")||`<div class="empty" style="text-align:center">아직 메시지가 없어요. 첫 메시지를 남겨 보세요.</div>`;
   const ro=(cur.ro&&!isAdmin())||cur.sys;
   const nOn=MS.notif&&"Notification"in window&&Notification.permission==="granted";
