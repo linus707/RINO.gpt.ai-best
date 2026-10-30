@@ -102,6 +102,12 @@ body.photo-on .setsec{color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.4)}
 .doc h3{margin:16px 0 4px;font-size:17px;font-weight:600}.doc hr{border:0;border-top:.5px solid var(--sep);margin:14px 0}
 .doc code{background:var(--fill);border-radius:6px;padding:1px 5px;font-size:.92em}.doc a{color:var(--accent)}
 .ph{background:rgba(255,204,0,.32);border-radius:6px;padding:0 4px}
+#ddw{position:fixed;inset:0;z-index:9000;background:var(--bg);display:none;overflow:auto;padding:calc(20px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
+#ddw .ddwx{max-width:520px;margin:0 auto}
+.ddbig{border-radius:22px;padding:18px 20px;margin:12px 0;color:#fff;position:relative;overflow:hidden}
+.ddbig .n{font-size:56px;font-weight:800;line-height:1.05;letter-spacing:-1px}.ddbig .t{font-size:17px;font-weight:600;opacity:.95}.ddbig .d{font-size:13px;opacity:.85;margin-top:2px}
+.ddrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.ddrow:last-child{border-bottom:0}
+.ddrow .bar{width:5px;align-self:stretch;border-radius:3px}.ddrow .dn{font-size:20px;font-weight:800;min-width:78px;text-align:right}
 #lockov{position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;padding:24px}
 #lockov .lockbox{width:100%;max-width:340px;text-align:center}#lockov .btn{width:100%}
 .lock{max-width:400px;margin:56px auto;border-radius:24px;padding:22px;box-shadow:var(--shadow)}
@@ -296,12 +302,12 @@ const IC={
  more:'<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
 };
 const ic=(k,z=22)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||IC.more}</svg>`;
-IC.messenger=IC.chat;IC.chat='<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/>';IC.schedule=IC.calendar;IC.proto='<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5h5V7h-5zM9 12h6M9 15.5h4"/>';IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
+IC.messenger=IC.chat;IC.chat='<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/>';IC.schedule=IC.calendar;IC.dday='<path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5c0 4 4 5 4 8.5s-4 4.5-4 8.5M16 3.5c0 4-4 5-4 8.5s4 4.5 4 8.5"/>';IC.proto='<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5h5V7h-5zM9 12h6M9 15.5h4"/>';IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
-const PAGES=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
-const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","proto","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
+const PAGES=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["dday","⏳","디데이"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","dday","proto","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
   try{
@@ -320,7 +326,7 @@ const today=()=>ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],ledger:[],prices:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],ledger:[],prices:[],dday:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),items:[["아침 스트레칭",0],["컨텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
@@ -362,7 +368,7 @@ function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs","ledger","prices"];
+const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs","ledger","prices","dday"];
 let SNAP={};
 const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
 resnap();
@@ -2000,7 +2006,8 @@ function homeToday(){
   const nt2=`<div class="card hcard"><h3>공지</h3><div class="body">
     ${notices.map(m=>`<div class="schrow" style="cursor:pointer" onclick="homeNotice()"><i class="schbar" style="background:var(--accent)"></i><div class="grow"><div class="t" style="font-weight:500;white-space:pre-wrap">${esc((m.text||"[사진]").replace(/\s+/g," ").slice(0,90))}${m.img?" 📷":""}</div><div class="m">${homeDay(m.t)} · ${esc(dn(m.by))}</div></div></div>`).join("")||`<div class="empty">아직 공지가 없어요${isAdmin()?" · 메신저의 공지사항에 글을 올리면 여기에 보여요":""}</div>`}
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="homeNotice()">공지 전체 보기</button>${isAdmin()?`<button class="pill" style="background:var(--make)" onclick="homeNotice()">공지 쓰기</button>`:""}</div></div></div>`;
-  return `<div class="hgrid">${sch}${nt2}</div>`;
+  const wi=ddWidgetItems().slice(0,3),ddc=`<div class="card hcard"><h3>디데이</h3><div class="body">${wi.map(o=>`<div class="schrow" style="cursor:pointer" onclick="go('dday')"><i class="schbar" style="background:${o.color}"></i><div class="grow"><div class="t">${esc(o.title)}</div><div class="m">${esc(o.sub)}</div></div><b style="color:${o.color};font-size:18px">${esc(o.label)}</b></div>`).join("")||'<div class="m sub">고정한 디데이가 없어요</div>'}<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="go('dday')">디데이 열기</button></div></div></div>`;
+  return `<div class="hgrid">${sch}${ddc}${nt2}</div>`;
 }
 
 /* ---------- 일정표 (월간 달력 · 날짜별 일정 · 컨텐츠/업무 마감 겹쳐 보기) ----------
@@ -2096,6 +2103,96 @@ views.schedule=()=>{
   <div class="sgrid">${WD.map((w,i)=>`<div class="swd ${i===0?"sun":""}">${w}</div>`).join("")}${grid}</div>
   <div class="m sub" style="margin:6px 2px 10px">이번 달 일정 ${total}건 · ${SCH_CATS.map(c=>`<span style="color:${c[2]}">●</span> ${c[1]}`).join("  ")}</div>
   <div class="card" style="border-color:${schSel===td?"var(--g)":"var(--line)"}"><h3>${sd.getMonth()+1}월 ${sd.getDate()}일 (${WD[sd.getDay()]})${schSel===td?" · 오늘":""} <button class="pill" style="background:var(--make);float:right" onclick="schNew()">＋ 일정 추가</button></h3><div class="body">${sel.map(row).join("")||'<div class="empty">이 날 일정이 없어요</div>'}${form}</div></div>`;
+};
+
+
+/* ---------- 디데이 (일정·기념일을 D-Day로 보기 · 홈 화면 위젯 화면 · 앱 아이콘 숫자) ----------
+   진짜 스마트폰 위젯은 웹앱으로는 만들 수 없어서, ① 홈 화면에 추가하는 전용 '위젯 화면'과 ② 앱 아이콘 숫자 배지로 대신해요.
+   디데이는 D.dday 에 저장되고 기존 동기화로 합쳐져요. 일정표의 일정은 자동으로 다가오는 디데이로 보여요. */
+const DDMS=864e5,ddP=sv=>{const[y,m,d]=String(sv).split("-").map(Number);return new Date(y,(m||1)-1,d||1)};
+const ddFmt=sv=>{const d=ddP(sv);return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} (${WD[d.getDay()]})`};
+function ddInfo(it){
+  const t=ddP(today());let d=ddP(it.date);
+  if(it.type==="since"){const n=Math.round((t-d)/DDMS);return n<0?{n,label:"D"+n,sub:ddFmt(it.date)+" 시작",sortN:-n}:{n,label:`${n+1}일째`,sub:`D+${n} · ${ddFmt(it.date)} 시작`,sortN:9e6+n}}
+  if(it.yearly&&d<t){while(d<t)d=new Date(d.getFullYear()+1,d.getMonth(),d.getDate())}
+  const n=Math.round((d-t)/DDMS),dt=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+  return {n,label:n===0?"D-Day":n>0?"D-"+n:"D+"+(-n),sub:ddFmt(dt)+(it.yearly?" · 매년":""),sortN:n<0?1e6-n:n};
+}
+const ddList=()=>D.dday.map(x=>({x,i:ddInfo(x)})).sort((a,b)=>a.i.sortN-b.i.sortN);
+const ddUpEvents=()=>{const t=today(),end=addDays(60);return D.events.filter(e=>e.date>=t&&e.date<=end&&!D.dday.some(x=>x.ev===e.id)).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6)};
+/* 위젯 화면·아이콘 숫자에 쓸 목록: 고정한 디데이 → 없으면 다가오는 일정 */
+function ddWidgetItems(){
+  const pins=ddList().filter(o=>o.x.pin&&o.i.n>=0||o.x.pin&&o.x.type==="since");
+  if(pins.length)return pins.slice(0,4).map(o=>({title:o.x.title,color:o.x.color||"#c8553d",label:o.i.label,sub:o.i.sub}));
+  return ddUpEvents().slice(0,3).map(e=>{const i=ddInfo({date:e.date,type:"to"});return{title:e.title,color:evColor(e),label:i.label,sub:ddFmt(e.date)}});
+}
+let ddEdit="",ddColor="#c8553d",ddNew=false;
+function ddNewOpen(){ddEdit="";ddNew=true;ddColor="#c8553d";render()}
+function ddEditOpen(id){const x=D.dday.find(y=>y.id===id);if(!x)return;ddEdit=id;ddNew=true;ddColor=x.color||"#c8553d";render()}
+function ddCancel(){ddEdit="";ddNew=false;render()}
+function ddSetColor(c){ddColor=c;const b=$("#ddCol");if(b)b.value=c;document.querySelectorAll(".ddsw").forEach(e=>e.style.outline=e.dataset.c===c?"3px solid var(--tx)":"none")}
+function ddSave(){
+  const t=$("#ddT").value.trim(),d=$("#ddD").value;if(!t||!d){alert("이름과 날짜를 입력해 주세요");return}
+  const rec={title:t.slice(0,40),date:d,type:$("#ddTy").value,yearly:$("#ddY").checked?1:0,color:ddColor};
+  if(ddEdit){const x=D.dday.find(y=>y.id===ddEdit);if(x)Object.assign(x,rec)}else D.dday.push({id:uid(),by:curName(),pin:D.dday.some(x=>x.pin)?0:1,...rec});
+  ddEdit="";ddNew=false;save();render();
+}
+function ddDel(id){if(!confirm("이 디데이를 지울까요?"))return;D.dday=D.dday.filter(x=>x.id!==id);save();render()}
+function ddPin(id){const x=D.dday.find(y=>y.id===id);if(!x)return;x.pin=x.pin?0:1;save();render()}
+function ddFromEv(id){const e=D.events.find(y=>y.id===id);if(!e)return;D.dday.push({id:uid(),by:curName(),title:e.title.slice(0,40),date:e.date,type:"to",yearly:0,color:evColor(e),ev:e.id,pin:D.dday.some(x=>x.pin)?0:1});save();render()}
+const ddCard=(label,title,sub,color)=>`<div class="ddbig" style="background:${color}"><div class="t">${esc(title)}</div><div class="n">${esc(label)}</div><div class="d">${esc(sub)}</div></div>`;
+/* 계산기 */
+function ddCalc(){
+  const a=$("#cA").value,b=$("#cB").value,out=$("#cR1");
+  if(a&&b){const n=Math.round((ddP(b)-ddP(a))/DDMS);out.textContent=`${Math.abs(n)}일 ${n>=0?"후":"전"} · 시작일을 1일째로 세면 ${Math.abs(n)+1}일`}else out.textContent="두 날짜를 넣어 주세요";
+  const s=$("#cS").value,n2=parseInt($("#cN").value,10),sg=$("#cSg").value==="-"?-1:1,o2=$("#cR2");
+  if(s&&!isNaN(n2)){const d=ddP(s);d.setDate(d.getDate()+sg*n2);o2.textContent=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} (${WD[d.getDay()]})`}else o2.textContent="기준일과 일수를 넣어 주세요";
+  const m=$("#cM").value,o3=$("#cR3");
+  if(m){o3.innerHTML=[100,200,300,365,500,730,1000].map(k=>{const d=ddP(m);d.setDate(d.getDate()+k-1);const past=d<ddP(today());return `<div class="ddrow" style="padding:6px 0;${past?"opacity:.5":""}"><span class="grow">${k}일</span><span class="m">${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} (${WD[d.getDay()]})${past?" · 지남":""}</span></div>`}).join("")}else o3.textContent="시작일(첫날)을 넣어 주세요";
+}
+const ddBadgeOn=()=>{try{return localStorage.getItem("rino-ddbadge")!=="0"}catch{return true}};
+function ddBadgeToggle(){try{localStorage.setItem("rino-ddbadge",ddBadgeOn()?"0":"1")}catch{}ddRefresh();render()}
+function ddBadge(){
+  try{
+    if(!navigator.setAppBadge)return;
+    const o=ddList().find(o=>o.x.pin&&o.i.n>=0&&o.x.type!=="since");
+    if(ddBadgeOn()&&o&&o.i.n>0&&o.i.n<=99)navigator.setAppBadge(o.i.n).catch(()=>{});else if(navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{});
+  }catch{}
+}
+function ddwHtml(){
+  const items=ddWidgetItems(),t=ddP(today());
+  return `<div class="ddwx"><div class="row" style="align-items:center"><div class="grow"><div class="m sub">${t.getMonth()+1}월 ${t.getDate()}일 (${WD[t.getDay()]})</div><b style="font-size:22px">디데이</b></div><button class="btn ghost" onclick="ddwClose()">앱 열기</button></div>
+  ${items.map(o=>ddCard(o.label,o.title,o.sub,o.color)).join("")||'<div class="empty">고정한 디데이가 없어요. 앱의 디데이 메뉴에서 ★ 로 고정해 주세요.</div>'}
+  <div class="m sub" style="text-align:center;margin-top:14px">이 화면을 홈 화면에 추가해 두면 위젯처럼 열어 볼 수 있어요</div></div>`;
+}
+function ddwShow(){
+  if(LOCKED||!me())return;
+  let el=$("#ddw");if(!el){el=document.createElement("div");el.id="ddw";document.body.appendChild(el)}
+  el.innerHTML=ddwHtml();el.style.display="block";
+}
+function ddwClose(){history.replaceState(null,"",location.pathname+location.search);const el=$("#ddw");if(el)el.style.display="none";render()}
+function ddRefresh(){ddBadge();if(location.hash==="#dday-widget")ddwShow();else{const el=$("#ddw");if(el)el.style.display="none"}}
+window.addEventListener("hashchange",()=>ddRefresh());
+setInterval(()=>{if(location.hash==="#dday-widget"&&!document.hidden)ddwShow();ddBadge()},60000);
+views.dday=()=>{
+  const list=ddList(),ev=ddUpEvents(),ed=ddEdit?D.dday.find(x=>x.id===ddEdit):null;
+  const form=ddNew?`<div class="form"><input id="ddT" placeholder="이름 (예: 제주 여행, 첫 만남, 에이스침대 행사)" value="${esc(ed?ed.title:"")}" onkeydown="if(event.key==='Enter')ddSave()">
+    <div class="filters"><label class="m">날짜<input id="ddD" type="date" value="${esc(ed?ed.date:today())}"></label><label class="m">방식<select id="ddTy"><option value="to" ${ed&&ed.type==="to"||!ed?"selected":""}>남은 날 (D-일수)</option><option value="since" ${ed&&ed.type==="since"?"selected":""}>지난 날 (N일째 · 기념일)</option></select></label></div>
+    <label class="m" style="display:flex;gap:6px;align-items:center"><input id="ddY" type="checkbox" style="width:auto" ${ed&&ed.yearly?"checked":""}> 매년 반복 (생일·기념일)</label>
+    <div class="m">색상</div><input type="hidden" id="ddCol" value="${esc(ddColor)}"><div class="row" style="gap:8px;flex-wrap:wrap">${SCH_PAL.map(c=>`<button type="button" class="ddsw" data-c="${c}" aria-label="색 ${c}" onclick="ddSetColor('${c}')" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:${c};padding:0;outline:${c===ddColor?"3px solid var(--tx)":"none"}"></button>`).join("")}</div>
+    <div class="row" style="gap:8px"><button class="btn grow" onclick="ddSave()">${ed?"저장":"추가"}</button><button class="btn ghost" onclick="ddCancel()">취소</button></div></div>`:"";
+  const row=o=>`<div class="ddrow"><i class="bar" style="background:${o.x.color||"#c8553d"}"></i><div class="grow" style="min-width:0"><div class="t" style="font-weight:600">${esc(o.x.title)}</div><div class="m">${esc(o.i.sub)}</div></div><div class="dn" style="color:${o.x.color||"#c8553d"}">${esc(o.i.label)}</div><button class="icon" title="위젯·아이콘에 고정" aria-label="고정" onclick="ddPin('${o.x.id}')" style="${o.x.pin?"color:#ff9500":""}">${o.x.pin?"★":"☆"}</button><button class="icon" aria-label="수정" onclick="ddEditOpen('${o.x.id}')">✎</button><button class="icon del" aria-label="삭제" onclick="ddDel('${o.x.id}')">✕</button></div>`;
+  const pins=list.filter(o=>o.x.pin).slice(0,2);
+  return `<h1>디데이</h1><div class="sub">중요한 날까지 며칠 남았는지 한눈에 봐요. ★ 로 고정하면 홈 화면 위젯 화면과 앱 아이콘 숫자에 나와요</div>
+  ${pins.map(o=>ddCard(o.i.label,o.x.title,o.i.sub,o.x.color||"#c8553d")).join("")}
+  <div class="card"><h3>내 디데이 <button class="pill" style="background:var(--make);float:right" onclick="ddNewOpen()">＋ 추가</button></h3><div class="body">${list.map(row).join("")||'<div class="empty">아직 없어요. ＋ 추가로 첫 디데이를 만들어 보세요</div>'}${form}</div></div>
+  <div class="card"><h3>다가오는 일정 <span class="m sub" style="margin:0">일정표에서 자동</span></h3><div class="body">${ev.map(e=>{const i=ddInfo({date:e.date,type:"to"});return `<div class="ddrow"><i class="bar" style="background:${evColor(e)}"></i><div class="grow" style="min-width:0"><div class="t" style="font-weight:600">${esc(e.title)}</div><div class="m">${esc(ddFmt(e.date))}${e.time?" "+esc(e.time):""}</div></div><div class="dn" style="color:${evColor(e)}">${esc(i.label)}</div><button class="pill" style="background:var(--g)" onclick="ddFromEv('${e.id}')">디데이로</button></div>`}).join("")||'<div class="empty">60일 안에 일정이 없어요</div>'}</div></div>
+  <div class="card"><h3>📱 스마트폰에서 위젯처럼 쓰기</h3><div class="body"><div class="m" style="line-height:1.6">웹앱은 진짜 위젯을 만들 수 없어서 두 가지로 대신해요.<br>① <b>위젯 화면</b>: 큰 숫자만 보여 주는 전용 화면이에요. 열어 둔 채 <b>홈 화면에 추가</b>(아이폰: 공유 → 홈 화면에 추가 / 안드로이드: ⋮ → 홈 화면에 추가)하면 아이콘을 눌러 바로 볼 수 있어요.<br>② <b>앱 아이콘 숫자</b>: 홈 화면에 추가한 앱 아이콘에 가장 가까운 고정 디데이의 남은 날(99일 이내)을 숫자로 띄워요. <span class="m sub">(지원하는 기기·설정에서만 보여요. 아이폰은 알림 권한이 필요해요)</span></div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" onclick="location.hash='dday-widget'">위젯 화면 열기</button><button class="btn ghost" onclick="ddBadgeToggle()">아이콘 숫자 ${ddBadgeOn()?"끄기":"켜기"}${navigator.setAppBadge?"":" (이 기기는 지원 안 함)"}</button></div></div></div>
+  <div class="card"><h3>디데이 계산기</h3><div class="body">
+    <b class="m">① 두 날짜 사이</b><div class="filters"><input id="cA" type="date" value="${today()}" oninput="ddCalc()"><input id="cB" type="date" oninput="ddCalc()"></div><div class="m" id="cR1" style="margin-bottom:12px">두 날짜를 넣어 주세요</div>
+    <b class="m">② 기준일에서 N일 후·전</b><div class="filters"><input id="cS" type="date" value="${today()}" oninput="ddCalc()"><input id="cN" type="number" min="0" placeholder="일수 (예: 100)" oninput="ddCalc()"><select id="cSg" onchange="ddCalc()"><option value="+">후</option><option value="-">전</option></select></div><div class="m" id="cR2" style="margin-bottom:12px">기준일과 일수를 넣어 주세요</div>
+    <b class="m">③ 기념일 (시작일을 1일째로)</b><div class="filters"><input id="cM" type="date" oninput="ddCalc()"></div><div id="cR3" class="m">시작일(첫날)을 넣어 주세요</div></div></div>`;
 };
 
 /* ---------- 메신저 (직원 대화방 · 공지 · @멘션 · 사진 · 알림) ----------
@@ -2756,6 +2853,7 @@ function render(keepFocus){
   if(page==="chat"||page==="home"||page==="messenger")pollResults(false);
   if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
   if(PENDING_PRC&&isAdmin()&&!LOCKED)setTimeout(prcPending,0);
+  try{ddRefresh()}catch{}
 }
 /* 애플 느낌: 제목·버튼 앞의 이모지는 지우고 글자만 보여줘요 */
 const EMO=/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,EMO_SEL=".card h3,.btn,.pill,.sheet b,.hero .mono,.chathead,.bubble .m,.stchips span,h1";
