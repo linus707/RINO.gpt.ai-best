@@ -1055,6 +1055,10 @@ async function inboxWhy(){
     const b=await api(`/repos/${repo}/branches/${encodeURIComponent(br)}`);
     if(b.status===404)return `❌ 저장소에 「${br}」 브랜치가 없어요. 설정의 브랜치 이름(기본 work)을 확인해 주세요.`;
     if(b.ok){const bj=await b.json();if(bj.protected)return `⚠️ 「${br}」 브랜치가 보호돼 있어서 앱이 바로 파일을 저장하지 못할 수 있어요. GitHub 저장소 Settings › Branches에서 이 브랜치의 보호 규칙을 풀거나 앱에서 쓰는 토큰을 예외로 해 주세요.`}
+    /* 토큰이 정말 쓸 수 있는지: 눈에 안 보이는 빈 조각(blob)을 하나 만들어 봐요(파일·커밋은 생기지 않아요) */
+    const w=await fetch(`https://api.github.com/repos/${repo}/git/blobs`,{method:"POST",headers:{...H,"Content-Type":"application/json"},body:JSON.stringify({content:"ping",encoding:"utf-8"})});
+    if(w.status===403||w.status===404){let m="";try{m=(await w.json()).message||""}catch{}return `❌ 이 토큰은 저장소를 볼 수만 있고 **글을 쓸 수 없어요** (${w.status}${m?" · GitHub: "+m.slice(0,120):""}).\n→ 토큰의 Permissions › Repository permissions › **Contents**가 「Read and write」가 아니라 「Read-only」이거나 없는 거예요. GitHub › Settings › Developer settings › Fine-grained tokens에서 이 토큰을 열어 Contents를 「Read and write」로 바꾸고 「Update」를 누르거나, 새 토큰을 만들어 다시 저장해 주세요.\n(저장소에 "Require signed commits" 같은 규칙이 있어도 막힐 수 있어요)`}
+    if(w.status===201)return `⚠️ 토큰은 이 저장소에 쓸 수 있어요(권한 정상). 그런데도 「${br}」 브랜치에 파일 저장이 거절됐다면 저장소 규칙이 막고 있을 가능성이 커요.\n→ GitHub 저장소 Settings › Rules(또는 Branches)에서 「${br}」에 걸린 규칙(서명된 커밋 필수·PR 필수·푸시 제한)을 확인해 주세요. 위 오류 창의 「GitHub 응답」 문장을 알려 주시면 정확히 짚어 드릴게요.`;
     return "✅ 토큰·저장소·브랜치는 모두 정상으로 보여요. 그래도 막히면 파일이 너무 크거나(수십 MB) GitHub가 잠시 제한 중일 수 있어요. 잠시 뒤 다시 보내 보세요."+(j.permissions?"":"\n(이 토큰은 권한 정보를 알려 주지 않아 쓰기 가능 여부는 확인하지 못했어요)");
   }catch(e){return "⚠️ 점검하지 못했어요: 인터넷 연결을 확인해 주세요."}
 }
@@ -1068,7 +1072,7 @@ async function sendInbox(id){
   try{
     const r=await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURI("지시/"+fid+".md")}`,{method:"PUT",headers:{Authorization:"Bearer "+CFG.repoWToken,Accept:"application/vnd.github+json","Content-Type":"application/json"},
       body:JSON.stringify({message:`지시 ${fid}: ${x.who} — ${x.title.slice(0,50)}`,content:b64enc(instrMd(x)),branch:br})});
-    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")":r.status===422?"같은 번호의 지시가 이미 있어요":(j.message||"저장하지 못했어요 ("+r.status+")"))}
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")"+(j.message?" · GitHub 응답: "+String(j.message).slice(0,160):""):r.status===422?"같은 번호의 지시가 이미 있어요":(j.message||"저장하지 못했어요 ("+r.status+")"))}
     x.inbox=1;x.as="sent";x.u=Date.now();save();render();
     toast("지시함에 저장했어요 · 바로 시키려면 ‘⚡ 지금 바로 실행’, 아니면 다음 정기 확인(매일 08:00)에 착수해요");
   }catch(e){const why=/40[134]/.test(String(e.message||e))?"\n\n🔎 원인 점검\n"+await inboxWhy():"";alert("지시함에 보내지 못했어요: "+(e.message||e)+why+"\n\n(‘지시문 복사’나 ‘이 직원만 깨우기’로 직접 전달할 수도 있어요)")}
@@ -2448,7 +2452,7 @@ async function mUpload(batch,list){
     const f=list[i].f,name=(i+1)+"_"+mSafeName(f.name),path="지시/첨부/"+String(batch).replace(/[^\w-]/g,"")+"/"+name;
     const r=await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURI(path)}`,{method:"PUT",headers:{Authorization:"Bearer "+CFG.repoWToken,Accept:"application/vnd.github+json","Content-Type":"application/json"},
       body:JSON.stringify({message:`첨부 ${batch}: ${name.slice(0,50)}`,content:await fileB64(f),branch:br})});
-    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(f.name+" — "+(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")":(j.message||"저장하지 못했어요 ("+r.status+")")))}
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(f.name+" — "+(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")"+(j.message?" · GitHub 응답: "+String(j.message).slice(0,160):""):(j.message||"저장하지 못했어요 ("+r.status+")")))}
     out.push({name:String(f.name||name).slice(0,80),path,size:f.size,type:f.type||""});
   }
   return out;
