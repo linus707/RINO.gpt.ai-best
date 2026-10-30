@@ -1038,6 +1038,27 @@ function instrMd(x){
     ...(x.files&&x.files.length?["","## 첨부파일 (저장소 기준 경로 · 열어서 확인하고 일할 것)",...x.files.map(f=>`- ${f.path} (${f.name}, ${mSize(f.size)})`)]:[]),
     ...(x.out?["","## 결과 저장 규칙",...outSpec(x)]:[]),"","## 진행 기록",`- ${kst()} 📨 지시 (대표, 앱)`,""].join("\n");
 }
+/* 지시함 쓰기 토큰이 왜 막히는지 글을 쓰지 않고 확인해서 고칠 곳을 알려 줘요 */
+async function inboxWhy(){
+  const repo=instrRepo(),br=(CFG.repoBranch||"work").trim()||"work",W=CFG.repoWToken;
+  if(!repo)return "❌ 저장소 이름이 비어 있거나 형식이 달라요 (예: linus707/SOLAMEN). 설정 › 작업 폴더 불러오기에서 저장소를 확인해 주세요.";
+  if(!W)return "❌ 쓰기 토큰이 저장돼 있지 않아요. 설정 › 지시함 연결에 넣어 주세요.";
+  const H={Authorization:"Bearer "+W,Accept:"application/vnd.github+json"},api=u=>fetch("https://api.github.com"+u,{headers:H});
+  try{
+    const u=await api("/user");
+    if(u.status===401)return "❌ 토큰이 올바르지 않거나 만료됐어요 (401). GitHub에서 새 토큰을 만들어 다시 저장해 주세요.";
+    const r=await api(`/repos/${repo}`);
+    if(r.status===404||r.status===403)return `❌ 이 토큰은 ${repo} 저장소를 볼 수 없어요 (${r.status}).\n→ 토큰 만들 때 Repository access를 「Only select repositories → ${repo.split("/")[1]||"SOLAMEN"}」로 골랐는지, 저장소 소유 계정(${repo.split("/")[0]})으로 로그인해서 만들었는지 확인해 주세요. 저장소 이름 철자도 확인해 주세요.`;
+    if(!r.ok)return "⚠️ 저장소를 확인하지 못했어요 ("+r.status+"). 잠시 뒤 다시 해 보세요.";
+    const j=await r.json();
+    if(j.permissions&&j.permissions.push===false)return "❌ 토큰이 저장소를 볼 수는 있지만 쓰기 권한이 없어요(읽기 전용). 새 토큰을 만들 때 Permissions › Repository permissions › Contents를 「Read and write」로 바꿔 주세요.";
+    const b=await api(`/repos/${repo}/branches/${encodeURIComponent(br)}`);
+    if(b.status===404)return `❌ 저장소에 「${br}」 브랜치가 없어요. 설정의 브랜치 이름(기본 work)을 확인해 주세요.`;
+    if(b.ok){const bj=await b.json();if(bj.protected)return `⚠️ 「${br}」 브랜치가 보호돼 있어서 앱이 바로 파일을 저장하지 못할 수 있어요. GitHub 저장소 Settings › Branches에서 이 브랜치의 보호 규칙을 풀거나 앱에서 쓰는 토큰을 예외로 해 주세요.`}
+    return "✅ 토큰·저장소·브랜치는 모두 정상으로 보여요. 그래도 막히면 파일이 너무 크거나(수십 MB) GitHub가 잠시 제한 중일 수 있어요. 잠시 뒤 다시 보내 보세요."+(j.permissions?"":"\n(이 토큰은 권한 정보를 알려 주지 않아 쓰기 가능 여부는 확인하지 못했어요)");
+  }catch(e){return "⚠️ 점검하지 못했어요: 인터넷 연결을 확인해 주세요."}
+}
+async function inboxCheck(){toast("연결을 점검하는 중이에요…");alert("지시함 연결 점검 결과\n\n"+await inboxWhy())}
 async function sendInbox(id){
   const x=D.tasks.find(t=>t.id===id);if(!x||x.inbox)return;
   const repo=instrRepo(),br=(CFG.repoBranch||"work").trim()||"work";
@@ -1050,7 +1071,7 @@ async function sendInbox(id){
     if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")":r.status===422?"같은 번호의 지시가 이미 있어요":(j.message||"저장하지 못했어요 ("+r.status+")"))}
     x.inbox=1;x.as="sent";x.u=Date.now();save();render();
     toast("지시함에 저장했어요 · 바로 시키려면 ‘⚡ 지금 바로 실행’, 아니면 다음 정기 확인(매일 08:00)에 착수해요");
-  }catch(e){alert("지시함에 보내지 못했어요: "+(e.message||e)+"\n\n(‘지시문 복사’나 ‘이 직원만 깨우기’로 직접 전달할 수도 있어요)")}
+  }catch(e){const why=/40[134]/.test(String(e.message||e))?"\n\n🔎 원인 점검\n"+await inboxWhy():"";alert("지시함에 보내지 못했어요: "+(e.message||e)+why+"\n\n(‘지시문 복사’나 ‘이 직원만 깨우기’로 직접 전달할 수도 있어요)")}
 }
 /* 예약을 기다리지 않고 바로 실행: 지시함에 저장 → 직원 개인 세션을 열고 "지금 확인" 문구를 복사해요 */
 let _sess=null;
@@ -1503,7 +1524,7 @@ const inboxCard=()=>`<div class="card"><h3>📨 지시함 연결 ${CFG.repoWToke
   <div class="m sub">Slack 없이, AI 직원 지시에서 보낸 지시가 Linus Company 저장소(<b>${esc(CFG.repo||"저장소 미설정")}</b> · ${esc(CFG.repoBranch||"work")} 브랜치)의 <b>지시/</b> 폴더에 파일로 저장돼요. 직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 일해요. 상태와 결과는 앱이 읽어 와요.</div>
   <div class="m sub" style="margin-top:6px">필요한 것: <b>Linus Company 저장소 하나에만</b>, <b>Contents: Read and write</b> 권한의 토큰(github_pat_…), 만료일 지정. 이 기기에만 저장돼요. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만드는 곳</a></div>
   <div class="form" style="border:0;padding:0"><input id="iwt" type="password" placeholder="쓰기 권한 토큰 (github_pat_…)" value="${esc(CFG.repoWToken||"")}" autocomplete="off">
-  <button class="btn" onclick="saveInboxToken()">저장하고 확인</button>${CFG.repoWToken?'<button class="btn ghost" onclick="clearInboxToken()">연결 해제</button>':""}</div>
+  <button class="btn" onclick="saveInboxToken()">저장하고 확인</button>${CFG.repoWToken?'<button class="btn ghost" onclick="inboxCheck()">🔍 연결 점검</button>':""}${CFG.repoWToken?'<button class="btn ghost" onclick="clearInboxToken()">연결 해제</button>':""}</div>
   <div class="m sub" style="margin-top:6px">상태를 읽으려면 위쪽 「Linus Company 작업 폴더 불러오기」의 읽기 전용 토큰도 저장돼 있어야 해요.</div></div></div>`;
 async function saveInboxToken(){if(connGuard())return;
   if(!isAdmin())return;
@@ -2285,7 +2306,7 @@ async function mSend(){
   else if(mFiles.length&&mCan()){
     mBusy=true;toast("첨부파일을 올리는 중이에요… ("+mFiles.length+"개)");render();
     try{m.files=await mUpload(m.id,mFiles)}catch(e){m.fileErr=String(e.message||e).slice(0,200);m.fileNames=mFiles.map(x=>x.f.name).slice(0,10)}
-    mBusy=false;if(m.fileErr)alert("첨부파일을 저장소에 올리지 못했어요: "+m.fileErr+"\n\n글은 그대로 보냈어요. 파일 이름은 지시 내용에 적어 둘게요.\n(⚡ 바로 처리를 쓰면 올리지 않아도 AI가 사진·PDF를 읽어요)");
+    mBusy=false;if(m.fileErr)alert("첨부파일을 저장소에 올리지 못했어요: "+m.fileErr+(/40[134]/.test(m.fileErr)?"\n\n🔎 원인 점검\n"+await inboxWhy():"")+"\n\n글은 그대로 보냈어요. 파일 이름은 지시 내용에 적어 둘게요.\n(⚡ 바로 처리를 쓰면 올리지 않아도 AI가 사진·PDF를 읽어요)");
   }
   /* AI 직원이 있는 방: @이름으로 부른 직원에게 지시로 전달해요. AI 한 명뿐인 나만의 방은 @ 없이도 지시예요. */
   const tasks=[];
