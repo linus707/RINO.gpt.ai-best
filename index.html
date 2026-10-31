@@ -603,7 +603,7 @@ contents(){
   const COL={all:"--accent",arc:"--done"};
   const tabBar=`<div class="cstab">${tabs.map(([k,n,c])=>{const v=COL[k]||(stInfo(k)||[])[2]||"--accent";return `<button class="${cStage===k?"on":""}" style="--c:var(${v})" onclick="setCStage('${k}')">${n}<b>${c}</b></button>`}).join("")}</div>`;
   const bar=`<div class="m" style="margin:0 0 6px"><label style="cursor:pointer"><input type="checkbox" class="csel" style="margin-right:4px" onchange="cPickAll(this.checked)" ${list.length&&list.every(c=>cSel.has(c.id))?"checked":""}>이 탭 전체 선택</label></div>${cSel.size?`<div class="cbar"><b>${cSel.size}개 선택</b><select class="stsel" style="background-color:var(--accent)" onchange="cBulk(this.value)"><option value="">단계 이동…</option>${ST.map(x=>`<option value="${x[0]}">${x[0]==="done"?"📦 ":""}${x[1]}</option>`).join("")}</select><button class="pill" style="background:var(--mut)" onclick="cSel.clear();render(true)">선택 해제</button></div>`:""}`;
-  return `<h1>컨텐츠</h1><div class="sub">착수 → 보고 → 제작중 → 검수 → 발행완료(보관함) · 글을 눌러 초안을 확인해요</div>${tabBar}
+  return `<h1>컨텐츠</h1>${tabBar}
   <div class="filters"><input placeholder="🔍 제목·메모 검색" value="${esc(window._q||"")}" oninput="window._q=this.value;render(true)"><select onchange="chF=this.value;render()"><option value="all">전체 채널</option>${Object.entries(CH).map(([k,v])=>`<option value="${k}" ${chF===k?"selected":""}>${v}</option>`).join("")}</select></div>
   ${list.length?bar:""}
   ${list.map(contentItem).join("")||`<div class="empty">${cStage==="arc"?"보관함이 비어 있어요. 발행완료 단계로 넘기면 여기로 들어와요":"이 단계에 컨텐츠가 없어요"}</div>`}`;
