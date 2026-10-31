@@ -2464,8 +2464,17 @@ async function mThumb(f){
   }
   return out;
 }
-async function mPick(inp){
-  const fs=[...(inp.files||[])];inp.value="";if(!fs.length)return;
+async function mPick(inp){const fs=[...(inp.files||[])];inp.value="";return mAddFiles(fs)}
+function mPaste(e){
+  const cd=e.clipboardData;if(!cd)return;
+  const imgs=[...(cd.files||[])].filter(mIsImg);if(!imgs.length)return;
+  if(!cd.getData("text/plain"))e.preventDefault();
+  const stamp=new Date().toTimeString().slice(0,8).replace(/:/g,"");
+  mAddFiles(imgs.map((f,i)=>new File([f],"붙여넣기_"+stamp+(imgs.length>1?"_"+(i+1):"")+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type})));
+}
+function mDrop(e){const fs=[...((e.dataTransfer||{}).files||[])];if(!fs.length)return;e.preventDefault();mAddFiles(fs)}
+async function mAddFiles(fs){
+  if(!fs.length)return;
   const can=mCan();
   for(const f of fs){
     if(!can&&!mIsImg(f)){toast("사진 외 파일은 설정 > 지시함 연결(쓰기 토큰)을 해야 올릴 수 있어요");continue}
@@ -2547,10 +2556,10 @@ views.messenger=()=>{
     ${aiIn.length&&!(CFG.aiKey&&MS.direct!==0)?`<div class="m ${CFG.repoWToken&&instrRepo()?"":"low"}">${solo?esc(aiIn[0])+"에게 쓰는 글은 모두 지시로 전달돼요":"@"+esc(aiIn[0])+" 처럼 AI 직원을 부르면 지시로 전달돼요"} · ${CFG.repoWToken&&instrRepo()?"지시함 연결됨":"지시함 연결 전(설정 > 연결·동기화)"} · <a href="#" onclick="chatWho=decodeURIComponent('${encodeURIComponent(aiIn[0])}');go('chat');return false">마감·브랜드까지 자세히 지시 ›</a></div>`:""}</div>
   <div class="chatlog" id="mlog">${log}</div>
   <div class="composer glass">${ro?`<div class="empty" style="text-align:center">${cur.sys?"물품 요청·재고 부족·일정 알림이 여기에 자동으로 쌓여요":"공지사항은 관리자만 올릴 수 있어요"}</div>`:`
-   <textarea id="mmsg" rows="2" placeholder="${solo?esc(aiIn[0])+"에게 지시할 내용 (첫 줄은 제목 · Enter 전송)":aiIn.length?"메시지 입력 (@"+esc(aiIn[0])+" 처럼 부르면 지시 · Enter 전송)":"메시지 입력 (Enter 전송 · Shift+Enter 줄바꿈 · @ 멘션)"}" oninput="mInput(this)" onkeydown="mKey(event)">${esc(mDraft)}</textarea><div id="mhint">${mHintHtml()}</div>
+   <textarea id="mmsg" rows="2" placeholder="${solo?esc(aiIn[0])+"에게 지시할 내용 (첫 줄은 제목 · Enter 전송)":aiIn.length?"메시지 입력 (@"+esc(aiIn[0])+" 처럼 부르면 지시 · Enter 전송)":"메시지 입력 (Enter 전송 · Shift+Enter 줄바꿈 · @ 멘션)"}" oninput="mInput(this)" onkeydown="mKey(event)" onpaste="mPaste(event)" ondragover="event.preventDefault()" ondrop="mDrop(event)">${esc(mDraft)}</textarea><div id="mhint">${mHintHtml()}</div>
    ${mFiles.length?`<div class="row" style="gap:6px;flex-wrap:wrap">${mFiles.map((x,i)=>`<span class="pill" style="background:var(--g);display:inline-flex;align-items:center;gap:6px">${x.thumb?`<img src="${x.thumb}" alt="" style="height:28px;border-radius:6px">`:mIcon(x.f)} ${esc(x.f.name.slice(0,24))} · ${mSize(x.f.size)} <a href="#" onclick="mFileDel(${i});return false" aria-label="첨부 빼기">✕</a></span>`).join("")}</div>`:""}
    <div class="row" style="gap:8px;flex-wrap:wrap"><label class="pill" style="background:var(--g);cursor:pointer">📎 첨부<input type="file" ${mCan()?"multiple":'accept="image/*"'} hidden onchange="mPick(this)"></label><button class="btn grow" ${mBusy?"disabled":""} onclick="mSend()">${mBusy?"올리는 중…":solo?(mFiles.length?"자료와 함께 지시 보내기":"지시 보내기"):"보내기"}</button></div>
-   <div class="m sub">${mCan()?`모든 종류의 파일(사진·PDF·엑셀·문서·영상·압축파일 등)을 ${MF_MAX}개까지, 파일당 ${mSize(MF_ONE)} · 합계 ${mSize(MF_ALL)}까지 붙일 수 있어요`:"지시함 연결 전에는 사진 1장만 붙일 수 있어요 (설정 > 연결·동기화 > 지시함 연결)"}</div>`}
+   <div class="m sub">${mCan()?`사진은 복사(Ctrl+V)해서 입력창에 바로 붙여넣거나 끌어다 놓을 수 있어요 · 모든 종류의 파일(사진·PDF·엑셀·문서·영상·압축파일 등)을 ${MF_MAX}개까지, 파일당 ${mSize(MF_ONE)} · 합계 ${mSize(MF_ALL)}까지 붙일 수 있어요`:"사진은 복사(Ctrl+V)해서 바로 붙여넣을 수 있어요 · 지시함 연결 전에는 사진 1장만 붙일 수 있어요 (설정 > 연결·동기화 > 지시함 연결)"}</div>`}
    <div class="m sub">${CFG.token?"클라우드 동기화로 직원들과 주고받아요":"클라우드 동기화가 꺼져 있어서 이 기기에서만 보여요 (설정에서 연결)"} · 보낸 사람 이름은 로그인 이름이에요</div>
    <button class="pill" style="background:${nOn?"var(--done)":"var(--make)"}" onclick="mNotifOn()">${MS.push?"✓ 푸시 켜짐 (앱이 꺼져 있어도 와요)":nOn?"✓ 알림 켜짐 (앱이 열려 있을 때)":"이 기기 알림 켜기"}</button>${MS.push?'<button class="pill" style="background:var(--mut)" onclick="pushOff()">푸시 끄기</button>':""}</div></div></div>`;
 };
