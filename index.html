@@ -98,6 +98,14 @@ body.photo-on .setsec{color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.4)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .form{display:grid;gap:8px;border-radius:16px;padding:12px;margin:10px 0}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.cstab{display:flex;gap:6px;overflow-x:auto;white-space:nowrap;margin:10px 0 8px;padding:2px 0 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cstab::-webkit-scrollbar{display:none}
+.cstab button{flex:0 0 auto;border:0;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
+.cstab button b{font-weight:700;margin-left:4px}
+.cstab button.on{background:var(--c);color:#fff}
+.stsel{width:auto!important;flex:0 0 auto;max-width:96px;appearance:none;-webkit-appearance:none;border:0;border-radius:999px;padding:5px 24px 5px 11px;font-size:12px;font-weight:700;color:#fff;background-image:linear-gradient(45deg,transparent 50%,#fff 50%),linear-gradient(135deg,#fff 50%,transparent 50%);background-position:calc(100% - 13px) 55%,calc(100% - 9px) 55%;background-size:4px 4px;background-repeat:no-repeat}
+.cbar{position:sticky;bottom:72px;z-index:5;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;padding:8px 12px;border-radius:14px;background:var(--card,#fff);box-shadow:0 2px 14px rgba(0,0,0,.18);font-size:13px}
+.csel{width:18px;height:18px;flex:0 0 auto;margin-right:8px;accent-color:var(--accent)}
 .doc{border-radius:20px;padding:16px 18px;line-height:1.75;word-break:keep-all;font-size:16px;box-shadow:var(--shadow)}
 .doc h3{margin:16px 0 4px;font-size:17px;font-weight:600}.doc hr{border:0;border-top:.5px solid var(--sep);margin:14px 0}
 .doc code{background:var(--fill);border-radius:6px;padding:1px 5px;font-size:.92em}.doc a{color:var(--accent)}
@@ -532,8 +540,13 @@ function advance(id){const c=D.contents.find(x=>x.id===id);if(!c)return;const i=
   else{c.stage=ST[Math.min(i+1,ST.length-1)][0];if(c.stage==="done")cStage="arc";else cStage=c.stage}
   save();render()}
 function stepBack(id){const c=D.contents.find(x=>x.id===id);if(!c)return;const i=ST.findIndex(s=>s[0]===stKey(c.stage));if(i<=0)return;c.stage=ST[i-1][0];cStage=c.stage;save();render()}
-let cStage=null;
-function setCStage(k){cStage=k;render()}
+let cStage=null;const cSel=new Set();
+function setCStage(k){cStage=k;cSel.clear();render()}
+const stSel=c=>{const s=stInfo(c.stage);return `<select class="stsel" style="background-color:var(${s[2]})" onchange="cSet('${c.id}',this.value)" title="단계 선택">${ST.map(x=>`<option value="${x[0]}" ${x[0]===s[0]?"selected":""}>${x[0]==="done"?"📦 ":""}${x[1]}</option>`).join("")}</select>`};
+function cSet(id,k){const c=D.contents.find(x=>x.id===id);if(!c||!ST.some(x=>x[0]===k))return;c.stage=k;cSel.delete(id);save();render(true)}
+function cPick(id,on){on?cSel.add(id):cSel.delete(id);render(true)}
+function cPickAll(on){const ids=[...document.querySelectorAll(".item .csel")].map(e=>e.getAttribute("onchange").match(/'([^']+)'/)[1]);ids.forEach(i=>on?cSel.add(i):cSel.delete(i));render(true)}
+function cBulk(k){if(!k||!cSel.size)return;D.contents.forEach(c=>{if(cSel.has(c.id))c.stage=k});cSel.clear();save();render(true)}
 function delItem(list,id){if(!isAdmin())return;if(!confirm("삭제할까요?"))return;D[list]=D[list].filter(x=>x.id!==id);save();render()}
 const sid=v=>String(v==null?"":v).replace(/[^\w-]/g,"");
 const taskRow=x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${sid(x.id)}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.who?" · 담당 "+esc(x.who):""}${x.done&&x.doneBy?" · 완료 "+esc(x.doneBy):""}${x.memo?"<br>"+esc(x.memo):""}${aiRow(x)}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('tasks','${sid(x.id)}')">✕</button></div>`;
@@ -559,7 +572,7 @@ function editLink(id){
   l.name=n.trim().slice(0,40);l.url=u;D.set.u=Date.now();save();render();
 }
 function delLink(id){if(!isAdmin()||!confirm("이 채널 링크를 지울까요?"))return;D.set.links=D.set.links.filter(x=>x.id!==id);D.set.u=Date.now();save();render()}
-const contentItem=c=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${pill(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
+const contentItem=c=>`<div class="item"><div class="row"><input type="checkbox" class="csel" ${cSel.has(c.id)?"checked":""} onchange="cPick('${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${stSel(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
 
 const BRAND_URL={"트립":"https://www.instagram.com/ellttoong.trip/"};
 const brandUrl=c=>c.url!==undefined?c.url:(BRAND_URL[c.tag]||"");
@@ -587,9 +600,12 @@ contents(){
   if(cStage===null)cStage=["report","review","make","idea"].find(k=>cnt(k))||"all";
   const tabs=[["all","전체 진행",live],...ST.filter(x=>x[0]!=="done").map(x=>[x[0],x[1],cnt(x[0])]),["arc","📦 보관함",cnt("done")]];
   const list=cStage==="all"?all.filter(c=>c.stage!=="done"):cStage==="arc"?all.filter(c=>c.stage==="done"):all.filter(c=>stKey(c.stage)===cStage);
-  const tabBar=`<div class="filters" style="flex-wrap:wrap;gap:6px">${tabs.map(([k,n,c])=>`<button class="pill" style="background:${cStage===k?"var(--accent)":"var(--fill)"};color:${cStage===k?"#fff":"var(--t)"}" onclick="setCStage('${k}')">${n} ${c}</button>`).join("")}</div>`;
+  const COL={all:"--accent",arc:"--done"};
+  const tabBar=`<div class="cstab">${tabs.map(([k,n,c])=>{const v=COL[k]||(stInfo(k)||[])[2]||"--accent";return `<button class="${cStage===k?"on":""}" style="--c:var(${v})" onclick="setCStage('${k}')">${n}<b>${c}</b></button>`}).join("")}</div>`;
+  const bar=`<div class="m" style="margin:0 0 6px"><label style="cursor:pointer"><input type="checkbox" class="csel" style="margin-right:4px" onchange="cPickAll(this.checked)" ${list.length&&list.every(c=>cSel.has(c.id))?"checked":""}>이 탭 전체 선택</label></div>${cSel.size?`<div class="cbar"><b>${cSel.size}개 선택</b><select class="stsel" style="background-color:var(--accent)" onchange="cBulk(this.value)"><option value="">단계 이동…</option>${ST.map(x=>`<option value="${x[0]}">${x[0]==="done"?"📦 ":""}${x[1]}</option>`).join("")}</select><button class="pill" style="background:var(--mut)" onclick="cSel.clear();render(true)">선택 해제</button></div>`:""}`;
   return `<h1>컨텐츠</h1><div class="sub">착수 → 보고 → 제작중 → 검수 → 발행완료(보관함) · 글을 눌러 초안을 확인해요</div>${tabBar}
   <div class="filters"><input placeholder="🔍 제목·메모 검색" value="${esc(window._q||"")}" oninput="window._q=this.value;render(true)"><select onchange="chF=this.value;render()"><option value="all">전체 채널</option>${Object.entries(CH).map(([k,v])=>`<option value="${k}" ${chF===k?"selected":""}>${v}</option>`).join("")}</select></div>
+  ${list.length?bar:""}
   ${list.map(contentItem).join("")||`<div class="empty">${cStage==="arc"?"보관함이 비어 있어요. 발행완료 단계로 넘기면 여기로 들어와요":"이 단계에 컨텐츠가 없어요"}</div>`}`;
 },
 tasks(){
