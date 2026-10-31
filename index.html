@@ -1271,28 +1271,33 @@ function docNotesHtml(c){
     const t=n.tk&&D.tasks.find(x=>x.id===n.tk),st=t?asInfo(t.as)[1]:"";
     return `<div style="margin:8px 0;padding:10px 12px;border-radius:12px;background:${n.to?"var(--card2,#f4efe9)":"var(--card,#fff)"};border:1px solid var(--line,#e5e5e5)">
     <div class="m sub">${esc(n.by||"")} · ${new Date(n.at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${n.to?" · 📨 "+esc(n.to)+"에게 수정 지시":""}${st?" · "+st:""}</div>
-    <div style="white-space:pre-wrap;margin-top:4px">${esc(n.txt)}</div>
+    <div style="white-space:pre-wrap;margin-top:4px">${esc(n.txt)}</div>${n.img?`<img src="${n.img}" alt="첨부 사진" style="max-width:100%;max-height:220px;border-radius:10px;margin-top:6px">`:""}${(n.fn||[]).length?`<div class="m sub" style="margin-top:4px">📎 ${esc(n.fn.join(", "))}</div>`:""}
     ${t&&t.rep?`<div class="m" style="margin-top:6px;white-space:pre-wrap">📝 ${esc(t.rep)}</div>`:""}
     ${t&&!t.done?`<div class="row" style="margin-top:6px;gap:6px"><button class="pill" style="background:var(--ready)" onclick="runNow('${t.id}')">⚡ 지금 바로 실행</button></div>`:""}</div>`};
   return `<h3 style="margin:22px 0 6px">💬 수정 요청·메모</h3>
   <div class="m sub">원하는 수정을 적어서 직원에게 보내면, 그 직원이 작업 폴더의 글을 고쳐요. 고친 글은 「작업 폴더 불러오기」로 다시 가져오면 위에 반영돼요. 혜택 내용처럼 직접 아는 내용은 위의 ‘본문 직접 고치기’가 가장 빨라요.</div>
   <div id="notes">${ns.length?ns.map(row).join(""):`<div class="m sub" style="margin:8px 0">아직 대화가 없어요.</div>`}</div>
-  <textarea id="noteTxt" placeholder="예) 혜택 ① 프로모션 내용을 이렇게 바꿔줘 …" style="width:100%;min-height:84px;font:inherit;padding:10px;border:1px solid var(--line,#ddd);border-radius:10px" oninput="noteDraft=this.value">${esc(noteDraft)}</textarea>
+  <textarea id="noteTxt" placeholder="예) 혜택 ① 프로모션 내용을 이렇게 바꿔줘 …" style="width:100%;min-height:84px;font:inherit;padding:10px;border:1px solid var(--line,#ddd);border-radius:10px" oninput="noteDraft=this.value" onpaste="mPaste(event,2)" ondragover="event.preventDefault()" ondrop="mDrop(event,2)">${esc(noteDraft)}</textarea>
+  ${nFiles.length?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${nFiles.map((x,i)=>`<span class="pill" style="background:var(--g);display:inline-flex;align-items:center;gap:6px">${x.thumb?`<img src="${x.thumb}" alt="" style="height:28px;border-radius:6px">`:mIcon(x.f)} ${esc(x.f.name.slice(0,24))} · ${mSize(x.f.size)} <a href="#" onclick="nFileDel(${i});return false" aria-label="첨부 빼기">✕</a></span>`).join("")}</div>`:""}
+  <div class="m sub" style="margin-top:6px"><label class="pill" style="background:var(--g);cursor:pointer;display:inline-block">📎 첨부<input type="file" multiple hidden onchange="nPickFiles(this)"></label> 사진은 복사(Ctrl+V)해서 입력창에 바로 붙여넣어도 돼요${mCan()?"":" · 직원에게 보내려면 설정 > 지시함 연결(쓰기 토큰)이 필요해요"}</div>
   <div class="row" style="margin:8px 0 24px;gap:6px;flex-wrap:wrap">
     <select onchange="noteWho=this.value" style="padding:8px;border-radius:10px">${names.map(n=>`<option ${n===noteWho?"selected":""}>${esc(n)}</option>`).join("")}</select>
     <button class="btn" onclick="noteSend('${c.id}',1)">📨 직원에게 수정 지시</button>
     <button class="btn ghost" onclick="noteSend('${c.id}',0)">메모만 남기기</button></div>`;
 }
 function noteSend(id,toStaff){
-  const c=D.contents.find(x=>x.id===id),txt=(noteDraft||"").trim();
+  const c=D.contents.find(x=>x.id===id),files=nFiles.slice(),txt=(noteDraft||"").trim()||(files.length?"첨부 사진 참고":"");
   if(!c||!txt){toast("내용을 먼저 적어 주세요");return}
+  if(toStaff&&files.length&&!mCan()){alert("직원에게 첨부를 보내려면 설정 > 지시함 연결(쓰기 토큰)이 필요해요. ‘메모만 남기기’는 사진과 함께 저장돼요");return}
   const n={id:uid(),at:Date.now(),by:curName(),txt:txt.slice(0,2000)};
+  const th=files.find(x=>x.thumb);if(th)n.img=th.thumb;if(files.length)n.fn=files.map(x=>x.f.name.slice(0,40)).slice(0,10);
+  nFiles=[];
   if(toStaff){
     if(!agentOf(noteWho)){alert("담당 직원이 명단에 없어요");return}
     n.to=noteWho;
     const folder=c.src?`작업/${c.src}/draft.md`:"(작업 폴더 없음 — 앱 본문 기준)";
     const body=`수정 요청 · ${c.title}`.slice(0,80)+"\n- 대상 글: "+folder+(c.src?"\n- draft.md의 `## 본문`을 수정하고 work 브랜치에 커밋·푸시해 주세요. 제목·서식(`## 제목`/`## 본문`/`## 해시태그`)은 유지.":"")+"\n- 대표 요청: "+txt+(c.edited?"\n- 참고: 대표가 앱에서 본문을 직접 고쳐 둔 상태예요. 아래가 앱의 현재 본문이에요.\n\n"+(c.body||"").slice(0,1000):"");
-    dispatchTask(noteWho,body,"",c.brand||"",1,0);
+    dispatchTask(noteWho,body,"",c.brand||"",1,0,files);
     n.tk=D.tasks[0]&&D.tasks[0].id;
   }
   (c.notes=c.notes||[]).push(n);c.u=Date.now();noteDraft="";save();render();
@@ -2473,11 +2478,13 @@ function mPaste(e,chat){
   mAddFiles(imgs.map((f,i)=>new File([f],"붙여넣기_"+stamp+(imgs.length>1?"_"+(i+1):"")+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type})),chat);
 }
 function mDrop(e,chat){const fs=[...((e.dataTransfer||{}).files||[])];if(!fs.length)return;e.preventDefault();mAddFiles(fs,chat)}
-let cFiles=[],cBusy=0;
+let cFiles=[],cBusy=0,nFiles=[];
+function nFileDel(i){const t=$("#noteTxt");if(t)noteDraft=t.value;nFiles.splice(i,1);render()}
+async function nPickFiles(inp){const fs=[...(inp.files||[])];inp.value="";return mAddFiles(fs,2)}
 function cFileDel(i){const t=$("#cmsg");if(t)chatDraft=t.value;cFiles.splice(i,1);render()}
 async function cPickFiles(inp){const fs=[...(inp.files||[])];inp.value="";return mAddFiles(fs,1)}
 async function mAddFiles(fs,chat){
-  const L=chat?cFiles:mFiles;
+  const L=chat===2?nFiles:chat?cFiles:mFiles;
   if(!fs.length)return;
   const can=mCan();
   for(const f of fs){
@@ -2490,7 +2497,7 @@ async function mAddFiles(fs,chat){
     if(mIsImg(f)){try{thumb=await mThumb(f)}catch{if(!can){alert("사진을 읽지 못했어요. 다른 사진으로 해 주세요");continue}}}
     L.push({f,thumb});
   }
-  if(chat){const t=$("#cmsg");if(t)chatDraft=t.value}else{const t=$("#mmsg");if(t)mDraft=t.value;mFoc=true}render();
+  if(chat===2){const t=$("#noteTxt");if(t)noteDraft=t.value}else if(chat){const t=$("#cmsg");if(t)chatDraft=t.value}else{const t=$("#mmsg");if(t)mDraft=t.value;mFoc=true}render();
 }
 function mFileDel(i){const t=$("#mmsg");if(t)mDraft=t.value;mFiles.splice(i,1);render()}
 const mSafeName=(n,i)=>String(n||"file").replace(/[\\/:*?"<>|#%\x00-\x1f]/g,"_").replace(/\s+/g," ").trim().slice(-80)||"file";
