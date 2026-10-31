@@ -2465,28 +2465,32 @@ async function mThumb(f){
   return out;
 }
 async function mPick(inp){const fs=[...(inp.files||[])];inp.value="";return mAddFiles(fs)}
-function mPaste(e){
+function mPaste(e,chat){
   const cd=e.clipboardData;if(!cd)return;
   const imgs=[...(cd.files||[])].filter(mIsImg);if(!imgs.length)return;
   if(!cd.getData("text/plain"))e.preventDefault();
   const stamp=new Date().toTimeString().slice(0,8).replace(/:/g,"");
-  mAddFiles(imgs.map((f,i)=>new File([f],"붙여넣기_"+stamp+(imgs.length>1?"_"+(i+1):"")+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type})));
+  mAddFiles(imgs.map((f,i)=>new File([f],"붙여넣기_"+stamp+(imgs.length>1?"_"+(i+1):"")+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type})),chat);
 }
-function mDrop(e){const fs=[...((e.dataTransfer||{}).files||[])];if(!fs.length)return;e.preventDefault();mAddFiles(fs)}
-async function mAddFiles(fs){
+function mDrop(e,chat){const fs=[...((e.dataTransfer||{}).files||[])];if(!fs.length)return;e.preventDefault();mAddFiles(fs,chat)}
+let cFiles=[],cBusy=0;
+function cFileDel(i){const t=$("#cmsg");if(t)chatDraft=t.value;cFiles.splice(i,1);render()}
+async function cPickFiles(inp){const fs=[...(inp.files||[])];inp.value="";return mAddFiles(fs,1)}
+async function mAddFiles(fs,chat){
+  const L=chat?cFiles:mFiles;
   if(!fs.length)return;
   const can=mCan();
   for(const f of fs){
     if(!can&&!mIsImg(f)){toast("사진 외 파일은 설정 > 지시함 연결(쓰기 토큰)을 해야 올릴 수 있어요");continue}
-    if(!can&&mFiles.length){toast("지시함 연결 전에는 사진 1장만 올릴 수 있어요");break}
-    if(mFiles.length>=MF_MAX){toast("첨부는 한 번에 최대 "+MF_MAX+"개예요");break}
+    if(!can&&L.length){toast("지시함 연결 전에는 사진 1장만 올릴 수 있어요");break}
+    if(L.length>=MF_MAX){toast("첨부는 한 번에 최대 "+MF_MAX+"개예요");break}
     if(f.size>MF_ONE){toast((f.name||"파일")+": "+mSize(MF_ONE)+"를 넘어서 올릴 수 없어요");continue}
-    if(mFiles.reduce((n,x)=>n+x.f.size,0)+f.size>MF_ALL){toast("한 번에 올릴 수 있는 총 용량은 "+mSize(MF_ALL)+"예요");break}
+    if(L.reduce((n,x)=>n+x.f.size,0)+f.size>MF_ALL){toast("한 번에 올릴 수 있는 총 용량은 "+mSize(MF_ALL)+"예요");break}
     let thumb="";
     if(mIsImg(f)){try{thumb=await mThumb(f)}catch{if(!can){alert("사진을 읽지 못했어요. 다른 사진으로 해 주세요");continue}}}
-    mFiles.push({f,thumb});
+    L.push({f,thumb});
   }
-  const t=$("#mmsg");if(t)mDraft=t.value;mFoc=true;render();
+  if(chat){const t=$("#cmsg");if(t)chatDraft=t.value}else{const t=$("#mmsg");if(t)mDraft=t.value;mFoc=true}render();
 }
 function mFileDel(i){const t=$("#mmsg");if(t)mDraft=t.value;mFiles.splice(i,1);render()}
 const mSafeName=(n,i)=>String(n||"file").replace(/[\\/:*?"<>|#%\x00-\x1f]/g,"_").replace(/\s+/g," ").trim().slice(-80)||"file";
@@ -2716,28 +2720,38 @@ views.chat=()=>{
   <div class="chatmain"><div class="chatsel-wrap">${sel}</div>
   <div class="chathead glass"><button class="pill" style="background:var(--make);float:right" onclick="pollResults(true)">🔄 결과 확인</button><b>${esc(cur.name)}</b> <span class="m">${esc(cur.title)} · ${esc(cur.dept)} · ${esc(cur.agent)}</span>${active(cur)?"":`<div class="m low">현재 가동 단계(${D.set.stage}단계) 밖의 직원이에요. 지시해도 바로 움직이지 않을 수 있어요.</div>`}</div>
   <div class="chatlog" id="chatlog">${bubbles}${results}</div>
-  <div class="composer glass"><textarea id="cmsg" rows="3" placeholder="${esc(cur.name)}에게 지시할 내용을 써 주세요" oninput="chatInput(this)">${esc(chatDraft)}</textarea><div id="chint">${hintHtml(cur.name,chatDraft,"chatSet")}</div>
+  <div class="composer glass"><textarea id="cmsg" rows="3" placeholder="${esc(cur.name)}에게 지시할 내용을 써 주세요 (사진은 Ctrl+V로 바로 붙여넣기)" oninput="chatInput(this)" onpaste="mPaste(event,1)" ondragover="event.preventDefault()" ondrop="mDrop(event,1)">${esc(chatDraft)}</textarea><div id="chint">${hintHtml(cur.name,chatDraft,"chatSet")}</div>
+   ${cFiles.length?`<div class="row" style="gap:6px;flex-wrap:wrap">${cFiles.map((x,i)=>`<span class="pill" style="background:var(--g);display:inline-flex;align-items:center;gap:6px">${x.thumb?`<img src="${x.thumb}" alt="" style="height:28px;border-radius:6px">`:mIcon(x.f)} ${esc(x.f.name.slice(0,24))} · ${mSize(x.f.size)} <a href="#" onclick="cFileDel(${i});return false" aria-label="첨부 빼기">✕</a></span>`).join("")}</div>`:""}
+   <div class="row" style="gap:8px;flex-wrap:wrap"><label class="pill" style="background:var(--g);cursor:pointer">📎 첨부<input type="file" multiple hidden onchange="cPickFiles(this)"></label><span class="m sub">${mCan()?"사진·PDF·문서 등을 붙여 지시와 함께 보내요":"첨부는 설정 > 지시함 연결(쓰기 토큰) 후에 보낼 수 있어요"}</span></div>
    <div class="chips">마감 <button onclick="chatDueSet(0)">오늘</button><button onclick="chatDueSet(1)">내일</button><button onclick="chatDueSet(3)">3일 뒤</button><button onclick="chatDueSet(7)">1주 뒤</button><input id="cdue" type="date" value="${esc(chatDue)}" onchange="chatDue=this.value" style="width:auto"></div>
    <div class="filters">${brands.length?`<select id="cbr"><option value="">브랜드 선택 안 함</option>${brands.map(b=>`<option value="${esc(b.tag)}">브랜드 ${esc(b.tag)}${b.name?" · "+esc(b.name):""}</option>`).join("")}</select>`:"<span></span>"}<select id="cmode" onchange="CFG.chatMode=this.value;saveCfg()">${CMODES.map(m=>`<option value="${m[0]}" ${m[0]===mode?"selected":""}>보낼 곳: ${m[1]}</option>`).join("")}</select></div>
    <label class="m"><input id="cout" type="checkbox" style="width:auto" ${CFG.chatOut!==0?"checked":""} onchange="CFG.chatOut=this.checked?1:0;saveCfg()"> 결과를 전체 컨텐츠에 올리기 (글·초안 지시)</label>
-   <button class="btn" onclick="sendChat()">보내기 (업무 저장 + 지시함)</button></div></div></div>`;
+   <button class="btn" ${cBusy?"disabled":""} onclick="sendChat()">${cBusy?"올리는 중…":"보내기 (업무 저장 + 지시함)"}</button></div></div></div>`;
 };
 function chatSet(n){chatDraft=($("#cmsg")||{value:chatDraft}).value;chatWho=n;render()}
 function chatDueSet(n){chatDue=addDays(n);const e=$("#cdue");if(e)e.value=chatDue}
-function dispatchTask(name,txt,due,brand,mode,out){
+async function dispatchTask(name,txt,due,brand,mode,out,files){
   const lines=txt.split("\n"),title=lines[0].trim().slice(0,200),memo=lines.slice(1).join("\n").trim().slice(0,1500);
   const x={id:uid(),title,due:due||"",pri:"중요도 보통",done:0,who:name,memo,brand:brand||"",by:curName(),as:"sent",at:Date.now(),out:out?1:0};
   D.tasks.unshift(x);save();
-  if(mode!==2&&CFG.repoWToken&&instrRepo()){sendInbox(x.id);return}
+  if(mode!==2&&CFG.repoWToken&&instrRepo()){
+    if(files&&files.length){try{x.files=await mUpload(x.id,files)}catch(e){x.memo=((x.memo||"")+"\n(첨부파일 업로드 실패, 파일: "+files.map(f=>f.f.name).join(", ")+")").trim().slice(0,1500);alert("첨부파일을 저장소에 올리지 못했어요: "+String(e.message||e).slice(0,200)+"\n\n지시는 그대로 보내요. 파일 이름은 지시 내용에 적어 둘게요.")}save()}
+    sendInbox(x.id);return}
   const txtOut=cmdText(x,mode===2?2:0);
   const ok=()=>toast(mode===2?"복사했어요. 이 직원의 Claude 세션에 붙여넣으면 "+name+" 한 명만 깨워요":"지시함 쓰기 토큰이 없어 복사만 했어요. 설정 > 지시함 연결을 해 두면 자동으로 보내져요");
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txtOut).then(ok,()=>prompt("복사해서 보내 주세요",txtOut));else prompt("복사해서 보내 주세요",txtOut);
 }
-function sendChat(){
-  const txt=($("#cmsg").value||"").trim();if(!txt){alert("지시 내용을 써 주세요");return}
+async function sendChat(){
+  if(cBusy)return;
+  const txt=($("#cmsg").value||"").trim();if(!txt&&!cFiles.length){alert("지시 내용을 써 주세요");return}
   const cur=chatPick();if(!cur)return;
-  dispatchTask(cur.name,txt,$("#cdue").value||"",$("#cbr")?$("#cbr").value:"",+($("#cmode").value||1),$("#cout").checked);
-  chatDraft="";chatDue="";render();
+  const mode=+($("#cmode").value||1),out=$("#cout").checked,due=$("#cdue").value||"",br=$("#cbr")?$("#cbr").value:"";
+  const files=cFiles.slice();
+  if(files.length&&(mode===2||!mCan())){alert(mode===2?"‘복사만’ 보내기에서는 첨부를 보낼 수 없어요. 보낼 곳을 지시함으로 바꿔 주세요":"첨부는 설정 > 지시함 연결(쓰기 토큰)을 한 뒤에 보낼 수 있어요");return}
+  chatDraft="";chatDue="";cFiles=[];
+  if(files.length){cBusy=1;toast("첨부파일을 올리는 중이에요… ("+files.length+"개)");render()}
+  await dispatchTask(cur.name,txt||"첨부 자료를 보고 일해 주세요",due,br,mode,out,files);
+  cBusy=0;render();
   const log=$("#chatlog");if(log)log.scrollTop=log.scrollHeight;
 }
 /* 담당자 안내: 글 초안 지시인데 글 쓰는 직원이 아니면 맞는 직원을 알려 줘요 */
