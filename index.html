@@ -543,10 +543,17 @@ function stepBack(id){const c=D.contents.find(x=>x.id===id);if(!c)return;const i
 let cStage=null;const cSel=new Set();
 function setCStage(k){cStage=k;cSel.clear();render()}
 const stSel=c=>{const s=stInfo(c.stage);return `<select class="stsel" style="background-color:var(${s[2]})" onchange="cSet('${c.id}',this.value)" title="단계 선택">${ST.map(x=>`<option value="${x[0]}" ${x[0]===s[0]?"selected":""}>${x[0]==="done"?"📦 ":""}${x[1]}</option>`).join("")}</select>`};
-function cSet(id,k){const c=D.contents.find(x=>x.id===id);if(!c||!ST.some(x=>x[0]===k))return;c.stage=k;cSel.delete(id);save();render(true)}
+function cSet(id,k){const c=D.contents.find(x=>x.id===id);if(!c||!ST.some(x=>x[0]===k))return;const was=c.stage;c.stage=k;cSel.delete(id);
+  if(k==="done"&&was!=="done"){if(!c.pubAt)c.pubAt=today();if(!c.pubUrl){const v=prompt("발행한 글의 링크를 붙여 넣어 주세요 (나중에 넣으려면 취소)","");if(v&&v.trim()){const u=linkOk(v);if(u)c.pubUrl=u;else alert("올바른 링크가 아니에요. 보관함에서 다시 넣을 수 있어요")}}}
+  c.u=Date.now();save();render(true)}
+function pubEdit(id){const c=D.contents.find(x=>x.id===id);if(!c)return;
+  const v=prompt("발행 링크 (비우면 삭제)",c.pubUrl||"");if(v===null)return;
+  if(v.trim()){const u=linkOk(v);if(!u){alert("올바른 링크가 아니에요");return}c.pubUrl=u}else delete c.pubUrl;
+  const d=prompt("발행일 (YYYY-MM-DD)",c.pubAt||today());if(d!==null&&/^\d{4}-\d{2}-\d{2}$/.test(d.trim()))c.pubAt=d.trim();
+  c.u=Date.now();save();render(true)}
 function cPick(id,on){on?cSel.add(id):cSel.delete(id);render(true)}
 function cPickAll(on){const ids=[...document.querySelectorAll(".item .csel")].map(e=>e.getAttribute("onchange").match(/'([^']+)'/)[1]);ids.forEach(i=>on?cSel.add(i):cSel.delete(i));render(true)}
-function cBulk(k){if(!k||!cSel.size)return;D.contents.forEach(c=>{if(cSel.has(c.id))c.stage=k});cSel.clear();save();render(true)}
+function cBulk(k){if(!k||!cSel.size)return;D.contents.forEach(c=>{if(cSel.has(c.id)){if(k==="done"&&c.stage!=="done"&&!c.pubAt)c.pubAt=today();c.stage=k}});cSel.clear();save();render(true)}
 function delItem(list,id){if(!isAdmin())return;if(!confirm("삭제할까요?"))return;D[list]=D[list].filter(x=>x.id!==id);save();render()}
 const sid=v=>String(v==null?"":v).replace(/[^\w-]/g,"");
 const taskRow=x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${sid(x.id)}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.who?" · 담당 "+esc(x.who):""}${x.done&&x.doneBy?" · 완료 "+esc(x.doneBy):""}${x.memo?"<br>"+esc(x.memo):""}${aiRow(x)}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('tasks','${sid(x.id)}')">✕</button></div>`;
@@ -572,7 +579,8 @@ function editLink(id){
   l.name=n.trim().slice(0,40);l.url=u;D.set.u=Date.now();save();render();
 }
 function delLink(id){if(!isAdmin()||!confirm("이 채널 링크를 지울까요?"))return;D.set.links=D.set.links.filter(x=>x.id!==id);D.set.u=Date.now();save();render()}
-const contentItem=c=>`<div class="item"><div class="row"><input type="checkbox" class="csel" ${cSel.has(c.id)?"checked":""} onchange="cPick('${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${stSel(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
+const pubRow=c=>{const d=c.pubAt?` · ${esc(c.pubAt)} 발행`:"";return c.pubUrl?`<div class="m" style="margin-top:4px"><a href="${esc(c.pubUrl)}" target="_blank" rel="noopener noreferrer">🔗 발행글 보기 · ${esc(hostOf(c.pubUrl))} ↗</a>${d} · <a href="#" onclick="pubEdit('${sid(c.id)}');return false">수정</a></div>`:`<div class="m" style="margin-top:4px">${d.slice(3)||"발행일 미입력"} · <a href="#" onclick="pubEdit('${sid(c.id)}');return false">🔗 발행 링크 추가</a></div>`};
+const contentItem=c=>`<div class="item"><div class="row"><input type="checkbox" class="csel" ${cSel.has(c.id)?"checked":""} onchange="cPick('${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.stage==="done"?pubRow(c):""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${stSel(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
 
 const BRAND_URL={"트립":"https://www.instagram.com/ellttoong.trip/"};
 const brandUrl=c=>c.url!==undefined?c.url:(BRAND_URL[c.tag]||"");
