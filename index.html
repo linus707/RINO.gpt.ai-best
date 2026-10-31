@@ -305,7 +305,8 @@ const ic=(k,z=22)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="no
 IC.messenger=IC.chat;IC.chat='<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/>';IC.schedule=IC.calendar;IC.dday='<path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5c0 4 4 5 4 8.5s-4 4.5-4 8.5M16 3.5c0 4-4 5-4 8.5s4 4.5 4 8.5"/>';IC.proto='<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5h5V7h-5zM9 12h6M9 15.5h4"/>';IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
-const ST=[["idea","아이디어","--idea"],["make","제작중","--make"],["review","검수","--review"],["ready","발행예정","--ready"],["done","발행완료","--done"]];
+const ST=[["idea","착수","--idea"],["report","보고","--ready"],["make","제작중","--make"],["review","검수","--review"],["done","발행완료","--done"]];
+const stKey=k=>k==="ready"?"review":k;
 const PAGES=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["dday","⏳","디데이"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
 const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","dday","proto","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
@@ -524,9 +525,15 @@ $("#menu").onclick=()=>{if(!me())return;nav();$("#drawer").classList.add("open")
 $("#drawer .shade").onclick=()=>$("#drawer").classList.remove("open");
 
 const stat=(l,n,hl)=>`<div class="stat ${hl?"hl":""}"><small>${l}</small><b>${n}</b></div>`;
-const stInfo=k=>ST.find(s=>s[0]===k);
-const pill=c=>{const s=stInfo(c.stage);return `<button class="pill" style="background:var(${s[2]})" onclick="advance('${c.id}')" title="누르면 다음 단계">${s[1]} ▸</button>`};
-function advance(id){const c=D.contents.find(x=>x.id===id);const i=ST.findIndex(s=>s[0]===c.stage);c.stage=ST[(i+1)%ST.length][0];save();render()}
+const stInfo=k=>ST.find(s=>s[0]===stKey(k))||ST[0];
+const pill=c=>{const s=stInfo(c.stage),i=ST.findIndex(x=>x[0]===s[0]);return (i>0&&s[0]!=="done"?`<button class="pill" style="background:var(--fill);color:var(--t)" onclick="stepBack('${c.id}')" title="이전 단계로">◂</button>`:"")+`<button class="pill" style="background:var(${s[2]})" onclick="advance('${c.id}')" title="${s[0]==="done"?"누르면 검수로 되돌려요":"누르면 다음 단계(발행완료는 보관함으로 이동)"}">${s[1]}${s[0]==="done"?" ↺":" ▸"}</button>`};
+function advance(id){const c=D.contents.find(x=>x.id===id);if(!c)return;const i=ST.findIndex(s=>s[0]===stKey(c.stage));
+  if(c.stage==="done"){if(!confirm("보관함에서 검수 단계로 되돌릴까요?"))return;c.stage="review";cStage="review"}
+  else{c.stage=ST[Math.min(i+1,ST.length-1)][0];if(c.stage==="done")cStage="arc";else cStage=c.stage}
+  save();render()}
+function stepBack(id){const c=D.contents.find(x=>x.id===id);if(!c)return;const i=ST.findIndex(s=>s[0]===stKey(c.stage));if(i<=0)return;c.stage=ST[i-1][0];cStage=c.stage;save();render()}
+let cStage=null;
+function setCStage(k){cStage=k;render()}
 function delItem(list,id){if(!isAdmin())return;if(!confirm("삭제할까요?"))return;D[list]=D[list].filter(x=>x.id!==id);save();render()}
 const sid=v=>String(v==null?"":v).replace(/[^\w-]/g,"");
 const taskRow=x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${sid(x.id)}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.who?" · 담당 "+esc(x.who):""}${x.done&&x.doneBy?" · 완료 "+esc(x.doneBy):""}${x.memo?"<br>"+esc(x.memo):""}${aiRow(x)}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('tasks','${sid(x.id)}')">✕</button></div>`;
@@ -575,10 +582,15 @@ home(){
 },
 contents(){
   const q=(window._q||"").toLowerCase();
-  const list=D.contents.filter(c=>(chF==="all"||c.ch===chF)&&(c.title+c.memo).toLowerCase().includes(q));
-  return `<h1>컨텐츠</h1><div class="sub">제목·메모로 검색하고, 글을 눌러 초안을 확인해요</div>
+  const all=D.contents.filter(c=>(chF==="all"||c.ch===chF)&&(c.title+c.memo).toLowerCase().includes(q));
+  const cnt=k=>all.filter(c=>stKey(c.stage)===k).length,live=all.filter(c=>c.stage!=="done").length;
+  if(cStage===null)cStage=["report","review","make","idea"].find(k=>cnt(k))||"all";
+  const tabs=[["all","전체 진행",live],...ST.filter(x=>x[0]!=="done").map(x=>[x[0],x[1],cnt(x[0])]),["arc","📦 보관함",cnt("done")]];
+  const list=cStage==="all"?all.filter(c=>c.stage!=="done"):cStage==="arc"?all.filter(c=>c.stage==="done"):all.filter(c=>stKey(c.stage)===cStage);
+  const tabBar=`<div class="filters" style="flex-wrap:wrap;gap:6px">${tabs.map(([k,n,c])=>`<button class="pill" style="background:${cStage===k?"var(--accent)":"var(--fill)"};color:${cStage===k?"#fff":"var(--t)"}" onclick="setCStage('${k}')">${n} ${c}</button>`).join("")}</div>`;
+  return `<h1>컨텐츠</h1><div class="sub">착수 → 보고 → 제작중 → 검수 → 발행완료(보관함) · 글을 눌러 초안을 확인해요</div>${tabBar}
   <div class="filters"><input placeholder="🔍 제목·메모 검색" value="${esc(window._q||"")}" oninput="window._q=this.value;render(true)"><select onchange="chF=this.value;render()"><option value="all">전체 채널</option>${Object.entries(CH).map(([k,v])=>`<option value="${k}" ${chF===k?"selected":""}>${v}</option>`).join("")}</select></div>
-  ${list.map(contentItem).join("")||'<div class="empty">컨텐츠가 없어요</div>'}`;
+  ${list.map(contentItem).join("")||`<div class="empty">${cStage==="arc"?"보관함이 비어 있어요. 발행완료 단계로 넘기면 여기로 들어와요":"이 단계에 컨텐츠가 없어요"}</div>`}`;
 },
 tasks(){
   const t=today(),wk=addDays(7);
@@ -1274,7 +1286,7 @@ function importContent(f){
     let n=0;const cut=(v,m)=>String(v||"").slice(0,m);
     j.items.slice(0,50).forEach(it=>{
       if(!it||!it.title)return;
-      const o={title:cut(it.title,200),ch:CH[it.ch]?it.ch:"blog",stage:ST.some(x=>x[0]===it.stage)?it.stage:"idea",due:cut(it.due,10),memo:cut(it.memo,300),by:cut(it.by,40),body:cut(it.body,100000),report:cut(it.report,100000)};
+      const o={title:cut(it.title,200),ch:CH[it.ch]?it.ch:"blog",stage:ST.some(x=>x[0]===stKey(it.stage))?stKey(it.stage):"idea",due:cut(it.due,10),memo:cut(it.memo,300),by:cut(it.by,40),body:cut(it.body,100000),report:cut(it.report,100000)};
       const ex=D.contents.find(c=>c.title===o.title&&c.by===o.by);
       if(ex)Object.assign(ex,o);else D.contents.unshift({id:uid(),...o});
       n++;
@@ -1286,7 +1298,7 @@ function importContent(f){
 /* ---------- Linus Company 작업 폴더 불러오기 (읽기 전용 토큰, 관리자 기기에만 저장) ---------- */
 /* 직원들이 Linus Company 저장소의 작업 폴더(작업/날짜_[태그]_제목/)에 저장한 글을 읽어 전체 컨텐츠에 넣어요.
    클라우드 직원 세션은 Gist 같은 계정 API를 쓸 수 없어서, 이미 하던 대로 레포에 저장하게 두고 앱이 읽어 와요. */
-const PARSER_V="p2";
+const PARSER_V="p3";
 const WORK_RE=/^작업\/([^/]+)\/(brief|plan|draft|final|copyedit)\.md$/;
 const REPO_CH={트립:"blog",슬립:"furn",포토:"photo",공통:"blog"};
 const repoOk=r=>/^[\w.-]+\/[\w.-]+$/.test(r||"");
@@ -1304,9 +1316,9 @@ function splitDraft(text){
   return{title,body,report:rest.trim()};
 }
 function stageOf(f,head){
-  if(f.final||/최종 승인[^\n:]*:\s*완료/.test(head))return"ready";
+  if(f.final||/최종 승인[^\n:]*:\s*완료/.test(head))return"review";
   if(f.copyedit||/교열[^\n:]*:\s*완료/.test(head))return"review";
-  return(f.draft||f.plan)?"make":"idea";
+  return(f.draft||f.plan)?"report":"idea";
 }
 async function importRepo(silent){
   if(!isAdmin())return;
@@ -2410,7 +2422,7 @@ function mDirectToggle(){MS.direct=MS.direct===0?1:0;msSave();render()}
 function mAiToContent(id){
   const m=D.msgs.find(x=>x.id===id);if(!m)return;
   const title=(String(m.text).split("\n").find(l=>l.replace(/[#*>\s-]/g,"").trim())||m.by+" 답변").replace(/^[#*>\s-]+/,"").replace(/\*\*/g,"").slice(0,80);
-  D.contents.unshift({id:uid(),title,ch:/침대|에이스|정림/.test(m.text)?"furn":"blog",stage:"make",due:"",memo:`${m.by} 바로 처리 답변 · 미확인`,by:m.by,body:"## 본문\n\n"+m.text,report:"",brand:""});
+  D.contents.unshift({id:uid(),title,ch:/침대|에이스|정림/.test(m.text)?"furn":"blog",stage:"report",due:"",memo:`${m.by} 바로 처리 답변 · 미확인`,by:m.by,body:"## 본문\n\n"+m.text,report:"",brand:""});
   save();toast("컨텐츠에 저장했어요 (컨텐츠 > 초안 보기)");
 }
 function mDel(id){if(!confirm("이 메시지를 지울까요?"))return;const i=D.msgs.findIndex(x=>x.id===id);if(i>=0)D.msgs.splice(i,1);save();render()}
