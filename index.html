@@ -517,7 +517,7 @@ const tabsNow=()=>TABS_BASE;
 function tabbar(){
   const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
 }
-function go(p){if(p==="org"||p==="staff"){setTabK="people";p="settings"}page=p;try{window.fabWake&&window.fabWake()}catch{}window.scrollTo(0,0);$("#drawer").classList.remove("open");closeModal();render()}
+function go(p){if(p==="org"||p==="staff"){setTabK="people";p="settings"}page=p;try{window.fabWake&&window.fabWake()}catch{}window.scrollTo(0,0);$("#drawer").classList.remove("open");closeModal();render();if(p==="schedule")calAuto()}
 function nav(){
   const m=me();
   $("#who").innerHTML=m?`<div class="brandbox"><b>${esc(m.name)}</b><div class="m sub" style="margin:0">${m.role==="admin"?"관리자":"직원"}${m.open?" · PIN 미설정":""}</div>${m.open?"":'<button class="btn ghost" style="margin-top:8px;padding:8px 12px" onclick="logout()">로그아웃</button>'}</div>`:"";
@@ -1618,7 +1618,7 @@ const orgBody=()=>views.org().replace("<h1>조직도</h1>","");
 function setSection(k){
   const adm=isAdmin(),x=staffParts();
   if(k==="people")return `<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
-  if(k==="link")return `${connCard()}${vaultCard()}${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${aiCardUi()}`;
+  if(k==="link")return `${connCard()}${vaultCard()}${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${adm?calCard():""}${aiCardUi()}`;
   if(k==="look")return `${bgCard()}${adm?brandCard():""}${themeCard()}${adm?brandLinkCard():""}`;
   if(k==="data")return `${backupCardUi()}${importCardUi()}${skillCard()}`;
   return `${x.login}${bioCard()}`;
@@ -2137,9 +2137,86 @@ function schSave(){
   if(schEdit&&schEdit!=="new"){const e=D.events.find(x=>x.id===schEdit);if(e&&schCan(e))Object.assign(e,rec)}
   else D.events.push({id:uid(),by:curName(),...rec});
   if(rec&&!(schEdit&&schEdit!=="new"))ntfy(`📅 새 일정 · ${ntfyDate(date)} ${rec.title}${rec.time?" ("+rec.time+")":""} (${dn(curName()||"관리자")})`,curName()||"관리자");
-  schSel=date;schM=date.slice(0,7);schEdit="";save();render();
+  schSel=date;schM=date.slice(0,7);schEdit="";save();render();calAuto(true);
 }
-function schDel(id){const e=D.events.find(x=>x.id===id);if(!e||!schCan(e))return;if(!confirm("이 일정을 지울까요?"))return;D.events=D.events.filter(x=>x.id!==id);schEdit="";save();render()}
+
+/* ---------- Notion 캘린더 연동 ----------
+   일정표(D.events) ↔ Notion '스케쥴' 데이터베이스. 즉시 푸시 워커의 /cal 경로를 거쳐요(worker/README.md).
+   일정마다 nid(Notion 페이지)·nh(마지막으로 맞춘 내용 지문)를 달아서, 한쪽만 바뀌면 그쪽 내용을 따라가요. 같은 일정을 양쪽에서 동시에 고치면 앱 내용이 이겨요.
+   앱에서 지운 일정은 Notion 휴지통으로 보내요(복구 가능). Notion에서 지운 일정은 앱에서 자동으로 지우지 않아요. */
+const CAL2N={event:"개인일정",meet:"모임",consult:"업무",delivery:"업무",shoot:"개인일정",pub:"업무",leave:"휴가"};
+const N2CAL={"휴가":"leave","모임":"meet","업무":"event","아르바이트":"event","운동":"event","데이트":"event","개인일정":"event","기념일":"event"};
+const calUrl=()=>{const u=(CFG.calWorker||"").trim().replace(/\/+$/,"");return /^https:\/\/[^\s/]+$/.test(u)?u:pushWorker()};
+const calReady=()=>!!(calUrl()&&CFG.calKey);
+const calCatName=e=>e.nc&&N2CAL[e.nc]===e.cat?e.nc:CAL2N[e.cat]||"";
+const calSig=(t,d,en,tm,m,c)=>[t||"",d||"",en||"",tm||"",m||"",c||""].join("|");
+const calHash=e=>calSig(e.title,e.date,e.end,e.time,e.memo,calCatName(e));
+async function calCall(body){
+  const r=await fetch(calUrl()+"/cal",{method:"POST",headers:{"content-type":"application/json","x-cal-key":CFG.calKey},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error==="forbidden"?"접속 키가 맞지 않거나 허용된 주소가 아니에요":j.error==="not configured"?"워커에 Notion 값(NOTION_TOKEN·NOTION_DB_ID·CAL_KEY)이 아직 없어요":j.error==="slow down"?"잠시 뒤에 다시 해 주세요":(j.error||"오류 "+r.status));
+  return j;
+}
+let _calBusy=0,_calT=0,_calMsg="";
+async function calSync(manual){
+  if(_calBusy||!calReady())return;
+  if(!manual&&CFG.calOn===0)return;
+  _calBusy=1;_calMsg="";let changed=0,up=0,down=0;
+  try{
+    const from=addDays(-30),to=addDays(180),inWin=e=>e.date>=from&&e.date<=to;
+    const gone=(D.set.calDel||[]).slice();
+    const push=CFG.calUp===0?[]:D.events.filter(e=>e.title&&e.date&&inWin(e)&&(!e.nid||calHash(e)!==e.nh)).slice(0,20)
+      .map(e=>({ref:e.id,nid:e.nid||"",title:e.title,date:e.date,end:e.end||"",time:e.time||"",memo:e.memo||"",cat:calCatName(e)}));
+    const r=await calCall({op:"sync",from,to,push,del:gone.slice(0,15)});
+    const pushed=new Set();
+    Object.entries(r.map||{}).forEach(([ref,nid])=>{const e=D.events.find(x=>x.id===ref);if(e){e.nid=nid;e.nc=calCatName(e);e.nh=calHash(e);pushed.add(nid);up++;changed=1}});
+    if((r.deleted||[]).length){D.set.calDel=gone.filter(n=>!r.deleted.includes(n));D.set.u=Date.now();changed=1}
+    if(CFG.calDown!==0){
+      for(const n of r.events||[]){
+        if(gone.includes(n.nid)||pushed.has(n.nid))continue;
+        const cat=N2CAL[n.cat]||"event",nsig=calSig(n.title,n.date,n.end,n.time,n.memo,n.cat),e=D.events.find(x=>x.nid===n.nid);
+        if(!e){D.events.push({id:uid(),by:"Notion",title:n.title.slice(0,80),date:n.date,end:n.end,time:n.time,cat,color:"",memo:(n.memo||"").slice(0,300),nid:n.nid,nc:n.cat,nh:nsig});down++;changed=1}
+        else if(nsig!==e.nh&&calHash(e)===e.nh){Object.assign(e,{title:n.title.slice(0,80),date:n.date,end:n.end,time:n.time,cat,memo:(n.memo||"").slice(0,300),nc:n.cat,nh:nsig});down++;changed=1}
+      }
+    }
+    CFG.calAt=Date.now();saveCfg();
+    _calMsg=`✅ 동기화 완료 · 앱→Notion ${up}건 · Notion→앱 ${down}건`+((r.failed||[]).length?` · 실패 ${(r.failed||[]).length}건`:"");
+    if(changed)save();
+  }catch(e){_calMsg="⚠️ "+(e.message||e);if(manual)alert("Notion 동기화에 실패했어요: "+(e.message||e))}
+  _calBusy=0;
+  if(manual)toast(_calMsg);
+  if(page==="schedule"||page==="settings")render(true);
+}
+function calAuto(now){
+  if(!calReady()||CFG.calOn===0)return;
+  clearTimeout(_calT);
+  if(now){_calT=setTimeout(()=>calSync(),1500);return}
+  if(Date.now()-(CFG.calAt||0)>180000)_calT=setTimeout(()=>calSync(),300);
+}
+function calSave(){
+  const w=($("#cwurl").value||"").trim().replace(/\/+$/,""),k=($("#ckey").value||"").trim();
+  if(w&&!/^https:\/\/[^\s/]+$/.test(w)){alert("워커 주소는 https://… 로 시작하는 주소만 넣어 주세요 (뒤에 /경로는 빼 주세요)");return}
+  CFG.calWorker=w;if(k)CFG.calKey=k;saveCfg();toast("저장했어요");render(true);
+}
+function calClear(){if(!confirm("Notion 연동 접속 키와 주소를 이 기기에서 지울까요?"))return;delete CFG.calKey;delete CFG.calWorker;saveCfg();render(true)}
+async function calCheck(){
+  if(!calReady()){alert("워커 주소(또는 푸시 워커 주소)와 접속 키를 먼저 저장해 주세요");return}
+  try{const r=await calCall({op:"check"});alert(`연결됐어요 ✅\n데이터베이스: ${r.db}\n제목: ${r.title} · 날짜: ${r.date}${r.memo?" · 메모: "+r.memo:""}${r.cat?" · 분류: "+r.cat:""}\n일정 상태 값: ${r.statusOpt||"(없음 — 모든 항목을 가져와요)"}`)}catch(e){alert("연결하지 못했어요: "+(e.message||e))}
+}
+function calFlag(k,on){CFG[k]=on?1:0;saveCfg();render(true)}
+const calCard=()=>{const ok=calReady();return `<div class="card"><h3>📆 Notion 캘린더 연동</h3><div class="body">
+  <div class="m sub">일정표와 Notion '스케쥴' 데이터베이스를 서로 맞춰요. 설정 방법은 저장소 worker/README.md 의 "Notion 일정 연동" 장을 보세요. Notion 값은 워커의 Secret에만 넣고, 여기에는 접속 키만 넣어요.</div>
+  <div class="form" style="border:0;padding:0">
+   <input id="cwurl" placeholder="워커 주소 (비워 두면 푸시 워커 주소를 써요)" value="${esc(CFG.calWorker||"")}">
+   <input id="ckey" type="password" autocomplete="off" placeholder="${CFG.calKey?"접속 키 저장됨 ✓ (바꾸려면 새로 입력)":"접속 키 (워커의 CAL_KEY와 같은 값)"}">
+   <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" onclick="calSave()">저장</button><button class="btn" onclick="calCheck()">연결 확인</button><button class="btn" ${ok?"":"disabled"} onclick="calSync(true)">지금 동기화</button><button class="btn ghost" onclick="calClear()">지우기</button></div>
+   <label class="m"><input type="checkbox" style="width:auto" ${CFG.calOn!==0?"checked":""} onchange="calFlag('calOn',this.checked)"> 일정표를 열 때와 일정을 고칠 때 자동으로 동기화</label>
+   <label class="m"><input type="checkbox" style="width:auto" ${CFG.calUp!==0?"checked":""} onchange="calFlag('calUp',this.checked)"> 앱 일정을 Notion에 올리기</label>
+   <label class="m"><input type="checkbox" style="width:auto" ${CFG.calDown!==0?"checked":""} onchange="calFlag('calDown',this.checked)"> Notion 일정을 앱으로 가져오기 (상태가 ‘일정 📅’인 항목)</label>
+   <div class="m sub">${ok?(CFG.calAt?"마지막 동기화 "+new Date(CFG.calAt).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"아직 동기화한 적이 없어요"):"아직 연결 전이에요"}${_calMsg?" · "+esc(_calMsg):""}</div>
+  </div></div></div>`};
+
+function schDel(id){const e=D.events.find(x=>x.id===id);if(!e||!schCan(e))return;if(!confirm("이 일정을 지울까요?"))return;if(e.nid){D.set.calDel=[...(D.set.calDel||[]),e.nid];D.set.u=Date.now()}D.events=D.events.filter(x=>x.id!==id);schEdit="";save();render();calAuto(true)}
 views.schedule=()=>{
   const[y,m]=schM.split("-").map(Number),first=new Date(y,m-1,1).getDay(),days=new Date(y,m,0).getDate(),td=today();
   const cells=[];for(let i=0;i<first;i++)cells.push(null);for(let d=1;d<=days;d++)cells.push(`${schM}-${p2(d)}`);while(cells.length%7)cells.push(null);
@@ -2168,7 +2245,7 @@ views.schedule=()=>{
   <div class="row" style="gap:8px;margin:6px 0 10px"><button class="icon" onclick="schMove(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center;font-size:18px">${y}년 ${m}월</b><button class="icon" onclick="schMove(1)" aria-label="다음 달">›</button><button class="pill" style="background:var(--make)" onclick="schNow()">이번 달</button></div>
   <div class="chips">겹쳐 보기 <button class="${L.content?"on":""}" onclick="schLayer('content')">컨텐츠 마감</button><button class="${L.task?"on":""}" onclick="schLayer('task')">업무 마감</button></div>
   <div class="sgrid">${WD.map((w,i)=>`<div class="swd ${i===0?"sun":""}">${w}</div>`).join("")}${grid}</div>
-  <div class="m sub" style="margin:6px 2px 10px">이번 달 일정 ${total}건 · ${SCH_CATS.map(c=>`<span style="color:${c[2]}">●</span> ${c[1]}`).join("  ")}</div>
+  <div class="m sub" style="margin:6px 2px 10px">이번 달 일정 ${total}건 · ${SCH_CATS.map(c=>`<span style="color:${c[2]}">●</span> ${c[1]}`).join("  ")}${calReady()?` · <a href="#" onclick="calSync(true);return false">🔄 Notion 동기화</a>`:""}</div>
   <div class="card" style="border-color:${schSel===td?"var(--g)":"var(--line)"}"><h3>${sd.getMonth()+1}월 ${sd.getDate()}일 (${WD[sd.getDay()]})${schSel===td?" · 오늘":""} <button class="pill" style="background:var(--make);float:right" onclick="schNew()">＋ 일정 추가</button></h3><div class="body">${sel.map(row).join("")||'<div class="empty">이 날 일정이 없어요</div>'}${form}</div></div>`;
 };
 

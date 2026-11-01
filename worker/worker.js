@@ -139,17 +139,118 @@ function throttled(ip) {
   return n > 60;
 }
 
+
+/* ---------- Notion 일정표 연동 (POST /cal) ----------
+   앱 일정표 ↔ Notion '스케쥴' 데이터베이스. 비밀값: NOTION_TOKEN(내부 통합 토큰), NOTION_DB_ID(데이터베이스 ID), CAL_KEY(앱과 나눠 가진 접속 키)
+   앱이 보낸 일정만 쓰고(최대 20건), 지운 일정은 Notion 휴지통으로 보내요(복구 가능). 보관·삭제 외에 Notion 데이터를 지우지 않아요. */
+const UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+const YMD = /^\d{4}-\d{2}-\d{2}$/;
+const HM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const KST = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+let _schema = null;
+async function nfetch(env, path, method = 'GET', body) {
+  const r = await fetch('https://api.notion.com' + path, { method, headers: { Authorization: 'Bearer ' + env.NOTION_TOKEN, 'Notion-Version': '2022-06-28', 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.message || 'notion ' + r.status); e.status = r.status; throw e; }
+  return j;
+}
+async function calSchema(env) {
+  if (_schema && _schema.id === env.NOTION_DB_ID) return _schema;
+  const db = await nfetch(env, '/v1/databases/' + env.NOTION_DB_ID);
+  const ps = Object.entries(db.properties || {});
+  const by = (t, pref) => { const l = ps.filter(([, p]) => p.type === t); return (l.find(([n]) => pref && pref.includes(n)) || l[0] || [])[0] || ''; };
+  const status = by('status', ['상태']);
+  const cat = by('select', ['일정분류', '분류']);
+  const opts = status ? db.properties[status].status.options.map((o) => o.name) : [];
+  _schema = {
+    id: env.NOTION_DB_ID, name: (db.title || []).map((t) => t.plain_text).join(''),
+    title: by('title'), date: by('date', ['날짜', 'Date', '일정']), memo: by('rich_text', ['한줄메모', '메모']),
+    cat, catOpts: cat ? db.properties[cat].select.options.map((o) => o.name) : [], status, statusOpt: opts.find((n) => /일정/.test(n)) || '',
+  };
+  return _schema;
+}
+function fromNotionDate(d) {
+  if (!d || !d.start) return null;
+  const one = (x) => { if (x.length <= 10) return { date: x, time: '' }; const q = KST.format(new Date(x)); return { date: q.slice(0, 10), time: q.slice(11, 16) }; };
+  const a = one(d.start), b = d.end ? one(d.end) : null;
+  return { date: a.date, time: a.time, end: b && b.date > a.date ? b.date : '' };
+}
+function toNotionDate(e) {
+  if (e.time) return { start: `${e.date}T${e.time}:00+09:00`, end: e.end && e.end > e.date ? `${e.end}T${e.time}:00+09:00` : null };
+  return { start: e.date, end: e.end && e.end > e.date ? e.end : null };
+}
+function calClean(x) {
+  if (!x || !YMD.test(x.date || '') || !String(x.title || '').trim()) return null;
+  return { title: String(x.title).trim().slice(0, 200), date: x.date, end: YMD.test(x.end || '') ? x.end : '', time: HM.test(x.time || '') ? x.time : '', memo: String(x.memo || '').slice(0, 1800), cat: String(x.cat || '').slice(0, 40) };
+}
+function calProps(s, e, create) {
+  const p = {};
+  p[s.title] = { title: [{ text: { content: e.title } }] };
+  if (s.date) p[s.date] = { date: toNotionDate(e) };
+  if (s.memo) p[s.memo] = { rich_text: e.memo ? [{ text: { content: e.memo } }] : [] };
+  if (s.cat && e.cat && s.catOpts.includes(e.cat)) p[s.cat] = { select: { name: e.cat } };
+  if (create && s.status && s.statusOpt) p[s.status] = { status: { name: s.statusOpt } };
+  return p;
+}
+async function calList(env, s, from, to) {
+  const and = [{ property: s.date, date: { on_or_after: from } }, { property: s.date, date: { on_or_before: to } }];
+  if (s.status && s.statusOpt) and.push({ property: s.status, status: { equals: s.statusOpt } });
+  const out = [];
+  let cursor;
+  for (let i = 0; i < 4; i++) {
+    const r = await nfetch(env, `/v1/databases/${env.NOTION_DB_ID}/query`, 'POST', { filter: { and }, page_size: 100, start_cursor: cursor });
+    for (const pg of r.results || []) {
+      const pr = pg.properties || {}, d = fromNotionDate((pr[s.date] || {}).date);
+      if (!d) continue;
+      out.push({ nid: pg.id, title: ((pr[s.title] || {}).title || []).map((t) => t.plain_text).join('') || '(제목 없음)', ...d, memo: ((pr[s.memo] || {}).rich_text || []).map((t) => t.plain_text).join(''), cat: s.cat && (pr[s.cat] || {}).select ? pr[s.cat].select.name : '' });
+    }
+    if (!r.has_more) break;
+    cursor = r.next_cursor;
+  }
+  return out;
+}
+const sameKey = (a, b) => { a = String(a); b = String(b); if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+async function calHandle(req, env, json) {
+  if (!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY)) return json({ error: 'not configured' }, 503);
+  if (!sameKey(req.headers.get('x-cal-key') || '', env.CAL_KEY)) return json({ error: 'forbidden' }, 403);
+  let b;
+  try { b = await req.json(); } catch { return json({ error: 'bad request' }, 400); }
+  try {
+    const s = await calSchema(env);
+    if (!s.title || !s.date) return json({ error: 'DB에 제목·날짜 속성이 없어요' }, 422);
+    if (b.op === 'check') return json({ ok: true, db: s.name, title: s.title, date: s.date, memo: s.memo, cat: s.cat, status: s.status, statusOpt: s.statusOpt });
+    const from = YMD.test(b.from || '') ? b.from : '', to = YMD.test(b.to || '') ? b.to : '';
+    if (b.op !== 'sync' || !from || !to) return json({ error: 'bad request' }, 400);
+    const map = {}, failed = [], deleted = [];
+    for (const x of (Array.isArray(b.push) ? b.push : []).slice(0, 20)) {
+      const e = calClean(x);
+      if (!e || !x.ref) { failed.push(String(x.ref || '')); continue; }
+      try {
+        if (x.nid && UUID.test(x.nid)) { await nfetch(env, '/v1/pages/' + x.nid, 'PATCH', { properties: calProps(s, e, false) }); map[x.ref] = x.nid; }
+        else { const r = await nfetch(env, '/v1/pages', 'POST', { parent: { database_id: env.NOTION_DB_ID }, properties: calProps(s, e, true) }); map[x.ref] = r.id; }
+      } catch { failed.push(String(x.ref)); }
+    }
+    for (const nid of (Array.isArray(b.del) ? b.del : []).slice(0, 15)) {
+      if (!UUID.test(nid || '')) continue;
+      try { await nfetch(env, '/v1/pages/' + nid, 'PATCH', { archived: true }); deleted.push(nid); } catch (e) { if (e.status === 404 || e.status === 400) deleted.push(nid); }
+    }
+    return json({ ok: true, events: await calList(env, s, from, to), map, failed, deleted });
+  } catch (e) {
+    return json({ error: e.status === 401 ? 'Notion 토큰이 올바르지 않아요' : e.status === 404 ? 'Notion 데이터베이스를 찾지 못했어요. 통합에 데이터베이스를 연결(공유)했는지 확인해 주세요' : String(e.message || 'failed').slice(0, 160) }, 502);
+  }
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     const origin = req.headers.get('Origin') || '';
     const allowed = (env.ALLOWED_ORIGIN || 'https://linuscompany.co.kr').split(',').map((s) => s.trim());
     const okOrigin = allowed.includes(origin) || (env.ALLOW_LOCALHOST === '1' && /^http:\/\/localhost(:\d+)?$/.test(origin));
-    const cors = { 'Access-Control-Allow-Origin': okOrigin ? origin : allowed[0], 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'content-type', Vary: 'Origin' };
+    const cors = { 'Access-Control-Allow-Origin': okOrigin ? origin : allowed[0], 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'content-type, x-cal-key', Vary: 'Origin' };
     const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json', ...cors } });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (url.pathname === '/health') {
-      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), version: 2 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
+      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), version: 3 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
     }
     if (url.pathname === '/notify' && req.method === 'POST') {
       if (!okOrigin) return json({ error: 'forbidden' }, 403);
@@ -164,6 +265,11 @@ export default {
       } catch (e) {
         return json({ error: 'failed' }, 502);
       }
+    }
+    if (url.pathname === '/cal' && req.method === 'POST') {
+      if (!okOrigin) return json({ error: 'forbidden' }, 403);
+      if (throttled(req.headers.get('CF-Connecting-IP') || 'x')) return json({ error: 'slow down' }, 429);
+      return calHandle(req, env, json);
     }
     return json({ error: 'not found' }, 404);
   },
