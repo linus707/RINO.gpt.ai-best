@@ -2412,6 +2412,9 @@ function mTrim(){
   if(D.msgs.length>300){D.msgs.sort((a,b)=>a.t-b.t);D.msgs.splice(0,D.msgs.length-300)}
   let n=0;D.msgs.slice().sort((a,b)=>b.t-a.t).forEach(m=>{if(m.img&&++n>40)m.img=""});
 }
+/* "지금 시작해"·"네"·"고마워요" 같은 짧은 맞장구·재촉은 대화로만 보내고 업무(지시)로 만들지 않아요 */
+const mNudge=t=>{const s=String(t||"").replace(/@\S+/g,"").replace(/\s+/g," ").trim();if(!s||s.length>16)return false;
+  return /^(지금|바로|빨리|이제|그럼|자|네|응|예|넵|넹)?(?:[ ,]*(?:시작|진행|착수|출발|확인|계속|go|ok|okay|오케이|오케|알겠|알았|좋아|좋습니다|고마워|감사|수고)\S{0,6})+[.!?~ㅋㅎ ]*$/i.test(s)||/^(ㅇㅋ|ㅇㅇ|ㄱㄱ|넵|넹|네|응|예|굿|굿굿)[.!?~ㅋㅎ ]*$/.test(s)};
 async function mSend(){
   if(mBusy)return;
   const ta=$("#mmsg"),t=(ta?ta.value:mDraft).trim();if(!t&&!mFiles.length)return;
@@ -2436,6 +2439,7 @@ async function mSend(){
     const ai=(cur.ai||[]).filter(n=>agentOf(n));
     let who=ai.filter(n=>t.includes("@"+n));
     if(!who.length&&ai.length===1&&!(cur.members||[]).length)who=[ai[0]];
+    if(who.length&&mNudge(t)&&!aiFiles.length){who=[];toast("짧은 말은 대화로만 보냈어요 (업무로 만들지 않아요)")}
     const esc2=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),strip=new RegExp(who.map(n=>"@"+esc2(n)+"\\s*").join("|"),"g");
     who.forEach(n=>{
       const body=t.replace(strip,"").trim()||t||"첨부 자료를 보고 일해 주세요",ls=body.split("\n");
