@@ -580,7 +580,29 @@ function editLink(id){
 }
 function delLink(id){if(!isAdmin()||!confirm("이 채널 링크를 지울까요?"))return;D.set.links=D.set.links.filter(x=>x.id!==id);D.set.u=Date.now();save();render()}
 const pubRow=c=>{const d=c.pubAt?` · ${esc(c.pubAt)} 발행`:"";return c.pubUrl?`<div class="m" style="margin-top:4px"><a href="${esc(c.pubUrl)}" target="_blank" rel="noopener noreferrer">🔗 발행글 보기 · ${esc(hostOf(c.pubUrl))} ↗</a>${d} · <a href="#" onclick="pubEdit('${sid(c.id)}');return false">수정</a></div>`:`<div class="m" style="margin-top:4px">${d.slice(3)||"발행일 미입력"} · <a href="#" onclick="pubEdit('${sid(c.id)}');return false">🔗 발행 링크 추가</a></div>`};
-const phBtns=c=>{const t=D.tasks.find(x=>x.id===c.tk);return `<div class="m sub" style="margin-top:6px">⏳ ${esc(c.by||"직원")}이(가) 작업 중이에요. 결과가 오면 이 칸이 초안으로 바뀌어요.</div>${t&&!t.done?`<button class="pill" style="background:var(--ready);margin-top:6px" onclick="runNow('${sid(t.id)}')">⚡ 지금 바로 실행</button>`:""}`};
+let _nudgeClean=0;
+function cleanNudgePh(){
+  const bad=D.contents.filter(c=>c.ph&&mNudge(c.title));if(!bad.length)return;
+  bad.forEach(c=>{const t=D.tasks.find(x=>x.id===c.tk);if(t){t.hid=1;t.done=1;t.doneAt=today();t.doneBy="자동 정리"}});
+  D.contents=D.contents.filter(c=>!bad.includes(c));save();render(true);
+}
+const stampHM=t=>new Date(t).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+/* ▶ 시작: 저장소 지시/시작/<번호>.md 를 올리면 GitHub Actions가 직원을 깨워 일을 시켜요(브라우저·세션 연결 없이). 저장소에 CLAUDE_CODE_OAUTH_TOKEN(또는 ANTHROPIC_API_KEY)이 있어야 해요 */
+async function startNow(tid){
+  const x=D.tasks.find(t=>t.id===tid);if(!x)return;
+  if(!(CFG.repoWToken&&instrRepo())){alert("설정 > 지시함 연결(쓰기 토큰)을 먼저 해 주세요");return}
+  if(!x.inbox){await sendInbox(tid);if(!x.inbox)return}
+  const fid=String(x.id).replace(/[^\w-]/g,""),repo=instrRepo(),br=(CFG.repoBranch||"work").trim()||"work",path="지시/시작/"+fid+".md",H={Authorization:"Bearer "+CFG.repoWToken,Accept:"application/vnd.github+json"};
+  try{
+    let sha;try{const g=await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURI(path)}?ref=${encodeURIComponent(br)}`,{headers:H});if(g.ok)sha=(await g.json()).sha}catch{}
+    const body=`# 시작 요청\n- 번호: ${fid}\n- 담당: ${x.who}\n- 시각: ${new Date().toISOString()}\n- 보낸이: 대표(리노) · 앱 시작 버튼\n`;
+    const r=await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURI(path)}`,{method:"PUT",headers:{...H,"Content-Type":"application/json"},body:JSON.stringify({message:`시작 요청 ${fid}: ${x.who}`,content:b64enc(body),branch:br,...(sha?{sha}:{})})});
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")":(j.message||"저장하지 못했어요 ("+r.status+")"))}
+    x.startAt=Date.now();x.u=Date.now();const ph=x.ct&&D.contents.find(c=>c.id===x.ct);if(ph&&!ph.body)ph.memo=`${x.who} 시작 요청 ${stampHM(x.startAt)} · 1~2분 안에 일을 시작해요`;
+    save();render(true);toast("시작 요청을 보냈어요 · "+x.who+"이(가) 곧 일을 시작해요");
+  }catch(e){alert("시작 요청을 보내지 못했어요: "+(e.message||e))}
+}
+const phBtns=c=>{const t=D.tasks.find(x=>x.id===c.tk),can=t&&!t.done&&t.as!=="rep"&&t.as!=="ok";return `<div class="m sub" style="margin-top:6px">⏳ ${esc(c.by||"직원")}이(가) 작업 대기·진행 중이에요. 결과가 오면 이 칸이 초안으로 바뀌어요.</div>${can?`<button class="pill" style="background:var(--make);margin-top:6px" onclick="startNow('${sid(t.id)}')">${t.startAt?"↻ 다시 시작 ("+stampHM(t.startAt)+" 요청함)":"▶ 시작"}</button> <a href="#" class="m sub" onclick="runNow('${sid(t.id)}');return false">복사로 실행</a>`:""}`};
 const contentItem=c=>`<div class="item"><div class="row"><input type="checkbox" class="csel" ${cSel.has(c.id)?"checked":""} onchange="cPick('${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.stage==="done"?pubRow(c):""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:c.ph?phBtns(c):aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${stSel(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
 
 const BRAND_URL={"트립":"https://www.instagram.com/ellttoong.trip/"};
@@ -604,6 +626,7 @@ home(){
 },
 contents(){
   const q=(window._q||"").toLowerCase();
+  if(!_nudgeClean){_nudgeClean=1;setTimeout(cleanNudgePh,0)}
   const all=D.contents.filter(c=>(chF==="all"||c.ch===chF)&&(c.title+c.memo).toLowerCase().includes(q));
   const cnt=k=>all.filter(c=>stKey(c.stage)===k).length,live=all.filter(c=>c.stage!=="done").length;
   if(cStage===null)cStage=["report","review","make","idea"].find(k=>cnt(k))||"all";
@@ -2418,7 +2441,7 @@ function mTrim(){
 }
 /* "지금 시작해"·"네"·"고마워요" 같은 짧은 맞장구·재촉은 대화로만 보내고 업무(지시)로 만들지 않아요 */
 const mNudge=t=>{const s=String(t||"").replace(/@\S+/g,"").replace(/\s+/g," ").trim();if(!s||s.length>16)return false;
-  return /^(지금|바로|빨리|이제|그럼|자|네|응|예|넵|넹)?(?:[ ,]*(?:시작|진행|착수|출발|확인|계속|go|ok|okay|오케이|오케|알겠|알았|좋아|좋습니다|고마워|감사|수고)\S{0,6})+[.!?~ㅋㅎ ]*$/i.test(s)||/^(ㅇㅋ|ㅇㅇ|ㄱㄱ|넵|넹|네|응|예|굿|굿굿)[.!?~ㅋㅎ ]*$/.test(s)};
+  return /^(?:(?:지금|바로|빨리|이제|그럼|자|네|응|예|넵|넹)[ ,]*)*(?:[ ,]*(?:시작|진행|착수|출발|확인|계속|go|ok|okay|오케이|오케|알겠|알았|좋아|좋습니다|고마워|감사|수고)\S{0,6})+[.!?~ㅋㅎ ]*$/i.test(s)||/^(ㅇㅋ|ㅇㅇ|ㄱㄱ|넵|넹|네|응|예|굿|굿굿)[.!?~ㅋㅎ ]*$/.test(s)};
 async function mSend(){
   if(mBusy)return;
   const ta=$("#mmsg"),t=(ta?ta.value:mDraft).trim();if(!t&&!mFiles.length)return;
