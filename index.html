@@ -316,7 +316,7 @@ const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿
 const ST=[["idea","착수","--idea"],["report","보고","--ready"],["make","제작중","--make"],["review","검수","--review"],["done","발행완료","--done"]];
 const stKey=k=>k==="ready"?"review":k;
 const PAGES=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["dday","⏳","디데이"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
-const NAV_GROUPS=[["",["home","messenger"]],["일하기",["tasks","schedule","dday","proto","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
+const NAV_GROUPS=[["",["home","messenger"]],["일하기",["schedule","dday","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
   try{
@@ -512,7 +512,7 @@ const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼
   </div></div>`};
 bgAll().then(l=>{BG.list=l;if(l.length)render()});
 /* 하단 탭 */
-const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["schedule","📅","일정"],["messenger","💬","메신저"],["tasks","✅","업무"]];
+const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["schedule","📅","일정"],["messenger","💬","메신저"]];
 const tabsNow=()=>TABS_BASE;
 function tabbar(){
   const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
@@ -2092,14 +2092,13 @@ let schColor="";
 const SS=(()=>{try{return JSON.parse(localStorage.getItem("rino-sch"))||{}}catch{return{}}})();
 const schSaveSS=()=>{try{localStorage.setItem("rino-sch",JSON.stringify(SS))}catch{}};
 let schM=today().slice(0,7),schSel=today(),schEdit="";
-const schLay=()=>({content:SS.content!==0,task:SS.task!==0});
+const schLay=()=>({content:SS.content!==0});
 const p2=n=>String(n).padStart(2,"0");
 const WD=["일","월","화","수","목","금","토"];
 function schItems(date){
   const out=[],L=schLay();
   D.events.forEach(e=>{const end=e.end&&e.end>=e.date?e.end:e.date;if(date>=e.date&&date<=end)out.push({src:"ev",id:e.id,title:e.title,time:e.time||"",color:evColor(e),label:schCat(e.cat)[1],e})});
   if(L.content)D.contents.forEach(c=>{if(c.due===date)out.push({src:"ct",id:c.id,title:c.title,time:"",color:"#5ac8fa",label:"컨텐츠 마감",c})});
-  if(L.task)vtasks().forEach(t=>{if(!t.done&&t.due===date)out.push({src:"tk",id:t.id,title:t.title,time:"",color:"#8e8e93",label:"업무 마감"})});
   return out.sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
 }
 function schMove(n){const[y,m]=schM.split("-").map(Number),d=new Date(y,m-1+n,1);schM=d.getFullYear()+"-"+p2(d.getMonth()+1);schEdit="";render()}
@@ -2248,7 +2247,7 @@ views.schedule=()=>{
     <div class="row" style="gap:8px"><button class="btn grow" onclick="schSave()">${schEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="schCancel()">취소</button></div></div>`:"";
   return `<h1>일정표</h1><div class="sub">날짜에는 제목만 보여요. 일정을 누르면 내용을 자세히 볼 수 있어요</div>
   <div class="row" style="gap:8px;margin:6px 0 10px"><button class="icon" onclick="schMove(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center;font-size:18px">${y}년 ${m}월</b><button class="icon" onclick="schMove(1)" aria-label="다음 달">›</button><button class="pill" style="background:var(--make)" onclick="schNow()">이번 달</button></div>
-  <div class="chips">겹쳐 보기 <button class="${L.content?"on":""}" onclick="schLayer('content')">컨텐츠 마감</button><button class="${L.task?"on":""}" onclick="schLayer('task')">업무 마감</button></div>
+  <div class="chips">겹쳐 보기 <button class="${L.content?"on":""}" onclick="schLayer('content')">컨텐츠 마감</button></div>
   <div class="sgrid">${WD.map((w,i)=>`<div class="swd ${i===0?"sun":""}">${w}</div>`).join("")}${grid}</div>
   <div class="m sub" style="margin:6px 2px 10px">이번 달 일정 ${total}건 · ${SCH_CATS.map(c=>`<span style="color:${c[2]}">●</span> ${c[1]}`).join("  ")}${calReady()?` · <a href="#" onclick="calSync(true);return false">🔄 Notion 동기화</a>`:""}</div>
   <div class="card" style="border-color:${schSel===td?"var(--g)":"var(--line)"}"><h3>${sd.getMonth()+1}월 ${sd.getDate()}일 (${WD[sd.getDay()]})${schSel===td?" · 오늘":""} <button class="pill" style="background:var(--make);float:right" onclick="schNew()">＋ 일정 추가</button></h3><div class="body">${sel.map(row).join("")||'<div class="empty">이 날 일정이 없어요</div>'}${form}</div></div>`;
