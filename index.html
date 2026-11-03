@@ -274,6 +274,7 @@ body.staff .del{display:none}
  .fab.chat{right:28px;bottom:100px}
 }
 body.out main{max-width:760px;margin:0 auto}
+.docimg{max-width:100%;border-radius:12px;margin:8px 0;display:block;background:#f4efe9;min-height:40px}
 </style>
 </head>
 <body>
@@ -1297,6 +1298,8 @@ function openDoc(id){docId=id;docTab="body";go("doc")}
 function md(src){
   return String(src||"").split("\n").map(l=>{
     if(/^\s*-{3,}\s*$/.test(l))return "<hr>";
+    {const im=/^\s*!\[([^\]]*)\]\(([^)\s]+)\)\s*$/.exec(l);
+     if(im){const rp=im[2];return /^[\w가-힣 ._\-\/\[\]()]+\.(png|jpe?g|webp|gif)$/i.test(rp)&&!/(^|\/)\.\.(\/|$)|^\//.test(rp)?`<img class="docimg" data-rp="${esc(rp)}" alt="${esc(im[1])}">`:""}}
     if(/^[|\s:-]+$/.test(l)&&l.includes("|"))return "";
     let t=l.startsWith("|")?l.split("|").slice(1,-1).map(c=>c.trim()).join(" — "):l;
     let head=/^#{1,3}\s+/.test(t);if(head)t=t.replace(/^#{1,3}\s+/,"");
@@ -1371,7 +1374,21 @@ function clip(txt,okMsg){
   const fb=()=>prompt("복사해서 사용해 주세요",txt);
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>alert(okMsg),fb);else fb();
 }
-function copyDoc(id){const c=D.contents.find(x=>x.id===id);clip(docTab==="report"?c.report:c.body,"복사했어요")}
+function copyDoc(id){const c=D.contents.find(x=>x.id===id),t=docTab==="report"?c.report:c.body;clip(String(t||"").split("\n").filter(l=>!/^\s*!\[[^\]]*\]\([^)]*\)\s*$/.test(l)).join("\n"),"복사했어요")}
+/* 초안 속 시안 이미지(작업 폴더 상대경로)를 읽기 토큰으로 가져와 보여줘요 */
+const DOCIMG={};
+function hydrateDocImgs(){
+  const repo=(CFG.repo||"").trim(),br=(CFG.repoBranch||"work").trim(),c=D.contents.find(x=>x.id===docId);
+  const note=(im,t)=>im.replaceWith(Object.assign(document.createElement("div"),{className:"m sub",textContent:"🖼 "+(im.alt||im.dataset.rp)+" ("+t+")"}));
+  document.querySelectorAll("img.docimg").forEach(im=>{
+    const rp=im.dataset.rp,key=(c&&c.src||"")+"/"+rp;
+    if(DOCIMG[key]){im.src=DOCIMG[key];return}
+    if(!c||!c.src||!CFG.repoToken||!repoOk(repo)){note(im,"설정에서 작업 폴더 읽기 토큰을 저장하면 보여요");return}
+    fetch(`https://api.github.com/repos/${repo}/contents/${encodeURI("작업/"+c.src+"/"+rp)}?ref=${encodeURIComponent(br)}`,{headers:{Authorization:"Bearer "+CFG.repoToken,Accept:"application/vnd.github.raw"}})
+      .then(r=>{if(!r.ok)throw 0;return r.blob()}).then(b=>{DOCIMG[key]=URL.createObjectURL(b);im.src=DOCIMG[key]})
+      .catch(()=>note(im,"불러오지 못했어요"));
+  });
+}
 function copyTitle(id){const c=D.contents.find(x=>x.id===id);clip(c.title,"제목을 복사했어요")}
 function importContent(f){
   if(!f||!isAdmin())return;
@@ -3226,6 +3243,7 @@ function render(keepFocus){
   if(page==="messenger")msgrBefore();
   $("#app").innerHTML=views[page]();
   if(page==="settings"){sdRestore();connApplyLock()}
+  if(page==="doc")setTimeout(hydrateDocImgs,0);
   if(page==="messenger")msgrAfter();
   if(page==="chat"){const lg=$("#chatlog");if(lg)lg.scrollTop=lg.scrollHeight}
   if(page==="chat"||page==="home"||page==="messenger")pollResults(false);
