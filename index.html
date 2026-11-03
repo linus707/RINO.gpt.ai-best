@@ -133,6 +133,8 @@ input[type=date]{min-height:44px}
 input[type=file]{padding:9px 10px}
 .chk{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:.5px solid var(--sep)}.chk:last-child{border-bottom:0}
 .done{text-decoration:line-through;color:var(--mut)}
+.tdbar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:4px 0 12px}.tdbar i{display:block;height:100%;background:var(--g);border-radius:99px;transition:width .3s}
+.tdadd{display:flex;gap:8px;margin:0 0 6px}.tdadd input{flex:1;min-width:0}.tdadd .btn{flex:0 0 auto;padding:10px 16px}
 .qty{display:flex;align-items:center;gap:8px}.qty button{width:32px;height:32px;border-radius:50%;border:0;background:var(--fill);font-size:18px}
 /* 세그먼트 컨트롤 */
 .tabs{display:flex;gap:2px;background:var(--fill);border-radius:9px;padding:2px;margin:12px 0;overflow:auto;-webkit-backdrop-filter:none;backdrop-filter:none}
@@ -310,17 +312,18 @@ const IC={
  more:'<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
 };
 const ic=(k,z=22)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||IC.more}</svg>`;
-IC.messenger=IC.chat;IC.chat='<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/>';IC.schedule=IC.calendar;IC.dday='<path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5c0 4 4 5 4 8.5s-4 4.5-4 8.5M16 3.5c0 4-4 5-4 8.5s4 4.5 4 8.5"/>';IC.proto='<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5h5V7h-5zM9 12h6M9 15.5h4"/>';IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
+IC.todo=IC.tasks;IC.messenger=IC.chat;IC.chat='<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/>';IC.schedule=IC.calendar;IC.dday='<path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5c0 4 4 5 4 8.5s-4 4.5-4 8.5M16 3.5c0 4-4 5-4 8.5s4 4.5 4 8.5"/>';IC.proto='<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5h5V7h-5zM9 12h6M9 15.5h4"/>';IC.inventory='<path d="M3.5 8 12 4l8.5 4v8L12 20l-8.5-4Z"/><path d="M3.5 8 12 12l8.5-4M12 12v8"/>';
 IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>';
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","착수","--idea"],["report","보고","--ready"],["make","제작중","--make"],["review","검수","--review"],["done","발행완료","--done"]];
 const stKey=k=>k==="ready"?"review":k;
-const PAGES=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["dday","⏳","디데이"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
-const NAV_GROUPS=[["",["home","messenger"]],["일하기",["schedule","dday","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
+const PAGES=[["home","🏠","홈"],["todo","☑️","오늘 할 일",1],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["dday","⏳","디데이"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const NAV_GROUPS=[["",["home","messenger"]],["일하기",["todo","schedule","dday","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
   try{
     if(k==="messenger")return msgUnreadAll();
+    if(k==="todo")return isAdmin()?tdLeft():0;
     if(k==="chat")return pendingAI();
     if(k==="inventory")return invLowN()+(isAdmin()?invReqN():0);
     if(k==="proto")return ptRuns().length;
@@ -335,11 +338,14 @@ const today=()=>ymd(new Date());
 const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],ledger:[],prices:[],dday:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
+/* 오늘 할 일: 매일 루틴(D.routine, 날마다 체크 초기화) + 오늘만 할 일(D.todo) */
+const RT_TEST=["[테스트] 아침에 물 한 잔 마시기","[테스트] 오늘 할 일 3개 적기"];
+const RT_OLD="아침 스트레칭|컨텐츠 1개 진행|댓글·DM 확인|수익 지표 체크|내일 할 일 3개 적기";
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],ledger:[],prices:[],dday:[],todo:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
-  routine:{date:today(),items:[["아침 스트레칭",0],["컨텐츠 1개 진행",0],["댓글·DM 확인",0],["수익 지표 체크",0],["내일 할 일 3개 적기",0]]}});
-const norm=d=>{const s=seed();d={...s,...d};d.set={...s.set,...(d.set||{})};d.del=d.del||{};if(typeof d.goal==="number"){if(!d.set.u)d.set.goal=d.goal;delete d.goal}if(!d.routine||d.routine.date!==today())d.routine={date:today(),items:(d.routine||s.routine).items.map(([n])=>[n,0])};return d};
+  routine:{date:today(),u:0,items:RT_TEST.map(n=>[n,0])}});
+const norm=d=>{const s=seed();d={...s,...d};d.set={...s.set,...(d.set||{})};d.del=d.del||{};if(typeof d.goal==="number"){if(!d.set.u)d.set.goal=d.goal;delete d.goal}if(d.routine&&!d.routine.u&&d.routine.items.map(x=>String(x[0]).replace("콘텐츠","컨텐츠")).join("|")===RT_OLD)d.routine={date:"",u:1,items:RT_TEST.map(n=>[n,0])};if(!d.routine||d.routine.date!==today())d.routine={date:today(),u:(d.routine||{}).u||0,items:(d.routine||s.routine).items.map(([n])=>[n,0])};return d};
 let FRESH_BOOT=false;try{FRESH_BOOT=!localStorage.getItem("rino-ws")}catch{}
 let D;try{D=norm(JSON.parse(localStorage.getItem("rino-ws"))||{})}catch{D=norm({})}
 let page="home",tab="open",chF="all";
@@ -377,7 +383,7 @@ function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs","ledger","prices","dday"];
+const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs","ledger","prices","dday","todo"];
 let SNAP={};
 const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
 resnap();
@@ -400,8 +406,10 @@ function merge(a,b){
     o[l].sort((x,y)=>(order.has(x.id)?order.get(x.id):-1)-(order.has(y.id)?order.get(y.id):-1)||0);
   });
   o.set=(b.set.u||0)>(a.set.u||0)?b.set:a.set;
-  if(a.routine.date===b.routine.date){o.routine={date:a.routine.date,items:a.routine.items.map((x,i)=>[x[0],(x[1]||(b.routine.items[i]&&b.routine.items[i][1]))?1:0])}}
-  else o.routine=a.routine.date>b.routine.date?a.routine:b.routine;
+  /* 루틴: 항목 목록은 나중에 고친 쪽, 체크는 같은 날짜끼리 이름으로 합쳐요 */
+  {const ra=a.routine,rb=b.routine,base=(rb.u||0)>(ra.u||0)?rb:ra,dt=ra.date>=rb.date?ra.date:rb.date;
+   const on=new Set([ra,rb].filter(r=>r.date===dt).flatMap(r=>r.items.filter(x=>x[1]).map(x=>x[0])));
+   o.routine={date:dt,u:base.u||0,items:base.items.map(x=>[x[0],on.has(x[0])?1:0])}}
   return o;
 }
 const persist=()=>{try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}};
@@ -513,7 +521,7 @@ const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼
 bgAll().then(l=>{BG.list=l;if(l.length)render()});
 /* 하단 탭 */
 const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["schedule","📅","일정"],["messenger","💬","메신저"]];
-const tabsNow=()=>TABS_BASE;
+const tabsNow=()=>isAdmin()?[TABS_BASE[0],["todo","☑️","할 일"],...TABS_BASE.slice(1)]:TABS_BASE;
 function tabbar(){
   const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
 }
@@ -666,6 +674,22 @@ sop(){
   return `<h1>나만의 SOP</h1><div class="sub">반복 작업을 체크리스트로 만들어 두세요 (줄바꿈으로 단계 구분)</div>
   <div class="form"><input id="pn" placeholder="SOP 이름"><textarea id="ps" rows="4" placeholder="단계 1&#10;단계 2&#10;단계 3"></textarea><button class="btn" onclick="addSop()">＋ SOP 추가</button></div>
   ${D.sop.map(p=>`<div class="card"><h3>${esc(p.title)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('sop','${p.id}')">✕</button></h3><div class="body"><ol style="margin:0;padding-left:20px">${p.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div></div>`).join("")}`;
+},
+todo(){
+  const t=today(),sd=new Date(t+"T00:00:00"),r=D.routine.items,L=tdList(),tot=r.length+L.length,dn=r.filter(x=>x[1]).length+L.filter(x=>x.done).length,pc=tot?Math.round(dn/tot*100):0;
+  const carry=x=>x.date<t&&!x.done?` <span class="m" style="color:var(--accent)">· ${tdAgo(x.date)}부터</span>`:"";
+  return `<h1>오늘 할 일</h1><div class="sub">${sd.getMonth()+1}월 ${sd.getDate()}일 (${WD[sd.getDay()]}) · 하나씩 체크해 나가요</div>
+  <div class="stats">${stat("오늘 달성",dn+" / "+tot,1)}${stat("달성률",pc+"%")}</div>
+  <div class="tdbar"><i style="width:${pc}%"></i></div>
+  <div class="card"><h3>매일 루틴 <button class="pill" style="background:var(--g)" onclick="tdEditRt=!tdEditRt;render()">${tdEditRt?"편집 끝":"편집"}</button></h3><div class="body">
+    <div class="m sub" style="margin-top:0">매일 아침 자동으로 체크가 풀려요</div>
+    ${r.map((x,i)=>`<div class="chk"><input type="checkbox" ${x[1]?"checked":""} onchange="rtTog(${i},this.checked)"><div class="grow ${x[1]?"done":""}">${esc(x[0])}</div>${tdEditRt?`<button class="icon del" style="width:32px;height:32px" onclick="rtDel(${i})" aria-label="루틴 삭제">✕</button>`:""}</div>`).join("")||'<div class="empty">루틴이 없어요. 편집을 눌러 추가해 주세요</div>'}
+    ${tdEditRt?`<div class="tdadd"><input id="rtin" placeholder="매일 할 루틴 (예: 스트레칭 10분)" maxlength="80" onkeydown="if(event.key==='Enter'&&!event.isComposing)rtAdd()"><button class="btn" onclick="rtAdd()">추가</button></div>`:""}
+  </div></div>
+  <div class="card"><h3>오늘만 할 일</h3><div class="body">
+    <div class="tdadd"><input id="tdin" placeholder="오늘 할 일을 적고 Enter" maxlength="120" onkeydown="if(event.key==='Enter'&&!event.isComposing)tdAdd()"><button class="btn" onclick="tdAdd()">추가</button></div>
+    ${L.map(x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="tdTog('${sid(x.id)}',this.checked)"><div class="grow ${x.done?"done":""}">${esc(x.title)}${carry(x)}</div><button class="icon del" style="width:32px;height:32px" onclick="tdDel('${sid(x.id)}')" aria-label="할 일 삭제">✕</button></div>`).join("")||'<div class="empty">오늘 할 일을 적어 보세요. 못 끝낸 일은 내일로 넘어가요</div>'}
+  </div></div>`;
 },
 routine(){
   const r=D.routine.items,d=r.filter(x=>x[1]).length;
@@ -2102,7 +2126,7 @@ function homeToday(){
     ${notices.map(m=>`<div class="schrow" style="cursor:pointer" onclick="homeNotice()"><i class="schbar" style="background:var(--accent)"></i><div class="grow"><div class="t" style="font-weight:500;white-space:pre-wrap">${esc((m.text||"[사진]").replace(/\s+/g," ").slice(0,90))}${m.img?" 📷":""}</div><div class="m">${homeDay(m.t)} · ${esc(dn(m.by))}</div></div></div>`).join("")||`<div class="empty">아직 공지가 없어요${isAdmin()?" · 메신저의 공지사항에 글을 올리면 여기에 보여요":""}</div>`}
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="homeNotice()">공지 전체 보기</button>${isAdmin()?`<button class="pill" style="background:var(--make)" onclick="homeNotice()">공지 쓰기</button>`:""}</div></div></div>`;
   const wi=ddWidgetItems().slice(0,3),ddc=`<div class="card hcard"><h3>디데이</h3><div class="body">${wi.map(o=>`<div class="schrow" style="cursor:pointer" onclick="go('dday')"><i class="schbar" style="background:${o.color}"></i><div class="grow"><div class="t">${esc(o.title)}</div><div class="m">${esc(o.sub)}</div></div><b style="color:${o.color};font-size:18px">${esc(o.label)}</b></div>`).join("")||'<div class="m sub">고정한 디데이가 없어요</div>'}<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="go('dday')">디데이 열기</button></div></div></div>`;
-  return `<div class="hgrid">${sch}${ddc}${nt2}</div>`;
+  return `<div class="hgrid">${homeTodo()}${sch}${ddc}${nt2}</div>`;
 }
 
 /* ---------- 일정표 (월간 달력 · 날짜별 일정 · 컨텐츠/업무 마감 겹쳐 보기) ----------
@@ -3191,6 +3215,28 @@ function render(keepFocus){
   if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
   if(PENDING_PRC&&isAdmin()&&!LOCKED)setTimeout(prcPending,0);
   try{ddRefresh()}catch{}
+}
+/* ---------- 오늘 할 일 ---------- */
+let tdEditRt=false;
+const tdList=()=>{const t=today();return D.todo.filter(x=>x.date===t||(x.date<t&&(!x.done||x.doneAt===t))).sort((a,b)=>(a.done-b.done)||((a.date||"").localeCompare(b.date||"")))};
+const tdLeft=()=>D.routine.items.filter(x=>!x[1]).length+tdList().filter(x=>!x.done).length;
+const tdAgo=d=>{const n=Math.round((new Date(today()+"T00:00:00")-new Date(d+"T00:00:00"))/864e5);return n===1?"어제":n+"일 전"};
+function tdAdd(){const e=$("#tdin"),v=(e&&e.value||"").trim().slice(0,120);if(!v)return;D.todo.push({id:uid(),title:v,date:today(),done:0,doneAt:null});save();render();setTimeout(()=>{const n=$("#tdin");if(n)n.focus()},0)}
+function tdTog(id,on){const x=D.todo.find(t=>t.id===id);if(!x)return;x.done=on?1:0;x.doneAt=on?today():null;save();render()}
+function tdDel(id){D.todo=D.todo.filter(t=>t.id!==id);save();render()}
+function rtTog(i,on){const x=D.routine.items[i];if(!x)return;x[1]=on?1:0;save();render()}
+function rtAdd(){const e=$("#rtin"),v=(e&&e.value||"").trim().slice(0,80);if(!v)return;if(D.routine.items.some(x=>x[0]===v)){alert("같은 이름의 루틴이 이미 있어요");return}D.routine.items.push([v,0]);D.routine.u=Date.now();save();render();setTimeout(()=>{const n=$("#rtin");if(n)n.focus()},0)}
+function rtDel(i){const x=D.routine.items[i];if(!x||!confirm(`'${x[0]}' 루틴을 지울까요?`))return;D.routine.items.splice(i,1);D.routine.u=Date.now();save();render()}
+/* 홈 카드: 남은 할 일 몇 개를 바로 체크 */
+function homeTodo(){
+  if(!isAdmin())return "";
+  const r=D.routine.items,L=tdList(),tot=r.length+L.length,dn=r.filter(x=>x[1]).length+L.filter(x=>x.done).length,pc=tot?Math.round(dn/tot*100):0;
+  const left=[...r.map((x,i)=>({k:"r",i,t:x[0],d:x[1]})),...L.map(x=>({k:"t",id:x.id,t:x.title,d:x.done}))].filter(x=>!x.d);
+  return `<div class="card hcard"><h3>오늘 할 일 <span class="m sub" style="margin:0">${dn} / ${tot} · ${pc}%</span></h3><div class="body">
+    <div class="tdbar" style="margin:0 0 6px"><i style="width:${pc}%"></i></div>
+    ${left.slice(0,4).map(x=>`<div class="chk"><input type="checkbox" onchange="${x.k==="r"?`rtTog(${x.i},true)`:`tdTog('${sid(x.id)}',true)`}"><div class="grow">${esc(x.t)}</div></div>`).join("")||`<div class="empty">${tot?"오늘 할 일을 모두 끝냈어요 👏":"아직 오늘 할 일이 없어요"}</div>`}
+    ${left.length>4?`<div class="m sub">외 ${left.length-4}개</div>`:""}
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="go('todo')">할 일 열기</button></div></div></div>`;
 }
 /* 애플 느낌: 제목·버튼 앞의 이모지는 지우고 글자만 보여줘요 */
 const EMO=/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,EMO_SEL=".card h3,.btn,.pill,.sheet b,.hero .mono,.chathead,.bubble .m,.stchips span,h1";
