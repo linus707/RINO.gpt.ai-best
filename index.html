@@ -590,7 +590,7 @@ function delLink(id){if(!isAdmin()||!confirm("이 채널 링크를 지울까요?
 const pubRow=c=>{const d=c.pubAt?` · ${esc(c.pubAt)} 발행`:"";return c.pubUrl?`<div class="m" style="margin-top:4px"><a href="${esc(c.pubUrl)}" target="_blank" rel="noopener noreferrer">🔗 발행글 보기 · ${esc(hostOf(c.pubUrl))} ↗</a>${d} · <a href="#" onclick="pubEdit('${sid(c.id)}');return false">수정</a></div>`:`<div class="m" style="margin-top:4px">${d.slice(3)||"발행일 미입력"} · <a href="#" onclick="pubEdit('${sid(c.id)}');return false">🔗 발행 링크 추가</a></div>`};
 let _nudgeClean=0;
 function cleanNudgePh(){
-  const bad=D.contents.filter(c=>c.ph&&mNudge(c.title));if(!bad.length)return;
+  const bad=D.contents.filter(c=>c.ph&&mNudge(c.title));if(!bad.length){if(resolvePh()){save();render(true)}return}
   bad.forEach(c=>{const t=D.tasks.find(x=>x.id===c.tk);if(t){t.hid=1;t.done=1;t.doneAt=today();t.doneBy="자동 정리"}});
   D.contents=D.contents.filter(c=>!bad.includes(c));save();render(true);
 }
@@ -1239,6 +1239,8 @@ async function syncInbox(){
       if(!to)continue;
       const rep=((txt.split("\n## 보고")[1]||"").trim().split("\n").filter(l=>l.trim()&&!l.startsWith("###")).slice(0,6).join("\n")).slice(0,500);
       const rej=st==="반려"?1:0;
+      const rsm=/작업\/(\d{4}-\d{2}-\d{2}_[^\s\/`"'»]+)/.exec(txt.split("\n## 보고")[1]||""),rsf=rsm?rsm[1].replace(/[),.;:]+$/,""):"";
+      if(rsf&&x.resSrc!==rsf){x.resSrc=rsf;x.u=Date.now();ch++}
       const moved=x.as!==to,key=to+"|"+rej;
       if(moved||(x.rep||"")!==rep||!!x.rej!==!!rej){x.as=to;x.rep=rep;x.rej=rej;x.u=Date.now();ch++;
         const ph=x.ct&&D.contents.find(c=>c.id===x.ct);if(ph&&!ph.body){ph.memo=`${x.who} ${asInfo(to)[1]}${rep?" · "+rep.split("\n")[0].slice(0,80):""}`;if(to==="rep"&&ph.stage==="idea")ph.stage="report"}}
@@ -1246,8 +1248,19 @@ async function syncInbox(){
       if(to==="ok"&&!x.done){x.done=1;x.doneAt=today();x.doneBy="영환(검증)";ch++}
     }catch{}
   }
+  ch+=resolvePh();
   if(ch){save();render()}
   return ch;
+}
+/* 메신저 지시로 만든 '착수 자리'와 직원이 올린 초안이 둘 다 있으면 하나로 합쳐요(보고서에 적힌 결과 폴더로 정확히 연결) */
+function resolvePh(){
+  let n=0;
+  D.tasks.forEach(t=>{
+    if(!t.ct||!t.resSrc)return;
+    const real=D.contents.find(c=>c.src===t.resSrc),ph=D.contents.find(c=>c.id===t.ct&&c.ph);
+    if(real&&ph){D.contents=D.contents.filter(c=>c!==ph);if(!t.res)t.res=real.id;if(t.as!=="ok")t.as="rep";delete t.ct;n++}
+  });
+  return n;
 }
 const outSpec=x=>{
   const tag=x.brand?`[${x.brand}]`:"[트립|슬립|포토|공통 중 하나]";
@@ -1434,10 +1447,13 @@ async function importRepo(silent){
         if(ex.stage===ex.srcStage)ex.stage=stage;
         Object.assign(ex,{report:cut(report,100000),memo,brand,srcSig:sig,srcStage:stage,srcTitle:title});if(!ex.edited)ex.body=cut(sp.body,100000);updated++;
       }else{
-        D.contents.unshift({id:uid(),title,ch:REPO_CH[brand]||"blog",stage,due:"",memo,by,body:cut(sp.body,100000),report:cut(report,100000),brand,src:name,srcSig:sig,srcStage:stage,srcTitle:title});added++;
+        const pht=D.tasks.find(t=>t.ct&&t.resSrc===name),phc=pht&&D.contents.find(c=>c.id===pht.ct&&c.ph);
+        if(phc){Object.assign(phc,{title,ch:REPO_CH[brand]||"blog",stage,memo,by,body:cut(sp.body,100000),report:cut(report,100000),brand,src:name,srcSig:sig,srcStage:stage,srcTitle:title});delete phc.ph;delete phc.tk;pht.res=phc.id;if(pht.as!=="ok")pht.as="rep";delete pht.ct;updated++}
+        else{D.contents.unshift({id:uid(),title,ch:REPO_CH[brand]||"blog",stage,due:"",memo,by,body:cut(sp.body,100000),report:cut(report,100000),brand,src:name,srcSig:sig,srcStage:stage,srcTitle:title});added++}
       }
     }
     CFG.repoLast=Date.now();saveCfg();
+    updated+=resolvePh();
     if(added||updated){save();render()}
     linkResults();
     say(added||updated?`새 글 ${added}건, 갱신 ${updated}건을 불러왔어요`:"새로 바뀐 글이 없어요 (이미 최신이에요)");
@@ -2914,10 +2930,11 @@ function qInput(){const w=$("#qwho"),m=$("#qmsg"),h=$("#qhint");if(h&&w&&m)h.inn
 function qUse(n){const w=$("#qwho");if(w){w.value=n;qWho=n}qInput()}
 /* 결과 연결: 지시한 직원 이름으로 work 폴더 글이 도착하면 업무를 '보고 도착'으로 바꾸고 연결해요 */
 function linkResults(){
-  const used=new Set(D.tasks.map(t=>t.res).filter(Boolean));let ch=0;
+  let ch=resolvePh();
+  const used=new Set(D.tasks.map(t=>t.res).filter(Boolean));
   const cands=D.contents.filter(c=>c.src).slice().sort((a,b)=>a.src.localeCompare(b.src));
   D.tasks.slice().reverse().forEach(t=>{
-    if(!t.out||t.done||t.res||!t.at||t.as==="ok"||!agentNames().has(t.who))return;
+    if(!t.out||t.done||t.res||!t.at||t.as==="ok"||t.ct||!agentNames().has(t.who))return;
     const day=ymd(new Date(t.at)),c=cands.find(c=>c.by===t.who&&c.src.slice(0,10)>=day&&!used.has(c.id));
     if(c){t.res=c.id;used.add(c.id);t.as="rep";ch++;if(t.ct){D.contents=D.contents.filter(x=>x.id!==t.ct);delete t.ct}}
   });
