@@ -324,7 +324,7 @@ function navBadge(k){
     if(k==="chat")return pendingAI();
     if(k==="inventory")return invLowN()+(isAdmin()?invReqN():0);
     if(k==="proto")return ptRuns().length;
-    if(k==="tasks"){const t=today(),n=curName();return D.tasks.filter(x=>!x.done&&x.who===n&&x.due&&x.due<=t).length}
+    if(k==="tasks"){const t=today(),n=curName();return vtasks().filter(x=>!x.done&&x.who===n&&x.due&&x.due<=t).length}
   }catch{}
   return 0;
 }
@@ -580,7 +580,8 @@ function editLink(id){
 }
 function delLink(id){if(!isAdmin()||!confirm("이 채널 링크를 지울까요?"))return;D.set.links=D.set.links.filter(x=>x.id!==id);D.set.u=Date.now();save();render()}
 const pubRow=c=>{const d=c.pubAt?` · ${esc(c.pubAt)} 발행`:"";return c.pubUrl?`<div class="m" style="margin-top:4px"><a href="${esc(c.pubUrl)}" target="_blank" rel="noopener noreferrer">🔗 발행글 보기 · ${esc(hostOf(c.pubUrl))} ↗</a>${d} · <a href="#" onclick="pubEdit('${sid(c.id)}');return false">수정</a></div>`:`<div class="m" style="margin-top:4px">${d.slice(3)||"발행일 미입력"} · <a href="#" onclick="pubEdit('${sid(c.id)}');return false">🔗 발행 링크 추가</a></div>`};
-const contentItem=c=>`<div class="item"><div class="row"><input type="checkbox" class="csel" ${cSel.has(c.id)?"checked":""} onchange="cPick('${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.stage==="done"?pubRow(c):""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${stSel(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
+const phBtns=c=>{const t=D.tasks.find(x=>x.id===c.tk);return `<div class="m sub" style="margin-top:6px">⏳ ${esc(c.by||"직원")}이(가) 작업 중이에요. 결과가 오면 이 칸이 초안으로 바뀌어요.</div>${t&&!t.done?`<button class="pill" style="background:var(--ready);margin-top:6px" onclick="runNow('${sid(t.id)}')">⚡ 지금 바로 실행</button>`:""}`};
+const contentItem=c=>`<div class="item"><div class="row"><input type="checkbox" class="csel" ${cSel.has(c.id)?"checked":""} onchange="cPick('${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.title)}</div><div class="m">${CH[c.ch]} · 마감 ${esc(c.due||"미정")}${c.by?" · 등록 "+esc(c.by):""}</div>${c.memo?`<div class="m">${esc(c.memo)}</div>`:""}${c.stage==="done"?pubRow(c):""}${c.body?`<button class="pill" style="background:var(--g);margin-top:6px" onclick="openDoc('${c.id}')">📄 초안·보고 보기</button>`:c.ph?phBtns(c):aiBtn(c)+`<button class="pill" style="background:var(--g);margin-top:6px" onclick="copyPrompt('${sid(c.id)}')">📋 프롬프트 복사</button><button class="pill" style="background:var(--g);margin-top:6px" onclick="openPaste('${sid(c.id)}')">✏️ 초안 붙여넣기</button>`}</div>${stSel(c)}<button class="icon del" style="width:32px;height:32px" onclick="delItem('contents','${c.id}')">✕</button></div></div>`;
 
 const BRAND_URL={"트립":"https://www.instagram.com/ellttoong.trip/"};
 const brandUrl=c=>c.url!==undefined?c.url:(BRAND_URL[c.tag]||"");
@@ -619,10 +620,10 @@ contents(){
 tasks(){
   const t=today(),wk=addDays(7);
   const f={mine:x=>!x.done&&x.who===curName(),ai:x=>!x.done&&agentNames().has(x.who),open:x=>!x.done,today:x=>!x.done&&x.due===t,week:x=>!x.done&&x.due&&x.due<=wk,done:x=>x.done,all:()=>true}[tab];
-  const list=D.tasks.filter(f).sort((a,b)=>(a.due||"9").localeCompare(b.due||"9"));
+  const list=vtasks().filter(f).sort((a,b)=>(a.due||"9").localeCompare(b.due||"9"));
   const tabs=[["mine","내 업무"],...(D.set.agents.length?[["ai","AI 직원"]]:[]),["open","미완료"],["today","오늘"],["week","이번 주"],["done","완료"],["all","전체"]];
   return `<h1>업무</h1><div class="sub">하나씩 확인하고, 하나씩 끝내요</div>
-  <div class="stats">${stat("전체 미완료",D.tasks.filter(x=>!x.done).length)}${stat("오늘 마감",D.tasks.filter(x=>!x.done&&x.due===t).length)}${stat("기한초과",D.tasks.filter(x=>!x.done&&x.due&&x.due<t).length)}${stat("오늘 완료",D.tasks.filter(x=>x.done&&x.doneAt===t).length)}</div>
+  <div class="stats">${stat("전체 미완료",vtasks().filter(x=>!x.done).length)}${stat("오늘 마감",vtasks().filter(x=>!x.done&&x.due===t).length)}${stat("기한초과",vtasks().filter(x=>!x.done&&x.due&&x.due<t).length)}${stat("오늘 완료",vtasks().filter(x=>x.done&&x.doneAt===t).length)}</div>
   <button class="btn" style="width:100%;padding:14px;font-size:16px" onclick="openTaskModal()">＋ 업무 추가</button>
   <div class="tabs">${tabs.map(([k,n])=>`<button class="${tab===k?"on":""}" onclick="tab='${k}';render()">${n}</button>`).join("")}</div>
   ${list.map(taskRow).join("")||'<div class="empty">해당 업무가 없어요</div>'}`;
@@ -984,14 +985,14 @@ function orgMigrate(){
   toast("6명으로 바꿨어요"+(n?` · 업무 담당 ${n}건 변경`:""));
 }
 const active=a=>a.stage<=D.set.stage;
-const openCnt=n=>D.tasks.filter(t=>!t.done&&t.who===n).length;
+const openCnt=n=>vtasks().filter(t=>!t.done&&t.who===n).length;
 views.org=()=>{
   const A=D.set.agents;
   if(!A.length)return `<h1>조직도</h1><div class="sub">AI 직원을 아직 가져오지 않았어요</div><div class="card"><div class="body"><div class="empty">${isAdmin()?"Linus Company AI 직원 6명을 한 번에 넣을 수 있어요.":"관리자가 직원 명단을 가져오면 여기에 보여요."}</div>${isAdmin()?`<button class="btn" onclick="seedAgents()">AI 직원 ${SOL_ROSTER.agents.length}명 넣기</button>`:""}</div></div>`;
   const depts=[...new Set(A.map(a=>a.dept))];
   const on=A.filter(active).length;
   return `<h1>조직도</h1><div class="sub">AI 직원 ${A.length}명 · ${depts.length}개 팀 · 가동 중 ${on}명 (현재 ${D.set.stage}단계)</div>
-  <div class="stats">${stat("전체 AI 직원",A.length+"명",1)}${stat("가동 중",on+"명")}${stat("대기",(A.length-on)+"명")}${stat("진행 업무",D.tasks.filter(t=>!t.done&&agentNames().has(t.who)).length)}</div>`+
+  <div class="stats">${stat("전체 AI 직원",A.length+"명",1)}${stat("가동 중",on+"명")}${stat("대기",(A.length-on)+"명")}${stat("진행 업무",vtasks().filter(t=>!t.done&&agentNames().has(t.who)).length)}</div>`+
   depts.map(d=>{const m=A.filter(a=>a.dept===d);return `<div class="card"><h3>${esc(d)}<span class="m sub" style="margin:0">${m.length}명</span></h3><div class="body">`+
     m.map(a=>`<div class="item" style="${active(a)?"":"opacity:.6"}"><div class="row"><div class="grow"><div class="t">${esc(a.name)} <span class="m">${esc(a.title)}</span></div><div class="m">${esc(a.role||"")}</div><div class="m">${esc(a.emp)} · ${esc(a.model)} · 보고 ${esc(a.boss)}</div></div>
     ${openCnt(a.name)?`<span class="pill" style="background:var(--make)">업무 ${openCnt(a.name)}</span>`:""}<span class="pill" style="background:var(${active(a)?"--done":"--idea"})">${active(a)?"가동":a.stage+"단계"}</span></div></div>`).join("")+`</div></div>`}).join("");
@@ -1051,6 +1052,9 @@ function clearAgents(){if(!confirm("AI 직원 명단을 모두 지울까요? (�
    직원은 다음 정기 확인(매일 08:00, 영환은 07:50·17:50)에 읽고 처리하며, 앱은 그 파일을 읽어 상태를 보여요. */
 const AS=[["","지시 전","--idea"],["sent","📋 지시함","--make"],["work","🔄 착수","--review"],["rep","✅ 보고 도착","--ready"],["ok","🔍 검증 완료","--done"]];
 const asInfo=k=>AS.find(a=>a[0]===(k||""))||AS[0];
+/* 메신저·컨텐츠 수정 요청으로 만든 지시는 '업무' 탭에 쌓지 않고(숨김), 결과는 컨텐츠에서만 다뤄요 */
+const tkHid=t=>!!(t.hid||(t.room&&t.out!==0));
+const vtasks=()=>D.tasks.filter(t=>!tkHid(t));
 const instrRepo=()=>{const r=(CFG.repo||"").trim();return repoOk(r)?r:""};
 const instrUrl=x=>`https://github.com/${instrRepo()}/blob/${encodeURIComponent((CFG.repoBranch||"work").trim())}/${encodeURI("지시/"+String(x.id).replace(/[^\w-]/g,"")+".md")}`;
 function aiRow(x){
@@ -1189,7 +1193,8 @@ async function syncInbox(){
       const rep=((txt.split("\n## 보고")[1]||"").trim().split("\n").filter(l=>l.trim()&&!l.startsWith("###")).slice(0,6).join("\n")).slice(0,500);
       const rej=st==="반려"?1:0;
       const moved=x.as!==to,key=to+"|"+rej;
-      if(moved||(x.rep||"")!==rep||!!x.rej!==!!rej){x.as=to;x.rep=rep;x.rej=rej;x.u=Date.now();ch++}
+      if(moved||(x.rep||"")!==rep||!!x.rej!==!!rej){x.as=to;x.rep=rep;x.rej=rej;x.u=Date.now();ch++;
+        const ph=x.ct&&D.contents.find(c=>c.id===x.ct);if(ph&&!ph.body){ph.memo=`${x.who} ${asInfo(to)[1]}${rep?" · "+rep.split("\n")[0].slice(0,80):""}`;if(to==="rep"&&ph.stage==="idea")ph.stage="report"}}
       if(moved&&(to==="work"||to==="rep")&&x.nk!==key){x.nk=key;staffNote(x,to,rej)}else if(!x.nk)x.nk=key;
       if(to==="ok"&&!x.done){x.done=1;x.doneAt=today();x.doneBy="영환(검증)";ch++}
     }catch{}
@@ -1298,7 +1303,7 @@ function noteSend(id,toStaff){
     const folder=c.src?`작업/${c.src}/draft.md`:"(작업 폴더 없음 — 앱 본문 기준)";
     const body=`수정 요청 · ${c.title}`.slice(0,80)+"\n- 대상 글: "+folder+(c.src?"\n- draft.md의 `## 본문`을 수정하고 work 브랜치에 커밋·푸시해 주세요. 제목·서식(`## 제목`/`## 본문`/`## 해시태그`)은 유지.":"")+"\n- 대표 요청: "+txt+(c.edited?"\n- 참고: 대표가 앱에서 본문을 직접 고쳐 둔 상태예요. 아래가 앱의 현재 본문이에요.\n\n"+(c.body||"").slice(0,1000):"");
     dispatchTask(noteWho,body,"",c.brand||"",1,0,files);
-    n.tk=D.tasks[0]&&D.tasks[0].id;
+    n.tk=D.tasks[0]&&D.tasks[0].id;if(D.tasks[0])D.tasks[0].hid=1;
   }
   (c.notes=c.notes||[]).push(n);c.u=Date.now();noteDraft="";save();render();
 }
@@ -2094,7 +2099,7 @@ function schItems(date){
   const out=[],L=schLay();
   D.events.forEach(e=>{const end=e.end&&e.end>=e.date?e.end:e.date;if(date>=e.date&&date<=end)out.push({src:"ev",id:e.id,title:e.title,time:e.time||"",color:evColor(e),label:schCat(e.cat)[1],e})});
   if(L.content)D.contents.forEach(c=>{if(c.due===date)out.push({src:"ct",id:c.id,title:c.title,time:"",color:"#5ac8fa",label:"컨텐츠 마감",c})});
-  if(L.task)D.tasks.forEach(t=>{if(!t.done&&t.due===date)out.push({src:"tk",id:t.id,title:t.title,time:"",color:"#8e8e93",label:"업무 마감"})});
+  if(L.task)vtasks().forEach(t=>{if(!t.done&&t.due===date)out.push({src:"tk",id:t.id,title:t.title,time:"",color:"#8e8e93",label:"업무 마감"})});
   return out.sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
 }
 function schMove(n){const[y,m]=schM.split("-").map(Number),d=new Date(y,m-1+n,1);schM=d.getFullYear()+"-"+p2(d.getMonth()+1);schEdit="";render()}
@@ -2446,7 +2451,10 @@ async function mSend(){
       const tk={id:uid(),title:ls[0].trim().slice(0,200),due:"",pri:"중요도 보통",done:0,who:n,memo:ls.slice(1).join("\n").trim().slice(0,1500),brand:"",by:curName(),as:"sent",at:Date.now(),out:CFG.chatOut!==0?1:0,room:mRoom};
       if(m.files)tk.files=m.files;if(m.fileErr)tk.memo=((tk.memo||"")+"\n(첨부파일 업로드 실패, 파일: "+(m.fileNames||[]).join(", ")+")").trim().slice(0,1500);tasks.push(tk);
     });
-    if(tasks.length){tasks.forEach(x=>D.tasks.unshift(x));m.tasks=tasks.map(x=>x.id)}
+    if(tasks.length){tasks.forEach(x=>{
+      D.tasks.unshift(x);
+      if(x.out){const ct={id:uid(),title:x.title,ch:/침대|에이스|정림|프로모션/.test(x.title+" "+(x.memo||""))?"furn":"blog",stage:"idea",due:"",memo:`${x.who}에게 메신저로 지시 · 결과가 오면 여기에 올라와요`,by:x.who,body:"",report:"",ph:1,tk:x.id,brand:""};x.ct=ct.id;x.hid=1;D.contents.unshift(ct)}
+    });m.tasks=tasks.map(x=>x.id)}
   }
   D.msgs.push(m);pushQueue(m.id);mTrim();mDraft="";mFiles=[];mForce=true;MS.read[mRoom]=Date.now();msSave();save();render();
   if(tasks.length){if(CFG.repoWToken&&instrRepo())tasks.forEach(x=>sendInbox(x.id));else toast("지시로 저장했어요. 설정 > 연결·동기화 > 지시함 연결을 하면 직원에게 자동으로 전달돼요")}
@@ -2793,7 +2801,7 @@ views.chat=()=>{
   if(!A.length)return `<h1>AI 직원 지시</h1><div class="sub">AI 직원에게 업무와 마감을 지시해요</div><div class="card"><div class="body"><div class="empty">AI 직원이 아직 없어요. 조직도에서 Linus Company 직원을 먼저 넣어 주세요.</div><button class="btn" onclick="go('org')">조직도로 가기</button></div></div>`;
   const cur=chatPick();chatWho=cur.name;
   const depts=[...new Set(A.map(a=>a.dept))],mode=chatModeNow();
-  const tasks=D.tasks.filter(t=>t.who===cur.name).slice().reverse();
+  const tasks=vtasks().filter(t=>t.who===cur.name).slice().reverse();
   const res=D.contents.filter(c=>c.by===cur.name).slice(0,5);
   const brands=D.set.brands||[];
   const listPc=depts.map(d=>`<div class="m sub" style="margin:10px 0 4px">${esc(d)}</div>`+A.filter(a=>a.dept===d).map(a=>`<button class="navbtn ${a.name===cur.name?"on":""}" style="${active(a)?"":"opacity:.6"}" onclick="chatSet(decodeURIComponent('${encodeURIComponent(a.name)}'))"><span class="grow" style="text-align:left">${esc(a.name)} <span class="m">${esc(a.title)}</span></span>${openCnt(a.name)?`<span class="pill" style="background:var(--make)">${openCnt(a.name)}</span>`:""}</button>`).join("")).join("");
@@ -2865,7 +2873,7 @@ function linkResults(){
   D.tasks.slice().reverse().forEach(t=>{
     if(!t.out||t.done||t.res||!t.at||t.as==="ok"||!agentNames().has(t.who))return;
     const day=ymd(new Date(t.at)),c=cands.find(c=>c.by===t.who&&c.src.slice(0,10)>=day&&!used.has(c.id));
-    if(c){t.res=c.id;used.add(c.id);t.as="rep";ch++}
+    if(c){t.res=c.id;used.add(c.id);t.as="rep";ch++;if(t.ct){D.contents=D.contents.filter(x=>x.id!==t.ct);delete t.ct}}
   });
   if(ch){save();render()}
   return ch;
@@ -3145,7 +3153,7 @@ function render(keepFocus){
   const m=me();applyBrand();
   document.body.classList.toggle("staff",!!m&&m.role!=="admin");document.body.classList.toggle("out",!m);
   $("#fab").style.display=m?"flex":"none";
-  {const cf=$("#chatfab"),n=m&&isAdmin()?D.tasks.filter(t=>!t.done&&agentNames().has(t.who)).length:0;cf.style.display=m&&isAdmin()&&page!=="chat"?"flex":"none";$("#chatbadge").textContent=n?String(n):""}
+  {const cf=$("#chatfab"),n=m&&isAdmin()?vtasks().filter(t=>!t.done&&agentNames().has(t.who)).length:0;cf.style.display=m&&isAdmin()&&page!=="chat"?"flex":"none";$("#chatbadge").textContent=n?String(n):""}
   if(!m){$("#crumb").textContent="로그인";applyBg();$("#app").innerHTML=lockView();return}
   const pg=PAGES.find(p=>p[0]===page&&(!p[3]||m.role==="admin"));if(!pg)page="home";
   nav();tabbar();applyBg();
