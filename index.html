@@ -944,15 +944,17 @@ function prcParse(text){
   const lines=String(text||"").replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean).slice(0,5000);
   if(!lines.length)return[];
   const d=lines.some(l=>l.includes("\t"))?"\t":",",rows=lines.map(l=>prcSplit(l,d).map(c=>c.trim()));
-  let ix={name:0,price:1,cost:2,cat:3,code:-1,spec:-1,color:-1},start=0;const h=rows[0];
+  let ix={out:-1,name:0,price:1,cost:2,cat:3,code:-1,spec:-1,color:-1},start=0;const h=rows[0];
   const find=re=>h.findIndex(c=>re.test(c));
   if(h.some(c=>/제품|품명|상품|모델|품목/.test(c))||h.some(c=>/가격|판매가|소비자|정가/.test(c))){
-    start=1;const n=find(/제품|품명|상품|모델|품목/),pr=find(/판매가|소비자|정가|가격/),co=find(/납부|납품|공급|도매|원가|매입|단가/),ca=find(/분류|카테고리|구분|종류/);
-    ix={name:n>=0?n:0,price:pr>=0?pr:1,cost:co>=0&&co!==pr?co:-1,cat:ca>=0?ca:-1,code:find(/^코드$|상품코드|품번|code/i),spec:find(/규격|사이즈|크기/),color:find(/색상|컬러/)};
+    start=1;const n=find(/제품|품명|상품|모델|품목/),pr=find(/판매가|소비자|정가|가격/),co=find(/납부|납품|공급|도매|원가|매입|단가/),ca=find(/분류|카테고리|구분|종류/),ou=find(/출고/);
+    ix={out:ou,name:n>=0?n:0,price:pr>=0?pr:1,cost:co>=0&&co!==pr?co:-1,cat:ca>=0?ca:-1,code:find(/^코드$|상품코드|품번|code/i),spec:find(/규격|사이즈|크기/),color:find(/색상|컬러/)};
   }
   return rows.slice(start).map(r0=>{
     const r=d===","?prcMergeNums(r0):r0,name=[r[ix.name],ix.spec>=0?r[ix.spec]:"",ix.color>=0?r[ix.color]:""].map(x=>(x||"").trim()).filter(Boolean).join(" · ").slice(0,80);
-    return {name,code:ix.code>=0?(r[ix.code]||"").slice(0,30):"",price:prcNum(r[ix.price]),cost:ix.cost>=0?prcNum(r[ix.cost]):0,cat:ix.cat>=0?(r[ix.cat]||"").slice(0,20):""};
+    let cost=ix.cost>=0?prcNum(r[ix.cost]):0,out=ix.out>=0?prcNum(r[ix.out]):0;
+    if(cost&&!out)out=Math.round(cost*1.1);else if(out&&!cost)cost=Math.round(out/1.1);/* 출고가 = 공급가 + 부가세 10% */
+    return {name,code:ix.code>=0?(r[ix.code]||"").slice(0,30):"",price:prcNum(r[ix.price]),cost,out,cat:ix.cat>=0?(r[ix.cat]||"").slice(0,20):""};
   }).filter(x=>x.name&&x.price>0);
 }
 /* 크롬 확장 프로그램이 AMS에서 담은 표를 보내오면 가져오기 창에 미리 채워 보여 줘요(저장은 내가 '가져오기'를 눌러야 해요). */
@@ -971,7 +973,7 @@ function prcPending(){
 }
 function prcOpenImport(){
   $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="단가표 가져오기"><div class="row"><b class="grow" style="font-size:18px">단가표 가져오기</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
-  <div class="m sub">AMS의 <b>엑셀 변환 → TAB 포맷 변환</b> 결과(또는 제품 표)를 복사해 아래에 붙여 넣으세요. (CSV 포맷도 읽어요) 첫 줄이 제목(제품명·판매가·납부단가·분류)이면 자동으로 열을 찾고, 제목이 없으면 <b>제품명, 판매가, 납부단가, 분류</b> 순서로 읽어요. 같은 제품명은 값이 갱신돼요.</div>
+  <div class="m sub">AMS의 <b>엑셀 변환 → TAB 포맷 변환</b> 결과(또는 제품 표)를 복사해 아래에 붙여 넣으세요. (CSV 포맷도 읽어요) 첫 줄이 제목(제품명·판매가·납부단가·분류)이면 자동으로 열을 찾고, 제목이 없으면 <b>제품명, 판매가, 납부단가, 분류</b> 순서로 읽어요. AMS 표(코드·분류명·상품명·판매가·출고가·공급가)도 그대로 읽어요. 출고가나 공급가 중 하나만 있으면 <b>출고가 = 공급가 × 1.1(부가세 10%)</b>로 계산해 채워요. 같은 제품명은 값이 갱신돼요.</div>
   <div class="form" style="border:0;padding:0"><textarea id="prci" rows="8" placeholder="제품명&#9;판매가&#9;납부단가&#10;퀸 매트리스&#9;1,500,000&#9;900,000" oninput="prcPrev()"></textarea>
   <div class="m" id="prcpv"></div>
   <label class="m">또는 CSV 파일 <input type="file" accept=".csv,.txt,text/csv,text/plain" onchange="prcFile(this)"></label>
@@ -988,7 +990,7 @@ async function prcFile(inp){
 function prcImport(){
   const rows=prcParse(($("#prci")||{}).value);if(!rows.length){alert("읽을 수 있는 제품이 없어요. 제품명과 판매가 열이 있는지 확인해 주세요");return}
   let add=0,upd=0;
-  rows.forEach(r=>{const x=r.code?(D.prices.find(q=>q.code===r.code)||D.prices.find(q=>!q.code&&q.name===r.name)):D.prices.find(q=>q.name===r.name);if(x){x.name=r.name;x.price=r.price;if(r.cost)x.cost=r.cost;if(r.cat)x.cat=r.cat;if(r.code)x.code=r.code;upd++}else{D.prices.push({id:uid(),...r});add++}});
+  rows.forEach(r=>{const x=r.code?(D.prices.find(q=>q.code===r.code)||D.prices.find(q=>!q.code&&q.name===r.name)):D.prices.find(q=>q.name===r.name);if(x){x.name=r.name;x.price=r.price;if(r.cost)x.cost=r.cost;if(r.out)x.out=r.out;if(r.cat)x.cat=r.cat;if(r.code)x.code=r.code;upd++}else{D.prices.push({id:uid(),...r});add++}});
   closeModal();save();render();toast(`새 제품 ${add}개, 갱신 ${upd}개`);
 }
 function prcEdit(id){
@@ -1001,7 +1003,7 @@ function prcEdit(id){
 }
 function prcSave(id){
   const name=$("#pn").value.trim().slice(0,80),price=Math.round(+$("#pp").value||0);if(!name||price<=0){alert("제품명과 판매가를 입력해 주세요");return}
-  const rec={name,cat:$("#pc").value.trim().slice(0,20),price,cost:Math.max(0,Math.round(+$("#pk").value||0))};
+  const cost=Math.max(0,Math.round(+$("#pk").value||0)),rec={name,cat:$("#pc").value.trim().slice(0,20),price,cost,out:cost?Math.round(cost*1.1):0};
   if(id){const x=D.prices.find(q=>q.id===id);if(x)Object.assign(x,rec)}else D.prices.push({id:uid(),...rec});
   closeModal();save();render();
 }
@@ -1012,7 +1014,7 @@ function prcView(){
   const q=prcQ.trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean),all=D.prices.filter(x=>!terms.length||terms.every(t=>((x.code||"")+" "+x.name+" "+(x.cat||"")).toLowerCase().includes(t))).sort((a,b)=>(a.cat||"").localeCompare(b.cat||"","ko")||a.name.localeCompare(b.name,"ko")),rows=all.slice(0,prcLim);
   return `<div class="row" style="gap:8px;margin:4px 0 8px;flex-wrap:wrap"><button class="btn grow" onclick="prcOpenImport()">표 붙여넣기 · CSV 가져오기</button><button class="btn ghost" onclick="prcEdit()">＋ 제품</button></div>
   <input placeholder="제품 검색 (${D.prices.length}개)" value="${esc(prcQ)}" oninput="prcQ=this.value;prcLim=100;clearTimeout(window._prcT);window._prcT=setTimeout(()=>render(true),200)" style="margin-bottom:8px">${q?`<div class="m" style="margin:0 4px 8px">검색 결과 ${all.length.toLocaleString("ko-KR")}개</div>`:""}
-  <div class="card"><h3>제품 단가표 <span class="m sub" style="margin:0">판매가 · 납부 단가 · 차액</span></h3><div class="body">${rows.map(x=>`<div class="row" style="gap:8px;padding:8px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t">${esc(x.name)}</div><div class="m">${x.code?esc(x.code)+" · ":""}${x.cat?esc(x.cat)+" · ":""}판매가 ${won(x.price)} · 납부 ${x.cost?won(x.cost):"미입력"}</div></div>
+  <div class="card"><h3>제품 단가표 <span class="m sub" style="margin:0">판매가 · 납부 단가 · 차액</span></h3><div class="body">${rows.map(x=>`<div class="row" style="gap:8px;padding:8px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t">${esc(x.name)}</div><div class="m">${x.code?esc(x.code)+" · ":""}${x.cat?esc(x.cat)+" · ":""}판매가 ${won(x.price)} · 납부(공급가) ${x.cost?won(x.cost):"미입력"}${x.out?" · 출고가 "+won(x.out):""}</div></div>
     <div style="text-align:right"><b>${x.cost?won(x.price-x.cost):"-"}</b><div class="m">차액</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="prcEdit('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="prcDel('${x.id}')" aria-label="삭제">✕</button></div>`).join("")||'<div class="empty">'+(D.prices.length?"검색 결과가 없어요":"단가표가 비어 있어요. AMS의 제품 표를 복사해 붙여 넣거나 ＋ 제품으로 하나씩 넣어 보세요.")+'</div>'}
   ${all.length>rows.length?`<button class="btn ghost" style="margin-top:10px;width:100%" onclick="prcLim+=200;render()">더 보기 (${(all.length-rows.length).toLocaleString("ko-KR")}개 남음)</button>`:""}
