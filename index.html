@@ -797,17 +797,30 @@ const ledSigned=n=>(n<0?"−":"")+won(Math.abs(n));
 const ledBasis=()=>{try{return localStorage.getItem("rino-led-basis")||"sup"}catch{return"sup"}};
 function ledNav(d){const[y,m]=(ledM||today().slice(0,7)).split("-").map(Number),dt=new Date(y,m-1+d,1);ledM=monthKey(dt.getFullYear(),dt.getMonth());render()}
 /* 가격표 카탈로그: 처음 장부 창을 열 때 한 번만 불러와요 */
-let LED_CAT=null,LED_CAT_P=null;
+let LED_CAT=null,LED_CAT_P=null,LED_PRIV=0;
+const ledKey=s=>String(s==null?"":s).replace(/\s+/g,"").toLowerCase();
 function ledCatLoad(){
-  if(LED_CAT_P)return LED_CAT_P;
+  if(LED_CAT_P&&!(LED_CAT&&!LED_PRIV))return LED_CAT_P;
   LED_CAT_P=(async()=>{
     const out=[];let priv={};
     try{priv=await new Promise(ok=>{const r=indexedDB.open("linus-price",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onerror=()=>ok({});r.onsuccess=()=>{try{const g=r.result.transaction("kv").objectStore("kv").get("priv");g.onsuccess=()=>ok(g.result||{});g.onerror=()=>ok({})}catch{ok({})}}})}catch{}
-    try{const d=await (await fetch("prices.json",{cache:"no-cache"})).json();d.items.forEach(x=>{const p=priv[x[0]]||[0,0];out.push({code:x[0],cat:d.cats[x[1]],name:x[2],price:x[3],out:p[0],sup:p[1],k:(x[0]+" "+x[2]+" "+d.cats[x[1]]).toLowerCase()})})}catch{}
+    const pv={};Object.keys(priv||{}).forEach(k=>{pv[ledKey(k)]=priv[k]});LED_PRIV=Object.keys(pv).length;
+    try{const d=await (await fetch("prices.json",{cache:"no-cache"})).json();d.items.forEach(x=>{const p=pv[ledKey(x[0])]||[0,0];out.push({code:x[0],cat:d.cats[x[1]],name:x[2],price:x[3],out:p[0],sup:p[1],k:(x[0]+" "+x[2]+" "+d.cats[x[1]]).toLowerCase()})})}catch{}
     LED_CAT=out;return out;
   })();
   return LED_CAT_P;
 }
+/* 장부 → 수익 자동 연결: 장부 기록 하나마다 에이스침대(슬립) 수익 기록 하나를 같은 id("led-"+장부id)로 만들어요.
+   금액은 판매가예요. id가 고정이라 여러 기기에서 돌려도 겹치지 않고, 수익 기록 탭에서 지운 건은 다시 만들지 않아요. */
+function ledRevSync(){
+  try{D.ledger.forEach(e=>{
+    const id="led-"+e.id,amt=Math.max(0,Math.round(+e.price||0));if(D.del[id]||!amt)return;
+    const memo=("장부 · "+(e.item||"판매")).slice(0,80),r=D.revenue.find(x=>x.id===id);
+    if(r){r.amount=amt;r.date=e.date;r.memo=memo;r.co=REV_GOAL}
+    else D.revenue.push({id,date:e.date,co:REV_GOAL,ch:"furn",amount:amt,memo});
+  })}catch{}
+}
+ledRevSync();
 function ledOpen(id){
   ledEdit=id||"";const e=id?D.ledger.find(x=>x.id===id):null;if(id&&!e)return;
   const last=D.ledger.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""))[0]||{};
@@ -831,24 +844,34 @@ function ledOpen(id){
 }
 const ledRef=v=>`판매가 <b>${won(v.price)}</b> · 출고가 <b>${v.out?won(v.out):"–"}</b> · 공급가 <b>${v.sup?won(v.sup):"–"}</b>`+
   (v.out||v.sup?` <span style="white-space:nowrap">· 물건대금: <button class="pill" style="background:var(--g)" onclick="ledUse('out')">출고가</button> <button class="pill" style="background:var(--g)" onclick="ledUse('sup')">공급가</button></span>`:"");
+/* 고른 제품에 출고가·공급가가 비어 있으면 단가표(D.prices, 모든 기기에 동기화)와 이 기기의 내부 단가(가격표)에서 코드 → 제품명 순으로 찾아 채워요 */
+function ledFill(x){
+  if(x.sup&&x.out)return x;
+  const c=ledKey(x.code),n=ledKey(x.name),o={...x};
+  const p=(c&&D.prices.find(q=>ledKey(q.code)===c))||D.prices.find(q=>ledKey(q.name)===n);
+  if(p){o.out=o.out||+p.out||0;o.sup=o.sup||+p.sup||+p.cost||0}
+  if((!o.sup||!o.out)&&LED_CAT){const k=(c&&LED_CAT.find(q=>ledKey(q.code)===c))||LED_CAT.find(q=>ledKey(q.name)===n);if(k){o.out=o.out||k.out||0;o.sup=o.sup||k.sup||0}}
+  return o;
+}
 async function ledFind(q){
   q=String(q||"").trim().toLowerCase();const box=$("#ledhits");if(!box)return;
   if(q.length<1){box.innerHTML="";return}
   const cat=LED_CAT||await ledCatLoad();
   const terms=q.split(/\s+/);
   const own=D.prices.filter(x=>terms.every(t=>((x.code||"")+" "+x.name+" "+(x.cat||"")).toLowerCase().includes(t))).map(x=>({code:x.code||"",cat:x.cat||"단가표",name:x.name,price:+x.price||0,out:+x.out||0,sup:+x.sup||+x.cost||0}));
-  ledHits=own.concat(cat.filter(x=>terms.every(t=>x.k.includes(t)))).slice(0,8);
+  const oc=new Set(own.map(x=>ledKey(x.code)).filter(Boolean));
+  ledHits=own.concat(cat.filter(x=>terms.every(t=>x.k.includes(t))&&!oc.has(ledKey(x.code)))).slice(0,8).map(ledFill);
   if(($("#ledi")||{}).value.trim().toLowerCase()!==q)return;
   box.innerHTML=ledHits.length?`<div class="card" style="margin:0 0 6px"><div class="body" style="padding:4px 10px">${ledHits.map((x,i)=>`<div onclick="ledPick(${i})" style="padding:8px 0;border-top:${i?".5px solid var(--sep)":"0"};cursor:pointer"><div class="t" style="font-size:14px">${esc(x.name)}</div><div class="m">${esc(x.cat)}${x.code?" · "+esc(x.code):""} · 판매가 ${won(x.price)} · 출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"}</div></div>`).join("")}</div></div>`
     :(cat.length?"":`<div class="m">가격표를 불러오지 못했어요. 직접 입력해 주세요.</div>`);
 }
 function ledPick(i){
-  const x=ledHits[i];if(!x)return;
+  const x=ledFill(ledHits[i]||{});if(!x.name)return;
   const I=$("#ledi"),P=$("#ledp"),C=$("#ledc");
   if(I)I.value=x.name.slice(0,60);if(P)P.value=x.price||"";
   window._ledRef={out:x.out,sup:x.sup,code:x.code};
-  const b=ledBasis(),c=b==="out"?(x.out||x.sup):(x.sup||x.out);if(C&&c)C.value=c;
-  $("#ledhits").innerHTML="";$("#ledref").innerHTML=ledRef(x);$("#ledbasis").innerHTML=c?`<span class="m">· ${b==="out"&&x.out||!x.sup?"출고가":"공급가"}로 채웠어요</span>`:"";
+  const b=ledBasis(),c=b==="out"?(x.out||x.sup):(x.sup||x.out);if(C)C.value=c||"";
+  $("#ledhits").innerHTML="";$("#ledref").innerHTML=ledRef(x);$("#ledbasis").innerHTML=c?`<span class="m">· ${b==="out"&&x.out||!x.sup?"출고가":"공급가"}로 채웠어요</span>`:`<span class="m" style="color:var(--red)">· 이 제품의 공급가 정보가 없어요. 단가표에 납부 단가를 넣거나 💲가격표에서 내부 단가 파일을 불러오면 다음부터 자동으로 채워져요</span>`;
   ledPv();
 }
 function ledUse(b){
@@ -872,9 +895,9 @@ function ledSave(){
     etc:wn($("#lede").value),etcNote:$("#ledn").value.trim().slice(0,60),vat:!!$("#ledv").checked,card:pc($("#ledk").value),tax:pc($("#ledt").value),
     code:(r.code||"").slice(0,30),out:wn(r.out),sup:wn(r.sup),memo:$("#ledm").value.trim().slice(0,200)};
   if(ledEdit){const e=D.ledger.find(x=>x.id===ledEdit);if(e)Object.assign(e,rec)}else D.ledger.push({id:uid(),by:curName(),...rec});
-  ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요");
+  ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요 · 판매가가 수익에 잡혔어요");
 }
-function ledDel(id){if(!isAdmin()||!confirm("이 장부 기록을 지울까요?"))return;D.ledger=D.ledger.filter(x=>x.id!==id);save();render()}
+function ledDel(id){if(!isAdmin()||!confirm("이 장부 기록을 지울까요?"))return;D.ledger=D.ledger.filter(x=>x.id!==id);D.revenue=D.revenue.filter(x=>x.id!=="led-"+id);save();render()}
 function ledCsv(){
   const m=ledM||today().slice(0,7),rows=D.ledger.filter(x=>x.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
   const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
