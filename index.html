@@ -811,10 +811,10 @@ function ledCatLoad(){
   return LED_CAT_P;
 }
 /* 장부 → 수익 자동 연결: 장부 기록 하나마다 에이스침대(슬립) 수익 기록 하나를 같은 id("led-"+장부id)로 만들어요.
-   금액은 판매가예요. id가 고정이라 여러 기기에서 돌려도 겹치지 않고, 수익 기록 탭에서 지운 건은 다시 만들지 않아요. */
+   금액은 할인 후 판매액(판매가 − 할인액, 고객이 실제로 낸 금액)이에요. id가 고정이라 여러 기기에서 돌려도 겹치지 않고, 수익 기록 탭에서 지운 건은 다시 만들지 않아요. */
 function ledRevSync(){
   try{D.ledger.forEach(e=>{
-    const id="led-"+e.id,amt=Math.max(0,Math.round(+e.price||0));if(D.del[id]||!amt)return;
+    const id="led-"+e.id,amt=Math.max(0,ledCalc(e).real);if(D.del[id]||!amt)return;
     const memo=("장부 · "+(e.item||"판매")).slice(0,80),r=D.revenue.find(x=>x.id===id);
     if(r){r.amount=amt;r.date=e.date;r.memo=memo;r.co=REV_GOAL}
     else D.revenue.push({id,date:e.date,co:REV_GOAL,ch:"furn",amount:amt,memo});
@@ -895,7 +895,7 @@ function ledSave(){
     etc:wn($("#lede").value),etcNote:$("#ledn").value.trim().slice(0,60),vat:!!$("#ledv").checked,card:pc($("#ledk").value),tax:pc($("#ledt").value),
     code:(r.code||"").slice(0,30),out:wn(r.out),sup:wn(r.sup),memo:$("#ledm").value.trim().slice(0,200)};
   if(ledEdit){const e=D.ledger.find(x=>x.id===ledEdit);if(e)Object.assign(e,rec)}else D.ledger.push({id:uid(),by:curName(),...rec});
-  ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요 · 판매가가 수익에 잡혔어요");
+  ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요 · 할인 후 판매액이 수익에 잡혔어요");
 }
 function ledDel(id){if(!isAdmin()||!confirm("이 장부 기록을 지울까요?"))return;D.ledger=D.ledger.filter(x=>x.id!==id);D.revenue=D.revenue.filter(x=>x.id!=="led-"+id);save();render()}
 function ledCsv(){
