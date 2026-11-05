@@ -1041,12 +1041,14 @@ function applyRoster(list,map){
   D.tasks.forEach(t=>{const to=map&&map[t.who];if(to&&!names.has(t.who)){t.who0=t.who;t.who=to;t.u=Date.now();n++}});
   return n;
 }
-const needOrgMig=()=>D.set.agents.some(a=>/^SOL-\d+$/.test(String(a.emp))&&+String(a.emp).slice(4)>7&&!SOL_ROSTER.agents.some(r=>r.agent===a.agent));
+/* 옛 34명 체제 이름이 명단에 남아 있을 때만 개편 안내를 띄워요(호출형 팀원 SOL-008~ 이 늘어도 안내가 뜨지 않게) */
+const needOrgMig=()=>D.set.agents.some(a=>Object.prototype.hasOwnProperty.call(OLD2NEW,a.name));
 /* 직원 이름 뒤 명칭을 팀명으로 바꿔요(2026-10-25). 이미 저장된 명단도 한 번 자동으로 맞춰요. */
 function teamMigrate(){
   if(!isAdmin()||!D.set.agents.length)return;
-  let ch=0;const TEAM_OF=Object.fromEntries(SOL_ROSTER.agents.map(a=>[a.agent,{title:a.title,dept:a.dept,role:a.role}]));
-  D.set.agents.forEach(a=>{const t=TEAM_OF[a.agent];if(t&&(a.title!==t.title||a.dept!==t.dept||a.role!==t.role||a.channel)){a.title=t.title;a.dept=t.dept;a.role=t.role;a.channel="";ch++}});
+  /* 기본 명단 버전(SOL_ROSTER.v)이 올라갔을 때 한 번만 팀·역할 문구를 맞춰요. 그 뒤 '저장소 기준으로 새로고침'한 값은 덮어쓰지 않아요. */
+  let ch=0;const TEAM_OF=Object.fromEntries(SOL_ROSTER.agents.map(a=>[a.agent,{title:a.title,dept:a.dept,role:a.role,boss:a.boss}]));
+  if((+D.set.rosterV||0)<SOL_ROSTER.v){D.set.agents.forEach(a=>{const t=TEAM_OF[a.agent];if(t&&(a.title!==t.title||a.dept!==t.dept||a.role!==t.role||a.boss!==t.boss||a.channel)){a.title=t.title;a.dept=t.dept;a.role=t.role;a.boss=t.boss;a.channel="";ch++}});D.set.rosterV=SOL_ROSTER.v;ch++}
   /* 새로 편성된 팀원(세움 등)이 저장된 명단에 없으면 넣어요 */
   SOL_ROSTER.agents.forEach(r=>{if(!D.set.agents.some(a=>a.agent===r.agent)){D.set.agents.push({...r});ch++}});
   if(ch){D.set.agents.sort((a,b)=>String(a.emp).localeCompare(String(b.emp)));D.set.u=Date.now();save()}
@@ -1055,13 +1057,13 @@ function orgMigrate(){
   if(!isAdmin()||!needOrgMig())return;
   if(!confirm("조직이 6명 체제(부대표 영환 · 민아 · 기호 · 유진 · 지수 · 시연)로 개편됐어요.\n앱의 AI 직원 명단을 6명으로 바꿀까요?\n(이전 이름으로 배정된 업무는 이어받은 직원으로 자동 변경돼요)")){toast("설정 > AI 직원에서 언제든 바꿀 수 있어요");return}
   const n=applyRoster(SOL_ROSTER.agents,OLD2NEW);D.set.stage=SOL_ROSTER.activeStage;D.set.agentsOff=false;D.set.u=Date.now();save();render();
-  toast("6명으로 바꿨어요"+(n?` · 업무 담당 ${n}건 변경`:""));
+  toast(SOL_ROSTER.agents.length+"명 명단으로 바꿨어요"+(n?` · 업무 담당 ${n}건 변경`:""));
 }
 const active=a=>a.stage<=D.set.stage;
 const openCnt=n=>vtasks().filter(t=>!t.done&&t.who===n).length;
 views.org=()=>{
   const A=D.set.agents;
-  if(!A.length)return `<h1>조직도</h1><div class="sub">AI 직원을 아직 가져오지 않았어요</div><div class="card"><div class="body"><div class="empty">${isAdmin()?"Linus Company AI 직원 6명을 한 번에 넣을 수 있어요.":"관리자가 직원 명단을 가져오면 여기에 보여요."}</div>${isAdmin()?`<button class="btn" onclick="seedAgents()">AI 직원 ${SOL_ROSTER.agents.length}명 넣기</button>`:""}</div></div>`;
+  if(!A.length)return `<h1>조직도</h1><div class="sub">AI 직원을 아직 가져오지 않았어요</div><div class="card"><div class="body"><div class="empty">${isAdmin()?"Linus Company AI 직원 "+SOL_ROSTER.agents.length+"명(상시 6명 + 호출형)을 한 번에 넣을 수 있어요.":"관리자가 직원 명단을 가져오면 여기에 보여요."}</div>${isAdmin()?`<button class="btn" onclick="seedAgents()">AI 직원 ${SOL_ROSTER.agents.length}명 넣기</button>`:""}</div></div>`;
   const depts=[...new Set(A.map(a=>a.dept))];
   const on=A.filter(active).length;
   return `<h1>조직도</h1><div class="sub">AI 직원 ${A.length}명 · ${depts.length}개 팀 · 가동 중 ${on}명 (현재 ${D.set.stage}단계)</div>
@@ -1070,8 +1072,8 @@ views.org=()=>{
     m.map(a=>`<div class="item" style="${active(a)?"":"opacity:.6"}"><div class="row"><div class="grow"><div class="t">${esc(a.name)} <span class="m">${esc(a.title)}</span></div><div class="m">${esc(a.role||"")}</div><div class="m">${esc(a.emp)} · ${esc(a.model)} · 보고 ${esc(a.boss)}</div></div>
     ${openCnt(a.name)?`<span class="pill" style="background:var(--make)">업무 ${openCnt(a.name)}</span>`:""}<span class="pill" style="background:var(${active(a)?"--done":"--idea"})">${active(a)?"가동":a.stage+"단계"}</span></div></div>`).join("")+`</div></div>`}).join("");
 };
-/* Linus Company AI 직원 기본 명단 (2026-10-14 개편: 6명, SOLAMEN tools/staff_registry.json 기준) */
-const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"Linus Company"}],"agents":[{"emp":"SOL-001","agent":"younghwan","name":"영환","title":"기획총괄팀","dept":"기획총괄팀","role":"부대표 · 접수·배분·검증·기획·전산","channel":"","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"mina","name":"민아","title":"경영지원팀","dept":"경영지원팀","role":"회계·세무·법무·규칙·템플릿","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-003","agent":"giho","name":"기호","title":"컨텐츠팀","dept":"컨텐츠팀","role":"에이스침대 현장 글 작성·교열","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-004","agent":"yujin","name":"유진","title":"수익사업팀","dept":"수익사업팀","role":"e-book·스토어·제휴 상품 · 수익 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-005","agent":"jisu","name":"지수","title":"마케팅팀","dept":"마케팅팀","role":"채널 실험·SEO·카피·비주얼·영상·성과 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-006","agent":"siyeon","name":"시연","title":"고객응대팀","dept":"고객응대팀","role":"댓글·DM 응대 · FAQ·VOC","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-007","agent":"bizsetup","name":"세움","title":"신사업·법규팀","dept":"신사업·법규팀","role":"신사업 법규·인허가·정책 분석 · 개인사업자 설립 (호출형: 영환이 대행)","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-008","agent":"daon","name":"다온","title":"마케팅팀","dept":"마케팅팀","role":"[슬립] 인스타 게시물·DM 답장 초안 (호출형 후배직원)","channel":"","stage":1,"boss":"지수","model":"Sonnet"},{"emp":"SOL-009","agent":"naru","name":"나루","title":"기획총괄팀","dept":"기획총괄팀","role":"파일럿(시험) 설계·판정안·배분안 (호출형: 새 아이디어는 본 업무 전에 먼저 시험)","channel":"","stage":1,"boss":"영환","model":"Sonnet"}]};
+/* Linus Company AI 직원 기본 명단 (SOLAMEN work 브랜치 tools/staff_registry.json 기준 · 2026-11-05 v2: 상시 6명 + 호출형 4명(세움·다온·나루·하린)) */
+const SOL_ROSTER={"activeStage":1,"brands":[{"tag":"트립","name":"얼뚱트립"},{"tag":"슬립","name":"에이스침대 정림동점"},{"tag":"포토","name":"퍼스널브랜딩 (스트릿포토)"},{"tag":"공통","name":"Linus Company"}],"agents":[{"emp":"SOL-001","agent":"younghwan","name":"영환","title":"기획총괄팀","dept":"기획총괄팀","role":"부대표 · 접수·배분·검증·기획·전산","channel":"","stage":0,"boss":"대표","model":"Opus"},{"emp":"SOL-002","agent":"mina","name":"민아","title":"경영지원팀","dept":"경영지원팀","role":"회계·세무·법무·규칙·템플릿","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-003","agent":"giho","name":"기호","title":"컨텐츠팀","dept":"컨텐츠팀","role":"블로그 포스팅 전담(모든 브랜드) · 기획·작성·교열 · 하린 초고 검수","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-004","agent":"yujin","name":"유진","title":"수익사업팀","dept":"수익사업팀","role":"e-book·스토어·제휴 상품 · 수익 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-005","agent":"jisu","name":"지수","title":"마케팅팀","dept":"마케팅팀","role":"인스타그램·스레드 전담(모든 브랜드) · 캡션·캐러셀·릴스·비주얼·성과 분석","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-006","agent":"siyeon","name":"시연","title":"고객응대팀","dept":"고객응대팀","role":"댓글·DM 응대 · FAQ·VOC","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-007","agent":"bizsetup","name":"세움","title":"신사업·법규팀","dept":"신사업·법규팀","role":"신사업 법규·인허가·정책 분석 · 개인사업자 설립 (호출형: 영환이 대행)","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-008","agent":"daon","name":"다온","title":"마케팅팀","dept":"마케팅팀","role":"[슬립] 인스타·DM·당근 (호출형 후배직원)","channel":"","stage":1,"boss":"지수","model":"Sonnet"},{"emp":"SOL-009","agent":"naru","name":"나루","title":"기획총괄팀","dept":"기획총괄팀","role":"모든 채널 첫 테스트 셋 · 파일럿 설계·판정안·배분안 (호출형)","channel":"","stage":1,"boss":"영환","model":"Sonnet"},{"emp":"SOL-010","agent":"harin","name":"하린","title":"컨텐츠팀","dept":"컨텐츠팀","role":"[슬립] 에이스침대 블로그 초고 (호출형 후배직원 · 검수 기호)","channel":"","stage":1,"boss":"기호","model":"Sonnet"}],"v":2};
 /* 이전 34명 이름 → 이어받은 직원 (업무 담당자 이름 자동 변경용) */
 const OLD2NEW={"아우렐리우스":"영환","아그리파":"영환","아티쿠스":"유진","마에케나스":"지수","티로":"영환","퀸틸리아누스":"기호","세네카":"기호","바로":"지수","오비디우스":"지수","겔리우스":"기호","하드리아누스":"지수","켈레르":"영환","헤르모게네스":"민아","스투디우스":"지수","로스키우스":"지수","플라우투스":"지수","필라데스":"지수","베르길리우스":"유진","플리니우스":"지수","호라티우스":"영환","마르티알리스":"지수","콜루멜라":"지수","소시우스":"유진","트리폰":"유진","스카우루스":"유진","필레몬":"시연","바우키스":"시연","비트루비우스":"영환","아폴로도로스":"영환","파불루스":"영환","프론티누스":"영환","카토":"민아","팔라스":"민아","가이우스":"민아"};
 let AG_READY=false;
@@ -1097,15 +1099,18 @@ async function refreshAgents(){
   try{
     const r=await ghRepo(`/repos/${repo}/contents/tools/staff_registry.json?ref=${encodeURIComponent(br)}`);
     if(!r.ok)throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===404?"tools/staff_registry.json 을 찾지 못했어요":"읽지 못했어요 ("+r.status+")");
-    const reg=JSON.parse(b64text((await r.json()).content)),st=(reg.staff||[]).concat((reg.specialists||[]).map(x=>({stage:0,...x})));
+    /* 상시 직원(staff) + 호출형 팀원(specialists: 세움·다온·나루·하린 …)을 함께 읽어요 */
+    const reg=JSON.parse(b64text((await r.json()).content)),st=(reg.staff||[]).concat((reg.specialists||[]).filter(x=>x&&x.emp_id&&x.name).map(x=>({stage:1,...x})));
     if(!st.length)throw new Error("직원 목록이 비어 있어요");
     const nameOf={};st.forEach(x=>{nameOf[x.agent]=x.name});
     const model={};SOL_ROSTER.agents.forEach(a=>{model[a.agent]=a.model});D.set.agents.forEach(a=>{if(a.model)model[a.agent]=a.model});
     const amap={...OLD2NEW};st.forEach(x=>(x.aliases||[]).forEach(al=>{if(!amap[al])amap[al]=String(x.name)}));
-    applyRoster(st.map(x=>({emp:String(x.emp_id),agent:String(x.agent||""),name:String(x.name),title:String(x.title||""),dept:String(x.team||"기타"),channel:x.home_channel?"#"+x.home_channel:"",stage:+x.stage||0,boss:x.reports_to==="ceo"?"대표":(nameOf[x.reports_to]||String(x.reports_to||"")),model:model[x.agent]||""})),amap);
+    const team=x=>String(x.team||"기타").replace(/콘텐츠/g,"컨텐츠");/* 앱 표기(컨텐츠)에 맞춰요 */
+    applyRoster(st.map(x=>({emp:String(x.emp_id),agent:String(x.agent||""),name:String(x.name),title:team(x),dept:team(x),role:String(x.role||""),channel:x.home_channel?"#"+x.home_channel:"",stage:+x.stage||0,boss:x.reports_to==="ceo"?"대표":(nameOf[x.reports_to]||String(x.reports_to||"")),model:model[x.agent]||"Sonnet"})),amap);
+    D.set.rosterV=SOL_ROSTER.v;
     if(!D.set.brands.length)D.set.brands=SOL_ROSTER.brands.map(b=>({...b}));
     D.set.agentsOff=false;D.set.u=Date.now();save();render();
-    alert(st.length+"명을 저장소 기준으로 새로고침했어요."+(reg.active_stage&&+reg.active_stage!==D.set.stage?`\nLinus Company 현재 가동 단계는 ${reg.active_stage}단계예요 (앱은 ${D.set.stage}단계). 필요하면 아래에서 바꿔 주세요.`:""));
+    alert(st.length+"명을 저장소 기준으로 새로고침했어요. (상시 "+(reg.staff||[]).length+"명 + 호출형 "+(st.length-(reg.staff||[]).length)+"명)"+(reg.active_stage&&+reg.active_stage!==D.set.stage?`\nLinus Company 현재 가동 단계는 ${reg.active_stage}단계예요 (앱은 ${D.set.stage}단계). 필요하면 아래에서 바꿔 주세요.`:""));
   }catch(e){alert("새로고침하지 못했어요: "+(e.message||e))}
 }
 function importAgents(f){
@@ -2470,9 +2475,12 @@ const mTime=t=>new Date(t).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-
 const mDay=t=>new Date(t).toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
 const mRich=s=>esc(s).replace(/@[^\s@<]+/g,x=>"<b>"+x+"</b>").replace(/\n/g,"<br>");
 const mPeople=()=>[...new Set(["리노",...D.set.staff.map(dn)])].filter(Boolean);
+/* AI 직원이 있는 방에서는 방에 초대하지 않은 AI 직원(하린·나루 등 호출형 팀원 포함)도 @이름으로 불러 지시할 수 있어요(관리자만) */
+const mAiCall=r=>r&&isAdmin()&&(r.ai||[]).length?[...new Set([...(r.ai||[]),...D.set.agents.map(a=>a.name)])].filter(n=>agentOf(n)):[];
+const mAiPick=(r,t)=>{const all=mAiCall(r);let w=all.filter(n=>t.includes("@"+n));if(!w.length){const ai=(r&&r.ai||[]).filter(n=>agentOf(n));if(ai.length===1&&!(r.members||[]).length)w=[ai[0]]}return w};
 function mCands(){
   const r=mrooms().find(x=>x.id===mRoom);
-  if(r&&Array.isArray(r.members))return [...new Set(["리노",...r.members.map(dn),...r.ai])].filter(Boolean);
+  if(r&&Array.isArray(r.members))return [...new Set(["리노",...r.members.map(dn),...r.ai,...mAiCall(r)])].filter(Boolean);
   return mPeople();
 }
 function mHintHtml(){
@@ -2532,8 +2540,7 @@ async function mSend(){
   const m={id:uid(),room:mRoom,by:curName()||"관리자",t:Date.now(),text:t.slice(0,2000)};
   const th=mFiles.find(x=>x.thumb);if(th)m.img=th.thumb;
   /* ⚡ 바로 처리: AI 키가 있고 AI 직원을 부르면 지시함을 거치지 않고 앱에서 바로 처리해 이 방에 답해요 */
-  const ai0=cur&&isAdmin()?(cur.ai||[]).filter(n=>agentOf(n)):[];let who0=ai0.filter(n=>t.includes("@"+n));
-  if(!who0.length&&ai0.length===1&&!(cur.members||[]).length)who0=[ai0[0]];
+  let who0=cur&&isAdmin()?mAiPick(cur,t):[];
   const direct=!!(who0.length&&CFG.aiKey&&MS.direct!==0&&(t||mFiles.length)),aiFiles=mFiles.slice();
   /* 첨부파일은 지시함 저장소(지시/첨부/<번호>/)에 올리고, 메시지·지시에는 경로만 남겨요 */
   if(direct&&mFiles.length&&mCan()){mUpload(m.id,aiFiles).then(r=>{m.files=r;save();render()}).catch(()=>{})}
@@ -2545,9 +2552,7 @@ async function mSend(){
   /* AI 직원이 있는 방: @이름으로 부른 직원에게 지시로 전달해요. AI 한 명뿐인 나만의 방은 @ 없이도 지시예요. */
   const tasks=[];
   if(cur&&isAdmin()&&(t||m.files)&&!direct){
-    const ai=(cur.ai||[]).filter(n=>agentOf(n));
-    let who=ai.filter(n=>t.includes("@"+n));
-    if(!who.length&&ai.length===1&&!(cur.members||[]).length)who=[ai[0]];
+    let who=mAiPick(cur,t);
     if(who.length&&mNudge(t)&&!aiFiles.length){who=[];m.nt=1;toast("대화로만 보냈어요 (업무로 만들지 않아요)")}
     const esc2=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),strip=new RegExp(who.map(n=>"@"+esc2(n)+"\\s*").join("|"),"g");
     who.forEach(n=>{
