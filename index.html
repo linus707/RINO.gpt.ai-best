@@ -1192,7 +1192,7 @@ async function sendInbox(id){
       body:JSON.stringify({message:`지시 ${fid}: ${x.who} — ${x.title.slice(0,50)}`,content:b64enc(instrMd(x)),branch:br})});
     if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")"+(j.message?" · GitHub 응답: "+String(j.message).slice(0,160):""):r.status===422?"같은 번호의 지시가 이미 있어요":(j.message||"저장하지 못했어요 ("+r.status+")"))}
     x.inbox=1;x.as="sent";x.u=Date.now();save();render();
-    toast("지시함에 저장했어요 · 바로 시키려면 ‘⚡ 지금 바로 실행’, 아니면 다음 정기 확인(매일 08:00)에 착수해요");
+    toast(/^수정 요청/.test(x.title)?"수정 지시를 보냈어요 · "+x.who+((c=>c>=0&&c<11172&&c%28)(x.who.charCodeAt(x.who.length-1)-44032)?"이":"가")+" 바로 착수해요 (보통 1~3분)":"지시함에 저장했어요 · 바로 시키려면 ‘⚡ 지금 바로 실행’, 아니면 다음 정기 확인(매일 08:00)에 착수해요");
   }catch(e){const why=/40[134]/.test(String(e.message||e))?"\n\n🔎 원인 점검\n"+await inboxWhy():"";alert("지시함에 보내지 못했어요: "+(e.message||e)+why+"\n\n(‘지시문 복사’나 ‘이 직원만 깨우기’로 직접 전달할 수도 있어요)")}
 }
 /* 예약을 기다리지 않고 바로 실행: 지시함에 저장 → 직원 개인 세션을 열고 "지금 확인" 문구를 복사해요 */
@@ -1371,9 +1371,9 @@ function docNotesHtml(c){
     <div class="m sub">${esc(n.by||"")} · ${new Date(n.at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${n.to?" · 📨 "+esc(n.to)+"에게 수정 지시":""}${st?" · "+st:""}</div>
     <div style="white-space:pre-wrap;margin-top:4px">${esc(n.txt)}</div>${n.img?`<img src="${n.img}" alt="첨부 사진" style="max-width:100%;max-height:220px;border-radius:10px;margin-top:6px">`:""}${(n.fn||[]).length?`<div class="m sub" style="margin-top:4px">📎 ${esc(n.fn.join(", "))}</div>`:""}
     ${t&&t.rep?`<div class="m" style="margin-top:6px;white-space:pre-wrap">📝 ${esc(t.rep)}</div>`:""}
-    ${t&&!t.done?`<div class="row" style="margin-top:6px;gap:6px"><button class="pill" style="background:var(--ready)" onclick="runNow('${t.id}')">⚡ 지금 바로 실행</button></div>`:""}</div>`};
+    ${t&&!t.done&&(!t.as||t.as==="sent")?`<div class="row" style="margin-top:6px;gap:6px;align-items:center;flex-wrap:wrap"><span class="m sub">🤖 자동으로 착수해요 · 5분이 지나도 ‘착수’로 안 바뀌면</span><button class="pill" style="background:var(--ready)" onclick="runNow('${t.id}')" title="자동 착수가 안 됐을 때만 눌러요">⚡ 직접 실행</button></div>`:""}</div>`};
   return `<h3 style="margin:22px 0 6px">💬 수정 요청·메모</h3>
-  <div class="m sub">원하는 수정을 적어서 직원에게 보내면, 그 직원이 작업 폴더의 글을 고쳐요. 고친 글은 「작업 폴더 불러오기」로 다시 가져오면 위에 반영돼요. 혜택 내용처럼 직접 아는 내용은 위의 ‘본문 직접 고치기’가 가장 빨라요.</div>
+  <div class="m sub">고칠 내용을 적고 <b>📨 직원에게 수정 지시</b>를 누르면, 그 직원이 <b>바로 착수</b>해 이 글을 고쳐요(보통 1~3분, 버튼을 따로 누를 필요 없어요). 끝나면 아래에 📝 보고가 붙고, 「작업 폴더 불러오기」를 누르면 고친 글이 위에 반영돼요. ‘메모만 남기기’는 직원에게 가지 않아요. 혜택 내용처럼 직접 아는 내용은 위의 ‘본문 직접 고치기’가 가장 빨라요.</div>
   <div id="notes">${ns.length?ns.map(row).join(""):`<div class="m sub" style="margin:8px 0">아직 대화가 없어요.</div>`}</div>
   <textarea id="noteTxt" placeholder="예) 혜택 ① 프로모션 내용을 이렇게 바꿔줘 …" style="width:100%;min-height:84px;font:inherit;padding:10px;border:1px solid var(--line,#ddd);border-radius:10px" oninput="noteDraft=this.value" onpaste="mPaste(event,2)" ondragover="event.preventDefault()" ondrop="mDrop(event,2)">${esc(noteDraft)}</textarea>
   ${nFiles.length?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${nFiles.map((x,i)=>`<span class="pill" style="background:var(--g);display:inline-flex;align-items:center;gap:6px">${x.thumb?`<img src="${x.thumb}" alt="" style="height:28px;border-radius:6px">`:mIcon(x.f)} ${esc(x.f.name.slice(0,24))} · ${mSize(x.f.size)} <a href="#" onclick="nFileDel(${i});return false" aria-label="첨부 빼기">✕</a></span>`).join("")}</div>`:""}
