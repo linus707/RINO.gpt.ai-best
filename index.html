@@ -1239,15 +1239,48 @@ function ledAnalysisCsv(){
   sec("제품별 할인율 순위 ("+(ledAllScope?"전체 기간":m)+")");line(["제품","코드",...aggHead("").slice(1)]);Object.values(g).map(o=>({o,a:ledAgg(o.rows)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.n-p.a.n).forEach(({o,a})=>{const r=aggRow(o.name,a);r.splice(1,0,o.code);line(r)});
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+out.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="에이스침대-장부분석-"+(ledAllScope?"전체":m)+(ledSel?"-"+ledSel:"")+".csv";a.click();
 }
-function ledRowHtml(x,c,full){return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(full?x.date:x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>${(x.lines||[]).length>1?`<div class="m">제품 ${x.lines.length}개: ${x.lines.map(l=>esc((l.item||"제품")+(l.qty>1?" ×"+l.qty:""))).join(", ")}</div>`:((x.lines||[])[0]&&x.lines[0].qty>1?`<div class="m">수량 ${x.lines[0].qty}개</div>`:"")}${x.cname||x.cphone||x.caddr?`<div class="m">👤 ${esc([x.cname,x.cphone].filter(Boolean).join(" · "))}${x.caddr?`<br>📍 ${esc(x.caddr)}`:""}</div>`:""}
+function ledRowHtml(x,c,full){return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(full?x.date:x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>${(x.lines||[]).length>1?`<div class="m">제품 ${x.lines.length}개: ${x.lines.map(l=>esc((l.item||"제품")+(l.qty>1?" ×"+l.qty:""))).join(", ")}</div>`:((x.lines||[])[0]&&x.lines[0].qty>1?`<div class="m">수량 ${x.lines[0].qty}개</div>`:"")}${x.cname||x.cphone||x.caddr?`<div class="m">👤 ${x.cname||x.cphone?`<a href="#" style="font-weight:600" onclick="ledCustOpen('${x.id}');return false" title="이 고객의 구매 이력 모아 보기">${esc(x.cname||x.cphone)}</a>`:""}${x.cname&&x.cphone?" · "+esc(x.cphone):""}${x.caddr?`<br>📍 ${esc(x.caddr)}`:""}</div>`:""}
     <div class="m">판매가 ${won(c.price)}${x.out||x.sup?` (출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"})`:""}</div>
     <div class="m">− 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.memo?`<div class="m">📝 비고: ${esc(x.memo)}</div>`:""}</div>
     <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}
 /* 검색창은 기간과 상관없이 전체 장부에서 찾아요. 입력할 때 결과 칸만 다시 그려서 글자 입력이 끊기지 않아요 */
-function ledSearchGo(v){ledQ=v;const el=document.getElementById("ledbody");if(el)el.innerHTML=ledBody(ledCur);const x=document.getElementById("ledsx");if(x)x.style.display=ledQ?"":"none"}
+function ledSearchGo(v){ledQ=v;if(v.trim())ledCust=null;const el=document.getElementById("ledbody");if(el)el.innerHTML=ledBody(ledCur);const x=document.getElementById("ledsx");if(x)x.style.display=ledQ?"":"none"}
 function ledSearchClear(){ledQ="";const i=document.getElementById("ledsq");if(i){i.value="";i.focus()}ledSearchGo("")}
-let ledCur="";
+let ledCur="",ledCust=null;
+/* 고객 구매 이력: 전화번호가 같으면 같은 고객, 전화번호가 없는 기록은 이름이 같으면 같은 고객으로 묶어요 */
+function ledCustOpen(id){
+  const x=D.ledger.find(r=>r.id===id);if(!x)return;
+  ledCust={ph:ledDigits(x.cphone),name:(x.cname||"").trim()};ledQ="";
+  const i=document.getElementById("ledsq");if(i)i.value="";
+  const el=document.getElementById("ledbody");if(el){el.innerHTML=ledBody(ledCur);window.scrollTo(0,0)}else render();
+  const sx=document.getElementById("ledsx");if(sx)sx.style.display="none";
+}
+function ledCustClose(){ledCust=null;const el=document.getElementById("ledbody");if(el)el.innerHTML=ledBody(ledCur);else render()}
+const ledCustOf=k=>{
+  /* 전화번호 없는 기록에서 열면: 같은 이름의 전화번호가 한 가지뿐일 때만 그 번호의 기록까지 같은 고객으로 봐요(동명이인이면 섞지 않아요) */
+  const phs=new Set(D.ledger.filter(x=>k.name&&(x.cname||"").trim()===k.name&&ledDigits(x.cphone)).map(x=>ledDigits(x.cphone))),same=!k.ph&&k.name&&phs.size===1;
+  return D.ledger.filter(x=>{const ph=ledDigits(x.cphone),nm=(x.cname||"").trim();return k.ph?(ph===k.ph||(!ph&&nm&&nm===k.name)):(!ph&&nm===k.name)||(same&&nm===k.name&&ph===[...phs][0])});
+};
+function ledCustHtml(){
+  const k=ledCust,recs=ledCustOf(k).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!recs.length)return `<div class="empty">이 고객의 기록을 찾을 수 없어요.</div><button class="btn ghost" onclick="ledCustClose()">← 장부로</button>`;
+  const a=ledAgg(recs),cs=recs.map(ledCalc),last=recs[0],first=recs[recs.length-1];
+  const nameV=(recs.find(x=>x.cname)||{}).cname||"(이름 없음)",phone=(recs.find(x=>x.cphone)||{}).cphone||"",addr=(recs.find(x=>x.caddr)||{}).caddr||"";
+  const addrs=[...new Set(recs.map(x=>(x.caddr||"").trim()).filter(Boolean))];
+  const pm={};recs.forEach(r=>{(r.lines&&r.lines.length?r.lines:[{item:r.item,qty:1,price:r.price}]).forEach(l=>{const nm=(l.item||"(제품 미입력)").trim(),q=Math.max(1,Math.round(+l.qty||1)),o=(pm[nm]=pm[nm]||{n:0,q:0,P:0});o.n++;o.q+=q;o.P+=(+l.price||0)*q})});
+  const plist=Object.entries(pm).sort((x,y)=>y[1].P-x[1].P);
+  const days=Math.round((new Date(last.date)-new Date(first.date))/864e5);
+  return `<button class="btn ghost" style="padding:8px 12px" onclick="ledCustClose()">← 장부로</button>
+  <div class="card" style="margin-top:8px"><div class="body"><div class="row" style="gap:8px;align-items:center"><b class="grow" style="font-size:20px">👤 ${esc(nameV)}</b>${phone?`<a class="btn ghost" style="padding:6px 10px;text-decoration:none" href="tel:${esc(phone.replace(/[^\d+]/g,""))}">📞 ${esc(phone)}</a>`:""}</div>
+  ${addr?`<div class="m" style="margin-top:4px">📍 ${esc(addr)}${addrs.length>1?` <span class="sub">(주소 ${addrs.length}개 기록됨: ${addrs.map(esc).join(" / ")})</span>`:""}</div>`:""}
+  <div class="m" style="margin-top:4px">첫 구매 ${esc(first.date)} · 최근 구매 ${esc(last.date)}${recs.length>1?` · 구매 간격 ${days}일`:""}</div></div></div>
+  <div class="stats"><div class="stat hl"><small>구매 횟수</small><b>${a.n}회</b></div><div class="stat"><small>판매가 합계</small><b>${won(a.P)}</b></div><div class="stat"><small>할인 후 판매액</small><b>${won(a.real)}</b></div></div>
+  <div class="stats"><div class="stat"><small>평균 할인율</small><b>${a.disc}%</b></div><div class="stat"><small>남는 금액</small><b style="${a.net<0?"color:var(--red)":""}">${ledSigned(a.net)}</b></div><div class="stat"><small>남는 비율</small><b>${a.rate}%</b></div></div>
+  <div class="card"><h3>산 제품 <span class="m sub" style="margin:0">판매가 큰 순</span></h3><div class="body">${plist.map(([nm,o])=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><span class="grow">${esc(nm)}</span><span class="m">${o.q}개 · ${won(o.P)}</span></div>`).join("")}</div></div>
+  <div class="card"><h3>구매 이력 <span class="m sub" style="margin:0">최신순 · ${recs.length}건</span></h3><div class="body">${recs.map((x,i)=>ledRowHtml(x,cs[i],1)).join("")}</div></div>
+  <div class="m sub" style="margin:8px 4px">전화번호가 같으면 같은 고객으로 묶고, 전화번호가 없는 기록은 이름이 같으면 같은 고객으로 묶어요. 동명이인은 연락처를 입력해야 구분돼요.</div>`;
+}
 function ledSearchHtml(){
   const res=D.ledger.filter(ledQMatch).sort((a,b)=>b.date.localeCompare(a.date)),cs=res.map(ledCalc),sum=k=>cs.reduce((a,c)=>a+c[k],0);
   const custs=new Set(res.map(x=>(x.cname||"")+"|"+ledDigits(x.cphone)).filter(k=>k!=="|"));
@@ -1255,7 +1288,7 @@ function ledSearchHtml(){
   ${res.length?`<div class="m" style="margin-top:4px">판매가 합계 ${won(sum("price"))} · 남는 금액 <b style="${sum("net")<0?"color:var(--red)":""}">${ledSigned(sum("net"))}</b>${custs.size===1?" · 같은 고객 1명":custs.size>1?" · 고객 "+custs.size+"명":""}</div>`:""}</div></div>
   <div class="card"><h3>검색 결과</h3><div class="body">${res.length?res.map((x,i)=>ledHl(ledRowHtml(x,cs[i],1))).join(""):'<div class="empty">찾은 기록이 없어요.<br><span class="m">고객 이름, 전화번호(뒤 4자리도 돼요), 제품명, 비고 속 단어로 찾아보세요. 여러 단어는 띄어 쓰면 모두 들어간 기록만 나와요.</span></div>'}</div></div>`;
 }
-const ledBody=cur=>ledQ.trim()?ledSearchHtml():ledMain(cur);
+const ledBody=cur=>ledCust?ledCustHtml():ledQ.trim()?ledSearchHtml():ledMain(cur);
 function ledView(cur){
   ledCur=cur;
   return `<div class="row" style="gap:6px;margin:4px 0 8px;position:relative"><input id="ledsq" type="text" enterkeyhint="search" autocomplete="off" placeholder="🔍 고객 이름 · 전화번호 · 제품명 · 키워드 검색" value="${esc(ledQ)}" oninput="clearTimeout(window._lqT);const v=this.value;window._lqT=setTimeout(()=>ledSearchGo(v),150)" style="flex:1"><button id="ledsx" class="icon" style="${ledQ?"":"display:none"}" onclick="ledSearchClear()" aria-label="검색 지우기">✕</button></div><div id="ledbody">${ledBody(cur)}</div>`;
