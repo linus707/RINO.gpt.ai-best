@@ -944,7 +944,20 @@ const ledGrid="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .
 const ledAggRow=(label,a,on,click)=>`<div style="${ledGrid}${on?";background:rgba(200,85,61,.14);border-radius:8px":""}${click?";cursor:pointer":""}" ${click?`onclick="${click}"`:""}><b>${label}</b><span>${a.n}건</span><span>${won(a.P)}</span><span>${a.disc}%</span><b style="${a.net<0?"color:var(--red)":""}">${ledSigned(a.net)}</b><span>${a.rate}%</span></div>`;
 const ledAggHead=first=>`<div class="m" style="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>${first}</span><span>건수</span><span>판매가</span><span>평균 할인</span><span>남는 금액</span><span>남는 비율</span></div>`;
 const ledMatch=x=>!ledSel||ledSl(x)===ledSel;
-const ledQMatch=x=>{const q=ledQ.trim().toLowerCase();if(!q)return true;const t=[x.cname,x.cphone,x.caddr,x.item,x.memo,x.seller,...(x.lines||[]).map(l=>l.item)].join(" ").toLowerCase();return q.split(/\s+/).every(w=>t.includes(w.replace(/-/g,""))||t.replace(/-/g,"").includes(w.replace(/-/g,"")))};
+/* 검색: 고객 이름·전화번호(숫자만 3자리 이상이면 뒷자리도)·주소·제품명·코드·분류·비고·판매자·날짜를 모두 찾아요. 단어를 띄우면 모두 들어간 기록만 나와요 */
+const ledQWords=()=>ledQ.trim().toLowerCase().split(/\s+/).filter(Boolean);
+const ledDigits=t=>String(t||"").replace(/\D/g,"");
+const ledQMatch=x=>{
+  const ws=ledQWords();if(!ws.length)return true;
+  const lines=x.lines||[],t=[x.cname,x.caddr,x.item,x.memo,x.seller,x.etcNote,x.date,x.cphone,x.code,ledCatOf(x),...lines.flatMap(l=>[l.item,l.code,l.cat])].join(" ").toLowerCase(),ph=ledDigits(x.cphone);
+  return ws.every(w=>t.includes(w)||(ledDigits(w).length>=3&&ledDigits(w)===w.replace(/[^\d]/g,"")&&ph.includes(ledDigits(w))))
+};
+/* 찾은 단어를 노랗게 표시(태그 바깥 글자에만) */
+function ledHl(html){
+  const ws=ledQWords().filter(w=>w.length>0).map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));if(!ws.length)return html;
+  const re=new RegExp("("+ws.map(esc).join("|")+")","gi");
+  return html.split(/(<[^>]+>)/).map(seg=>seg.startsWith("<")?seg:seg.replace(re,'<mark style="background:#ffe08a;color:inherit;border-radius:3px">$1</mark>')).join("");
+}
 /* 제품 분류: 기록에 저장된 분류 → 단가표 → 가격표 순으로 코드·제품명으로 찾고, 없으면 "분류 없음". "거실장(XA)"처럼 괄호 코드는 떼요 */
 let LED_CAT_ASKED=0;
 function ledCatOf(x){
@@ -1226,7 +1239,28 @@ function ledAnalysisCsv(){
   sec("제품별 할인율 순위 ("+(ledAllScope?"전체 기간":m)+")");line(["제품","코드",...aggHead("").slice(1)]);Object.values(g).map(o=>({o,a:ledAgg(o.rows)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.n-p.a.n).forEach(({o,a})=>{const r=aggRow(o.name,a);r.splice(1,0,o.code);line(r)});
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+out.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="에이스침대-장부분석-"+(ledAllScope?"전체":m)+(ledSel?"-"+ledSel:"")+".csv";a.click();
 }
+function ledRowHtml(x,c,full){return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(full?x.date:x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>${(x.lines||[]).length>1?`<div class="m">제품 ${x.lines.length}개: ${x.lines.map(l=>esc((l.item||"제품")+(l.qty>1?" ×"+l.qty:""))).join(", ")}</div>`:((x.lines||[])[0]&&x.lines[0].qty>1?`<div class="m">수량 ${x.lines[0].qty}개</div>`:"")}${x.cname||x.cphone||x.caddr?`<div class="m">👤 ${esc([x.cname,x.cphone].filter(Boolean).join(" · "))}${x.caddr?`<br>📍 ${esc(x.caddr)}`:""}</div>`:""}
+    <div class="m">판매가 ${won(c.price)}${x.out||x.sup?` (출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"})`:""}</div>
+    <div class="m">− 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.memo?`<div class="m">📝 비고: ${esc(x.memo)}</div>`:""}</div>
+    <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
+    <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}
+/* 검색창은 기간과 상관없이 전체 장부에서 찾아요. 입력할 때 결과 칸만 다시 그려서 글자 입력이 끊기지 않아요 */
+function ledSearchGo(v){ledQ=v;const el=document.getElementById("ledbody");if(el)el.innerHTML=ledBody(ledCur);const x=document.getElementById("ledsx");if(x)x.style.display=ledQ?"":"none"}
+function ledSearchClear(){ledQ="";const i=document.getElementById("ledsq");if(i){i.value="";i.focus()}ledSearchGo("")}
+let ledCur="";
+function ledSearchHtml(){
+  const res=D.ledger.filter(ledQMatch).sort((a,b)=>b.date.localeCompare(a.date)),cs=res.map(ledCalc),sum=k=>cs.reduce((a,c)=>a+c[k],0);
+  const custs=new Set(res.map(x=>(x.cname||"")+"|"+ledDigits(x.cphone)).filter(k=>k!=="|"));
+  return `<div class="card"><div class="body"><div class="m"><b>“${esc(ledQ.trim())}”</b> 검색 결과 <b>${res.length}건</b> · 전체 기간${ledSel?"":""}</div>
+  ${res.length?`<div class="m" style="margin-top:4px">판매가 합계 ${won(sum("price"))} · 남는 금액 <b style="${sum("net")<0?"color:var(--red)":""}">${ledSigned(sum("net"))}</b>${custs.size===1?" · 같은 고객 1명":custs.size>1?" · 고객 "+custs.size+"명":""}</div>`:""}</div></div>
+  <div class="card"><h3>검색 결과</h3><div class="body">${res.length?res.map((x,i)=>ledHl(ledRowHtml(x,cs[i],1))).join(""):'<div class="empty">찾은 기록이 없어요.<br><span class="m">고객 이름, 전화번호(뒤 4자리도 돼요), 제품명, 비고 속 단어로 찾아보세요. 여러 단어는 띄어 쓰면 모두 들어간 기록만 나와요.</span></div>'}</div></div>`;
+}
+const ledBody=cur=>ledQ.trim()?ledSearchHtml():ledMain(cur);
 function ledView(cur){
+  ledCur=cur;
+  return `<div class="row" style="gap:6px;margin:4px 0 8px;position:relative"><input id="ledsq" type="text" enterkeyhint="search" autocomplete="off" placeholder="🔍 고객 이름 · 전화번호 · 제품명 · 키워드 검색" value="${esc(ledQ)}" oninput="clearTimeout(window._lqT);const v=this.value;window._lqT=setTimeout(()=>ledSearchGo(v),150)" style="flex:1"><button id="ledsx" class="icon" style="${ledQ?"":"display:none"}" onclick="ledSearchClear()" aria-label="검색 지우기">✕</button></div><div id="ledbody">${ledBody(cur)}</div>`;
+}
+function ledMain(cur){
   const m=ledM||cur,[y,mo]=m.split("-").map(Number);
   if(!LED_CAT&&!LED_CAT_ASKED){LED_CAT_ASKED=1;ledCatLoad().then(()=>{if(page==="revenue"||page==="inventory")render(true)}).catch(()=>{})}
   const monthAll=D.ledger.filter(x=>x.date.startsWith(m));
@@ -1241,11 +1275,7 @@ function ledView(cur){
   <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><button class="btn ghost" onclick="ledCsv()">CSV</button><button class="btn ghost" onclick="ledAnalysisCsv()" title="지금 화면의 분석을 한 파일로">분석 CSV</button><a class="btn ghost" href="price.html" style="text-decoration:none">💲 가격표</a></div>
   <div class="stats"><div class="stat hl"><small>남는 금액 (할인·배송·물건대금·세금·수수료·기타 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>남는 비율</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
   <div class="stats"><div class="stat"><small>판매가 합계</small><b>${won(P)}</b></div><div class="stat"><small>할인액 합계</small><b>${won(sum("da"))}</b></div><div class="stat"><small>배송료 합계</small><b>${won(sum("ship"))}</b></div><div class="stat"><small>물건대금 합계</small><b>${won(sum("cost"))}</b></div><div class="stat"><small>세금·수수료 합계</small><b>${won(sum("fees"))}</b></div><div class="stat"><small>기타 비용 합계</small><b>${won(sum("etc"))}</b></div></div>
-  ${sellerCard}${ledGoalCard(monthAll,mo)}${filt}${ledBinCards(m,mo)}${ledCatTrendCard()}${ledDiscRank(rows)}<input placeholder="고객 성함·연락처·제품·비고 검색" value="${esc(ledQ)}" oninput="ledQ=this.value;clearTimeout(window._lqT);window._lqT=setTimeout(()=>render(true),200)" style="margin-bottom:8px"><div class="card"><h3>판매 기록 <span class="m sub" style="margin:0">${rows.filter(ledQMatch).length}건${ledQ.trim()?" (검색)":""}</span></h3><div class="body">${rows.map((x,i)=>[x,cs[i]]).filter(([x])=>ledQMatch(x)).map(([x,c])=>{return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>${(x.lines||[]).length>1?`<div class="m">제품 ${x.lines.length}개: ${x.lines.map(l=>esc((l.item||"제품")+(l.qty>1?" ×"+l.qty:""))).join(", ")}</div>`:((x.lines||[])[0]&&x.lines[0].qty>1?`<div class="m">수량 ${x.lines[0].qty}개</div>`:"")}${x.cname||x.cphone||x.caddr?`<div class="m">👤 ${esc([x.cname,x.cphone].filter(Boolean).join(" · "))}${x.caddr?`<br>📍 ${esc(x.caddr)}`:""}</div>`:""}
-    <div class="m">판매가 ${won(c.price)}${x.out||x.sup?` (출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"})`:""}</div>
-    <div class="m">− 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.memo?`<div class="m">📝 비고: ${esc(x.memo)}</div>`:""}</div>
-    <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
-    <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>
+  ${sellerCard}${ledGoalCard(monthAll,mo)}${filt}${ledBinCards(m,mo)}${ledCatTrendCard()}${ledDiscRank(rows)}<div class="card"><h3>판매 기록 <span class="m sub" style="margin:0">${rows.length}건</span></h3><div class="body">${rows.map((x,i)=>ledRowHtml(x,cs[i])).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>
   <div class="m sub" style="margin:8px 4px">남는 금액 = 할인 후 판매액 − 배송료 − 물건대금 − 기타 비용 − 부가세(선택) − 카드수수료 − 기타 세율이에요. 세금·수수료는 할인 후 판매액 기준이며, 매입 부가세 공제는 반영하지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요. 판매자별 평균 할인은 판매가 대비 할인액(금액 기준), 남는 비율은 판매가 대비 남는 금액이에요. 판매자를 입력하지 않은 기록은 “미지정”으로 묶여요.</div>`;
 }
 /* ---------- 단가표 (에이스침대 제품별 판매가·납부 단가) ----------
