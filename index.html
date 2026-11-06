@@ -342,7 +342,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 /* 오늘 할 일: 매일 루틴(D.routine, 날마다 체크 초기화) + 오늘만 할 일(D.todo) */
 const RT_TEST=["[테스트] 아침에 물 한 잔 마시기","[테스트] 오늘 할 일 3개 적기"];
 const RT_OLD="아침 스트레칭|컨텐츠 1개 진행|댓글·DM 확인|수익 지표 체크|내일 할 일 3개 적기";
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,ledGoals:{},ledGoalBy:"real",u:0},revenue:[],ledger:[],prices:[],dday:[],todo:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,ledGoals:{},ledGoalsM:{},ledGoalBy:"real",u:0},revenue:[],ledger:[],prices:[],dday:[],todo:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),u:0,items:RT_TEST.map(n=>[n,0])}});
@@ -784,7 +784,7 @@ function revOpen(){
    부가세·수수료·세율은 '할인 후 판매액'(고객이 실제로 낸 금액) 기준이에요. 매입 부가세 공제는 반영하지 않아요.
    기록은 D.ledger 에 저장되고 동기화돼요. 물품·재고 → 장부 탭과 수익 → 장부 탭이 같은 데이터를 보여 줘요.
    제품 검색은 가격표(prices.json, 판매가)와 이 기기에 불러온 내부 단가(IndexedDB linus-price: 출고가·공급가), 단가표(D.prices)를 함께 써요. */
-let ledM="",ledEdit="",ledHits=[],ledSel="";
+let ledM="",ledEdit="",ledHits=[],ledSel="",ledAllScope=0;
 const ledCalc=e=>{
   const n=v=>Math.max(0,+v||0),pct=v=>Math.min(100,n(v));
   const price=n(e.price),disc=pct(e.disc),ship=n(e.ship),cost=n(e.cost),etc=n(e.etc),card=pct(e.card),tax=pct(e.tax),vat=!!e.vat;
@@ -809,17 +809,65 @@ const ledAggRow=(label,a,on,click)=>`<div style="${ledGrid}${on?";background:rgb
 const ledAggHead=first=>`<div class="m" style="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>${first}</span><span>건수</span><span>판매가</span><span>평균 할인</span><span>남는 금액</span><span>남는 비율</span></div>`;
 const ledMatch=x=>!ledSel||ledSl(x)===ledSel;
 /* 개인별 월 목표: 판매자마다 한 달 목표 금액(기준: 할인 후 판매액 또는 남는 금액)을 정하고 달성률을 봐요 */
-function ledGoalSet(i,v){if(!isAdmin())return;const n=ledSellers()[i];if(!n)return;const g={...(D.set.ledGoals||{})},a=Math.max(0,Math.round(+v||0));if(a)g[n]=a;else delete g[n];D.set.ledGoals=g;D.set.u=Date.now();save();render()}
+/* 목표는 달마다 따로 정할 수 있어요(ledGoalsM[월][판매자]). 그 달에 따로 정하지 않았으면 「매달 기본」(ledGoals)을 써요. */
+const ledGoalOf=(n,m)=>{const o=(D.set.ledGoalsM||{})[m];return o&&n in o?{v:+o[n]||0,own:1}:{v:+(D.set.ledGoals||{})[n]||0,own:0}};
+function ledGoalSet(i,v){
+  if(!isAdmin())return;const n=ledSellers()[i],m=ledM||today().slice(0,7);if(!n)return;
+  const all={...(D.set.ledGoalsM||{})},o={...(all[m]||{})};
+  if(String(v).trim()==="")delete o[n];else o[n]=Math.max(0,Math.round(+v||0));
+  if(Object.keys(o).length)all[m]=o;else delete all[m];
+  D.set.ledGoalsM=all;D.set.u=Date.now();save();render();
+}
+function ledGoalDefault(i){
+  if(!isAdmin())return;const n=ledSellers()[i],m=ledM||today().slice(0,7);if(!n)return;
+  const g=ledGoalOf(n,m).v;if(!g){alert("먼저 이 달 목표 금액을 입력해 주세요");return}
+  if(!confirm(`${n}님의 목표 ${won(g)}을 매달 기본 목표로 정할까요? (달마다 따로 정한 목표는 그대로 우선해요)`))return;
+  D.set.ledGoals={...(D.set.ledGoals||{}),[n]:g};
+  const all={...(D.set.ledGoalsM||{})};if(all[m]){const o={...all[m]};delete o[n];if(Object.keys(o).length)all[m]=o;else delete all[m]}
+  D.set.ledGoalsM=all;D.set.u=Date.now();save();render();
+}
 function ledGoalBy(v){if(!isAdmin())return;D.set.ledGoalBy=v==="net"?"net":"real";D.set.u=Date.now();save();render()}
 function ledGoalCard(monthAll,mo){
-  const names=ledSellers(),by=D.set.ledGoalBy==="net"?"net":"real",lab=by==="net"?"남는 금액":"할인 후 판매액",goals=D.set.ledGoals||{};
+  const names=ledSellers(),by=D.set.ledGoalBy==="net"?"net":"real",lab=by==="net"?"남는 금액":"할인 후 판매액";
   if(!names.length)return"";
   const bar=p=>`<div style="height:8px;border-radius:6px;background:rgba(0,0,0,.08);overflow:hidden;margin:4px 0"><div style="height:100%;width:${Math.min(100,Math.max(0,p))}%;background:var(--ac,#c8553d)"></div></div>`;
   const rows=names.map((n,i)=>{
-    const a=ledAgg(monthAll.filter(x=>ledSl(x)===n)),v=by==="net"?a.net:a.real,g=+goals[n]||0,p=g>0?Math.round(v/g*1000)/10:0;
-    return `<div style="padding:10px 6px;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="grow">${esc(n)}</b>${isAdmin()?`<label class="m" style="display:flex;align-items:center;gap:6px">목표(원)<input type="number" min="0" inputmode="numeric" value="${g||""}" placeholder="미설정" style="width:120px" onchange="ledGoalSet(${i},this.value)"></label>`:`<span class="m">목표 ${g?won(g):"미설정"}</span>`}</div>
-    ${g>0?`${bar(p)}<div class="row" style="justify-content:space-between"><span class="m">${lab} <b style="color:var(--tx)">${ledSigned(v)}</b> / ${won(g)}</span><b style="${p>=100?"color:var(--ok,#2e8b57)":""}">${p}%${p>=100?" 달성":""}</b></div><div class="m">${v>=g?"목표를 넘었어요":"남은 금액 "+won(g-v)}</div>`:`<div class="m">${lab} ${ledSigned(v)} · 목표를 넣으면 달성률이 보여요</div>`}</div>`}).join("");
-  return `<div class="card"><h3>개인별 ${mo}월 목표 달성률</h3><div class="body" style="padding:6px 4px"><div class="row" style="gap:8px;padding:0 6px 6px;flex-wrap:wrap"><span class="m">목표 기준</span><select ${isAdmin()?"":"disabled"} onchange="ledGoalBy(this.value)" style="padding:6px;border-radius:10px"><option value="real" ${by==="real"?"selected":""}>할인 후 판매액</option><option value="net" ${by==="net"?"selected":""}>남는 금액(이윤)</option></select><span class="m">목표는 매달 같은 금액으로 적용돼요</span></div>${rows}</div></div>`;
+    const a=ledAgg(monthAll.filter(x=>ledSl(x)===n)),v=by==="net"?a.net:a.real,gg=ledGoalOf(n,ledM||today().slice(0,7)),g=gg.v,p=g>0?Math.round(v/g*1000)/10:0;
+    return `<div style="padding:10px 6px;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="grow">${esc(n)}</b>${isAdmin()?`<label class="m" style="display:flex;align-items:center;gap:6px">${mo}월 목표(원)<input type="number" min="0" inputmode="numeric" value="${g||""}" placeholder="미설정" style="width:120px" onchange="ledGoalSet(${i},this.value)"></label><button class="pill" style="background:var(--g)" onclick="ledGoalDefault(${i})" title="이 금액을 매달 기본 목표로">매달 기본으로</button>`:`<span class="m">목표 ${g?won(g):"미설정"}</span>`}</div>
+    ${g>0?`<div class="m">${gg.own?"이 달에 따로 정한 목표":"매달 기본 목표"}</div>${bar(p)}<div class="row" style="justify-content:space-between"><span class="m">${lab} <b style="color:var(--tx)">${ledSigned(v)}</b> / ${won(g)}</span><b style="${p>=100?"color:var(--ok,#2e8b57)":""}">${p}%${p>=100?" 달성":""}</b></div><div class="m">${v>=g?"목표를 넘었어요":"남은 금액 "+won(g-v)}</div>`:`<div class="m">${lab} ${ledSigned(v)} · 목표를 넣으면 달성률이 보여요</div>`}</div>`}).join("");
+  return `<div class="card"><h3>개인별 ${mo}월 목표 달성률</h3><div class="body" style="padding:6px 4px"><div class="row" style="gap:8px;padding:0 6px 6px;flex-wrap:wrap"><span class="m">목표 기준</span><select ${isAdmin()?"":"disabled"} onchange="ledGoalBy(this.value)" style="padding:6px;border-radius:10px"><option value="real" ${by==="real"?"selected":""}>할인 후 판매액</option><option value="net" ${by==="net"?"selected":""}>남는 금액(이윤)</option></select><span class="m">달마다 따로 정하거나, 「매달 기본으로」로 계속 쓸 목표를 정해요</span></div>${rows}</div></div>`;
+}
+/* 할인율 구간 분석: 0~10%(10% 미만) · 10~20%(10% 이상 20% 미만) · 20% 이상 */
+const LED_BINS=[["0~10%",0,10],["10~20%",10,20],["20% 이상",20,101]];
+const ledBinOf=x=>{const d=ledCalc(x).disc;return LED_BINS.findIndex(b=>d>=b[1]&&d<b[2])};
+function ledScope(v){ledAllScope=v?1:0;render()}
+/* 이 달 또는 전체 기간 기록에서, 같은 판매자 필터를 적용한 목록 */
+const ledScopeRows=m=>D.ledger.filter(x=>ledMatch(x)&&(ledAllScope||x.date.startsWith(m)));
+/* 판매자별로 할인율에 따른 남는 비율이 어떻게 변하는지: 최소 3건·할인율이 2가지 이상일 때만 기울기(할인 1%p당 남는 비율 변화)를 계산 */
+function ledSlope(rows){
+  const pts=rows.map(x=>{const c=ledCalc(x);return c.price>0?[c.disc,c.rate]:null}).filter(Boolean);
+  if(pts.length<3)return null;const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n;
+  const sxx=pts.reduce((a,p)=>a+(p[0]-mx)**2,0);if(sxx<1)return null;
+  return Math.round(pts.reduce((a,p)=>a+(p[0]-mx)*(p[1]-my),0)/sxx*100)/100;
+}
+function ledBinCards(m,mo){
+  const rows=ledScopeRows(m);if(!rows.length)return"";
+  const tog=`<div class="row" style="gap:6px;padding:0 6px 6px"><button class="pill" style="${ledAllScope?"background:rgba(0,0,0,.08)":"background:#c8553d;color:#fff"}" onclick="ledScope(0)">${mo}월</button><button class="pill" style="${ledAllScope?"background:#c8553d;color:#fff":"background:rgba(0,0,0,.08)"}" onclick="ledScope(1)">전체 기간</button><span class="m">${ledSel?esc(ledSel)+" 기준":"전체 판매자"}</span></div>`;
+  const bins=LED_BINS.map((b,i)=>({b,a:ledAgg(rows.filter(x=>ledBinOf(x)===i))}));
+  const lo=bins.find(o=>o.a.n),hi=[...bins].reverse().find(o=>o.a.n);
+  const msg=lo&&hi&&lo!==hi?`${hi.b[0]} 구간의 남는 비율은 ${hi.a.rate}%로, ${lo.b[0]} 구간(${lo.a.rate}%)보다 <b style="${hi.a.rate<lo.a.rate?"color:var(--red)":""}">${Math.abs(Math.round((hi.a.rate-lo.a.rate)*10)/10)}%p ${hi.a.rate<lo.a.rate?"낮아요":"높아요"}</b>. 건당 남는 금액은 ${won(Math.round(lo.a.n?lo.a.net/lo.a.n:0))} → ${won(Math.round(hi.a.n?hi.a.net/hi.a.n:0))}예요.`:"비교하려면 서로 다른 할인율 구간의 판매가 있어야 해요.";
+  const card1=`<div class="card"><h3>할인율 구간별 판매·이윤</h3><div class="body" style="padding:6px 4px">${tog}${ledAggHead("할인율 구간")}${bins.map(o=>o.a.n?ledAggRow(o.b[0],o.a,false,""):`<div style="${ledGrid}"><b>${o.b[0]}</b><span style="grid-column:2/7" class="m">판매 없음</span></div>`).join("")}<div class="m" style="padding:8px 6px">${msg}</div><div class="m" style="padding:0 6px 6px">구간 경계: 10%는 10~20%에, 20%는 20% 이상에 들어가요.</div></div></div>`;
+  const names=[...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko"));
+  const cell=(a)=>a.n?`<span>${a.rate}%<br><span class="m" style="font-size:11px">${a.n}건</span></span>`:`<span class="m">–</span>`;
+  const g5="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.25fr;gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)";
+  const srows=names.map(n=>{
+    const rs=rows.filter(x=>ledSl(x)===n),ba=LED_BINS.map((b,i)=>ledAgg(rs.filter(x=>ledBinOf(x)===i)));
+    const l=ba.find(a=>a.n),h=[...ba].reverse().find(a=>a.n),sl=ledSlope(rs),few=rs.length<3;
+    let chg=`<span class="m">비교 불가</span>`;
+    if(l&&h&&l!==h){const d=Math.round((h.rate-l.rate)*10)/10;chg=`<b style="${d<0?"color:var(--red)":""}">${d>0?"+":""}${d}%p</b>${sl!==null?`<br><span class="m" style="font-size:11px">할인 1%p↑ → ${sl>0?"+":""}${sl}%p</span>`:""}`}
+    return `<div style="${g5}"><b>${esc(n)}${few?'<br><span class="m" style="font-size:11px">참고용</span>':""}</b>${ba.map(cell).join("")}<span>${chg}</span></div>`}).join("");
+  const card2=`<div class="card"><h3>판매자별 할인율과 남는 비율 <span class="m sub" style="margin:0">할인이 높을 때 이윤이 얼마나 줄었나</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.25fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>판매자</span>${LED_BINS.map(b=>`<span>${b[0]}</span>`).join("")}<span>높은 할인 vs 낮은 할인</span></div>${srows}<div class="m" style="padding:8px 6px">칸은 구간별 <b>남는 비율(판매가 대비)</b>과 건수예요. 맨 오른쪽은 가장 높은 할인 구간과 가장 낮은 할인 구간의 차이(%p)이고, 3건 이상이면 할인 1%p 올릴 때 남는 비율이 평균 몇 %p 변하는지도 보여줘요. 3건 미만은 “참고용”이에요.</div></div></div>`;
+  return card1+card2;
 }
 /* 제품별 할인율 순위: 이 달 판매에서 제품마다 평균 할인율이 높은 순서 */
 function ledDiscRank(rows){
@@ -954,7 +1002,7 @@ function ledView(cur){
   <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><button class="btn ghost" onclick="ledCsv()">CSV</button><a class="btn ghost" href="price.html" style="text-decoration:none">💲 가격표</a></div>
   <div class="stats"><div class="stat hl"><small>남는 금액 (할인·배송·물건대금·세금·수수료·기타 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>남는 비율</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
   <div class="stats"><div class="stat"><small>판매가 합계</small><b>${won(P)}</b></div><div class="stat"><small>할인액 합계</small><b>${won(sum("da"))}</b></div><div class="stat"><small>배송료 합계</small><b>${won(sum("ship"))}</b></div><div class="stat"><small>물건대금 합계</small><b>${won(sum("cost"))}</b></div><div class="stat"><small>세금·수수료 합계</small><b>${won(sum("fees"))}</b></div><div class="stat"><small>기타 비용 합계</small><b>${won(sum("etc"))}</b></div></div>
-  ${sellerCard}${ledGoalCard(monthAll,mo)}${filt}${ledDiscRank(rows)}<div class="card"><h3>판매 기록</h3><div class="body">${rows.map((x,i)=>{const c=cs[i];return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>
+  ${sellerCard}${ledGoalCard(monthAll,mo)}${filt}${ledBinCards(m,mo)}${ledDiscRank(rows)}<div class="card"><h3>판매 기록</h3><div class="body">${rows.map((x,i)=>{const c=cs[i];return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>
     <div class="m">판매가 ${won(c.price)}${x.out||x.sup?` (출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"})`:""}</div>
     <div class="m">− 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.memo?`<div class="m">${esc(x.memo)}</div>`:""}</div>
     <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
