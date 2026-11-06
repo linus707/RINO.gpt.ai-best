@@ -1152,6 +1152,32 @@ function ledSalesCards(rows){
   const note=`<div class="card"><div class="body"><div class="m"><b>매트리스·프레임 판매량</b> · ${ledAllScope?"전체 기간":"이 달"}${ledSel?" · "+esc(ledSel):""}<br>침대세트 상품명(프레임모델 (매트리스모델) 사이즈 색상)에서 프레임과 매트리스를 나눠 세어요. 침대세트 1개는 프레임 1개와 매트리스 1개로 각각 세요. 읽을 수 없는 제품(직접 입력 등) ${d.un}줄은 빠졌어요(전체 제품 줄 ${d.total}개).</div></div></div>`;
   return note+ledSalesTable("mt","매트리스 모델별 판매량",d.mt)+ledSalesTable("fr","프레임 모델별 판매량",d.fr)+ledSalesTable("combo","프레임 + 매트리스 조합",d.combo,"어떤 조합이 많이 나가나")+ledSalesTable("size","사이즈별 판매량",d.size);
 }
+/* ===== 월별 모델 판매 추이: 매트리스·프레임 모델마다 달별 판매 수량 (판매자 선택을 따라가고, 기간 버튼과는 무관하게 최근 달들을 봐요) ===== */
+let ledTrendKind="mt";
+function ledTrendSet(k){ledTrendKind=k;render(true)}
+const ledMonthsBack=(end,n)=>{const[y,m]=end.split("-").map(Number);return Array.from({length:n},(_,i)=>{const d=new Date(y,m-1-(n-1-i),1);return monthKey(d.getFullYear(),d.getMonth())})};
+function ledModelTrendData(kind,months){
+  const ex=ledExpand(D.ledger.filter(ledMatch).filter(x=>months.includes(x.date.slice(0,7)))),g={},tot={};months.forEach(m=>tot[m]=0);let un=0;
+  ex.forEach(x=>{const k=ledKind(x),it=k&&k[kind];if(!it){if(!k||(!k.mt&&!k.fr))un++;return}
+    const o=(g[it.key]=g[it.key]||{label:it.label,by:{},tot:0}),m=x.date.slice(0,7),q=x.qty||1;o.by[m]=(o.by[m]||0)+q;o.tot+=q;tot[m]+=q});
+  return{rows:Object.values(g).sort((a,b)=>b.tot-a.tot),totals:tot,un};
+}
+function ledModelTrendCard(cur){
+  const end=(ledM||cur),months=ledMonthsBack(end,6),kind=ledTrendKind,d=ledModelTrendData(kind,months);
+  const seg=(k,t)=>`<button type="button" class="pill" style="${kind===k?"background:#c8553d;color:#fff":"background:rgba(0,0,0,.08)"}" onclick="ledTrendSet('${k}')">${t}</button>`;
+  const head=`<div class="row" style="gap:6px;padding:0 6px 6px;flex-wrap:wrap">${seg("mt","매트리스")}${seg("fr","프레임")}<span class="m">${ledSel?esc(ledSel)+" 기준":"전체 판매자"} · 최근 6개월(${months[0].slice(2).replace("-",".")}~${months[5].slice(2).replace("-",".")})</span></div>`;
+  if(!d.rows.length)return `<div class="card"><h3>월별 모델 판매 추이</h3><div class="body" style="padding:6px 4px">${head}<div class="m" style="padding:6px">이 기간에 읽을 수 있는 ${kind==="mt"?"매트리스":"프레임"} 판매가 없어요.</div></div></div>`;
+  const key="trend"+kind,open=!!ledSalesOpen[key],list=open?d.rows:d.rows.slice(0,8),max=Math.max(1,...d.rows.flatMap(o=>months.map(m=>o.by[m]||0)));
+  const g=`display:grid;grid-template-columns:1.5fr repeat(6,.5fr) .6fr;gap:3px;align-items:center;font-size:12px;padding:7px 6px;border-top:.5px solid var(--sep)`;
+  const cell=q=>`<span style="text-align:center;border-radius:6px;padding:3px 0;${q?`background:rgba(200,85,61,${Math.round(Math.min(.55,.12+q/max*.43)*100)/100})`:"color:#bbb"}">${q||"·"}</span>`;
+  const last=months[5],prev=months[4];
+  return `<div class="card"><h3>월별 모델 판매 추이 <span class="m sub" style="margin:0">달별 판매 수량(개)</span></h3><div class="body" style="padding:6px 4px">${head}
+  <div class="m" style="display:grid;grid-template-columns:1.5fr repeat(6,.5fr) .6fr;gap:3px;padding:0 6px 4px;font-size:11px"><span>모델</span>${months.map(m=>`<span style="text-align:center">${m.slice(5)}월</span>`).join("")}<span style="text-align:center">합계</span></div>
+  ${list.map((o,i)=>{const dl=(o.by[last]||0)-(o.by[prev]||0);return `<div style="${g}"><b style="word-break:break-all;font-size:12px">${i+1}. ${esc(o.label.length>22?o.label.slice(0,22)+"…":o.label)}${dl?`<br><span class="m" style="font-size:10px;color:${dl>0?"#2e8b57":"var(--red)"}">${dl>0?"▲":"▼"} 전월 대비 ${Math.abs(dl)}개</span>`:""}</b>${months.map(m=>cell(o.by[m]||0)).join("")}<b style="text-align:center">${o.tot}</b></div>`}).join("")}
+  <div style="${g};background:rgba(0,0,0,.04)"><b style="font-size:12px">월 합계</b>${months.map(m=>`<span style="text-align:center">${d.totals[m]||"·"}</span>`).join("")}<b style="text-align:center">${Object.values(d.totals).reduce((a,b)=>a+b,0)}</b></div>
+  ${d.rows.length>8?`<div style="padding:8px 6px"><button class="btn ghost" onclick="ledSalesMore('${key}')">${open?"접기":"전체 "+d.rows.length+"개 보기"}</button></div>`:""}
+  <div class="m" style="padding:6px 6px 8px">진한 칸일수록 그 달에 많이 팔린 모델이에요. 침대세트는 프레임과 매트리스 표에 각각 1개씩 세요. 읽을 수 없는 제품(직접 입력 등) ${d.un}줄은 빠졌어요. 선택한 달 기준 최근 6개월이에요(위의 달 이동 화살표를 따라가요).</div></div></div>`;
+}
 /* 묶음 구성별: 묶음 주문에 들어간 분류 조합과, 같이 팔린 제품 쌍 */
 function ledComboData(rows){
   const bund=rows.filter(ledIsBundle),cm={},pm={};
@@ -1351,6 +1377,7 @@ function ledAnalysisCsv(){
    [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const q=ledBundleSplit(rows.filter(x=>ledSl(x)===n)),a=ledAgg(q.single),b=ledAgg(q.bund);line([n,a.n,a.n?a.disc:"",a.n?a.rate:"",b.n,b.n?b.disc:"",b.n?b.rate:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])});
    sec("월별 묶음·단품 평균 할인율(%) ("+(ledSel||"전체 판매자")+")");line(["월","단품 건수","단품 평균 할인율(%)","묶음 건수","묶음 평균 할인율(%)","묶음-단품(%p)","묶음 비중(%)"]);
    [...new Set(D.ledger.filter(ledMatch).map(x=>x.date.slice(0,7)))].sort().reverse().forEach(k=>{const q=ledBundleSplit(D.ledger.filter(x=>x.date.startsWith(k)&&ledMatch(x))),a=ledAgg(q.single),b=ledAgg(q.bund);line([k,a.n,a.n?a.disc:"",b.n,b.n?b.disc:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])})}
+  {const ms=ledMonthsBack(m,12);[["mt","매트리스"],["fr","프레임"]].forEach(([k,t])=>{const d=ledModelTrendData(k,ms);sec("월별 "+t+" 모델 판매 수량 ("+(ledSel||"전체 판매자")+", 최근 12개월)");line(["모델",...ms,"합계"]);d.rows.forEach(o=>line([o.label,...ms.map(x=>o.by[x]||0),o.tot]));line(["월 합계",...ms.map(x=>d.totals[x]),Object.values(d.totals).reduce((a,b)=>a+b,0)])})}
   {const cd=ledComboData(rows);sec("묶음 구성별 (분류 조합)");line(aggHead("구성"));cd.combos.forEach(o=>line(aggRow(o.label,o.a)));
    sec("같이 팔린 제품 쌍");line(aggHead("제품 쌍"));cd.pairs.forEach(o=>line(aggRow(o.label,o.a)));
    const sd=ledSalesData(rows),sl=(t,list)=>{sec(t+" ("+(ledAllScope?"전체 기간":m)+")");line(["이름","판매 수량","주문 줄 수","판매가 합계","평균 할인율(%)","남는 금액","남는 비율(%)"]);list.forEach(o=>line([o.label,o.qty,o.a.n,o.a.P,o.a.disc,o.a.net,o.a.rate]))};
@@ -1435,7 +1462,7 @@ function ledMain(cur){
   <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><button class="btn ghost" onclick="ledCsv()">CSV</button><button class="btn ghost" onclick="ledAnalysisCsv()" title="지금 화면의 분석을 한 파일로">분석 CSV</button><a class="btn ghost" href="price.html" style="text-decoration:none">💲 가격표</a></div>
   <div class="stats"><div class="stat hl"><small>남는 금액 (할인·배송·물건대금·세금·수수료·기타 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>남는 비율</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
   <div class="stats"><div class="stat"><small>판매가 합계</small><b>${won(P)}</b></div><div class="stat"><small>할인액 합계</small><b>${won(sum("da"))}</b></div><div class="stat"><small>배송료 합계</small><b>${won(sum("ship"))}</b></div><div class="stat"><small>물건대금 합계</small><b>${won(sum("cost"))}</b></div><div class="stat"><small>세금·수수료 합계</small><b>${won(sum("fees"))}</b></div><div class="stat"><small>기타 비용 합계</small><b>${won(sum("etc"))}</b></div></div>
-  ${sellerCard}${ledGoalCard(monthAll,mo)}${filt}${ledBinCards(m,mo)}${ledCatTrendCard()}${ledDiscRank(rows)}<div class="card"><h3>판매 기록 <span class="m sub" style="margin:0">${rows.length}건</span></h3><div class="body">${rows.map((x,i)=>ledRowHtml(x,cs[i])).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>
+  ${sellerCard}${ledGoalCard(monthAll,mo)}${filt}${ledBinCards(m,mo)}${ledModelTrendCard(cur)}${ledCatTrendCard()}${ledDiscRank(rows)}<div class="card"><h3>판매 기록 <span class="m sub" style="margin:0">${rows.length}건</span></h3><div class="body">${rows.map((x,i)=>ledRowHtml(x,cs[i])).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>
   <div class="m sub" style="margin:8px 4px">남는 금액 = 할인 후 판매액 − 배송료 − 물건대금 − 기타 비용 − 부가세(선택) − 카드수수료 − 기타 세율이에요. 세금·수수료는 할인 후 판매액 기준이며, 매입 부가세 공제는 반영하지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요. 판매자별 평균 할인은 판매가 대비 할인액(금액 기준), 남는 비율은 판매가 대비 남는 금액이에요. 판매자를 입력하지 않은 기록은 “미지정”으로 묶여요.</div>`;
 }
 /* ---------- 단가표 (에이스침대 제품별 판매가·납부 단가) ----------
