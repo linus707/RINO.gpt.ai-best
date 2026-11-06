@@ -1286,6 +1286,8 @@ function ledDueAlerts(){
 }
 const ledDueBadge=o=>o.level==="over"?`<span class="pill" style="background:#fde4e0;color:#c0392b">${-o.diff}일 지남</span>`:o.level==="soon"?`<span class="pill" style="background:#fff0d6;color:#b36b00">${o.diff===0?"오늘":o.diff+"일 후"} 예정</span>`:`<span class="pill" style="background:var(--g)">${o.diff}일 후</span>`;
 function ledSetDue(id,v){const x=D.ledger.find(r=>r.id===id);if(!x)return;if(v)x.dueDate=v;else delete x.dueDate;save();render(true)}
+const ledDueCfg=()=>({on:1,hour:9,names:0,...(D.set.dueNotify||{})});
+function ledDueNotifySet(k,v){if(!isAdmin())return;const c=ledDueCfg();if(k==="hour")c.hour=Math.min(23,Math.max(0,Math.round(+v)||0));else c[k]=v?1:0;D.set.dueNotify=c;D.set.u=Date.now();save();render(true)}
 function ledSetDueDays(v){if(!isAdmin())return;D.set.dueDays=Math.max(1,Math.min(365,Math.round(+v||14)));D.set.u=Date.now();save();render(true)}
 function ledDueHome(){
   if(!isAdmin())return"";const al=ledDueAlerts().filter(o=>o.level!=="ok");if(!al.length)return"";
@@ -1345,7 +1347,13 @@ function ledPayCards(m,mo,monthAll){
   ${ms.map(k=>{const a=ent.filter(e=>String(e.date).startsWith(k)),t=tot(a),c=tot(a.filter(e=>e.method==="카드")).net,h=tot(a.filter(e=>e.method==="현금"||e.method==="현금영수증")).net,o=tot(a.filter(e=>e.method==="계좌이체"||e.method==="기타")).net;return `<div style="${g6}${k===m?";background:rgba(200,85,61,.14);border-radius:8px":""}"><b>${k.slice(2).replace("-",".")}</b><b>${ledSigned(t.net)}</b><span>${ledSigned(c)}</span><span>${ledSigned(h)}</span><span>${ledSigned(o)}</span><span style="${t.O?"color:var(--red)":""}">${t.O?"−"+won(t.O):"–"}</span></div>`}).join("")}</div></div>`:"";
   const book=inM.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))||0);
   const ledg=`<div class="card"><h3>${mo}월 결제 원장 <span class="m sub" style="margin:0">회계 장부 · 날짜순</span></h3><div class="body">${book.map(e=>`<div class="row" style="gap:8px;padding:7px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t" style="font-size:14px">${esc(String(e.date).slice(5))} · ${esc(e.kind)} · ${esc(e.method)}</div><div class="m">${esc(e.x.cname||"(고객 미입력)")} · ${esc(e.x.item||"(제품 미입력)")}</div></div><b style="${e.kind==="취소"?"color:var(--red)":""}">${e.kind==="취소"?"−":"+"}${won(amt(e))}</b><button class="icon" style="width:30px;height:30px" onclick="ledOpen('${e.x.id}')" aria-label="기록 열기">✎</button></div>`).join("")||'<div class="m">이 달 결제 내역이 없어요.</div>'}</div></div>`;
-  const setBox=`<div class="card"><div class="body"><label class="m" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">예정일이 없는 미수금은 판매일로부터 <input type="number" min="1" max="365" value="${ledDueDays()}" ${isAdmin()?"":"disabled"} onchange="ledSetDueDays(this.value)" style="width:70px"> 일이 지나면 알려요</label></div></div>`;
+  const dn=ledDueCfg(),ps=D.set.push&&D.set.push.pub,subN=(D.pushsubs||[]).filter(s=>s&&s.name==="관리자").length;
+  const setBox=`<div class="card"><div class="body"><label class="m" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">예정일이 없는 미수금은 판매일로부터 <input type="number" min="1" max="365" value="${ledDueDays()}" ${isAdmin()?"":"disabled"} onchange="ledSetDueDays(this.value)" style="width:70px"> 일이 지나면 알려요</label>
+  <div style="border-top:.5px solid var(--sep);margin-top:10px;padding-top:10px"><b>🔔 미수금 푸시 알림</b>
+  <label class="m" style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" style="width:auto" ${dn.on?"checked":""} ${isAdmin()?"":"disabled"} onchange="ledDueNotifySet('on',this.checked)"> 앱이 꺼져 있어도 폰으로 알려요 (하루 한 번)</label>
+  <label class="m" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">알림 시각 한국 시간 오전/오후 <input type="number" min="0" max="23" value="${dn.hour}" ${isAdmin()?"":"disabled"} onchange="ledDueNotifySet('hour',this.value)" style="width:64px"> 시 이후 첫 확인 때</label>
+  <label class="m" style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" style="width:auto" ${dn.names?"checked":""} ${isAdmin()?"":"disabled"} onchange="ledDueNotifySet('names',this.checked)"> 알림에 고객 이름·금액 표시 (잠금 화면에 보여요. 꺼 두면 건수와 합계만 보내요)</label>
+  <div class="m sub" style="margin-top:6px">${ps?(subN?`✅ 알림을 받을 관리자 기기 ${subN}대가 등록돼 있어요.`:"⚠️ 관리자 기기에서 설정 > 푸시 알림을 켜야 알림을 받아요."):"⚠️ 푸시 키가 아직 없어요. 설정의 푸시 알림에서 먼저 만들어 주세요."} 5분마다 확인하는 서버(GitHub Actions)가 보내서 정해 둔 시각 뒤 최대 몇 분 늦을 수 있어요. 알림을 누르면 이 결제·회계 탭이 열려요.</div></div></div></div>`;
   return btn+alertCard+stat+meth+dueCard+setBox+trend+ledg;
 }
 function ledPayCsv(){
@@ -4018,7 +4026,7 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&s
   /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
   try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
   /* 알림을 눌러 들어오면(?chat=… / ?messenger=1) 메신저로 바로 가요 */
-  try{const q=new URLSearchParams(location.search);if(q.has("chat")||q.has("messenger")){if(me()){page="messenger";const rq=q.get("room");if(rq&&mrooms().some(r=>r.id===rq)){mRoom=rq;mForce=true}}history.replaceState(null,"",location.pathname)}}catch{}
+  try{const q=new URLSearchParams(location.search);if(q.has("ledger")){if(me()&&isAdmin()){revCo=REV_GOAL;revTab="led";ledTab=q.get("ledger")==="pay"?"pay":"sum";page="revenue"}history.replaceState(null,"",location.pathname)}else if(q.has("chat")||q.has("messenger")){if(me()){page="messenger";const rq=q.get("room");if(rq&&mrooms().some(r=>r.id===rq)){mRoom=rq;mForce=true}}history.replaceState(null,"",location.pathname)}}catch{}
   render();
   const auto=()=>{if(CFG.repoAuto&&CFG.repoToken&&isAdmin())importRepo(true)};
   if(CFG.token){setSync("☁ 확인 중…");syncNow().then(()=>{AG_READY=true;try{teamMigrate()}catch{}render();auto();ntfyDaily();pushRefresh()},()=>{AG_READY=true;render()})}else{AG_READY=true;try{teamMigrate()}catch{}render();auto();ntfyDaily();pushRefresh()}

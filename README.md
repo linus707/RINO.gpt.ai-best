@@ -57,3 +57,8 @@
 MIT License
 
 Copyright (c) 2026
+
+## 미수금 푸시 알림
+- `scripts/due-notify.mjs`가 `.github/workflows/push.yml`(5분마다)에서 함께 실행돼요. 동기화 Gist의 장부에서 잔금이 남은 주문 중 예정일이 지났거나 3일 이내인 건을 찾아, 정해 둔 시각(기본 한국 시간 9시) 뒤 첫 실행 때 하루 한 번 관리자 기기로 웹 푸시를 보내요.
+- 기본 알림에는 건수와 잔금 합계만 담고, 고객 이름은 앱 설정(장부 > 결제·회계 > 미수금 푸시 알림)에서 켠 경우에만 넣어요. 필요한 비밀값은 기존 푸시와 같아요(`SYNC_GIST_TOKEN`, `SYNC_GIST_ID`, `VAPID_PRIVATE_KEY`).
+- 알림을 누르면 `/?ledger=pay`로 열려 장부의 결제·회계 탭이 보여요.

@@ -17,12 +17,13 @@ self.addEventListener('push', (event) => {
   const room = typeof data.room === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(data.room) ? data.room : null;
   const title = previewText(data.preview?.title, 80), body = previewText(data.preview?.body, 180);
   const preview = Boolean(title && body), test = data.test === true;
-  event.waitUntil(self.registration.showNotification(test ? '푸시 알림 테스트' : preview ? title : '새 메시지', {
+  const due = data.kind === 'due';
+  event.waitUntil(self.registration.showNotification(test ? '푸시 알림 테스트' : preview ? title : due ? '미수금 알림' : '새 메시지', {
     body: test ? '푸시 알림이 정상적으로 연결되었습니다.' : preview ? body : '새 메시지가 도착했습니다.',
     icon: '/icon-192.png',
-    tag: test ? 'linus-push-test' : `linus-chat-${room ?? 'new'}`,
+    tag: test ? 'linus-push-test' : due ? 'linus-due' : `linus-chat-${room ?? 'new'}`,
     silent: data.silent === true,
-    data: { url: room ? `/?messenger=1&room=${encodeURIComponent(room)}` : '/?messenger=1' },
+    data: { url: due ? '/?ledger=pay' : room ? `/?messenger=1&room=${encodeURIComponent(room)}` : '/?messenger=1' },
   }));
 });
 
