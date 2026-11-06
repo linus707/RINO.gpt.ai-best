@@ -808,6 +808,15 @@ const ledGrid="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .
 const ledAggRow=(label,a,on,click)=>`<div style="${ledGrid}${on?";background:rgba(200,85,61,.14);border-radius:8px":""}${click?";cursor:pointer":""}" ${click?`onclick="${click}"`:""}><b>${label}</b><span>${a.n}건</span><span>${won(a.P)}</span><span>${a.disc}%</span><b style="${a.net<0?"color:var(--red)":""}">${ledSigned(a.net)}</b><span>${a.rate}%</span></div>`;
 const ledAggHead=first=>`<div class="m" style="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>${first}</span><span>건수</span><span>판매가</span><span>평균 할인</span><span>남는 금액</span><span>남는 비율</span></div>`;
 const ledMatch=x=>!ledSel||ledSl(x)===ledSel;
+/* 제품 분류: 기록에 저장된 분류 → 단가표 → 가격표 순으로 코드·제품명으로 찾고, 없으면 "분류 없음". "거실장(XA)"처럼 괄호 코드는 떼요 */
+let LED_CAT_ASKED=0;
+function ledCatOf(x){
+  let c=(x.cat&&x.cat!=="단가표")?x.cat:"";
+  if(!c){const k=ledKey(x.code),n=ledKey(x.item);
+    const p=(k&&D.prices.find(q=>ledKey(q.code)===k))||(n&&D.prices.find(q=>ledKey(q.name)===n));if(p&&p.cat)c=p.cat;
+    if(!c&&LED_CAT){const q=(k&&LED_CAT.find(z=>ledKey(z.code)===k))||(n&&LED_CAT.find(z=>ledKey(z.name)===n));if(q&&q.cat)c=q.cat}}
+  c=String(c||"").replace(/\s*\([^)]*\)\s*$/,"").trim();return c||"분류 없음";
+}
 /* 개인별 월 목표: 판매자마다 한 달 목표 금액(기준: 할인 후 판매액 또는 남는 금액)을 정하고 달성률을 봐요 */
 /* 목표는 달마다 따로 정할 수 있어요(ledGoalsM[월][판매자]). 그 달에 따로 정하지 않았으면 「매달 기본」(ledGoals)을 써요. */
 const ledGoalOf=(n,m)=>{const o=(D.set.ledGoalsM||{})[m];return o&&n in o?{v:+o[n]||0,own:1}:{v:+(D.set.ledGoals||{})[n]||0,own:0}};
@@ -867,7 +876,10 @@ function ledBinCards(m,mo){
     if(l&&h&&l!==h){const d=Math.round((h.rate-l.rate)*10)/10;chg=`<b style="${d<0?"color:var(--red)":""}">${d>0?"+":""}${d}%p</b>${sl!==null?`<br><span class="m" style="font-size:11px">할인 1%p↑ → ${sl>0?"+":""}${sl}%p</span>`:""}`}
     return `<div style="${g5}"><b>${esc(n)}${few?'<br><span class="m" style="font-size:11px">참고용</span>':""}</b>${ba.map(cell).join("")}<span>${chg}</span></div>`}).join("");
   const card2=`<div class="card"><h3>판매자별 할인율과 남는 비율 <span class="m sub" style="margin:0">할인이 높을 때 이윤이 얼마나 줄었나</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.25fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>판매자</span>${LED_BINS.map(b=>`<span>${b[0]}</span>`).join("")}<span>높은 할인 vs 낮은 할인</span></div>${srows}<div class="m" style="padding:8px 6px">칸은 구간별 <b>남는 비율(판매가 대비)</b>과 건수예요. 맨 오른쪽은 가장 높은 할인 구간과 가장 낮은 할인 구간의 차이(%p)이고, 3건 이상이면 할인 1%p 올릴 때 남는 비율이 평균 몇 %p 변하는지도 보여줘요. 3건 미만은 “참고용”이에요.</div></div></div>`;
-  return card1+card2;
+  const cm={};rows.forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
+  const all=ledAgg(rows),cl=Object.entries(cm).map(([k,r])=>({k,a:ledAgg(r)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.P-p.a.P);
+  const card3=`<div class="card"><h3>제품 분류별 할인율 비교 <span class="m sub" style="margin:0">평균 할인 높은 순</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("분류")}${cl.map(o=>ledAggRow(esc(o.k.length>9?o.k.slice(0,9)+"…":o.k),o.a,false,"")).join("")}${cl.length>1?ledAggRow("전체",all,false,""):""}<div class="m" style="padding:8px 6px">${cl.length>1?`전체 평균 할인은 ${all.disc}%예요. 평균보다 많이 깎아 준 분류는 <b>${cl.filter(o=>o.a.disc>all.disc).map(o=>esc(o.k)+" +"+Math.round((o.a.disc-all.disc)*10)/10+"%p").join(", ")||"없어요"}</b>.`:"분류가 하나뿐이라 비교할 수 없어요."} 분류는 가격표·단가표의 분류명을 써요(괄호 코드는 뺐어요). 가격표에서 제품을 골라 기록한 건만 분류가 붙고, 직접 입력한 건은 “분류 없음”이에요. 위의 ‘${ledAllScope?"전체 기간":mo+"월"}’ 범위와 판매자 선택을 따라가요.</div></div></div>`;
+  return card1+card2+card3;
 }
 /* 제품별 할인율 순위: 이 달 판매에서 제품마다 평균 할인율이 높은 순서 */
 function ledDiscRank(rows){
@@ -922,7 +934,7 @@ function ledOpen(id){
   <input id="ledm" placeholder="메모 (선택)" value="${esc(v.memo||"")}">
   <div class="card" style="margin:6px 0"><div class="body" id="ledpv"></div></div>
   <button class="btn" onclick="ledSave()">${e?"저장":"기록하기"}</button></div></div>`;
-  window._ledRef={out:+v.out||0,sup:+v.sup||0,code:v.code||""};
+  window._ledRef={out:+v.out||0,sup:+v.sup||0,code:v.code||"",cat:v.cat||""};
   $("#modal").classList.add("open");ledPv();ledCatLoad();const f=$("#ledi");if(f&&!e)f.focus();
 }
 const ledRef=v=>`판매가 <b>${won(v.price)}</b> · 출고가 <b>${v.out?won(v.out):"–"}</b> · 공급가 <b>${v.sup?won(v.sup):"–"}</b>`+
@@ -952,7 +964,7 @@ function ledPick(i){
   const x=ledFill(ledHits[i]||{});if(!x.name)return;
   const I=$("#ledi"),P=$("#ledp"),C=$("#ledc");
   if(I)I.value=x.name.slice(0,60);if(P)P.value=x.price||"";
-  window._ledRef={out:x.out,sup:x.sup,code:x.code};
+  window._ledRef={out:x.out,sup:x.sup,code:x.code,cat:x.cat==="단가표"?"":(x.cat||"")};
   const b=ledBasis(),c=b==="out"?(x.out||x.sup):(x.sup||x.out);if(C)C.value=c||"";
   $("#ledhits").innerHTML="";$("#ledref").innerHTML=ledRef(x);$("#ledbasis").innerHTML=c?`<span class="m">· ${b==="out"&&x.out||!x.sup?"출고가":"공급가"}로 채웠어요</span>`:`<span class="m" style="color:var(--red)">· 이 제품의 공급가 정보가 없어요. 단가표에 납부 단가를 넣거나 💲가격표에서 내부 단가 파일을 불러오면 다음부터 자동으로 채워져요</span>`;
   ledPv();
@@ -976,7 +988,7 @@ function ledSave(){
   const pc=v=>Math.min(100,Math.max(0,Math.round((+v||0)*100)/100)),wn=v=>Math.max(0,Math.round(+v||0)),r=window._ledRef||{};
   const rec={date:$("#ledd").value||today(),seller:$("#ledsl").value.trim().slice(0,20),item:$("#ledi").value.trim().slice(0,60),price:Math.round(price),disc,ship:wn($("#ledh").value),cost:wn($("#ledc").value),
     etc:wn($("#lede").value),etcNote:$("#ledn").value.trim().slice(0,60),vat:!!$("#ledv").checked,card:pc($("#ledk").value),tax:pc($("#ledt").value),
-    code:(r.code||"").slice(0,30),out:wn(r.out),sup:wn(r.sup),memo:$("#ledm").value.trim().slice(0,200)};
+    code:(r.code||"").slice(0,30),cat:(r.cat||"").slice(0,20),out:wn(r.out),sup:wn(r.sup),memo:$("#ledm").value.trim().slice(0,200)};
   if(ledEdit){const e=D.ledger.find(x=>x.id===ledEdit);if(e)Object.assign(e,rec)}else D.ledger.push({id:uid(),by:curName(),...rec});
   ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요 · 할인 후 판매액이 수익에 잡혔어요");
 }
@@ -988,8 +1000,30 @@ function ledCsv(){
   rows.forEach(x=>{const c=ledCalc(x);out.push([x.date,ledSl(x),x.item,x.code||"",c.price,x.out||"",x.sup||"",c.disc,c.da,c.real,c.ship,c.cost,c.etc,x.etcNote||"",c.va,c.card,c.ca,c.tax,c.ta,c.net,c.rate,x.memo].map(q).join(","))});
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+out.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="에이스침대-장부-"+m+".csv";a.click();
 }
+/* 분석 CSV: 지금 화면(월·판매자 선택·기간 범위)의 집계를 한 파일에 구역별로 담아요. 엑셀에서 열면 구역 사이 빈 줄로 나뉘어요. */
+function ledAnalysisCsv(){
+  const m=ledM||today().slice(0,7),q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"',out=[],line=a=>out.push(a.map(q).join(","));
+  const aggRow=(l,a)=>[l,a.n,a.P,a.da,a.disc,a.real,a.net,a.rate,a.n?Math.round(a.net/a.n):0],aggHead=f=>[f,"건수","판매가 합계","할인액 합계","평균 할인율(%)","할인 후 판매액","남는 금액","남는 비율(%)","건당 남는 금액"];
+  const sec=t=>{if(out.length)out.push("");line([t])};
+  line(["장부 분석",ledAllScope?"전체 기간":m,ledSel||"전체 판매자","만든 날 "+today()]);
+  const monthAll=D.ledger.filter(x=>x.date.startsWith(m)),rows=ledScopeRows(m);
+  sec(m+" 판매자별 집계");line(aggHead("판매자"));ledSellersAll().forEach(n=>{const r=monthAll.filter(x=>ledSl(x)===n);if(r.length)line(aggRow(n,ledAgg(r)))});line(aggRow("전체",ledAgg(monthAll)));
+  sec("월별 추이 ("+(ledSel||"전체")+")");line(aggHead("월"));[...new Set(D.ledger.filter(ledMatch).map(x=>x.date.slice(0,7)))].sort().reverse().forEach(k=>line(aggRow(k,ledAgg(D.ledger.filter(x=>x.date.startsWith(k)&&ledMatch(x))))));
+  sec(m+" 판매자 목표 달성률 (기준: "+(D.set.ledGoalBy==="net"?"남는 금액":"할인 후 판매액")+")");line(["판매자","목표","실적","달성률(%)","남은 금액","목표 종류"]);
+  ledSellers().forEach(n=>{const g=ledGoalOf(n,m),a=ledAgg(monthAll.filter(x=>ledSl(x)===n)),v=D.set.ledGoalBy==="net"?a.net:a.real;line([n,g.v||"",v,g.v?Math.round(v/g.v*1000)/10:"",g.v?Math.max(0,g.v-v):"",g.v?(g.own?"이 달 목표":"매달 기본"):"미설정"])});
+  sec("할인율 구간별 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("할인율 구간"));LED_BINS.forEach((b,i)=>line(aggRow(b[0],ledAgg(rows.filter(x=>ledBinOf(x)===i)))));
+  sec("판매자별 할인율 구간의 남는 비율 (%) / 건수");line(["판매자",...LED_BINS.flatMap(b=>[b[0]+" 남는 비율(%)",b[0]+" 건수"]),"높은 할인 vs 낮은 할인(%p)","할인 1%p당 변화(%p)"]);
+  [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const rs=rows.filter(x=>ledSl(x)===n),ba=LED_BINS.map((b,i)=>ledAgg(rs.filter(x=>ledBinOf(x)===i))),l=ba.find(a=>a.n),h=[...ba].reverse().find(a=>a.n),sl=ledSlope(rs);
+    line([n,...ba.flatMap(a=>[a.n?a.rate:"",a.n]),l&&h&&l!==h?Math.round((h.rate-l.rate)*10)/10:"",sl===null?"":sl])});
+  const cm={};rows.forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
+  sec("제품 분류별 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("분류"));Object.entries(cm).map(([k,r])=>[k,ledAgg(r)]).sort((p,q)=>q[1].disc-p[1].disc).forEach(([k,a])=>line(aggRow(k,a)));
+  const g={};rows.forEach(x=>{const k=((x.code||"")||(x.item||"")).trim();if(!k)return;(g[k]=g[k]||{name:(x.item||k).trim(),code:x.code||"",rows:[]}).rows.push(x)});
+  sec("제품별 할인율 순위 ("+(ledAllScope?"전체 기간":m)+")");line(["제품","코드",...aggHead("").slice(1)]);Object.values(g).map(o=>({o,a:ledAgg(o.rows)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.n-p.a.n).forEach(({o,a})=>{const r=aggRow(o.name,a);r.splice(1,0,o.code);line(r)});
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+out.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="에이스침대-장부분석-"+(ledAllScope?"전체":m)+(ledSel?"-"+ledSel:"")+".csv";a.click();
+}
 function ledView(cur){
   const m=ledM||cur,[y,mo]=m.split("-").map(Number);
+  if(!LED_CAT&&!LED_CAT_ASKED){LED_CAT_ASKED=1;ledCatLoad().then(()=>{if(page==="revenue"||page==="inventory")render(true)}).catch(()=>{})}
   const monthAll=D.ledger.filter(x=>x.date.startsWith(m));
   const rows=monthAll.filter(ledMatch).sort((a,b)=>b.date.localeCompare(a.date)),cs=rows.map(ledCalc);
   const names=ledSellersAll(),bySeller=names.map(n=>({n,a:ledAgg(monthAll.filter(x=>ledSl(x)===n))})).filter(o=>o.a.n).sort((p,q)=>q.a.net-p.a.net);
@@ -999,7 +1033,7 @@ function ledView(cur){
   const filt=ledSel?`<div class="row" style="gap:8px;margin:0 0 8px"><span class="pill" style="background:var(--g)">판매자: ${esc(ledSel)}</span><button class="btn ghost" style="padding:4px 10px" onclick="ledPick(-1)">전체 보기</button></div>`:"";
   const sum=k=>cs.reduce((a,c)=>a+c[k],0),P=sum("price"),N=sum("net"),rate=P>0?Math.round(N/P*1000)/10:0;
   return `<div class="row" style="gap:8px;margin:4px 0 8px;flex-wrap:wrap"><button class="icon" onclick="ledNav(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center">${y}년 ${mo}월 장부</b><button class="icon" onclick="ledNav(1)" aria-label="다음 달">›</button></div>
-  <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><button class="btn ghost" onclick="ledCsv()">CSV</button><a class="btn ghost" href="price.html" style="text-decoration:none">💲 가격표</a></div>
+  <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><button class="btn ghost" onclick="ledCsv()">CSV</button><button class="btn ghost" onclick="ledAnalysisCsv()" title="지금 화면의 분석을 한 파일로">분석 CSV</button><a class="btn ghost" href="price.html" style="text-decoration:none">💲 가격표</a></div>
   <div class="stats"><div class="stat hl"><small>남는 금액 (할인·배송·물건대금·세금·수수료·기타 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>남는 비율</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
   <div class="stats"><div class="stat"><small>판매가 합계</small><b>${won(P)}</b></div><div class="stat"><small>할인액 합계</small><b>${won(sum("da"))}</b></div><div class="stat"><small>배송료 합계</small><b>${won(sum("ship"))}</b></div><div class="stat"><small>물건대금 합계</small><b>${won(sum("cost"))}</b></div><div class="stat"><small>세금·수수료 합계</small><b>${won(sum("fees"))}</b></div><div class="stat"><small>기타 비용 합계</small><b>${won(sum("etc"))}</b></div></div>
   ${sellerCard}${ledGoalCard(monthAll,mo)}${filt}${ledBinCards(m,mo)}${ledDiscRank(rows)}<div class="card"><h3>판매 기록</h3><div class="body">${rows.map((x,i)=>{const c=cs[i];return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>
