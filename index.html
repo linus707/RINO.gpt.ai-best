@@ -359,7 +359,7 @@ const saveCfg=()=>{try{localStorage.setItem("rino-cfg",JSON.stringify(CFG))}catc
 /* 연결·동기화 값은 localStorage 말고 IndexedDB에도 한 부 더 저장해 두고, localStorage가 비면 되살려요 */
 function cfgDb(f){try{const r=indexedDB.open("rino-cfg",1);r.onupgradeneeded=()=>r.result.createObjectStore("k");r.onsuccess=()=>{try{f(r.result)}catch{}}}catch{}}
 function cfgMirror(){cfgDb(db=>{db.transaction("k","readwrite").objectStore("k").put(JSON.stringify(CFG),"cfg")})}
-const hasConn=o=>!!(o&&(o.token||o.repoToken||o.repoWToken||o.aiKey));
+const hasConn=o=>!!(o&&(o.token||o.repoToken||o.repoWToken||o.aiKey||o.calKey||o.calWorker||o.pushWorkerBak));
 function cfgRestore(){
   if(hasConn(CFG))return;
   cfgDb(db=>{const q=db.transaction("k").objectStore("k").get("cfg");q.onsuccess=()=>{try{
@@ -368,7 +368,7 @@ function cfgRestore(){
   }catch{}}});
 }
 /* 설정 칸에 쓰던 값(토큰·저장소 등)은 저장 버튼을 누르기 전이라도 입력하는 즉시 기기에 남겨요. 화면이 새로 그려져도 되살려요 */
-const SD_KEY="rino-sdraft",SD_IDS=["tk","gi","wr","wb","wt","iwt","ak","aw","pwurl"];
+const SD_KEY="rino-sdraft",SD_IDS=["tk","gi","wr","wb","wt","iwt","ak","aw","pwurl","cwurl"];
 let SD={};try{SD=JSON.parse(localStorage.getItem(SD_KEY))||{}}catch{}
 const sdSave=()=>{try{localStorage.setItem(SD_KEY,JSON.stringify(SD))}catch{}};
 const sdClear=(...ids)=>{ids.forEach(i=>delete SD[i]);sdSave()};
@@ -1912,8 +1912,8 @@ views.settings=()=>{
 const aiHeaders=()=>{const h={"content-type":"application/json","x-api-key":CFG.aiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};if(CFG.aiWs)h["anthropic-workspace-id"]=CFG.aiWs;return h};
 /* ---------- 연결 정보 보호: 저장 점검 + 잠금 ----------
    잠그면 토큰·저장소·키 칸을 고치거나 지울 수 없어요(실수로 지우거나 덮어쓰는 것 방지). 풀려면 관리자 비밀번호가 필요해요. */
-const CONN_IDS=["tk","gi","wr","wb","wt","iwt","ak","aw"];
-const CONN_FN=["connectSync(","disconnectSync(","saveRepo(","clearRepo(","saveInboxToken(","clearInboxToken(","CFG.aiKey="];
+const CONN_IDS=["tk","gi","wr","wb","wt","iwt","ak","aw","pwurl","cwurl","ckey"];
+const CONN_FN=["connectSync(","disconnectSync(","saveRepo(","clearRepo(","saveInboxToken(","clearInboxToken(","CFG.aiKey=","pushWorkerSave(","calSave(","calClear("];
 const connLocked=()=>!!CFG.connLock;
 function connGuard(){if(!connLocked())return false;toast("연결 정보가 잠겨 있어요. 설정 > 연결·동기화에서 잠금을 풀어 주세요");return true}
 let CONN_ST=null;
@@ -1953,7 +1953,7 @@ function connApplyLock(){
 const connCard=()=>{
   const st=CONN_ST,mark=v=>v?"✅":"⚠️",lk=connLocked();
   return `<div class="card"><h3>🔒 연결 정보 보호 ${lk?'<span class="m sub" style="margin:0">잠김</span>':""}</h3><div class="body">
-  <div class="m sub">동기화·작업 폴더·지시함·AI 연결 값을 이 기기의 두 저장소에 따로 보관하고, 잠가서 실수로 지우거나 덮어쓰는 것을 막아요.</div>
+  <div class="m sub">동기화·작업 폴더·지시함·AI·푸시 워커·Notion 캘린더 연동 값을 이 기기의 두 저장소에 따로 보관하고, 잠가서 실수로 지우거나 덮어쓰는 것을 막아요.</div>
   <div class="m" style="margin:8px 0;line-height:1.8">${st?`${mark(st.ls)} 기본 저장소(localStorage) ${st.ls?"저장됨":"확인 안 됨"}<br>${mark(st.idb)} 보조 저장소(IndexedDB) ${st.idb?"저장됨":"확인 안 됨"}<br>${mark(st.per)} 브라우저 자동 삭제 방지 ${st.per?"허용됨":"아직 허용 전 (홈 화면 앱으로 쓰면 허용되는 경우가 많아요)"}`:"저장 상태를 확인하는 중이에요…"}</div>
   <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" onclick="connCheck()">저장 상태 다시 확인</button>${lk?`<button class="btn ghost" onclick="connUnlockOpen()">잠금 풀기</button>`:`<button class="btn" onclick="connLock()">지금 저장하고 잠그기</button>`}</div>
   ${lk?`<div class="m sub" style="margin-top:6px">잠근 시각: ${new Date(CFG.connLock).toLocaleString("ko-KR")} · 잠겨 있어도 동기화와 불러오기는 계속 작동해요.</div>`:""}</div></div>`;
@@ -1962,7 +1962,7 @@ const connCard=()=>{
    저장소 토큰·지시함 토큰·AI 키 등을 관리자 비밀번호로 암호화(AES-256-GCM)해서 동기화 데이터(D.set.vault)에 넣어요.
    깃허브 저장소에 커밋하지 않고, 평문은 어디에도 올라가지 않아요. 새 기기에서는 같은 비밀번호로 풀어 복원해요.
    (동기화 토큰·Gist ID는 이 보관본을 읽기 위한 열쇠라서 초대 링크나 직접 입력으로 먼저 연결해야 해요.) */
-const VAULT_KEYS=["repo","repoBranch","repoAuto","repoToken","repoWToken","aiKey","aiWs"];
+const VAULT_KEYS=["repo","repoBranch","repoAuto","repoToken","repoWToken","aiKey","aiWs","calWorker","calKey","pushWorkerBak"];
 const vb64=u=>btoa(String.fromCharCode(...u)),vb64d=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
 async function vaultKey(pw,salt){const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",hash:"SHA-256",salt,iterations:200000},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
 const vaultData=()=>{const o={};VAULT_KEYS.forEach(k=>{if(CFG[k]!==undefined&&CFG[k]!=="")o[k]=CFG[k]});return o};
@@ -2232,7 +2232,7 @@ async function pushMakeKeys(){
 }
 /* 즉시 푸시(Cloudflare 워커): 새 메시지 id만 워커에 알려요. 내용은 워커가 비공개 Gist에서 직접 읽어요.
    동기화가 끝난 뒤에 보내고, 실패하면 다음 동기화 때 다시 시도해요. 워커가 없어도 GitHub Actions가 5분 간격으로 보내요. */
-const pushWorker=()=>{const u=(D.set.push&&D.set.push.worker)||"";return /^https:\/\/[^\s/]+(\/\S*)?$/.test(u)?u.replace(/\/+$/,""):""};
+const pushWorker=()=>{const u=(D.set.push&&D.set.push.worker)||CFG.pushWorkerBak||"";return /^https:\/\/[^\s/]+(\/\S*)?$/.test(u)?u.replace(/\/+$/,""):""};
 const pushQ=()=>{try{return JSON.parse(localStorage.getItem("rino-pushq"))||[]}catch{return[]}};
 const pushQSave=q=>{try{localStorage.setItem("rino-pushq",JSON.stringify(q.slice(-30)))}catch{}};
 function pushQueue(id){if(!pushWorker()||!pushPub())return;pushQSave([...pushQ(),{id,t:Date.now(),n:0}])}
@@ -2265,9 +2265,10 @@ function pushWorkerNorm(raw){
   return{u,fixed};
 }
 async function pushWorkerSave(){
+  if(connGuard())return;
   const el=$("#pwurl"),n=pushWorkerNorm(el?el.value:""),u=n.u;
   if(u&&!/^https:\/\/[^\s/]+\.[^\s/]+(\/\S*)?$/.test(u)){alert("워커 주소 형식이 올바르지 않아요. 예) https://linus-push.내이름.workers.dev");return}
-  D.set.push={...(D.set.push||{}),worker:u,u:Date.now()};D.set.u=Date.now();sdClear('pwurl');save();render();
+  D.set.push={...(D.set.push||{}),worker:u,u:Date.now()};D.set.u=Date.now();if(u)CFG.pushWorkerBak=u;else delete CFG.pushWorkerBak;saveCfg();sdClear('pwurl');save();render();
   toast(u?(n.fixed?"철자를 고쳐서 저장했어요 → "+u:"워커 주소를 저장했어요 · 이어서 ‘연결 확인’을 눌러 주세요"):"워커 연결을 껐어요");
 }
 async function pushWorkerCheck(){
@@ -2331,7 +2332,7 @@ function pushCard(){
   <div class="m sub">토큰과 비공개 키는 채팅이나 문서에 쓰지 말고, GitHub Secrets에만 넣어 주세요.</div>
   <div style="border-top:1px solid var(--line,#0001);margin-top:12px;padding-top:10px"><b>⚡ 즉시 푸시 (Cloudflare 워커, 선택)</b>
   <div class="m sub" style="margin:4px 0">메시지를 보내자마자 몇 초 안에 알림이 가요. 연결하지 않아도 위의 5분 간격 방식은 계속 작동해요.</div>
-  <div class="row" style="gap:6px;flex-wrap:wrap"><input id="pwurl" style="flex:1;min-width:200px" placeholder="https://linus-push.내이름.workers.dev" value="${esc((D.set.push&&D.set.push.worker)||"")}"><button class="btn" onclick="pushWorkerSave()">저장</button><button class="btn" onclick="pushWorkerCheck()">연결 확인</button></div>
+  <div class="row" style="gap:6px;flex-wrap:wrap"><input id="pwurl" style="flex:1;min-width:200px" placeholder="https://linus-push.내이름.workers.dev" value="${esc((D.set.push&&D.set.push.worker)||CFG.pushWorkerBak||"")}"><button class="btn" onclick="pushWorkerSave()">저장</button><button class="btn" onclick="pushWorkerCheck()">연결 확인</button></div>
   <ol class="m" style="margin:6px 0;padding-left:20px;line-height:1.7">
    <li>Cloudflare 대시보드 → Workers &amp; Pages → <b>Create Worker</b> → 코드 편집에 <a href="https://github.com/linus707/RINO.gpt.ai-best/blob/main/worker/worker.js" target="_blank" rel="noopener">worker/worker.js</a> 내용을 붙여 넣고 Deploy.</li>
    <li>워커 Settings → Variables and Secrets에서 <b>비밀값(Secret)</b> 3개 추가: <b>GIST_TOKEN</b>, <b>GIST_ID</b>, <b>VAPID_PRIVATE_KEY</b> (위 GitHub Secrets와 같은 값).</li>
@@ -2473,11 +2474,12 @@ function calAuto(now){
   if(Date.now()-(CFG.calAt||0)>180000)_calT=setTimeout(()=>calSync(),300);
 }
 function calSave(){
+  if(connGuard())return;
   const w=($("#cwurl").value||"").trim().replace(/\/+$/,""),k=($("#ckey").value||"").trim();
   if(w&&!/^https:\/\/[^\s/]+$/.test(w)){alert("워커 주소는 https://… 로 시작하는 주소만 넣어 주세요 (뒤에 /경로는 빼 주세요)");return}
-  CFG.calWorker=w;if(k)CFG.calKey=k;saveCfg();toast("저장했어요");render(true);
+  CFG.calWorker=w;if(k)CFG.calKey=k;saveCfg();cfgMirror();sdClear("cwurl","ckey");toast("저장했어요"+(connLocked()?"":" · ‘연결 정보 보호’에서 잠그면 실수로 지워지지 않아요"));render(true);
 }
-function calClear(){if(!confirm("Notion 연동 접속 키와 주소를 이 기기에서 지울까요?"))return;delete CFG.calKey;delete CFG.calWorker;saveCfg();render(true)}
+function calClear(){if(connGuard())return;if(!confirm("Notion 연동 접속 키와 주소를 이 기기에서 지울까요?"))return;delete CFG.calKey;delete CFG.calWorker;saveCfg();render(true)}
 async function calCheck(){
   if(!calReady()){alert("워커 주소(또는 푸시 워커 주소)와 접속 키를 먼저 저장해 주세요");return}
   try{const r=await calCall({op:"check"});alert(`연결됐어요 ✅\n데이터베이스: ${r.db}\n제목: ${r.title} · 날짜: ${r.date}${r.memo?" · 메모: "+r.memo:""}${r.cat?" · 분류: "+r.cat:""}\n일정 상태 값: ${r.statusOpt||"(없음 — 모든 항목을 가져와요)"}`)}catch(e){alert("연결하지 못했어요: "+(e.message||e))}
