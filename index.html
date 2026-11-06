@@ -342,7 +342,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 /* 오늘 할 일: 매일 루틴(D.routine, 날마다 체크 초기화) + 오늘만 할 일(D.todo) */
 const RT_TEST=["[테스트] 아침에 물 한 잔 마시기","[테스트] 오늘 할 일 3개 적기"];
 const RT_OLD="아침 스트레칭|컨텐츠 1개 진행|댓글·DM 확인|수익 지표 체크|내일 할 일 3개 적기";
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,u:0},revenue:[],ledger:[],prices:[],dday:[],todo:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,ledGoals:{},ledGoalBy:"real",u:0},revenue:[],ledger:[],prices:[],dday:[],todo:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),u:0,items:RT_TEST.map(n=>[n,0])}});
@@ -808,6 +808,26 @@ const ledGrid="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .
 const ledAggRow=(label,a,on,click)=>`<div style="${ledGrid}${on?";background:rgba(200,85,61,.14);border-radius:8px":""}${click?";cursor:pointer":""}" ${click?`onclick="${click}"`:""}><b>${label}</b><span>${a.n}건</span><span>${won(a.P)}</span><span>${a.disc}%</span><b style="${a.net<0?"color:var(--red)":""}">${ledSigned(a.net)}</b><span>${a.rate}%</span></div>`;
 const ledAggHead=first=>`<div class="m" style="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>${first}</span><span>건수</span><span>판매가</span><span>평균 할인</span><span>남는 금액</span><span>남는 비율</span></div>`;
 const ledMatch=x=>!ledSel||ledSl(x)===ledSel;
+/* 개인별 월 목표: 판매자마다 한 달 목표 금액(기준: 할인 후 판매액 또는 남는 금액)을 정하고 달성률을 봐요 */
+function ledGoalSet(i,v){if(!isAdmin())return;const n=ledSellers()[i];if(!n)return;const g={...(D.set.ledGoals||{})},a=Math.max(0,Math.round(+v||0));if(a)g[n]=a;else delete g[n];D.set.ledGoals=g;D.set.u=Date.now();save();render()}
+function ledGoalBy(v){if(!isAdmin())return;D.set.ledGoalBy=v==="net"?"net":"real";D.set.u=Date.now();save();render()}
+function ledGoalCard(monthAll,mo){
+  const names=ledSellers(),by=D.set.ledGoalBy==="net"?"net":"real",lab=by==="net"?"남는 금액":"할인 후 판매액",goals=D.set.ledGoals||{};
+  if(!names.length)return"";
+  const bar=p=>`<div style="height:8px;border-radius:6px;background:rgba(0,0,0,.08);overflow:hidden;margin:4px 0"><div style="height:100%;width:${Math.min(100,Math.max(0,p))}%;background:var(--ac,#c8553d)"></div></div>`;
+  const rows=names.map((n,i)=>{
+    const a=ledAgg(monthAll.filter(x=>ledSl(x)===n)),v=by==="net"?a.net:a.real,g=+goals[n]||0,p=g>0?Math.round(v/g*1000)/10:0;
+    return `<div style="padding:10px 6px;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="grow">${esc(n)}</b>${isAdmin()?`<label class="m" style="display:flex;align-items:center;gap:6px">목표(원)<input type="number" min="0" inputmode="numeric" value="${g||""}" placeholder="미설정" style="width:120px" onchange="ledGoalSet(${i},this.value)"></label>`:`<span class="m">목표 ${g?won(g):"미설정"}</span>`}</div>
+    ${g>0?`${bar(p)}<div class="row" style="justify-content:space-between"><span class="m">${lab} <b style="color:var(--tx)">${ledSigned(v)}</b> / ${won(g)}</span><b style="${p>=100?"color:var(--ok,#2e8b57)":""}">${p}%${p>=100?" 달성":""}</b></div><div class="m">${v>=g?"목표를 넘었어요":"남은 금액 "+won(g-v)}</div>`:`<div class="m">${lab} ${ledSigned(v)} · 목표를 넣으면 달성률이 보여요</div>`}</div>`}).join("");
+  return `<div class="card"><h3>개인별 ${mo}월 목표 달성률</h3><div class="body" style="padding:6px 4px"><div class="row" style="gap:8px;padding:0 6px 6px;flex-wrap:wrap"><span class="m">목표 기준</span><select ${isAdmin()?"":"disabled"} onchange="ledGoalBy(this.value)" style="padding:6px;border-radius:10px"><option value="real" ${by==="real"?"selected":""}>할인 후 판매액</option><option value="net" ${by==="net"?"selected":""}>남는 금액(이윤)</option></select><span class="m">목표는 매달 같은 금액으로 적용돼요</span></div>${rows}</div></div>`;
+}
+/* 제품별 할인율 순위: 이 달 판매에서 제품마다 평균 할인율이 높은 순서 */
+function ledDiscRank(rows){
+  const g={};rows.forEach(x=>{const k=((x.code||"")||(x.item||"")).trim();if(!k)return;(g[k]=g[k]||{name:(x.item||k).trim(),rows:[]}).rows.push(x)});
+  const list=Object.values(g).map(o=>({name:o.name,a:ledAgg(o.rows)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.n-p.a.n);
+  if(!list.length)return"";
+  return `<div class="card"><h3>제품별 할인율 순위 <span class="m sub" style="margin:0">평균 할인 높은 순 · 상위 10개</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("제품")}${list.slice(0,10).map((o,i)=>ledAggRow((i+1)+". "+esc(o.name.length>16?o.name.slice(0,16)+"…":o.name),o.a,false,"")).join("")}</div></div>`;
+}
 const ledBasis=()=>{try{return localStorage.getItem("rino-led-basis")||"sup"}catch{return"sup"}};
 function ledNav(d){const[y,m]=(ledM||today().slice(0,7)).split("-").map(Number),dt=new Date(y,m-1+d,1);ledM=monthKey(dt.getFullYear(),dt.getMonth());render()}
 /* 가격표 카탈로그: 처음 장부 창을 열 때 한 번만 불러와요 */
@@ -934,7 +954,7 @@ function ledView(cur){
   <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><button class="btn ghost" onclick="ledCsv()">CSV</button><a class="btn ghost" href="price.html" style="text-decoration:none">💲 가격표</a></div>
   <div class="stats"><div class="stat hl"><small>남는 금액 (할인·배송·물건대금·세금·수수료·기타 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>남는 비율</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
   <div class="stats"><div class="stat"><small>판매가 합계</small><b>${won(P)}</b></div><div class="stat"><small>할인액 합계</small><b>${won(sum("da"))}</b></div><div class="stat"><small>배송료 합계</small><b>${won(sum("ship"))}</b></div><div class="stat"><small>물건대금 합계</small><b>${won(sum("cost"))}</b></div><div class="stat"><small>세금·수수료 합계</small><b>${won(sum("fees"))}</b></div><div class="stat"><small>기타 비용 합계</small><b>${won(sum("etc"))}</b></div></div>
-  ${sellerCard}${filt}<div class="card"><h3>판매 기록</h3><div class="body">${rows.map((x,i)=>{const c=cs[i];return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>
+  ${sellerCard}${ledGoalCard(monthAll,mo)}${filt}${ledDiscRank(rows)}<div class="card"><h3>판매 기록</h3><div class="body">${rows.map((x,i)=>{const c=cs[i];return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>
     <div class="m">판매가 ${won(c.price)}${x.out||x.sup?` (출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"})`:""}</div>
     <div class="m">− 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.memo?`<div class="m">${esc(x.memo)}</div>`:""}</div>
     <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
