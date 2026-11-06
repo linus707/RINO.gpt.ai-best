@@ -413,9 +413,10 @@ function merge(a,b){
    o.routine={date:dt,u:base.u||0,items:base.items.map(x=>[x[0],on.has(x[0])?1:0])}}
   return o;
 }
-/* ---------- 장부 안전장치 ----------
-   장부 기록(D.ledger)이 사라지지 않도록 ① 이 기기의 보조 저장소(IndexedDB "rino-safe")에 자동 복사(최신본 + 날짜별 30일 + 지우기·불러오기 직전본),
-   ② 지운 기록은 휴지통(D.ledtrash, 동기화됨)에 90일 보관, ③ 시작할 때 장부가 비어 있는데 보조 저장소에 있으면 되살리고, ④ 백업 파일(JSON) 받기·합쳐 불러오기를 제공해요. */
+/* ---------- 데이터 안전장치 (장부·일정·컨텐츠·수익 기록) ----------
+   ① 이 기기 보조 저장소(IndexedDB "rino-safe")에 자동 복사(최신본 + 날짜별 30일 + 지우기·불러오기 직전본), ② 지운 기록은 휴지통(D.ledtrash, 동기화)에 90일 보관,
+   ③ 시작할 때 해당 목록이 비어 있는데 보조 저장소에 있으면 되살림, ④ 백업 파일(JSON) 받기·합쳐 불러오기, ⑤ 설정의 「데이터 잠금」으로 삭제·전체 불러오기를 막아요. */
+const SAFE_LISTS=["ledger","events","contents","revenue"],SAFE_NAME={ledger:"장부",events:"일정",contents:"컨텐츠",revenue:"수익 기록"};
 let LS_INFO=null,LS_ASKED=0,_lsT=0,LS_PERSIST=0;
 const lsDb=()=>new Promise(ok=>{try{const r=indexedDB.open("rino-safe",1);r.onupgradeneeded=()=>r.result.createObjectStore("k");r.onsuccess=()=>ok(r.result);r.onerror=()=>ok(null)}catch{ok(null)}});
 const lsReq=(mode,f)=>lsDb().then(db=>!db?null:new Promise(ok=>{try{const t=db.transaction("k",mode),r=f(t.objectStore("k"));t.oncomplete=()=>ok(r&&"result"in r?r.result:true);t.onerror=t.onabort=()=>ok(null)}catch{ok(null)}}));
@@ -423,77 +424,121 @@ const lsPut=(k,v)=>lsReq("readwrite",o=>o.put(v,k));
 const lsGet=k=>lsReq("readonly",o=>o.get(k));
 const lsKeys=()=>lsReq("readonly",o=>o.getAllKeys()).then(r=>Array.isArray(r)?r:[]);
 const lsDel=k=>lsReq("readwrite",o=>o.delete(k));
-const lsPayload=()=>({at:Date.now(),ledger:D.ledger,prices:D.prices,goals:{ledGoals:D.set.ledGoals,ledGoalsM:D.set.ledGoalsM,ledGoalBy:D.set.ledGoalBy},trash:D.ledtrash});
+const lsPayload=()=>({at:Date.now(),ledger:D.ledger,events:D.events,contents:D.contents,revenue:D.revenue,prices:D.prices,goals:{ledGoals:D.set.ledGoals,ledGoalsM:D.set.ledGoalsM,ledGoalBy:D.set.ledGoalBy},trash:D.ledtrash});
+const lsCount=sn=>SAFE_LISTS.reduce((a,l)=>a+((sn&&sn[l])||[]).length,0);
 async function lsPrune(){
   const ks=await lsKeys(),keep=(pre,n)=>ks.filter(k=>String(k).startsWith(pre)).sort().slice(0,-n);
   for(const k of [...keep("snap-",30),...keep("pre-",20)])await lsDel(k);
 }
-/* force=true면 장부가 비어도 최신본을 덮어써요(마지막 기록을 일부러 지운 경우). 평소엔 비어 있으면 건드리지 않아 전체 삭제 사고에서 최신본이 남아요 */
+/* force=true면 비어도 최신본을 덮어써요. 평소엔 목록이 비어 있으면 그 목록은 이전 최신본을 그대로 남겨 전체 삭제 사고에서도 복구돼요 */
 async function lsWrite(force){
-  if(!D.ledger.length&&!force)return;
+  if(!SAFE_LISTS.some(l=>D[l].length)&&!force)return;
   if(!LS_PERSIST){LS_PERSIST=1;try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch{}}
-  const pl=lsPayload();await lsPut("latest",pl);if(D.ledger.length){await lsPut("snap-"+today(),pl);lsPrune()}
+  const pl=lsPayload();
+  if(!force){const old=await lsGet("latest");if(old)SAFE_LISTS.forEach(l=>{if(!pl[l].length&&(old[l]||[]).length)pl[l]=old[l]})}
+  await lsPut("latest",pl);if(SAFE_LISTS.some(l=>D[l].length)){await lsPut("snap-"+today(),pl);lsPrune()}
   LS_INFO=null;
 }
 function lsSchedule(){clearTimeout(_lsT);_lsT=setTimeout(()=>lsWrite(false),1500)}
-async function lsSnapNow(tag){if(!D.ledger.length&&!D.ledtrash.length)return;await lsPut("pre-"+new Date().toISOString().replace(/[:.]/g,"-")+"-"+tag,lsPayload());lsPrune()}
-/* 스냅샷의 기록 중 지금 없는 것만 되살려요(있는 기록은 그대로). 지운 표시가 남아 있어도 풀어요 */
-function lsMergeIn(sn){
-  let n=0;const have=new Set(D.ledger.map(x=>x.id)),hp=new Set(D.prices.map(x=>x.id)),now=Date.now();
-  (sn.ledger||[]).forEach(r=>{if(!r||!r.id||have.has(r.id))return;delete D.del[r.id];delete D.del["led-"+r.id];const{u,...c}=r;D.ledger.push({...c,u:now});n++});
-  (sn.prices||[]).forEach(r=>{if(!r||!r.id||hp.has(r.id))return;delete D.del[r.id];const{u,...c}=r;D.prices.push({...c,u:now})});
-  const g=sn.goals||{};if(g.ledGoals&&!Object.keys(D.set.ledGoals||{}).length&&Object.keys(g.ledGoals).length){D.set.ledGoals=g.ledGoals;D.set.u=now}
-  if(g.ledGoalsM&&!Object.keys(D.set.ledGoalsM||{}).length&&Object.keys(g.ledGoalsM).length){D.set.ledGoalsM=g.ledGoalsM;D.set.u=now}
-  if(n){try{ledRevSync()}catch{}}return n;
+async function lsSnapNow(tag){if(!SAFE_LISTS.some(l=>D[l].length)&&!D.ledtrash.length)return;await lsPut("pre-"+new Date().toISOString().replace(/[:.]/g,"-")+"-"+tag,lsPayload());lsPrune()}
+/* 스냅샷의 기록 중 지금 없는 것만 되살려요(있는 기록은 그대로). 지운 표시가 남아 있어도 풀어요. only가 있으면 그 목록만 */
+function lsMergeIn(sn,only){
+  const now=Date.now(),res={};
+  (only?[only]:SAFE_LISTS).forEach(l=>{
+    const have=new Set(D[l].map(x=>x.id));let n=0;
+    (sn[l]||[]).forEach(r=>{if(!r||!r.id||have.has(r.id))return;delete D.del[r.id];if(l==="ledger")delete D.del["led-"+r.id];const{u,...c}=r;if(l==="events"){delete c.nid;delete c.nh}D[l].push({...c,u:now});n++});
+    res[l]=n;
+  });
+  if(!only||only==="ledger"){
+    const hp=new Set(D.prices.map(x=>x.id));(sn.prices||[]).forEach(r=>{if(!r||!r.id||hp.has(r.id))return;delete D.del[r.id];const{u,...c}=r;D.prices.push({...c,u:now})});
+    const g=sn.goals||{};if(g.ledGoals&&!Object.keys(D.set.ledGoals||{}).length&&Object.keys(g.ledGoals).length){D.set.ledGoals=g.ledGoals;D.set.u=now}
+    if(g.ledGoalsM&&!Object.keys(D.set.ledGoalsM||{}).length&&Object.keys(g.ledGoalsM).length){D.set.ledGoalsM=g.ledGoalsM;D.set.u=now}
+  }
+  if(res.ledger){try{ledRevSync()}catch{}}
+  res.total=Object.values(res).reduce((a,b)=>a+b,0);return res;
 }
+const lsSumm=r=>SAFE_LISTS.filter(l=>r[l]).map(l=>SAFE_NAME[l]+" "+r[l]+"건").join(", ");
 async function lsBootRestore(){
-  try{if(D.ledger.length)return;const sn=await lsGet("latest");if(!sn||!(sn.ledger||[]).length)return;
-    const n=lsMergeIn(sn);if(n){save();try{render()}catch{}toast(`장부 ${n}건을 이 기기의 보조 저장소에서 되살렸어요`)}}catch{}
+  try{const sn=await lsGet("latest");if(!sn)return;
+    const emptied=SAFE_LISTS.filter(l=>!D[l].length&&(sn[l]||[]).length);if(!emptied.length)return;
+    let r={total:0};emptied.forEach(l=>{const x=lsMergeIn(sn,l);r={...r,...x,total:r.total+x.total}});
+    if(r.total){save();try{render()}catch{}toast("보조 저장소에서 되살렸어요: "+lsSumm(r))}}catch{}
 }
 async function lsInfo(){
   const ks=await lsKeys(),snaps=[];
-  for(const k of ks.filter(k=>/^(snap|pre)-/.test(String(k))).sort().reverse()){const v=await lsGet(k);if(v&&v.ledger)snaps.push({k,at:v.at||0,n:v.ledger.length})}
-  const l=await lsGet("latest");LS_INFO={ok:ks.length>0||l!==null,snaps:snaps.slice(0,40),latest:l?{at:l.at,n:(l.ledger||[]).length}:null};
-  if(page==="revenue"||page==="inventory")render(true);
+  for(const k of ks.filter(k=>/^(snap|pre)-/.test(String(k))).sort().reverse()){const v=await lsGet(k);if(v&&v.ledger)snaps.push({k,at:v.at||0,n:lsCount(v)})}
+  const l=await lsGet("latest");LS_INFO={ok:ks.length>0||l!==null,snaps:snaps.slice(0,40),latest:l?{at:l.at,n:lsCount(l)}:null};
+  if(page==="settings"||page==="revenue"||page==="inventory")render(true);
 }
 async function lsRestore(k){
   const sn=await lsGet(k);if(!sn){alert("그 백업을 읽지 못했어요");return}
-  const miss=(sn.ledger||[]).filter(r=>!D.ledger.some(x=>x.id===r.id)).length;
-  if(!confirm(`${new Date(sn.at||0).toLocaleString("ko-KR")} 백업에서 지금 장부에 없는 기록 ${miss}건을 되살릴까요? (있는 기록은 그대로 두고 빠진 것만 추가해요)`))return;
-  await lsSnapNow("restore-before");const n=lsMergeIn(sn);save();LS_INFO=null;render();toast(n?`${n}건을 되살렸어요`:"되살릴 기록이 없었어요 (모두 이미 있어요)");
+  const miss={};SAFE_LISTS.forEach(l=>{miss[l]=(sn[l]||[]).filter(r=>!D[l].some(x=>x.id===r.id)).length});
+  const t=Object.values(miss).reduce((a,b)=>a+b,0);
+  if(!confirm(`${new Date(sn.at||0).toLocaleString("ko-KR")} 백업에서 지금 없는 기록 ${t}건(${lsSumm(miss)||"없음"})을 되살릴까요? (있는 기록은 그대로 두고 빠진 것만 추가해요)`))return;
+  await lsSnapNow("restore-before");const r=lsMergeIn(sn);save();LS_INFO=null;render();toast(r.total?"되살렸어요: "+lsSumm(r):"되살릴 기록이 없었어요 (모두 이미 있어요)");
 }
 function lsExport(){
-  const o={kind:"rino-ledger-backup",v:1,...lsPayload()},a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));a.download="장부백업-"+today()+".json";a.click();
+  const o={kind:"rino-data-backup",v:2,...lsPayload()},a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));a.download="데이터백업-"+today()+".json";a.click();
   CFG.lsFileAt=Date.now();saveCfg();render(true);
 }
 function lsImport(f){
   if(!f||!isAdmin())return;
-  f.text().then(async t=>{try{const o=JSON.parse(t);if(o.kind!=="rino-ledger-backup"||!Array.isArray(o.ledger))throw 0;
-    const miss=o.ledger.filter(r=>r&&r.id&&!D.ledger.some(x=>x.id===r.id)).length;
-    if(!confirm(`백업 파일에서 지금 장부에 없는 기록 ${miss}건을 합칠까요? (있는 기록은 그대로 두고 빠진 것만 추가해요)`))return;
-    await lsSnapNow("import-before");const n=lsMergeIn(o);save();LS_INFO=null;render();toast(n?`${n}건을 합쳤어요`:"합칠 기록이 없었어요 (모두 이미 있어요)")}catch{alert("장부 백업 파일이 아니에요. ‘백업 파일 받기’로 만든 파일을 골라 주세요")}});
+  f.text().then(async t=>{try{const o=JSON.parse(t);if(!["rino-data-backup","rino-ledger-backup"].includes(o.kind)||!Array.isArray(o.ledger))throw 0;
+    const miss={};SAFE_LISTS.forEach(l=>{miss[l]=(o[l]||[]).filter(r=>r&&r.id&&!D[l].some(x=>x.id===r.id)).length});
+    if(!confirm(`백업 파일에서 지금 없는 기록 ${Object.values(miss).reduce((a,b)=>a+b,0)}건(${lsSumm(miss)||"없음"})을 합칠까요? (있는 기록은 그대로 두고 빠진 것만 추가해요)`))return;
+    await lsSnapNow("import-before");const r=lsMergeIn(o);save();LS_INFO=null;render();toast(r.total?"합쳤어요: "+lsSumm(r):"합칠 기록이 없었어요 (모두 이미 있어요)")}catch{alert("백업 파일이 아니에요. ‘백업 파일 받기’로 만든 파일을 골라 주세요")}});
+}
+/* 휴지통: 장부·일정·컨텐츠·수익 기록을 지우면 여기로 와요(kind로 구분). 동기화돼서 다른 기기에서도 보여요 */
+const TRASH_LIST={ledger:"ledger",events:"events",contents:"contents",revenue:"revenue"};
+function trashPut(kind,e){
+  const{u,...rec}=e;D.ledtrash.push({id:uid(),at:Date.now(),kind,rec});
+  const cut=Date.now()-90*864e5;D.ledtrash=D.ledtrash.filter(x=>x.at>cut);
 }
 function ledRestoreTrash(id){
-  if(!isAdmin())return;const t=D.ledtrash.find(x=>x.id===id);if(!t)return;const r=t.rec;
-  if(D.ledger.some(x=>x.id===r.id)){toast("이미 장부에 있어요");return}
-  delete D.del[r.id];delete D.del["led-"+r.id];D.ledger.push({...r,u:Date.now()});D.ledtrash=D.ledtrash.filter(x=>x.id!==id);
-  try{ledRevSync()}catch{}ledM=r.date.slice(0,7);save();render();toast("장부로 되살렸어요")
+  if(!isAdmin())return;const t=D.ledtrash.find(x=>x.id===id);if(!t)return;const kind=t.kind||"ledger",l=TRASH_LIST[kind]||"ledger",r={...t.rec};
+  if(D[l].some(x=>x.id===r.id)){toast("이미 있어요");return}
+  delete D.del[r.id];if(kind==="ledger")delete D.del["led-"+r.id];if(kind==="events"){delete r.nid;delete r.nh}
+  D[l].push({...r,u:Date.now()});D.ledtrash=D.ledtrash.filter(x=>x.id!==id);
+  if(kind==="ledger"){try{ledRevSync()}catch{}ledM=(r.date||today()).slice(0,7)}
+  save();render();toast(SAFE_NAME[kind]+" 기록을 되살렸어요")
 }
-function ledPurgeTrash(id){if(!isAdmin()||!confirm("휴지통에서 완전히 지울까요? (되살릴 수 없어요)"))return;D.ledtrash=D.ledtrash.filter(x=>x.id!==id);save();render()}
-function ledSafeCard(){
+function ledPurgeTrash(id){if(dataGuard())return;if(!isAdmin()||!confirm("휴지통에서 완전히 지울까요? (되살릴 수 없어요)"))return;D.ledtrash=D.ledtrash.filter(x=>x.id!==id);save();render()}
+const trashLabel=t=>{const r=t.rec||{},k=t.kind||"ledger";return k==="ledger"?(r.item||"(제품 미입력)")+(r.seller?" · "+r.seller:"")+" · 판매가 "+won(+r.price||0):k==="events"?(r.title||"(제목 없음)")+" · "+(r.date||""):k==="contents"?(r.title||"(제목 없음)"):(r.memo||"수익 기록")+" · "+won(+r.amount||0)};
+/* 데이터 잠금: 켜면 장부·일정·컨텐츠·수익 기록 등의 삭제와 전체 불러오기를 막아요. 풀 때 관리자 비밀번호가 필요해요 */
+const dataLocked=()=>!!CFG.dataLock;
+function dataGuard(){if(!dataLocked())return false;toast("데이터가 잠겨 있어요. 설정 > 데이터·스킬에서 잠금을 풀어 주세요");return true}
+async function dataLockOn(){
+  if(!isAdmin())return;await lsWrite(true);await lsSnapNow("lock");CFG.dataLock=Date.now();saveCfg();render();toast("데이터를 잠갔어요 · 삭제와 전체 불러오기가 막혀요")
+}
+function dataUnlockOpen(){
+  $("#modal").innerHTML=`<div class="shade2" onclick="closeModal()"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="데이터 잠금 풀기"><div class="row"><b class="grow" style="font-size:18px">데이터 잠금 풀기</b><button class="icon" onclick="closeModal()" aria-label="닫기">✕</button></div>
+  <div class="form" style="border:0;padding:0"><div class="m sub">관리자 비밀번호를 입력하면 삭제와 전체 불러오기를 다시 쓸 수 있어요.</div><input id="dulp" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" onkeydown="if(event.key==='Enter')dataUnlock()"><button class="btn" onclick="dataUnlock()">잠금 풀기</button></div></div>`;
+  $("#modal").classList.add("open");const e=$("#dulp");if(e)e.focus();
+}
+async function dataUnlock(){
+  const p=D.set.pins,pw=($("#dulp")||{}).value||"";
+  if(p){let h="";try{h=await hashAdmin(pw,p)}catch{}if(h!==p.a){alert("비밀번호가 맞지 않아요");return}}
+  delete CFG.dataLock;saveCfg();closeModal();render();toast("데이터 잠금을 풀었어요")
+}
+function dataProtectCard(){
   if(!LS_INFO&&!LS_ASKED){LS_ASKED=1;lsInfo()}
   if(!LS_INFO)LS_ASKED=0;
-  const I=LS_INFO,fmt=t=>t?new Date(t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"-";
-  const fileOld=!CFG.lsFileAt||Date.now()-CFG.lsFileAt>30*864e5,tr=[...D.ledtrash].sort((a,b)=>b.at-a.at);
-  return `<div class="card"><h3>🛡 장부 안전장치</h3><div class="body"><div class="m" style="line-height:1.8">
-  장부 <b>${D.ledger.length}건</b> · ${I?(I.ok?"✅ 이 기기 보조 저장소에 자동 백업 중":"⚠️ 보조 저장소를 쓸 수 없어요 (백업 파일을 꼭 받아 두세요)"):"저장 상태 확인 중…"}<br>
-  ${I&&I.latest?`최신 자동 백업 ${fmt(I.latest.at)} (${I.latest.n}건) · 보관본 ${I.snaps.length}개 (날짜별 30일 + 지우기·불러오기 직전본)`:""}<br>
+  const I=LS_INFO,fmt=t=>t?new Date(t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"-",lk=dataLocked();
+  const fileOld=!CFG.lsFileAt||Date.now()-CFG.lsFileAt>30*864e5,tr=[...D.ledtrash].sort((a,b)=>b.at-a.at),cnt=SAFE_LISTS.map(l=>SAFE_NAME[l]+" "+D[l].length).join(" · ");
+  return `<div class="card"><h3>🛡 데이터 보호 ${lk?'<span class="m sub" style="margin:0">🔒 잠김</span>':""}</h3><div class="body"><div class="m sub">장부·일정·컨텐츠·수익 기록이 사라지지 않게 이 기기에 자동으로 복사해 두고, 지운 기록은 휴지통에 보관해요.</div>
+  <div class="m" style="line-height:1.8;margin-top:8px">${esc(cnt)}<br>${I?(I.ok?"✅ 이 기기 보조 저장소에 자동 백업 중":"⚠️ 보조 저장소를 쓸 수 없어요 (백업 파일을 꼭 받아 두세요)"):"저장 상태 확인 중…"}<br>
+  ${I&&I.latest?`최신 자동 백업 ${fmt(I.latest.at)} (${I.latest.n}건) · 보관본 ${I.snaps.length}개 (날짜별 30일 + 지우기·불러오기·잠금 직전본)<br>`:""}
   ${fileOld?"⚠️ 백업 파일을 "+(CFG.lsFileAt?"받은 지 30일이 넘었어요":"아직 받지 않았어요")+". 한 달에 한 번 받아 두세요.":"백업 파일 마지막 저장 "+fmt(CFG.lsFileAt)}</div>
   <div class="row" style="gap:8px;flex-wrap:wrap;margin:8px 0"><button class="btn" onclick="lsExport()">백업 파일 받기</button><label class="btn ghost" style="cursor:pointer">백업 파일 합치기<input type="file" accept=".json,application/json" hidden onchange="lsImport(this.files[0]);this.value=''"></label></div>
-  ${I&&I.snaps.length?`<details style="margin-top:6px"><summary class="m" style="cursor:pointer">자동 백업에서 되살리기 (${I.snaps.length}개)</summary>${I.snaps.map(x=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><span class="grow m">${fmt(x.at)} · ${x.n}건 ${String(x.k).startsWith("pre-")?"· "+(String(x.k).includes("delete")?"지우기 직전":String(x.k).includes("import")?"불러오기 직전":"복원 직전"):""}</span><button class="pill" style="background:var(--g)" onclick="lsRestore('${esc(String(x.k))}')">되살리기</button></div>`).join("")}</details>`:""}
-  <details style="margin-top:6px" ${tr.length?"open":""}><summary class="m" style="cursor:pointer">🗑 휴지통 (${tr.length}건 · 90일 보관)</summary>${tr.map(t=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t" style="font-size:14px">${esc(t.rec.item||"(제품 미입력)")} <span class="m">${esc((t.rec.date||"").slice(5))}${t.rec.seller?" · "+esc(t.rec.seller):""}</span></div><div class="m">판매가 ${won(+t.rec.price||0)} · 지운 날 ${fmt(t.at)}</div></div><button class="pill" style="background:var(--g)" onclick="ledRestoreTrash('${t.id}')">되살리기</button><button class="icon del" style="width:28px;height:28px" onclick="ledPurgeTrash('${t.id}')" aria-label="완전 삭제">✕</button></div>`).join("")||'<div class="m" style="padding:6px 0">비어 있어요. 장부에서 지운 기록은 여기로 와요.</div>'}</details>
+  <div class="card" style="margin:8px 0;box-shadow:none;border:1px solid var(--sep)"><div class="body"><b>🔒 데이터 잠금</b><div class="m sub" style="margin:4px 0 8px">잠그면 장부·일정·컨텐츠·수익 기록·단가표 삭제와 ‘전체 불러오기’가 막혀요. 입력·수정과 동기화는 그대로 돼요. 풀려면 관리자 비밀번호가 필요해요.</div>${lk?`<div class="m" style="margin-bottom:6px">잠근 시각: ${new Date(CFG.dataLock).toLocaleString("ko-KR")}</div><button class="btn ghost" onclick="dataUnlockOpen()">잠금 풀기</button>`:`<button class="btn" ${isAdmin()?"":"disabled"} onclick="dataLockOn()">지금 잠그기</button>`}</div></div>
+  ${I&&I.snaps.length?`<details style="margin-top:6px"><summary class="m" style="cursor:pointer">자동 백업에서 되살리기 (${I.snaps.length}개)</summary>${I.snaps.map(x=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><span class="grow m">${fmt(x.at)} · ${x.n}건 ${String(x.k).startsWith("pre-")?"· "+(String(x.k).includes("delete")?"지우기 직전":String(x.k).includes("import")?"불러오기 직전":String(x.k).includes("lock")?"잠그기 직전":"복원 직전"):""}</span><button class="pill" style="background:var(--g)" onclick="lsRestore('${esc(String(x.k))}')">되살리기</button></div>`).join("")}</details>`:""}
+  <details style="margin-top:6px" ${tr.length?"open":""}><summary class="m" style="cursor:pointer">🗑 휴지통 (${tr.length}건 · 90일 보관)</summary>${tr.map(t=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t" style="font-size:14px"><span class="pill" style="background:var(--g);font-size:11px">${SAFE_NAME[t.kind||"ledger"]}</span> ${esc(trashLabel(t))}</div><div class="m">지운 날 ${fmt(t.at)}</div></div><button class="pill" style="background:var(--g)" onclick="ledRestoreTrash('${t.id}')">되살리기</button><button class="icon del" style="width:28px;height:28px" onclick="ledPurgeTrash('${t.id}')" aria-label="완전 삭제">✕</button></div>`).join("")||'<div class="m" style="padding:6px 0">비어 있어요. 장부·일정·컨텐츠·수익 기록을 지우면 여기로 와요.</div>'}</details>
   </div></div>`;
+}
+/* 장부 화면에는 짧은 안내만 두고 관리는 설정에서 해요 */
+function ledSafeCard(){
+  return `<div class="card"><div class="body row" style="gap:8px;align-items:center"><span class="m grow">🛡 장부는 이 기기에 자동 백업돼요 · 지운 기록은 휴지통에 90일 보관${dataLocked()?" · 🔒 잠김":""}</span><button class="btn ghost" onclick="setTabK='data';go('settings')">데이터 보호 열기</button></div></div>`;
 }
 const persist=()=>{try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}try{lsSchedule()}catch{}};
 async function fetchRemote(){
@@ -645,7 +690,7 @@ function pubEdit(id){const c=D.contents.find(x=>x.id===id);if(!c)return;
 function cPick(id,on){on?cSel.add(id):cSel.delete(id);render(true)}
 function cPickAll(on){const ids=[...document.querySelectorAll(".item .csel")].map(e=>e.getAttribute("onchange").match(/'([^']+)'/)[1]);ids.forEach(i=>on?cSel.add(i):cSel.delete(i));render(true)}
 function cBulk(k){if(!k||!cSel.size)return;D.contents.forEach(c=>{if(cSel.has(c.id)){if(k==="done"&&c.stage!=="done"&&!c.pubAt)c.pubAt=today();c.stage=k}});cSel.clear();save();render(true)}
-function delItem(list,id){if(!isAdmin())return;if(!confirm("삭제할까요?"))return;D[list]=D[list].filter(x=>x.id!==id);save();render()}
+function delItem(list,id){if(dataGuard())return;if(!isAdmin())return;const e=D[list].find(x=>x.id===id),tr=e&&(list==="contents"||list==="revenue");if(!confirm(tr?"삭제할까요? (휴지통에 90일 보관돼요)":"삭제할까요?"))return;if(tr){lsSnapNow("delete");trashPut(list,e)}D[list]=D[list].filter(x=>x.id!==id);save();render();if(tr)lsWrite(true)}
 const sid=v=>String(v==null?"":v).replace(/[^\w-]/g,"");
 const taskRow=x=>`<div class="chk"><input type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${sid(x.id)}')"><div class="grow ${x.done?"done":""}">${esc(x.title)}<div class="m">${esc(x.due||"기한 없음")} · ${esc(x.pri)}${x.who?" · 담당 "+esc(x.who):""}${x.done&&x.doneBy?" · 완료 "+esc(x.doneBy):""}${x.memo?"<br>"+esc(x.memo):""}${aiRow(x)}${x.due&&x.due<today()&&!x.done?' · <span class="low">기한초과</span>':""}</div></div><button class="icon del" style="width:32px;height:32px" onclick="delItem('tasks','${sid(x.id)}')">✕</button></div>`;
 const linkOk=u=>{try{const raw=String(u||"").trim();const x=new URL(/^https?:\/\//i.test(raw)?raw:"https://"+raw);return /^https?:$/.test(x.protocol)&&x.hostname.includes(".")?x.href:""}catch{return""}};
@@ -1112,10 +1157,9 @@ function ledSave(){
   ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요 · 할인 후 판매액이 수익에 잡혔어요");
 }
 function ledDel(id){
-  if(!isAdmin())return;const e=D.ledger.find(x=>x.id===id);if(!e||!confirm("이 장부 기록을 지울까요? (휴지통에 90일 보관돼요)"))return;
-  lsSnapNow("delete");const{u,...rec}=e;D.ledtrash.push({id:uid(),at:Date.now(),rec});
-  const cut=Date.now()-90*864e5;D.ledtrash=D.ledtrash.filter(x=>x.at>cut);
-  D.ledger=D.ledger.filter(x=>x.id!==id);D.revenue=D.revenue.filter(x=>x.id!=="led-"+id);save();render();lsWrite(true);toast("휴지통으로 옮겼어요 · 장부 맨 아래 「장부 안전장치」에서 되살릴 수 있어요")
+  if(dataGuard())return;if(!isAdmin())return;const e=D.ledger.find(x=>x.id===id);if(!e||!confirm("이 장부 기록을 지울까요? (휴지통에 90일 보관돼요)"))return;
+  lsSnapNow("delete");trashPut("ledger",e);
+  D.ledger=D.ledger.filter(x=>x.id!==id);D.revenue=D.revenue.filter(x=>x.id!=="led-"+id);save();render();lsWrite(true);toast("휴지통으로 옮겼어요 · 설정 > 데이터·스킬 > 데이터 보호에서 되살릴 수 있어요")
 }
 function ledCsv(){
   const m=ledM||today().slice(0,7),rows=D.ledger.filter(x=>x.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
@@ -1260,8 +1304,8 @@ function prcSave(id){
   if(id){const x=D.prices.find(q=>q.id===id);if(x)Object.assign(x,rec)}else D.prices.push({id:uid(),...rec});
   closeModal();save();render();
 }
-function prcDel(id){if(!isAdmin()||!confirm("이 제품을 단가표에서 지울까요?"))return;D.prices=D.prices.filter(x=>x.id!==id);save();render()}
-function prcClear(){if(!isAdmin()||!confirm(`단가표 ${D.prices.length}개를 모두 지울까요? (장부 기록은 그대로예요)`))return;D.prices=[];save();render()}
+function prcDel(id){if(dataGuard())return;if(!isAdmin()||!confirm("이 제품을 단가표에서 지울까요?"))return;D.prices=D.prices.filter(x=>x.id!==id);save();render()}
+function prcClear(){if(dataGuard())return;if(!isAdmin()||!confirm(`단가표 ${D.prices.length}개를 모두 지울까요? (장부 기록은 그대로예요)`))return;D.prices=[];save();render()}
 function prcView(){
   /* 제품이 수천 개라 한 번에 다 그리면 화면이 멈춰요. 100개씩만 그리고 '더 보기'로 늘려요. */
   const q=prcQ.trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean),all=D.prices.filter(x=>!terms.length||terms.every(t=>((x.code||"")+" "+x.name+" "+(x.cat||"")).toLowerCase().includes(t))).sort((a,b)=>(a.cat||"").localeCompare(b.cat||"","ko")||a.name.localeCompare(b.name,"ko")),rows=all.slice(0,prcLim);
@@ -1988,7 +2032,7 @@ function setSection(k){
   if(k==="people")return `<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
   if(k==="link")return `${connCard()}${vaultCard()}${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${adm?calCard():""}${aiCardUi()}`;
   if(k==="look")return `${bgCard()}${adm?brandCard():""}${themeCard()}${adm?brandLinkCard():""}`;
-  if(k==="data")return `${backupCardUi()}${importCardUi()}${skillCard()}`;
+  if(k==="data")return `${adm?dataProtectCard():""}${backupCardUi()}${importCardUi()}${skillCard()}`;
   return `${x.login}${bioCard()}`;
 }
 views.settings=()=>{
@@ -2095,7 +2139,7 @@ function vaultCard(){
 function connectSync(){if(connGuard())return;CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value.trim()||CFG.gistId||"";saveCfg();sdClear("tk","gi");if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
 function disconnectSync(){if(connGuard())return;delete CFG.token;saveCfg();sdClear("tk");setSync("● 자동 저장");render()}
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
-function importJson(f){if(!f)return;f.text().then(async t=>{try{await lsSnapNow("import-all");D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
+function importJson(f){if(!f||dataGuard())return;f.text().then(async t=>{try{await lsSnapNow("import-all");D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
 
 /* ---------- 업무 절차 (절차 문서 · 실행 체크 · 완료 기록) ----------
    절차는 D.proto, 실행 기록은 D.protorun 에 저장되고 기존 클라우드 동기화로 합쳐져요.
@@ -2585,7 +2629,7 @@ const calCard=()=>{const ok=calReady();return `<div class="card"><h3>📆 Notion
    <div class="m sub">${ok?(CFG.calAt?"마지막 동기화 "+new Date(CFG.calAt).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"아직 동기화한 적이 없어요"):"아직 연결 전이에요"}${_calMsg?" · "+esc(_calMsg):""}</div>
   </div></div></div>`};
 
-function schDel(id){const e=D.events.find(x=>x.id===id);if(!e||!schCan(e))return;if(!confirm("이 일정을 지울까요?"))return;if(e.nid){D.set.calDel=[...(D.set.calDel||[]),e.nid];D.set.u=Date.now()}D.events=D.events.filter(x=>x.id!==id);schEdit="";save();render();calAuto(true)}
+function schDel(id){if(dataGuard())return;const e=D.events.find(x=>x.id===id);if(!e||!schCan(e))return;if(!confirm("이 일정을 지울까요? (휴지통에 90일 보관돼요)"))return;lsSnapNow("delete");trashPut("events",e);if(e.nid){D.set.calDel=[...(D.set.calDel||[]),e.nid];D.set.u=Date.now()}D.events=D.events.filter(x=>x.id!==id);schEdit="";save();render();calAuto(true)}
 views.schedule=()=>{
   const[y,m]=schM.split("-").map(Number),first=new Date(y,m-1,1).getDay(),days=new Date(y,m,0).getDate(),td=today();
   const cells=[];for(let i=0;i<first;i++)cells.push(null);for(let d=1;d<=days;d++)cells.push(`${schM}-${p2(d)}`);while(cells.length%7)cells.push(null);
