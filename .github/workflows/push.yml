@@ -35,3 +35,11 @@ jobs:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
           SOLAMEN_READ_TOKEN: ${{ secrets.SOLAMEN_READ_TOKEN }}
+      - name: Due payments
+        if: ${{ !cancelled() }}
+        run: node scripts/due-notify.mjs
+        env:
+          SYNC_GIST_TOKEN: ${{ secrets.SYNC_GIST_TOKEN }}
+          SYNC_GIST_ID: ${{ secrets.SYNC_GIST_ID }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
