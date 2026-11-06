@@ -1031,7 +1031,7 @@ function ledBinCards(m,mo){
   const cm={};ledExpand(rows).forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
   const all=ledAgg(ledExpand(rows)),cl=Object.entries(cm).map(([k,r])=>({k,a:ledAgg(r)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.P-p.a.P);
   const card3=`<div class="card"><h3>제품 분류별 할인율 비교 <span class="m sub" style="margin:0">평균 할인 높은 순</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("분류")}${cl.map(o=>ledAggRow(esc(o.k.length>9?o.k.slice(0,9)+"…":o.k),o.a,false,"")).join("")}${cl.length>1?ledAggRow("전체",all,false,""):""}<div class="m" style="padding:8px 6px">${cl.length>1?`전체 평균 할인은 ${all.disc}%예요. 평균보다 많이 깎아 준 분류는 <b>${cl.filter(o=>o.a.disc>all.disc).map(o=>esc(o.k)+" +"+Math.round((o.a.disc-all.disc)*10)/10+"%p").join(", ")||"없어요"}</b>.`:"분류가 하나뿐이라 비교할 수 없어요."} 분류는 가격표·단가표의 분류명을 써요(괄호 코드는 뺐어요). 가격표에서 제품을 골라 기록한 건만 분류가 붙고, 직접 입력한 건은 “분류 없음”이에요. 위의 ‘${ledAllScope?"전체 기간":mo+"월"}’ 범위와 판매자 선택을 따라가요.</div></div></div>`;
-  return card1+card2+card3+ledSellerCatCard(rows);
+  return card1+ledBundleCards(rows)+card2+card3+ledSellerCatCard(rows);
 }
 /* 판매자 × 제품 분류: 판매액이 큰 분류 3개 + 그 외. 칸마다 평균 할인율, 남는 비율, 건수 */
 function ledSellerCat(rows){
@@ -1070,6 +1070,36 @@ function ledCatTrendCard(){
   <div class="m" style="display:grid;grid-template-columns:.8fr ${t.cols.map(()=>"1fr").join(" ")} 1.2fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>월</span>${t.cols.map(c=>`<span>${nm(c)}</span>`).join("")}<span>판매가 합계</span></div>
   ${t.data.map(r=>`<div style="${g}"><b>${r.m.slice(2).replace("-",".")}</b>${r.cells.map(c=>c.n?`<span><b>${c.sh}%</b><br><span class="m" style="font-size:11px">${c.n}건</span></span>`:`<span class="m">–</span>`).join("")}<span>${won(r.P)}<br><span class="m" style="font-size:11px">${r.n}건</span></span>${bar(r)}</div>`).join("")}
   <div class="m" style="padding:8px 6px">비중은 그 달 판매가 합계에서 각 분류가 차지하는 비율이에요(건수가 아니라 금액 기준). 최근 12개월에서 판매액이 큰 분류 3개만 따로 보여주고 나머지는 “그 외”예요. 분류를 못 찾은 건은 “분류 없음”으로 따로 잡혀요. 판매자 이름을 눌러 한 사람만 볼 수도 있어요.</div></div></div>`;
+}
+/* 묶음 vs 단품: 한 주문에 제품이 2개 이상이면 묶음, 1개면 단품(같은 제품 수량이 여러 개여도 단품). 묶음은 합산 할인/제품별 할인으로 한 번 더 나눠요 */
+const ledIsBundle=x=>(x.lines||[]).length>=2;
+function ledBundleSplit(rows){
+  const single=rows.filter(x=>!ledIsBundle(x)),bund=rows.filter(ledIsBundle);
+  return{single,bund,sum:bund.filter(x=>x.bundle),each:bund.filter(x=>!x.bundle)};
+}
+function ledBundleCards(rows){
+  if(!rows.length)return"";
+  const sp=ledBundleSplit(rows),A={single:ledAgg(sp.single),bund:ledAgg(sp.bund),sum:ledAgg(sp.sum),each:ledAgg(sp.each),all:ledAgg(rows)};
+  const per=a=>a.n?Math.round(a.net/a.n):0,perP=a=>a.n?Math.round(a.P/a.n):0;
+  const one=(lab,a)=>a.n?ledAggRow(lab,a,false,""):`<div style="${ledGrid}"><b>${lab}</b><span class="m" style="grid-column:2/7">판매 없음</span></div>`;
+  let msg="단품과 묶음 판매가 모두 있어야 비교할 수 있어요.";
+  if(A.single.n&&A.bund.n){const dd=Math.round((A.bund.disc-A.single.disc)*10)/10,dr=Math.round((A.bund.rate-A.single.rate)*10)/10;
+    msg=`묶음 판매의 평균 할인은 ${A.bund.disc}%로 단품(${A.single.disc}%)보다 <b>${Math.abs(dd)}%p ${dd>0?"높아요":dd<0?"낮아요":"같아요"}</b>. 남는 비율은 ${A.bund.rate}% vs ${A.single.rate}% (<b style="${dr<0?"color:var(--red)":""}">${dr>0?"+":""}${dr}%p</b>). 한 주문당 판매가는 ${won(perP(A.single))} → ${won(perP(A.bund))}, 남는 금액은 ${won(per(A.single))} → ${won(per(A.bund))}예요.`}
+  const card1=`<div class="card"><h3>묶음 판매 vs 단품 판매 <span class="m sub" style="margin:0">${ledAllScope?"전체 기간":"이 달"}${ledSel?" · "+esc(ledSel):""}</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("판매 방식")}${one("단품",A.single)}${one("묶음",A.bund)}${A.bund.n?one("└ 합산 할인",A.sum)+one("└ 제품별 할인",A.each):""}${A.all.n?ledAggRow("전체",A.all,false,""):""}<div class="m" style="padding:8px 6px">${msg}</div><div class="m" style="padding:0 6px 6px">묶음 = 한 주문에 제품이 2개 이상. 같은 제품을 여러 개 사도 단품이에요. 건수는 주문 수예요.</div></div></div>`;
+  /* 판매자별 */
+  const g5="display:grid;grid-template-columns:.9fr 1.1fr 1.1fr .9fr .8fr;gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)";
+  const cell=a=>a.n?`<span><b>${a.disc}%</b><br><span class="m" style="font-size:11px">남 ${a.rate}% · ${a.n}건</span></span>`:`<span class="m">–</span>`;
+  const diff=(s,b)=>s.n&&b.n?(()=>{const d=Math.round((b.disc-s.disc)*10)/10;return `<b>${d>0?"+":""}${d}%p</b>`})():`<span class="m">–</span>`;
+  const sh=(s,b)=>s.n+b.n?Math.round(b.n/(s.n+b.n)*100)+"%":"–";
+  const names=[...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko"));
+  const srows=names.map(n=>{const r=rows.filter(x=>ledSl(x)===n),q=ledBundleSplit(r),s1=ledAgg(q.single),b1=ledAgg(q.bund);return `<div style="${g5}"><b>${esc(n)}</b>${cell(s1)}${cell(b1)}${diff(s1,b1)}<span>${sh(s1,b1)}</span></div>`}).join("");
+  const hd=(a,b,c,d,e)=>`<div class="m" style="display:grid;grid-template-columns:${a};gap:4px;padding:0 6px 4px;font-size:12px">${[b,c,d,e].join("")}</div>`;
+  const card2=names.length>1||ledSel?`<div class="card"><h3>판매자별 묶음 · 단품 할인율</h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:.9fr 1.1fr 1.1fr .9fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>판매자</span><span>단품 평균 할인</span><span>묶음 평균 할인</span><span>묶음−단품</span><span>묶음 비중</span></div>${srows}<div class="m" style="padding:8px 6px">묶음 비중은 그 판매자의 주문 중 묶음 주문 비율이에요.</div></div></div>`:"";
+  /* 월별 */
+  const all=D.ledger.filter(ledMatch),ms=[...new Set(all.map(x=>x.date.slice(0,7)))].sort().reverse().slice(0,12);
+  const mrows=ms.map(k=>{const q=ledBundleSplit(all.filter(x=>x.date.startsWith(k))),s1=ledAgg(q.single),b1=ledAgg(q.bund);return `<div style="${g5}"><b>${k.slice(2).replace("-",".")}</b>${cell(s1)}${cell(b1)}${diff(s1,b1)}<span>${sh(s1,b1)}</span></div>`}).join("");
+  const card3=ms.length>1?`<div class="card"><h3>월별 묶음 · 단품 할인율 <span class="m sub" style="margin:0">최근 12개월</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:.9fr 1.1fr 1.1fr .9fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>월</span><span>단품 평균 할인</span><span>묶음 평균 할인</span><span>묶음−단품</span><span>묶음 비중</span></div>${mrows}</div></div>`:"";
+  return card1+card2+card3;
 }
 /* 제품별 할인율 순위: 이 달 판매에서 제품마다 평균 할인율이 높은 순서 */
 function ledDiscRank(rows){
@@ -1249,6 +1279,11 @@ function ledAnalysisCsv(){
   sec("판매자별 할인율 구간의 남는 비율 (%) / 건수");line(["판매자",...LED_BINS.flatMap(b=>[b[0]+" 남는 비율(%)",b[0]+" 건수"]),"높은 할인 vs 낮은 할인(%p)","할인 1%p당 변화(%p)"]);
   [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const rs=rows.filter(x=>ledSl(x)===n),ba=LED_BINS.map((b,i)=>ledAgg(rs.filter(x=>ledBinOf(x)===i))),l=ba.find(a=>a.n),h=[...ba].reverse().find(a=>a.n),sl=ledSlope(rs);
     line([n,...ba.flatMap(a=>[a.n?a.rate:"",a.n]),l&&h&&l!==h?Math.round((h.rate-l.rate)*10)/10:"",sl===null?"":sl])});
+  {const sp=ledBundleSplit(rows);sec("묶음 vs 단품 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("판매 방식"));[["단품",sp.single],["묶음",sp.bund],["묶음 - 합산 할인",sp.sum],["묶음 - 제품별 할인",sp.each]].forEach(([l,r])=>line(aggRow(l,ledAgg(r))));
+   sec("판매자별 묶음·단품 평균 할인율(%)");line(["판매자","단품 건수","단품 평균 할인율(%)","단품 남는 비율(%)","묶음 건수","묶음 평균 할인율(%)","묶음 남는 비율(%)","묶음-단품(%p)","묶음 비중(%)"]);
+   [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const q=ledBundleSplit(rows.filter(x=>ledSl(x)===n)),a=ledAgg(q.single),b=ledAgg(q.bund);line([n,a.n,a.n?a.disc:"",a.n?a.rate:"",b.n,b.n?b.disc:"",b.n?b.rate:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])});
+   sec("월별 묶음·단품 평균 할인율(%) ("+(ledSel||"전체 판매자")+")");line(["월","단품 건수","단품 평균 할인율(%)","묶음 건수","묶음 평균 할인율(%)","묶음-단품(%p)","묶음 비중(%)"]);
+   [...new Set(D.ledger.filter(ledMatch).map(x=>x.date.slice(0,7)))].sort().reverse().forEach(k=>{const q=ledBundleSplit(D.ledger.filter(x=>x.date.startsWith(k)&&ledMatch(x))),a=ledAgg(q.single),b=ledAgg(q.bund);line([k,a.n,a.n?a.disc:"",b.n,b.n?b.disc:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])})}
   const cm={};ledExpand(rows).forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
   sec("제품 분류별 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("분류"));Object.entries(cm).map(([k,r])=>[k,ledAgg(r)]).sort((p,q)=>q[1].disc-p[1].disc).forEach(([k,a])=>line(aggRow(k,a)));
   {const t=ledSellerCat(rows);sec("판매자 × 제품 분류 ("+(ledAllScope?"전체 기간":m)+")");line(["판매자",...t.cols.flatMap(c=>[c+" 건수",c+" 평균 할인율(%)",c+" 남는 비율(%)",c+" 남는 금액"])]);
