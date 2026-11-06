@@ -879,7 +879,24 @@ function ledBinCards(m,mo){
   const cm={};rows.forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
   const all=ledAgg(rows),cl=Object.entries(cm).map(([k,r])=>({k,a:ledAgg(r)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.P-p.a.P);
   const card3=`<div class="card"><h3>제품 분류별 할인율 비교 <span class="m sub" style="margin:0">평균 할인 높은 순</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("분류")}${cl.map(o=>ledAggRow(esc(o.k.length>9?o.k.slice(0,9)+"…":o.k),o.a,false,"")).join("")}${cl.length>1?ledAggRow("전체",all,false,""):""}<div class="m" style="padding:8px 6px">${cl.length>1?`전체 평균 할인은 ${all.disc}%예요. 평균보다 많이 깎아 준 분류는 <b>${cl.filter(o=>o.a.disc>all.disc).map(o=>esc(o.k)+" +"+Math.round((o.a.disc-all.disc)*10)/10+"%p").join(", ")||"없어요"}</b>.`:"분류가 하나뿐이라 비교할 수 없어요."} 분류는 가격표·단가표의 분류명을 써요(괄호 코드는 뺐어요). 가격표에서 제품을 골라 기록한 건만 분류가 붙고, 직접 입력한 건은 “분류 없음”이에요. 위의 ‘${ledAllScope?"전체 기간":mo+"월"}’ 범위와 판매자 선택을 따라가요.</div></div></div>`;
-  return card1+card2+card3;
+  return card1+card2+card3+ledSellerCatCard(rows);
+}
+/* 판매자 × 제품 분류: 판매액이 큰 분류 3개 + 그 외. 칸마다 평균 할인율, 남는 비율, 건수 */
+function ledSellerCat(rows){
+  const catP={};rows.forEach(x=>{const k=ledCatOf(x);catP[k]=(catP[k]||0)+(+x.price||0)});
+  const ord=Object.keys(catP).sort((a,b)=>catP[b]-catP[a]),top=ord.slice(0,3),more=ord.length>3;
+  const colOf=x=>{const k=ledCatOf(x);return top.includes(k)?k:"그 외"};
+  const cols=more?[...top,"그 외"]:top,sellers=[...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko"));
+  return{cols,sellers,cell:(n,c)=>ledAgg(rows.filter(x=>ledSl(x)===n&&colOf(x)===c)),tot:c=>ledAgg(rows.filter(x=>colOf(x)===c))};
+}
+function ledSellerCatCard(rows){
+  if(!rows.length)return"";const t=ledSellerCat(rows),g=`display:grid;grid-template-columns:.9fr ${t.cols.map(()=>"1fr").join(" ")};gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)`;
+  const cell=a=>a.n?`<span><b>${a.disc}%</b><br><span class="m" style="font-size:11px">남 ${a.rate}% · ${a.n}건</span></span>`:`<span class="m">–</span>`;
+  const nm=c=>esc(c.length>6?c.slice(0,6)+"…":c);
+  return `<div class="card"><h3>판매자 × 제품 분류 <span class="m sub" style="margin:0">평균 할인율과 남는 비율</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:.9fr ${t.cols.map(()=>"1fr").join(" ")};gap:4px;padding:0 6px 4px;font-size:12px"><span>판매자</span>${t.cols.map(c=>`<span>${nm(c)}</span>`).join("")}</div>
+  ${t.sellers.map(n=>`<div style="${g}"><b>${esc(n)}</b>${t.cols.map(c=>cell(t.cell(n,c))).join("")}</div>`).join("")}
+  ${t.sellers.length>1?`<div style="${g}"><b>전체</b>${t.cols.map(c=>cell(t.tot(c))).join("")}</div>`:""}
+  <div class="m" style="padding:8px 6px">칸 위 숫자는 <b>평균 할인율</b>, 아래는 <b>남는 비율(판매가 대비)</b>과 건수예요. 판매액이 큰 분류 3개만 따로 보여주고 나머지는 “그 외”로 묶어요. 같은 분류에서 판매자끼리 할인율·남는 비율을 비교해 보세요. 건수가 1~2건인 칸은 참고용이에요.</div></div></div>`;
 }
 /* 제품별 할인율 순위: 이 달 판매에서 제품마다 평균 할인율이 높은 순서 */
 function ledDiscRank(rows){
@@ -1017,6 +1034,9 @@ function ledAnalysisCsv(){
     line([n,...ba.flatMap(a=>[a.n?a.rate:"",a.n]),l&&h&&l!==h?Math.round((h.rate-l.rate)*10)/10:"",sl===null?"":sl])});
   const cm={};rows.forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
   sec("제품 분류별 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("분류"));Object.entries(cm).map(([k,r])=>[k,ledAgg(r)]).sort((p,q)=>q[1].disc-p[1].disc).forEach(([k,a])=>line(aggRow(k,a)));
+  {const t=ledSellerCat(rows);sec("판매자 × 제품 분류 ("+(ledAllScope?"전체 기간":m)+")");line(["판매자",...t.cols.flatMap(c=>[c+" 건수",c+" 평균 할인율(%)",c+" 남는 비율(%)",c+" 남는 금액"])]);
+   t.sellers.forEach(n=>line([n,...t.cols.flatMap(c=>{const a=t.cell(n,c);return a.n?[a.n,a.disc,a.rate,a.net]:["","","",""]})]));
+   line(["전체",...t.cols.flatMap(c=>{const a=t.tot(c);return a.n?[a.n,a.disc,a.rate,a.net]:["","","",""]})])}
   const g={};rows.forEach(x=>{const k=((x.code||"")||(x.item||"")).trim();if(!k)return;(g[k]=g[k]||{name:(x.item||k).trim(),code:x.code||"",rows:[]}).rows.push(x)});
   sec("제품별 할인율 순위 ("+(ledAllScope?"전체 기간":m)+")");line(["제품","코드",...aggHead("").slice(1)]);Object.values(g).map(o=>({o,a:ledAgg(o.rows)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.n-p.a.n).forEach(({o,a})=>{const r=aggRow(o.name,a);r.splice(1,0,o.code);line(r)});
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+out.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="에이스침대-장부분석-"+(ledAllScope?"전체":m)+(ledSel?"-"+ledSel:"")+".csv";a.click();
