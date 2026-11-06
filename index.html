@@ -911,8 +911,8 @@ function revOpen(){
   <input id="ra" type="number" min="0" placeholder="금액 (원)" onkeydown="if(event.key==='Enter')addRev()"><input id="rm" placeholder="출처 메모 (예: 애드센스, 쿠팡파트너스, 가구 판매)" onkeydown="if(event.key==='Enter')addRev()"><button class="btn" onclick="addRev()">기록하기</button></div></div>`;
   $("#modal").classList.add("open");const e=$("#ra");if(e)e.focus();
 }
-/* ---------- 장부 (에이스침대 전용: 판매가에서 할인·배송료·세금·수수료·기타를 뺀 남는 금액) ----------
-   남는 금액 = 할인 후 판매액 − 배송료 − 물건대금 − 기타비용 − 부가세(할인 후 판매액의 10/110, 선택) − 카드수수료(%) − 기타 세율(%).
+/* ---------- 장부 (에이스침대 전용: 판매가에서 할인·배송료·세금·수수료·기타를 뺀 이익금) ----------
+   이익금 = 할인 후 판매액 − 배송료 − 물건대금 − 기타비용 − 부가세(할인 후 판매액의 10/110, 선택) − 카드수수료(%) − 기타 세율(%).
    부가세·수수료·세율은 '할인 후 판매액'(고객이 실제로 낸 금액) 기준이에요. 매입 부가세 공제는 반영하지 않아요.
    기록은 D.ledger 에 저장되고 동기화돼요. 물품·재고 → 장부 탭과 수익 → 장부 탭이 같은 데이터를 보여 줘요.
    제품 검색은 가격표(prices.json, 판매가)와 이 기기에 불러온 내부 단가(IndexedDB linus-price: 출고가·공급가), 단가표(D.prices)를 함께 써요. */
@@ -943,7 +943,7 @@ const ledExpand=rows=>rows.flatMap(ledLines);
 const ledSigned=n=>(n<0?"−":"")+won(Math.abs(n));
 const ledSellers=()=>[...new Set(D.ledger.map(x=>(x.seller||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ko"));
 const ledSl=x=>(x.seller||"").trim()||"미지정";
-/* 판매자별·월별 집계: 할인율은 판매가 대비 할인액(금액 가중), 남는 비율은 장부 기존 기준(판매가 대비 남는 금액) */
+/* 판매자별·월별 집계: 할인율은 판매가 대비 할인액(금액 가중), 이익률은 장부 기존 기준(판매가 대비 이익금) */
 function ledAgg(rows){
   const a={n:rows.length,P:0,da:0,real:0,net:0};
   rows.forEach(x=>{const c=ledCalc(x);a.P+=c.price;a.da+=c.da;a.real+=c.real;a.net+=c.net});
@@ -953,7 +953,7 @@ function ledPickSeller(i){const n=i<0?"":ledSellersAll()[i];ledSel=ledSel===n?""
 const ledSellersAll=()=>{const l=ledSellers();return D.ledger.some(x=>!(x.seller||"").trim())?[...l,"미지정"]:l};
 const ledGrid="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .8fr;gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)";
 const ledAggRow=(label,a,on,click)=>`<div style="${ledGrid}${on?";background:rgba(200,85,61,.14);border-radius:8px":""}${click?";cursor:pointer":""}" ${click?`onclick="${click}"`:""}><b>${label}</b><span>${a.n}건</span><span>${won(a.P)}</span><span>${a.disc}%</span><b style="${a.net<0?"color:var(--red)":""}">${ledSigned(a.net)}</b><span>${a.rate}%</span></div>`;
-const ledAggHead=first=>`<div class="m" style="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>${first}</span><span>건수</span><span>판매가</span><span>평균 할인</span><span>남는 금액</span><span>남는 비율</span></div>`;
+const ledAggHead=first=>`<div class="m" style="display:grid;grid-template-columns:1.1fr .55fr 1.3fr .8fr 1.3fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>${first}</span><span>건수</span><span>판매가</span><span>평균 할인</span><span>이익금</span><span>이익률</span></div>`;
 const ledMatch=x=>!ledSel||ledSl(x)===ledSel;
 /* 검색: 고객 이름·전화번호(숫자만 3자리 이상이면 뒷자리도)·주소·제품명·코드·분류·비고·판매자·날짜를 모두 찾아요. 단어를 띄우면 모두 들어간 기록만 나와요 */
 const ledQWords=()=>ledQ.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -978,7 +978,7 @@ function ledCatOf(x){
     if(!c&&LED_CAT){const q=(k&&LED_CAT.find(z=>ledKey(z.code)===k))||(n&&LED_CAT.find(z=>ledKey(z.name)===n));if(q&&q.cat)c=q.cat}}
   c=String(c||"").replace(/\s*\([^)]*\)\s*$/,"").trim();return c||"분류 없음";
 }
-/* 개인별 월 목표: 판매자마다 한 달 목표 금액(기준: 할인 후 판매액 또는 남는 금액)을 정하고 달성률을 봐요 */
+/* 개인별 월 목표: 판매자마다 한 달 목표 금액(기준: 할인 후 판매액 또는 이익금)을 정하고 달성률을 봐요 */
 /* 목표는 달마다 따로 정할 수 있어요(ledGoalsM[월][판매자]). 그 달에 따로 정하지 않았으면 「매달 기본」(ledGoals)을 써요. */
 const ledGoalOf=(n,m)=>{const o=(D.set.ledGoalsM||{})[m];return o&&n in o?{v:+o[n]||0,own:1}:{v:+(D.set.ledGoals||{})[n]||0,own:0}};
 function ledGoalSet(i,v){
@@ -998,14 +998,14 @@ function ledGoalDefault(i){
 }
 function ledGoalBy(v){if(!isAdmin())return;D.set.ledGoalBy=v==="net"?"net":"real";D.set.u=Date.now();save();render()}
 function ledGoalCard(monthAll,mo){
-  const names=ledSellers(),by=D.set.ledGoalBy==="net"?"net":"real",lab=by==="net"?"남는 금액":"할인 후 판매액";
+  const names=ledSellers(),by=D.set.ledGoalBy==="net"?"net":"real",lab=by==="net"?"이익금":"할인 후 판매액";
   if(!names.length)return"";
   const bar=p=>`<div style="height:8px;border-radius:6px;background:rgba(0,0,0,.08);overflow:hidden;margin:4px 0"><div style="height:100%;width:${Math.min(100,Math.max(0,p))}%;background:var(--ac,#c8553d)"></div></div>`;
   const rows=names.map((n,i)=>{
     const a=ledAgg(monthAll.filter(x=>ledSl(x)===n)),v=by==="net"?a.net:a.real,gg=ledGoalOf(n,ledM||today().slice(0,7)),g=gg.v,p=g>0?Math.round(v/g*1000)/10:0;
     return `<div style="padding:10px 6px;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="grow">${esc(n)}</b>${isAdmin()?`<label class="m" style="display:flex;align-items:center;gap:6px">${mo}월 목표(원)<input type="number" min="0" inputmode="numeric" value="${g||""}" placeholder="미설정" style="width:120px" onchange="ledGoalSet(${i},this.value)"></label><button class="pill" style="background:var(--g)" onclick="ledGoalDefault(${i})" title="이 금액을 매달 기본 목표로">매달 기본으로</button>`:`<span class="m">목표 ${g?won(g):"미설정"}</span>`}</div>
     ${g>0?`<div class="m">${gg.own?"이 달에 따로 정한 목표":"매달 기본 목표"}</div>${bar(p)}<div class="row" style="justify-content:space-between"><span class="m">${lab} <b style="color:var(--tx)">${ledSigned(v)}</b> / ${won(g)}</span><b style="${p>=100?"color:var(--ok,#2e8b57)":""}">${p}%${p>=100?" 달성":""}</b></div><div class="m">${v>=g?"목표를 넘었어요":"남은 금액 "+won(g-v)}</div>`:`<div class="m">${lab} ${ledSigned(v)} · 목표를 넣으면 달성률이 보여요</div>`}</div>`}).join("");
-  return `<div class="card"><h3>개인별 ${mo}월 목표 달성률</h3><div class="body" style="padding:6px 4px"><div class="row" style="gap:8px;padding:0 6px 6px;flex-wrap:wrap"><span class="m">목표 기준</span><select ${isAdmin()?"":"disabled"} onchange="ledGoalBy(this.value)" style="padding:6px;border-radius:10px"><option value="real" ${by==="real"?"selected":""}>할인 후 판매액</option><option value="net" ${by==="net"?"selected":""}>남는 금액(이윤)</option></select><span class="m">달마다 따로 정하거나, 「매달 기본으로」로 계속 쓸 목표를 정해요</span></div>${rows}</div></div>`;
+  return `<div class="card"><h3>개인별 ${mo}월 목표 달성률</h3><div class="body" style="padding:6px 4px"><div class="row" style="gap:8px;padding:0 6px 6px;flex-wrap:wrap"><span class="m">목표 기준</span><select ${isAdmin()?"":"disabled"} onchange="ledGoalBy(this.value)" style="padding:6px;border-radius:10px"><option value="real" ${by==="real"?"selected":""}>할인 후 판매액</option><option value="net" ${by==="net"?"selected":""}>이익금(이윤)</option></select><span class="m">달마다 따로 정하거나, 「매달 기본으로」로 계속 쓸 목표를 정해요</span></div>${rows}</div></div>`;
 }
 /* 할인율 구간 분석: 0~10%(10% 미만) · 10~20%(10% 이상 20% 미만) · 20% 이상 */
 const LED_BINS=[["0~10%",0,10],["10~20%",10,20],["20% 이상",20,101]];
@@ -1013,7 +1013,7 @@ const ledBinOf=x=>{const d=ledCalc(x).disc;return LED_BINS.findIndex(b=>d>=b[1]&
 function ledScope(v){ledAllScope=v?1:0;render()}
 /* 이 달 또는 전체 기간 기록에서, 같은 판매자 필터를 적용한 목록 */
 const ledScopeRows=m=>D.ledger.filter(x=>ledMatch(x)&&(ledAllScope||x.date.startsWith(m)));
-/* 판매자별로 할인율에 따른 남는 비율이 어떻게 변하는지: 최소 3건·할인율이 2가지 이상일 때만 기울기(할인 1%p당 남는 비율 변화)를 계산 */
+/* 판매자별로 할인율에 따른 이익률이 어떻게 변하는지: 최소 3건·할인율이 2가지 이상일 때만 기울기(할인 1%p당 이익률 변화)를 계산 */
 function ledSlope(rows){
   const pts=rows.map(x=>{const c=ledCalc(x);return c.price>0?[c.disc,c.rate]:null}).filter(Boolean);
   if(pts.length<3)return null;const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n;
@@ -1026,7 +1026,7 @@ function ledBinCards(m,mo,part){
   const tog="";
   const bins=LED_BINS.map((b,i)=>({b,a:ledAgg(rows.filter(x=>ledBinOf(x)===i))}));
   const lo=bins.find(o=>o.a.n),hi=[...bins].reverse().find(o=>o.a.n);
-  const msg=lo&&hi&&lo!==hi?`${hi.b[0]} 구간의 남는 비율은 ${hi.a.rate}%로, ${lo.b[0]} 구간(${lo.a.rate}%)보다 <b style="${hi.a.rate<lo.a.rate?"color:var(--red)":""}">${Math.abs(Math.round((hi.a.rate-lo.a.rate)*10)/10)}%p ${hi.a.rate<lo.a.rate?"낮아요":"높아요"}</b>. 건당 남는 금액은 ${won(Math.round(lo.a.n?lo.a.net/lo.a.n:0))} → ${won(Math.round(hi.a.n?hi.a.net/hi.a.n:0))}예요.`:"비교하려면 서로 다른 할인율 구간의 판매가 있어야 해요.";
+  const msg=lo&&hi&&lo!==hi?`${hi.b[0]} 구간의 이익률은 ${hi.a.rate}%로, ${lo.b[0]} 구간(${lo.a.rate}%)보다 <b style="${hi.a.rate<lo.a.rate?"color:var(--red)":""}">${Math.abs(Math.round((hi.a.rate-lo.a.rate)*10)/10)}%p ${hi.a.rate<lo.a.rate?"낮아요":"높아요"}</b>. 건당 이익금은 ${won(Math.round(lo.a.n?lo.a.net/lo.a.n:0))} → ${won(Math.round(hi.a.n?hi.a.net/hi.a.n:0))}예요.`:"비교하려면 서로 다른 할인율 구간의 판매가 있어야 해요.";
   const card1=`<div class="card"><h3>할인율 구간별 판매·이윤</h3><div class="body" style="padding:6px 4px">${tog}${ledAggHead("할인율 구간")}${bins.map(o=>o.a.n?ledAggRow(o.b[0],o.a,false,""):`<div style="${ledGrid}"><b>${o.b[0]}</b><span style="grid-column:2/7" class="m">판매 없음</span></div>`).join("")}<div class="m" style="padding:8px 6px">${msg}</div><div class="m" style="padding:0 6px 6px">구간 경계: 10%는 10~20%에, 20%는 20% 이상에 들어가요.</div></div></div>`;
   const names=[...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko"));
   const cell=(a)=>a.n?`<span>${a.rate}%<br><span class="m" style="font-size:11px">${a.n}건</span></span>`:`<span class="m">–</span>`;
@@ -1037,13 +1037,13 @@ function ledBinCards(m,mo,part){
     let chg=`<span class="m">비교 불가</span>`;
     if(l&&h&&l!==h){const d=Math.round((h.rate-l.rate)*10)/10;chg=`<b style="${d<0?"color:var(--red)":""}">${d>0?"+":""}${d}%p</b>${sl!==null?`<br><span class="m" style="font-size:11px">할인 1%p↑ → ${sl>0?"+":""}${sl}%p</span>`:""}`}
     return `<div style="${g5}"><b>${esc(n)}${few?'<br><span class="m" style="font-size:11px">참고용</span>':""}</b>${ba.map(cell).join("")}<span>${chg}</span></div>`}).join("");
-  const card2=`<div class="card"><h3>판매자별 할인율과 남는 비율 <span class="m sub" style="margin:0">할인이 높을 때 이윤이 얼마나 줄었나</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.25fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>판매자</span>${LED_BINS.map(b=>`<span>${b[0]}</span>`).join("")}<span>높은 할인 vs 낮은 할인</span></div>${srows}<div class="m" style="padding:8px 6px">칸은 구간별 <b>남는 비율(판매가 대비)</b>과 건수예요. 맨 오른쪽은 가장 높은 할인 구간과 가장 낮은 할인 구간의 차이(%p)이고, 3건 이상이면 할인 1%p 올릴 때 남는 비율이 평균 몇 %p 변하는지도 보여줘요. 3건 미만은 “참고용”이에요.</div></div></div>`;
+  const card2=`<div class="card"><h3>판매자별 할인율과 이익률 <span class="m sub" style="margin:0">할인이 높을 때 이윤이 얼마나 줄었나</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.25fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>판매자</span>${LED_BINS.map(b=>`<span>${b[0]}</span>`).join("")}<span>높은 할인 vs 낮은 할인</span></div>${srows}<div class="m" style="padding:8px 6px">칸은 구간별 <b>이익률(판매가 대비)</b>과 건수예요. 맨 오른쪽은 가장 높은 할인 구간과 가장 낮은 할인 구간의 차이(%p)이고, 3건 이상이면 할인 1%p 올릴 때 이익률이 평균 몇 %p 변하는지도 보여줘요. 3건 미만은 “참고용”이에요.</div></div></div>`;
   const cm={};ledExpand(rows).forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
   const all=ledAgg(ledExpand(rows)),cl=Object.entries(cm).map(([k,r])=>({k,a:ledAgg(r)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.P-p.a.P);
   const card3=`<div class="card"><h3>제품 분류별 할인율 비교 <span class="m sub" style="margin:0">평균 할인 높은 순</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("분류")}${cl.map(o=>ledAggRow(esc(o.k.length>9?o.k.slice(0,9)+"…":o.k),o.a,false,"")).join("")}${cl.length>1?ledAggRow("전체",all,false,""):""}<div class="m" style="padding:8px 6px">${cl.length>1?`전체 평균 할인은 ${all.disc}%예요. 평균보다 많이 깎아 준 분류는 <b>${cl.filter(o=>o.a.disc>all.disc).map(o=>esc(o.k)+" +"+Math.round((o.a.disc-all.disc)*10)/10+"%p").join(", ")||"없어요"}</b>.`:"분류가 하나뿐이라 비교할 수 없어요."} 분류는 가격표·단가표의 분류명을 써요(괄호 코드는 뺐어요). 가격표에서 제품을 골라 기록한 건만 분류가 붙고, 직접 입력한 건은 “분류 없음”이에요. 위의 ‘${ledAllScope?"전체 기간":mo+"월"}’ 범위와 판매자 선택을 따라가요.</div></div></div>`;
   return part==="prod"?ledSalesCards(rows)+ledComboCards(rows)+ledSellerCatCard(rows):card1+ledBundleCards(rows)+card2+card3;
 }
-/* 판매자 × 제품 분류: 판매액이 큰 분류 3개 + 그 외. 칸마다 평균 할인율, 남는 비율, 건수 */
+/* 판매자 × 제품 분류: 판매액이 큰 분류 3개 + 그 외. 칸마다 평균 할인율, 이익률, 건수 */
 function ledSellerCat(rows){
   rows=ledExpand(rows);
   const catP={};rows.forEach(x=>{const k=ledCatOf(x);catP[k]=(catP[k]||0)+(+x.price||0)});
@@ -1054,12 +1054,12 @@ function ledSellerCat(rows){
 }
 function ledSellerCatCard(rows){
   if(!rows.length)return"";const t=ledSellerCat(rows),g=`display:grid;grid-template-columns:.9fr ${t.cols.map(()=>"1fr").join(" ")};gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)`;
-  const cell=a=>a.n?`<span><b>${a.disc}%</b><br><span class="m" style="font-size:11px">남 ${a.rate}% · ${a.n}건</span></span>`:`<span class="m">–</span>`;
+  const cell=a=>a.n?`<span><b>${a.disc}%</b><br><span class="m" style="font-size:11px">이익률 ${a.rate}% · ${a.n}건</span></span>`:`<span class="m">–</span>`;
   const nm=c=>esc(c.length>6?c.slice(0,6)+"…":c);
-  return `<div class="card"><h3>판매자 × 제품 분류 <span class="m sub" style="margin:0">평균 할인율과 남는 비율</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:.9fr ${t.cols.map(()=>"1fr").join(" ")};gap:4px;padding:0 6px 4px;font-size:12px"><span>판매자</span>${t.cols.map(c=>`<span>${nm(c)}</span>`).join("")}</div>
+  return `<div class="card"><h3>판매자 × 제품 분류 <span class="m sub" style="margin:0">평균 할인율과 이익률</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:.9fr ${t.cols.map(()=>"1fr").join(" ")};gap:4px;padding:0 6px 4px;font-size:12px"><span>판매자</span>${t.cols.map(c=>`<span>${nm(c)}</span>`).join("")}</div>
   ${t.sellers.map(n=>`<div style="${g}"><b>${esc(n)}</b>${t.cols.map(c=>cell(t.cell(n,c))).join("")}</div>`).join("")}
   ${t.sellers.length>1?`<div style="${g}"><b>전체</b>${t.cols.map(c=>cell(t.tot(c))).join("")}</div>`:""}
-  <div class="m" style="padding:8px 6px">칸 위 숫자는 <b>평균 할인율</b>, 아래는 <b>남는 비율(판매가 대비)</b>과 건수예요. 판매액이 큰 분류 3개만 따로 보여주고 나머지는 “그 외”로 묶어요. 같은 분류에서 판매자끼리 할인율·남는 비율을 비교해 보세요. 건수가 1~2건인 칸은 참고용이에요.</div></div></div>`;
+  <div class="m" style="padding:8px 6px">칸 위 숫자는 <b>평균 할인율</b>, 아래는 <b>이익률(판매가 대비)</b>과 건수예요. 판매액이 큰 분류 3개만 따로 보여주고 나머지는 “그 외”로 묶어요. 같은 분류에서 판매자끼리 할인율·이익률을 비교해 보세요. 건수가 1~2건인 칸은 참고용이에요.</div></div></div>`;
 }
 /* 월별 분류 비중: 최근 12개월, 각 달 판매가 합계 중 분류별 몫(%). 판매자 선택을 따라가고, 기간 버튼과는 무관하게 월 전체를 봐요 */
 function ledCatTrend(){
@@ -1114,12 +1114,12 @@ function ledBundleCards(rows){
   const one=(lab,a)=>a.n?ledAggRow(lab,a,false,""):`<div style="${ledGrid}"><b>${lab}</b><span class="m" style="grid-column:2/7">판매 없음</span></div>`;
   let msg="세트와 단품 판매가 모두 있어야 비교할 수 있어요.";
   if(A.set.n&&A.single.n){const dd=Math.round((A.set.disc-A.single.disc)*10)/10,dr=Math.round((A.set.rate-A.single.rate)*10)/10;
-    msg=`세트 판매의 평균 할인은 ${A.set.disc}%로 단품(${A.single.disc}%)보다 <b>${Math.abs(dd)}%p ${dd>0?"높아요":dd<0?"낮아요":"같아요"}</b>. 남는 비율은 ${A.set.rate}% vs ${A.single.rate}% (<b style="${dr<0?"color:var(--red)":""}">${dr>0?"+":""}${dr}%p</b>). 한 주문당 판매가는 ${won(perP(A.single))} → ${won(perP(A.set))}, 남는 금액은 ${won(per(A.single))} → ${won(per(A.set))}예요.`}
+    msg=`세트 판매의 평균 할인은 ${A.set.disc}%로 단품(${A.single.disc}%)보다 <b>${Math.abs(dd)}%p ${dd>0?"높아요":dd<0?"낮아요":"같아요"}</b>. 이익률은 ${A.set.rate}% vs ${A.single.rate}% (<b style="${dr<0?"color:var(--red)":""}">${dr>0?"+":""}${dr}%p</b>). 한 주문당 판매가는 ${won(perP(A.single))} → ${won(perP(A.set))}, 이익금은 ${won(per(A.single))} → ${won(per(A.set))}예요.`}
   const att=A.set.n?`세트 ${A.set.n}건 중 사이드(옵션)를 같이 산 주문은 <b>${A.setOpt.n}건(${Math.round(A.setOpt.n/A.set.n*100)}%)</b>, 슬립케어를 같이 산 주문은 <b>${A.setCare.n}건(${Math.round(A.setCare.n/A.set.n*100)}%)</b>이에요. `:"";
   const card1=`<div class="card"><h3>세트 vs 단품 · 옵션 <span class="m sub" style="margin:0">${ledAllScope?"전체 기간":"이 달"}${ledSel?" · "+esc(ledSel):""}</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("판매 유형")}${one("세트",A.set)}${A.set.n?one("└ 옵션(사이드) 포함",A.setOpt)+one("└ 슬립케어 포함",A.setCare)+one("└ 둘 다 없음",A.setNo):""}${one("단품",A.single)}${A.single.n?one("└ 프레임만",A.fr)+one("└ 매트리스만",A.mt):""}${A.opt.n?one("옵션만(사이드)",A.opt):""}${A.care.n?one("슬립케어만",A.care):""}${A.oc.n?one("옵션+슬립케어만",A.oc):""}${A.etc.n?one("기타",A.etc):""}${A.all.n?ledAggRow("전체",A.all,false,""):""}<div class="m" style="padding:8px 6px">${msg}</div><div class="m" style="padding:0 6px 6px">${att}</div>
   <div class="m" style="padding:0 6px 6px">세트 = 프레임+매트리스가 함께 판매(침대세트 상품 포함). 단품 = 프레임만 또는 매트리스만. 옵션만 = 협탁·사이드만 산 주문. 슬립케어만 = 침구·케어 제품(방수커버, 마이크로케어, 쿨링패드, 온열매트, 스마트슬리브, 베개, 이불 등)만 산 주문. 건수는 주문 수예요. 상품명·분류로 구분하니, 단가표·가격표에서 제품을 골라 입력해야 정확해요.</div></div></div>`;
   const g5="display:grid;grid-template-columns:.9fr 1.1fr 1.1fr .9fr .8fr;gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)";
-  const cell=a=>a.n?`<span><b>${a.disc}%</b><br><span class="m" style="font-size:11px">남 ${a.rate}% · ${a.n}건</span></span>`:`<span class="m">–</span>`;
+  const cell=a=>a.n?`<span><b>${a.disc}%</b><br><span class="m" style="font-size:11px">이익률 ${a.rate}% · ${a.n}건</span></span>`:`<span class="m">–</span>`;
   const diff=(s,b)=>s.n&&b.n?(()=>{const d=Math.round((b.disc-s.disc)*10)/10;return `<b>${d>0?"+":""}${d}%p</b>`})():`<span class="m">–</span>`;
   const sh=(s,b)=>s.n+b.n?Math.round(b.n/(s.n+b.n)*100)+"%":"–";
   const hd=f=>`<div class="m" style="display:grid;grid-template-columns:.9fr 1.1fr 1.1fr .9fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>${f}</span><span>단품 평균 할인</span><span>세트 평균 할인</span><span>세트−단품</span><span>세트 비중</span></div>`;
@@ -1171,7 +1171,7 @@ function ledSalesTable(k,title,list,hint){
   if(!list.length)return"";
   const tq=list.reduce((a,o)=>a+o.qty,0),open=!!ledSalesOpen[k],shown=open?list:list.slice(0,10);
   const g="display:grid;grid-template-columns:1.8fr .75fr 1.1fr .8fr 1.1fr;gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)";
-  return `<div class="card"><h3>${title} <span class="m sub" style="margin:0">${hint||"판매 수량 순"}</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:1.8fr .75fr 1.1fr .8fr 1.1fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>이름</span><span>수량</span><span>판매가</span><span>평균 할인</span><span>남는 금액</span></div>
+  return `<div class="card"><h3>${title} <span class="m sub" style="margin:0">${hint||"판매 수량 순"}</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:1.8fr .75fr 1.1fr .8fr 1.1fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>이름</span><span>수량</span><span>판매가</span><span>평균 할인</span><span>이익금</span></div>
   ${shown.map((o,i)=>`<div style="${g}"><b style="word-break:break-all">${i+1}. ${esc(o.label.length>34?o.label.slice(0,34)+"…":o.label)}</b><span>${o.qty}개<br><span class="m" style="font-size:11px">${Math.round(o.qty/tq*1000)/10}%</span></span><span>${won(o.a.P)}</span><span>${o.a.disc}%</span><b style="${o.a.net<0?"color:var(--red)":""}">${ledSigned(o.a.net)}</b></div>`).join("")}
   ${list.length>10?`<div style="padding:8px 6px"><button class="btn ghost" onclick="ledSalesMore('${k}')">${open?"접기":"전체 "+list.length+"개 보기"}</button></div>`:""}</div></div>`;
 }
@@ -1457,7 +1457,7 @@ function ledPv(){
   const ln=(k,v)=>`<div class="row" style="justify-content:space-between"><span class="m">${k}</span><span class="m">${v}</span></div>`;
   el.innerHTML=(f.lines.length>1?ln("제품",f.lines.length+"개"):"")+ln("판매가"+(f.lines.length>1?" 합계":""),won(c.price))+ln(`할인 ${c.disc}%`,"− "+won(c.da))+ln("<b>할인 후 판매액</b>","<b>"+won(c.real)+"</b>")+ln("배송료","− "+won(c.ship))+ln("물건대금","− "+won(c.cost))+(c.etc?ln("기타 비용","− "+won(c.etc)):"")+
     (c.vat?ln("부가세 (10/110)","− "+won(c.va)):"")+(c.card?ln(`카드수수료 ${c.card}%`,"− "+won(c.ca)):"")+(c.tax?ln(`기타 세율 ${c.tax}%`,"− "+won(c.ta)):"")+
-    `<div style="font-size:20px;font-weight:700;margin-top:6px;${c.net<0?"color:var(--red)":""}">남는 금액 ${ledSigned(c.net)} <span class="m">(판매가의 ${c.rate}%)</span></div>`;
+    `<div style="font-size:20px;font-weight:700;margin-top:6px;${c.net<0?"color:var(--red)":""}">이익금 ${ledSigned(c.net)} <span class="m">(판매가의 ${c.rate}%)</span></div>`;
 }
 function ledSave(){
   llSync();const pc=v=>Math.min(100,Math.max(0,Math.round((+v||0)*100)/100)),wn=v=>Math.max(0,Math.round(+v||0));
@@ -1484,38 +1484,38 @@ function ledDel(id){
 function ledCsv(){
   const m=ledM||today().slice(0,7),rows=D.ledger.filter(x=>x.date.startsWith(m)&&ledMatch(x)).sort((a,b)=>a.date.localeCompare(b.date));
   const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
-  const out=[["날짜","판매자","고객 성함","연락처","주소","제품·수량","코드","판매가","출고가","공급가","할인율(%)","할인액","할인 후 판매액","배송료","물건대금","기타 비용","기타 내용","부가세","카드수수료(%)","카드수수료","기타 세율(%)","기타 세금","남는 금액","남는 비율(%)","전체 결제금액","받은 금액","미수금","잔금 예정일","결제 내역","비고"].map(q).join(",")];
+  const out=[["날짜","판매자","고객 성함","연락처","주소","제품·수량","코드","판매가","출고가","공급가","할인율(%)","할인액","할인 후 판매액","배송료","물건대금","기타 비용","기타 내용","부가세","카드수수료(%)","카드수수료","기타 세율(%)","기타 세금","이익금","이익률(%)","전체 결제금액","받은 금액","미수금","잔금 예정일","결제 내역","비고"].map(q).join(",")];
   rows.forEach(x=>{const c=ledCalc(x);out.push([x.date,ledSl(x),x.cname||"",x.cphone||"",x.caddr||"",(x.lines||[]).length?x.lines.map(l=>(l.item||"제품")+" x"+(l.qty||1)).join(" / "):x.item,x.code||"",c.price,x.out||"",x.sup||"",c.disc,c.da,c.real,c.ship,c.cost,c.etc,x.etcNote||"",c.va,c.card,c.ca,c.tax,c.ta,c.net,c.rate,ledPayInfo(x).total,ledPayInfo(x).net,Math.max(0,ledPayInfo(x).due),x.dueDate||"",ledPayInfo(x).pays.map(p=>p.kind+" "+p.date+" "+p.method+" "+(p.kind==="취소"?"-":"")+p.amount).join(" / "),x.memo].map(q).join(","))});
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+out.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="에이스침대-장부-"+m+".csv";a.click();
 }
 /* 분석 CSV: 지금 화면(월·판매자 선택·기간 범위)의 집계를 한 파일에 구역별로 담아요. 엑셀에서 열면 구역 사이 빈 줄로 나뉘어요. */
 function ledAnalysisCsv(){
   const m=ledM||today().slice(0,7),q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"',out=[],line=a=>out.push(a.map(q).join(","));
-  const aggRow=(l,a)=>[l,a.n,a.P,a.da,a.disc,a.real,a.net,a.rate,a.n?Math.round(a.net/a.n):0],aggHead=f=>[f,"건수","판매가 합계","할인액 합계","평균 할인율(%)","할인 후 판매액","남는 금액","남는 비율(%)","건당 남는 금액"];
+  const aggRow=(l,a)=>[l,a.n,a.P,a.da,a.disc,a.real,a.net,a.rate,a.n?Math.round(a.net/a.n):0],aggHead=f=>[f,"건수","판매가 합계","할인액 합계","평균 할인율(%)","할인 후 판매액","이익금","이익률(%)","건당 이익금"];
   const sec=t=>{if(out.length)out.push("");line([t])};
   line(["장부 분석",ledAllScope?"전체 기간":m,ledSel||"전체 판매자","만든 날 "+today()]);
   const monthAll=D.ledger.filter(x=>x.date.startsWith(m)),rows=ledScopeRows(m);
   sec(m+" 판매자별 집계");line(aggHead("판매자"));ledSellersAll().forEach(n=>{const r=monthAll.filter(x=>ledSl(x)===n);if(r.length)line(aggRow(n,ledAgg(r)))});line(aggRow("전체",ledAgg(monthAll)));
   sec("월별 추이 ("+(ledSel||"전체")+")");line(aggHead("월"));[...new Set(D.ledger.filter(ledMatch).map(x=>x.date.slice(0,7)))].sort().reverse().forEach(k=>line(aggRow(k,ledAgg(D.ledger.filter(x=>x.date.startsWith(k)&&ledMatch(x))))));
-  sec(m+" 판매자 목표 달성률 (기준: "+(D.set.ledGoalBy==="net"?"남는 금액":"할인 후 판매액")+")");line(["판매자","목표","실적","달성률(%)","남은 금액","목표 종류"]);
+  sec(m+" 판매자 목표 달성률 (기준: "+(D.set.ledGoalBy==="net"?"이익금":"할인 후 판매액")+")");line(["판매자","목표","실적","달성률(%)","남은 금액","목표 종류"]);
   ledSellers().forEach(n=>{const g=ledGoalOf(n,m),a=ledAgg(monthAll.filter(x=>ledSl(x)===n)),v=D.set.ledGoalBy==="net"?a.net:a.real;line([n,g.v||"",v,g.v?Math.round(v/g.v*1000)/10:"",g.v?Math.max(0,g.v-v):"",g.v?(g.own?"이 달 목표":"매달 기본"):"미설정"])});
   sec("할인율 구간별 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("할인율 구간"));LED_BINS.forEach((b,i)=>line(aggRow(b[0],ledAgg(rows.filter(x=>ledBinOf(x)===i)))));
-  sec("판매자별 할인율 구간의 남는 비율 (%) / 건수");line(["판매자",...LED_BINS.flatMap(b=>[b[0]+" 남는 비율(%)",b[0]+" 건수"]),"높은 할인 vs 낮은 할인(%p)","할인 1%p당 변화(%p)"]);
+  sec("판매자별 할인율 구간의 이익률 (%) / 건수");line(["판매자",...LED_BINS.flatMap(b=>[b[0]+" 이익률(%)",b[0]+" 건수"]),"높은 할인 vs 낮은 할인(%p)","할인 1%p당 변화(%p)"]);
   [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const rs=rows.filter(x=>ledSl(x)===n),ba=LED_BINS.map((b,i)=>ledAgg(rs.filter(x=>ledBinOf(x)===i))),l=ba.find(a=>a.n),h=[...ba].reverse().find(a=>a.n),sl=ledSlope(rs);
     line([n,...ba.flatMap(a=>[a.n?a.rate:"",a.n]),l&&h&&l!==h?Math.round((h.rate-l.rate)*10)/10:"",sl===null?"":sl])});
   {const sp=ledTypeSplit(rows);sec("세트 vs 단품 · 옵션 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("판매 유형"));[["세트",sp.set],["세트 - 옵션(사이드) 포함",sp.setOpt],["세트 - 슬립케어 포함",sp.setCare],["세트 - 둘 다 없음",sp.setNo],["단품",sp.single],["단품 - 프레임만",sp.fr],["단품 - 매트리스만",sp.mt],["옵션만(사이드)",sp.opt],["슬립케어만",sp.care],["옵션+슬립케어만",sp.oc],["기타",sp.etc]].forEach(([l,r])=>line(aggRow(l,ledAgg(r))));
-   sec("판매자별 세트·단품 평균 할인율(%)");line(["판매자","단품 건수","단품 평균 할인율(%)","단품 남는 비율(%)","세트 건수","세트 평균 할인율(%)","세트 남는 비율(%)","세트-단품(%p)","세트 비중(%)"]);
+   sec("판매자별 세트·단품 평균 할인율(%)");line(["판매자","단품 건수","단품 평균 할인율(%)","단품 이익률(%)","세트 건수","세트 평균 할인율(%)","세트 이익률(%)","세트-단품(%p)","세트 비중(%)"]);
    [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const q=ledTypeSplit(rows.filter(x=>ledSl(x)===n)),a=ledAgg(q.single),b=ledAgg(q.set);line([n,a.n,a.n?a.disc:"",a.n?a.rate:"",b.n,b.n?b.disc:"",b.n?b.rate:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])});
    sec("월별 세트·단품 평균 할인율(%) ("+(ledSel||"전체 판매자")+")");line(["월","단품 건수","단품 평균 할인율(%)","세트 건수","세트 평균 할인율(%)","세트-단품(%p)","세트 비중(%)"]);
    [...new Set(D.ledger.filter(ledMatch).map(x=>x.date.slice(0,7)))].sort().reverse().forEach(k=>{const q=ledTypeSplit(D.ledger.filter(x=>x.date.startsWith(k)&&ledMatch(x))),a=ledAgg(q.single),b=ledAgg(q.set);line([k,a.n,a.n?a.disc:"",b.n,b.n?b.disc:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])})}
   {const ms=ledMonthsBack(m,12);[["mt","매트리스"],["fr","프레임"]].forEach(([k,t])=>{const d=ledModelTrendData(k,ms);sec("월별 "+t+" 모델 판매 수량 ("+(ledSel||"전체 판매자")+", 최근 12개월)");line(["모델",...ms,"합계"]);d.rows.forEach(o=>line([o.label,...ms.map(x=>o.by[x]||0),o.tot]));line(["월 합계",...ms.map(x=>d.totals[x]),Object.values(d.totals).reduce((a,b)=>a+b,0)])})}
   {const cd=ledComboData(rows);sec("묶음 구성별 (여러 제품 주문, 분류 조합)");line(aggHead("구성"));cd.combos.forEach(o=>line(aggRow(o.label,o.a)));
    sec("같이 팔린 제품 쌍");line(aggHead("제품 쌍"));cd.pairs.forEach(o=>line(aggRow(o.label,o.a)));
-   const sd=ledSalesData(rows),sl=(t,list)=>{sec(t+" ("+(ledAllScope?"전체 기간":m)+")");line(["이름","판매 수량","주문 줄 수","판매가 합계","평균 할인율(%)","남는 금액","남는 비율(%)"]);list.forEach(o=>line([o.label,o.qty,o.a.n,o.a.P,o.a.disc,o.a.net,o.a.rate]))};
+   const sd=ledSalesData(rows),sl=(t,list)=>{sec(t+" ("+(ledAllScope?"전체 기간":m)+")");line(["이름","판매 수량","주문 줄 수","판매가 합계","평균 할인율(%)","이익금","이익률(%)"]);list.forEach(o=>line([o.label,o.qty,o.a.n,o.a.P,o.a.disc,o.a.net,o.a.rate]))};
    sl("매트리스 모델별 판매량",sd.mt);sl("프레임 모델별 판매량",sd.fr);sl("프레임 + 매트리스 조합",sd.combo);sl("사이즈별 판매량",sd.size);line(["읽을 수 없는 제품 줄",sd.un])}
   const cm={};ledExpand(rows).forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
   sec("제품 분류별 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("분류"));Object.entries(cm).map(([k,r])=>[k,ledAgg(r)]).sort((p,q)=>q[1].disc-p[1].disc).forEach(([k,a])=>line(aggRow(k,a)));
-  {const t=ledSellerCat(rows);sec("판매자 × 제품 분류 ("+(ledAllScope?"전체 기간":m)+")");line(["판매자",...t.cols.flatMap(c=>[c+" 건수",c+" 평균 할인율(%)",c+" 남는 비율(%)",c+" 남는 금액"])]);
+  {const t=ledSellerCat(rows);sec("판매자 × 제품 분류 ("+(ledAllScope?"전체 기간":m)+")");line(["판매자",...t.cols.flatMap(c=>[c+" 건수",c+" 평균 할인율(%)",c+" 이익률(%)",c+" 이익금"])]);
    t.sellers.forEach(n=>line([n,...t.cols.flatMap(c=>{const a=t.cell(n,c);return a.n?[a.n,a.disc,a.rate,a.net]:["","","",""]})]));
    line(["전체",...t.cols.flatMap(c=>{const a=t.tot(c);return a.n?[a.n,a.disc,a.rate,a.net]:["","","",""]})])}
   {const t=ledCatTrend();sec("월별 제품 분류 비중 ("+(ledSel||"전체 판매자")+", 최근 12개월)");line(["월",...t.cols.flatMap(c=>[c+" 비중(%)",c+" 판매가 합계",c+" 건수"]),"판매가 합계","건수"]);
@@ -1527,7 +1527,7 @@ function ledAnalysisCsv(){
 function ledRowHtml(x,c,full){return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(full?x.date:x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>${(x.lines||[]).length>1?`<div class="m">제품 ${x.lines.length}개: ${x.lines.map(l=>esc((l.item||"제품")+(l.qty>1?" ×"+l.qty:""))).join(", ")}</div>`:((x.lines||[])[0]&&x.lines[0].qty>1?`<div class="m">수량 ${x.lines[0].qty}개</div>`:"")}${x.cname||x.cphone||x.caddr?`<div class="m">👤 ${x.cname||x.cphone?`<a href="#" style="font-weight:600" onclick="ledCustOpen('${x.id}');return false" title="이 고객의 구매 이력 모아 보기">${esc(x.cname||x.cphone)}</a>`:""}${x.cname&&x.cphone?" · "+esc(x.cphone):""}${x.caddr?`<br>📍 ${esc(x.caddr)}`:""}</div>`:""}
     <div class="m">판매가 ${won(c.price)}${x.out||x.sup?` (출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"})`:""}</div>
     <div class="m">− ${x.bundle?"합산 ":""}할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${ledPayLine(x)}${x.memo?`<div class="m">📝 비고: ${esc(x.memo)}</div>`:""}</div>
-    <div style="text-align:right"><div class="m" style="font-size:11px">결제금액</div><b>${won(ledPayInfo(x).total)}</b><div class="m" style="font-size:11px;margin-top:2px">남는 <span style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</span> (${c.rate}%)</div></div>
+    <div style="text-align:right"><div class="m" style="font-size:11px">결제금액</div><b>${won(ledPayInfo(x).total)}</b><div class="m" style="font-size:11px;margin-top:2px">이익금 <span style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</span> (${c.rate}%)</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}
 /* 검색창은 기간과 상관없이 전체 장부에서 찾아요. 입력할 때 결과 칸만 다시 그려서 글자 입력이 끊기지 않아요 */
 function ledSearchGo(v){ledQ=v;if(v.trim())ledCust=null;const el=document.getElementById("ledbody");if(el)el.innerHTML=ledBody(ledCur);const x=document.getElementById("ledsx");if(x)x.style.display=ledQ?"":"none"}
@@ -1563,7 +1563,7 @@ function ledCustHtml(){
   ${addr?`<div class="m" style="margin-top:4px">📍 ${esc(addr)}${addrs.length>1?` <span class="sub">(주소 ${addrs.length}개 기록됨: ${addrs.map(esc).join(" / ")})</span>`:""}</div>`:""}
   <div class="m" style="margin-top:4px">첫 구매 ${esc(first.date)} · 최근 구매 ${esc(last.date)}${recs.length>1?` · 구매 간격 ${days}일`:""}</div></div></div>
   <div class="stats"><div class="stat hl"><small>구매 횟수</small><b>${a.n}회</b></div><div class="stat"><small>판매가 합계</small><b>${won(a.P)}</b></div><div class="stat"><small>할인 후 판매액</small><b>${won(a.real)}</b></div></div>
-  <div class="stats"><div class="stat"><small>평균 할인율</small><b>${a.disc}%</b></div><div class="stat"><small>남는 금액</small><b style="${a.net<0?"color:var(--red)":""}">${ledSigned(a.net)}</b></div><div class="stat"><small>남는 비율</small><b>${a.rate}%</b></div></div>
+  <div class="stats"><div class="stat"><small>평균 할인율</small><b>${a.disc}%</b></div><div class="stat"><small>이익금</small><b style="${a.net<0?"color:var(--red)":""}">${ledSigned(a.net)}</b></div><div class="stat"><small>이익률</small><b>${a.rate}%</b></div></div>
   <div class="card"><h3>산 제품 <span class="m sub" style="margin:0">판매가 큰 순</span></h3><div class="body">${plist.map(([nm,o])=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><span class="grow">${esc(nm)}</span><span class="m">${o.q}개 · ${won(o.P)}</span></div>`).join("")}</div></div>
   <div class="card"><h3>구매 이력 <span class="m sub" style="margin:0">최신순 · ${recs.length}건</span></h3><div class="body">${recs.map((x,i)=>ledRowHtml(x,cs[i],1)).join("")}</div></div>
   <div class="m sub" style="margin:8px 4px">전화번호가 같으면 같은 고객으로 묶고, 전화번호가 없는 기록은 이름이 같으면 같은 고객으로 묶어요. 동명이인은 연락처를 입력해야 구분돼요.</div>`;
@@ -1572,7 +1572,7 @@ function ledSearchHtml(){
   const res=D.ledger.filter(ledQMatch).sort((a,b)=>b.date.localeCompare(a.date)),cs=res.map(ledCalc),sum=k=>cs.reduce((a,c)=>a+c[k],0);
   const custs=new Set(res.map(x=>(x.cname||"")+"|"+ledDigits(x.cphone)).filter(k=>k!=="|"));
   return `<div class="card"><div class="body"><div class="m"><b>“${esc(ledQ.trim())}”</b> 검색 결과 <b>${res.length}건</b> · 전체 기간${ledSel?"":""}</div>
-  ${res.length?`<div class="m" style="margin-top:4px">판매가 합계 ${won(sum("price"))} · 남는 금액 <b style="${sum("net")<0?"color:var(--red)":""}">${ledSigned(sum("net"))}</b>${custs.size===1?" · 같은 고객 1명":custs.size>1?" · 고객 "+custs.size+"명":""}</div>`:""}</div></div>
+  ${res.length?`<div class="m" style="margin-top:4px">판매가 합계 ${won(sum("price"))} · 이익금 <b style="${sum("net")<0?"color:var(--red)":""}">${ledSigned(sum("net"))}</b>${custs.size===1?" · 같은 고객 1명":custs.size>1?" · 고객 "+custs.size+"명":""}</div>`:""}</div></div>
   <div class="card"><h3>검색 결과</h3><div class="body">${res.length?res.map((x,i)=>ledHl(ledRowHtml(x,cs[i],1))).join(""):'<div class="empty">찾은 기록이 없어요.<br><span class="m">고객 이름, 전화번호(뒤 4자리도 돼요), 제품명, 비고 속 단어로 찾아보세요. 여러 단어는 띄어 쓰면 모두 들어간 기록만 나와요.</span></div>'}</div></div>`;
 }
 const ledBody=cur=>ledCust?ledCustHtml():ledQ.trim()?ledSearchHtml():ledMain(cur);
@@ -1594,9 +1594,9 @@ function ledMain(cur){
   const head=`<div class="row" style="gap:8px;margin:4px 0 8px;flex-wrap:wrap"><button class="icon" onclick="ledNav(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center">${y}년 ${mo}월 장부</b><button class="icon" onclick="ledNav(1)" aria-label="다음 달">›</button></div>
   <div class="row" style="gap:8px;margin-bottom:8px"><button class="btn grow" onclick="ledOpen()">＋ 장부 기록</button><a class="btn ghost" href="price.html" style="text-decoration:none">💲 가격표</a></div>`;
   const stats=`
-  <div class="stats"><div class="stat hl"><small>남는 금액 (할인·배송·물건대금·세금·수수료·기타 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>남는 비율</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
+  <div class="stats"><div class="stat hl"><small>이익금 (할인·배송·물건대금·세금·수수료·기타 제외)</small><b>${ledSigned(N)}</b></div><div class="stat"><small>이익률</small><b>${rate}%</b></div><div class="stat"><small>판매 건수</small><b>${rows.length}건</b></div></div>
   <div class="stats"><div class="stat"><small>판매가 합계</small><b>${won(P)}</b></div><div class="stat"><small>할인액 합계</small><b>${won(sum("da"))}</b></div><div class="stat"><small>배송료 합계</small><b>${won(sum("ship"))}</b></div><div class="stat"><small>물건대금 합계</small><b>${won(sum("cost"))}</b></div><div class="stat"><small>세금·수수료 합계</small><b>${won(sum("fees"))}</b></div><div class="stat"><small>기타 비용 합계</small><b>${won(sum("etc"))}</b></div></div>`,lst=`<div class="card"><h3>판매 기록 <span class="m sub" style="margin:0">${rows.length}건</span></h3><div class="body">${rows.map((x,i)=>ledRowHtml(x,cs[i])).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>`,foot=`
-  <div class="m sub" style="margin:8px 4px">남는 금액 = 할인 후 판매액 − 배송료 − 물건대금 − 기타 비용 − 부가세(선택) − 카드수수료 − 기타 세율이에요. 세금·수수료는 할인 후 판매액 기준이며, 매입 부가세 공제는 반영하지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요. 판매자별 평균 할인은 판매가 대비 할인액(금액 기준), 남는 비율은 판매가 대비 남는 금액이에요. 판매자를 입력하지 않은 기록은 “미지정”으로 묶여요.</div>`;
+  <div class="m sub" style="margin:8px 4px">이익금 = 할인 후 판매액 − 배송료 − 물건대금 − 기타 비용 − 부가세(선택) − 카드수수료 − 기타 세율이에요. 세금·수수료는 할인 후 판매액 기준이며, 매입 부가세 공제는 반영하지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요. 판매자별 평균 할인은 판매가 대비 할인액(금액 기준), 이익률은 판매가 대비 이익금이에요. 판매자를 입력하지 않은 기록은 “미지정”으로 묶여요.</div>`;
   const secSum=`${stats}
   ${sellerCard}${ledGoalCard(monthAll,mo)}`;
   const secRec=`${filt}${lst}${foot}`;
