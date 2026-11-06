@@ -536,10 +536,6 @@ function dataProtectCard(){
   <details style="margin-top:6px" ${tr.length?"open":""}><summary class="m" style="cursor:pointer">🗑 휴지통 (${tr.length}건 · 90일 보관)</summary>${tr.map(t=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t" style="font-size:14px"><span class="pill" style="background:var(--g);font-size:11px">${SAFE_NAME[t.kind||"ledger"]}</span> ${esc(trashLabel(t))}</div><div class="m">지운 날 ${fmt(t.at)}</div></div><button class="pill" style="background:var(--g)" onclick="ledRestoreTrash('${t.id}')">되살리기</button><button class="icon del" style="width:28px;height:28px" onclick="ledPurgeTrash('${t.id}')" aria-label="완전 삭제">✕</button></div>`).join("")||'<div class="m" style="padding:6px 0">비어 있어요. 장부·일정·컨텐츠·수익 기록을 지우면 여기로 와요.</div>'}</details>
   </div></div>`;
 }
-/* 장부 화면에는 짧은 안내만 두고 관리는 설정에서 해요 */
-function ledSafeCard(){
-  return `<div class="card"><div class="body row" style="gap:8px;align-items:center"><span class="m grow">🛡 장부는 이 기기에 자동 백업돼요 · 지운 기록은 휴지통에 90일 보관${dataLocked()?" · 🔒 잠김":""}</span><button class="btn ghost" onclick="setTabK='data';go('settings')">데이터 보호 열기</button></div></div>`;
-}
 const persist=()=>{try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}try{lsSchedule()}catch{}};
 async function fetchRemote(){
   const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw new Error(r.status);
@@ -1214,7 +1210,6 @@ function ledView(cur){
     <div class="m">− 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.memo?`<div class="m">${esc(x.memo)}</div>`:""}</div>
     <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>
-  ${ledSafeCard()}
   <div class="m sub" style="margin:8px 4px">남는 금액 = 할인 후 판매액 − 배송료 − 물건대금 − 기타 비용 − 부가세(선택) − 카드수수료 − 기타 세율이에요. 세금·수수료는 할인 후 판매액 기준이며, 매입 부가세 공제는 반영하지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요. 판매자별 평균 할인은 판매가 대비 할인액(금액 기준), 남는 비율은 판매가 대비 남는 금액이에요. 판매자를 입력하지 않은 기록은 “미지정”으로 묶여요.</div>`;
 }
 /* ---------- 단가표 (에이스침대 제품별 판매가·납부 단가) ----------
