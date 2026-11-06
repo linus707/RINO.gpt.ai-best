@@ -1076,23 +1076,25 @@ const ledIsBundle=x=>(x.lines||[]).length>=2;
 /* 판매 유형: 한 주문(기록)을 세트·단품·옵션으로 나눠요.
    세트 = 프레임+매트리스가 함께 있는 판매(침대세트 상품이거나, 프레임 줄과 매트리스 줄을 같이 산 주문)
    단품 = 프레임만 또는 매트리스만 산 판매
-   옵션 = 사이드(협탁류)나 침구·케어(방수커버·패드 등)만 따로 산 판매. 세트·단품에 같이 들어간 옵션은 "옵션 포함"으로 따로 표시해요.
+   옵션 = 사이드(협탁류)만 따로 산 판매. 슬립케어 = 침구·케어 제품(방수커버·마이크로케어·패드·베개·이불 등)만 산 판매. 세트·단품에 같이 들어간 옵션·슬립케어는 "포함"으로 따로 표시해요.
    기타 = 위에 해당하지 않는 판매(소파, 식탁, 직접 입력 등) */
-const LED_OPT_CAT=/협탁|^협\(|사이드|마이크로|쿨링|온열|스마트|바디필로우|BEURER|패드|침구/i,LED_OPT_NAME=/협탁|사이드|SIDE|방수커버|마이크로\s*케어|쿨링|온열|패드|베개|이불|BEDDING/i;
+const LED_OPT_CAT=/협탁|^협\(|사이드/i,LED_OPT_NAME=/협탁|사이드|SIDE/i;
+const LED_CARE_CAT=/마이크로|쿨링|온열|스마트|바디필로우|BEURER|패드|침구|베개|토퍼|슬립케어/i,LED_CARE_NAME=/슬립\s*케어|SLEEP\s*CARE|방수커버|마이크로\s*케어|쿨링|온열|패드|베개|이불|토퍼|스마트\s*슬리브|SMARTSLEEVE|바디필로우|BEDDING/i;
 const ledIsOpt=x=>LED_OPT_CAT.test(ledCatOf(x))||LED_OPT_NAME.test(String(x.item||""));
+const ledIsCare=x=>LED_CARE_CAT.test(ledCatOf(x))||LED_CARE_NAME.test(String(x.item||""));
 function ledOrderType(x){
-  const ls=ledLines(x).map(l=>{const k=ledKind(l);return k&&k.mt&&k.fr?"set":k&&k.fr?"fr":k&&k.mt?"mt":ledIsOpt(l)?"opt":"etc"}),has=t=>ls.includes(t),opt=has("opt");
-  if(has("set")||(has("fr")&&has("mt")))return{t:"set",opt};
-  if(has("fr")||has("mt"))return{t:"single",sub:has("fr")?"fr":"mt",opt};
-  if(opt&&ls.every(t=>t==="opt"))return{t:"opt"};
+  const ls=ledLines(x).map(l=>{const k=ledKind(l);return k&&k.mt&&k.fr?"set":k&&k.fr?"fr":k&&k.mt?"mt":ledIsOpt(l)?"opt":ledIsCare(l)?"care":"etc"}),has=t=>ls.includes(t),opt=has("opt"),care=has("care");
+  if(has("set")||(has("fr")&&has("mt")))return{t:"set",opt,care};
+  if(has("fr")||has("mt"))return{t:"single",sub:has("fr")?"fr":"mt",opt,care};
+  if((opt||care)&&ls.every(t=>t==="opt"||t==="care"))return{t:opt&&care?"oc":care?"care":"opt"};
   return{t:"etc"};
 }
 function ledTypeSplit(rows){
-  const o={set:[],single:[],fr:[],mt:[],opt:[],etc:[],setOpt:[],setNo:[],oneOpt:[]};
+  const o={set:[],single:[],fr:[],mt:[],opt:[],care:[],oc:[],etc:[],setOpt:[],setCare:[],setNo:[],oneOpt:[],oneCare:[]};
   rows.forEach(x=>{const t=ledOrderType(x);
-    if(t.t==="set"){o.set.push(x);(t.opt?o.setOpt:o.setNo).push(x)}
-    else if(t.t==="single"){o.single.push(x);o[t.sub].push(x);if(t.opt)o.oneOpt.push(x)}
-    else if(t.t==="opt")o.opt.push(x);else o.etc.push(x)});
+    if(t.t==="set"){o.set.push(x);if(t.opt)o.setOpt.push(x);if(t.care)o.setCare.push(x);if(!t.opt&&!t.care)o.setNo.push(x)}
+    else if(t.t==="single"){o.single.push(x);o[t.sub].push(x);if(t.opt)o.oneOpt.push(x);if(t.care)o.oneCare.push(x)}
+    else o[t.t].push(x)});
   return o;
 }
 function ledBundleCards(rows){
@@ -1103,9 +1105,9 @@ function ledBundleCards(rows){
   let msg="세트와 단품 판매가 모두 있어야 비교할 수 있어요.";
   if(A.set.n&&A.single.n){const dd=Math.round((A.set.disc-A.single.disc)*10)/10,dr=Math.round((A.set.rate-A.single.rate)*10)/10;
     msg=`세트 판매의 평균 할인은 ${A.set.disc}%로 단품(${A.single.disc}%)보다 <b>${Math.abs(dd)}%p ${dd>0?"높아요":dd<0?"낮아요":"같아요"}</b>. 남는 비율은 ${A.set.rate}% vs ${A.single.rate}% (<b style="${dr<0?"color:var(--red)":""}">${dr>0?"+":""}${dr}%p</b>). 한 주문당 판매가는 ${won(perP(A.single))} → ${won(perP(A.set))}, 남는 금액은 ${won(per(A.single))} → ${won(per(A.set))}예요.`}
-  const att=A.set.n?`세트 ${A.set.n}건 중 옵션(협탁·침구류)을 같이 산 주문은 <b>${A.setOpt.n}건(${Math.round(A.setOpt.n/A.set.n*100)}%)</b>이에요. `:"";
-  const card1=`<div class="card"><h3>세트 vs 단품 · 옵션 <span class="m sub" style="margin:0">${ledAllScope?"전체 기간":"이 달"}${ledSel?" · "+esc(ledSel):""}</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("판매 유형")}${one("세트",A.set)}${A.set.n?one("└ 옵션 포함",A.setOpt)+one("└ 옵션 없음",A.setNo):""}${one("단품",A.single)}${A.single.n?one("└ 프레임만",A.fr)+one("└ 매트리스만",A.mt):""}${A.opt.n?one("옵션만(사이드 등)",A.opt):""}${A.etc.n?one("기타",A.etc):""}${A.all.n?ledAggRow("전체",A.all,false,""):""}<div class="m" style="padding:8px 6px">${msg}</div><div class="m" style="padding:0 6px 6px">${att}</div>
-  <div class="m" style="padding:0 6px 6px">세트 = 프레임+매트리스가 함께 판매(침대세트 상품 포함). 단품 = 프레임만 또는 매트리스만. 옵션만 = 협탁·사이드나 침구·케어류(방수커버·패드 등)만 산 주문. 건수는 주문 수예요. 상품명·분류로 구분하니, 단가표·가격표에서 제품을 골라 입력해야 정확해요.</div></div></div>`;
+  const att=A.set.n?`세트 ${A.set.n}건 중 사이드(옵션)를 같이 산 주문은 <b>${A.setOpt.n}건(${Math.round(A.setOpt.n/A.set.n*100)}%)</b>, 슬립케어를 같이 산 주문은 <b>${A.setCare.n}건(${Math.round(A.setCare.n/A.set.n*100)}%)</b>이에요. `:"";
+  const card1=`<div class="card"><h3>세트 vs 단품 · 옵션 <span class="m sub" style="margin:0">${ledAllScope?"전체 기간":"이 달"}${ledSel?" · "+esc(ledSel):""}</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("판매 유형")}${one("세트",A.set)}${A.set.n?one("└ 옵션(사이드) 포함",A.setOpt)+one("└ 슬립케어 포함",A.setCare)+one("└ 둘 다 없음",A.setNo):""}${one("단품",A.single)}${A.single.n?one("└ 프레임만",A.fr)+one("└ 매트리스만",A.mt):""}${A.opt.n?one("옵션만(사이드)",A.opt):""}${A.care.n?one("슬립케어만",A.care):""}${A.oc.n?one("옵션+슬립케어만",A.oc):""}${A.etc.n?one("기타",A.etc):""}${A.all.n?ledAggRow("전체",A.all,false,""):""}<div class="m" style="padding:8px 6px">${msg}</div><div class="m" style="padding:0 6px 6px">${att}</div>
+  <div class="m" style="padding:0 6px 6px">세트 = 프레임+매트리스가 함께 판매(침대세트 상품 포함). 단품 = 프레임만 또는 매트리스만. 옵션만 = 협탁·사이드만 산 주문. 슬립케어만 = 침구·케어 제품(방수커버, 마이크로케어, 쿨링패드, 온열매트, 스마트슬리브, 베개, 이불 등)만 산 주문. 건수는 주문 수예요. 상품명·분류로 구분하니, 단가표·가격표에서 제품을 골라 입력해야 정확해요.</div></div></div>`;
   const g5="display:grid;grid-template-columns:.9fr 1.1fr 1.1fr .9fr .8fr;gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)";
   const cell=a=>a.n?`<span><b>${a.disc}%</b><br><span class="m" style="font-size:11px">남 ${a.rate}% · ${a.n}건</span></span>`:`<span class="m">–</span>`;
   const diff=(s,b)=>s.n&&b.n?(()=>{const d=Math.round((b.disc-s.disc)*10)/10;return `<b>${d>0?"+":""}${d}%p</b>`})():`<span class="m">–</span>`;
@@ -1389,7 +1391,7 @@ function ledAnalysisCsv(){
   sec("판매자별 할인율 구간의 남는 비율 (%) / 건수");line(["판매자",...LED_BINS.flatMap(b=>[b[0]+" 남는 비율(%)",b[0]+" 건수"]),"높은 할인 vs 낮은 할인(%p)","할인 1%p당 변화(%p)"]);
   [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const rs=rows.filter(x=>ledSl(x)===n),ba=LED_BINS.map((b,i)=>ledAgg(rs.filter(x=>ledBinOf(x)===i))),l=ba.find(a=>a.n),h=[...ba].reverse().find(a=>a.n),sl=ledSlope(rs);
     line([n,...ba.flatMap(a=>[a.n?a.rate:"",a.n]),l&&h&&l!==h?Math.round((h.rate-l.rate)*10)/10:"",sl===null?"":sl])});
-  {const sp=ledTypeSplit(rows);sec("세트 vs 단품 · 옵션 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("판매 유형"));[["세트",sp.set],["세트 - 옵션 포함",sp.setOpt],["세트 - 옵션 없음",sp.setNo],["단품",sp.single],["단품 - 프레임만",sp.fr],["단품 - 매트리스만",sp.mt],["옵션만(사이드 등)",sp.opt],["기타",sp.etc]].forEach(([l,r])=>line(aggRow(l,ledAgg(r))));
+  {const sp=ledTypeSplit(rows);sec("세트 vs 단품 · 옵션 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("판매 유형"));[["세트",sp.set],["세트 - 옵션(사이드) 포함",sp.setOpt],["세트 - 슬립케어 포함",sp.setCare],["세트 - 둘 다 없음",sp.setNo],["단품",sp.single],["단품 - 프레임만",sp.fr],["단품 - 매트리스만",sp.mt],["옵션만(사이드)",sp.opt],["슬립케어만",sp.care],["옵션+슬립케어만",sp.oc],["기타",sp.etc]].forEach(([l,r])=>line(aggRow(l,ledAgg(r))));
    sec("판매자별 세트·단품 평균 할인율(%)");line(["판매자","단품 건수","단품 평균 할인율(%)","단품 남는 비율(%)","세트 건수","세트 평균 할인율(%)","세트 남는 비율(%)","세트-단품(%p)","세트 비중(%)"]);
    [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const q=ledTypeSplit(rows.filter(x=>ledSl(x)===n)),a=ledAgg(q.single),b=ledAgg(q.set);line([n,a.n,a.n?a.disc:"",a.n?a.rate:"",b.n,b.n?b.disc:"",b.n?b.rate:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])});
    sec("월별 세트·단품 평균 할인율(%) ("+(ledSel||"전체 판매자")+")");line(["월","단품 건수","단품 평균 할인율(%)","세트 건수","세트 평균 할인율(%)","세트-단품(%p)","세트 비중(%)"]);
