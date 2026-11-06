@@ -928,7 +928,7 @@ function ledLines(x){
   if(!Array.isArray(x.lines)||!x.lines.length)return[x];
   const q=l=>Math.max(1,Math.round(+l.qty||1)),tot=x.lines.reduce((a,l)=>a+(+l.price||0)*q(l),0)||1,bd=x.bundle?ledCalc(x).da/tot*100:null;
   return x.lines.map((l,i)=>{const p=(+l.price||0)*q(l),sh=p/tot;
-    return{...x,id:x.id+"#"+i,item:l.item||x.item,code:l.code||"",cat:l.cat||"",out:l.out||0,sup:l.sup||0,price:p,disc:bd!==null?bd:(l.disc||0),cost:(+l.cost||0)*q(l),ship:Math.round((+x.ship||0)*sh),etc:Math.round((+x.etc||0)*sh),lines:undefined}});
+    return{...x,qty:q(l),id:x.id+"#"+i,item:l.item||x.item,code:l.code||"",cat:l.cat||"",out:l.out||0,sup:l.sup||0,price:p,disc:bd!==null?bd:(l.disc||0),cost:(+l.cost||0)*q(l),ship:Math.round((+x.ship||0)*sh),etc:Math.round((+x.etc||0)*sh),lines:undefined}});
 }
 const ledExpand=rows=>rows.flatMap(ledLines);
 const ledSigned=n=>(n<0?"−":"")+won(Math.abs(n));
@@ -1031,7 +1031,7 @@ function ledBinCards(m,mo){
   const cm={};ledExpand(rows).forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
   const all=ledAgg(ledExpand(rows)),cl=Object.entries(cm).map(([k,r])=>({k,a:ledAgg(r)})).sort((p,q)=>q.a.disc-p.a.disc||q.a.P-p.a.P);
   const card3=`<div class="card"><h3>제품 분류별 할인율 비교 <span class="m sub" style="margin:0">평균 할인 높은 순</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("분류")}${cl.map(o=>ledAggRow(esc(o.k.length>9?o.k.slice(0,9)+"…":o.k),o.a,false,"")).join("")}${cl.length>1?ledAggRow("전체",all,false,""):""}<div class="m" style="padding:8px 6px">${cl.length>1?`전체 평균 할인은 ${all.disc}%예요. 평균보다 많이 깎아 준 분류는 <b>${cl.filter(o=>o.a.disc>all.disc).map(o=>esc(o.k)+" +"+Math.round((o.a.disc-all.disc)*10)/10+"%p").join(", ")||"없어요"}</b>.`:"분류가 하나뿐이라 비교할 수 없어요."} 분류는 가격표·단가표의 분류명을 써요(괄호 코드는 뺐어요). 가격표에서 제품을 골라 기록한 건만 분류가 붙고, 직접 입력한 건은 “분류 없음”이에요. 위의 ‘${ledAllScope?"전체 기간":mo+"월"}’ 범위와 판매자 선택을 따라가요.</div></div></div>`;
-  return card1+ledBundleCards(rows)+card2+card3+ledSellerCatCard(rows);
+  return card1+ledBundleCards(rows)+ledComboCards(rows)+ledSalesCards(rows)+card2+card3+ledSellerCatCard(rows);
 }
 /* 판매자 × 제품 분류: 판매액이 큰 분류 3개 + 그 외. 칸마다 평균 할인율, 남는 비율, 건수 */
 function ledSellerCat(rows){
@@ -1100,6 +1100,73 @@ function ledBundleCards(rows){
   const mrows=ms.map(k=>{const q=ledBundleSplit(all.filter(x=>x.date.startsWith(k))),s1=ledAgg(q.single),b1=ledAgg(q.bund);return `<div style="${g5}"><b>${k.slice(2).replace("-",".")}</b>${cell(s1)}${cell(b1)}${diff(s1,b1)}<span>${sh(s1,b1)}</span></div>`}).join("");
   const card3=ms.length>1?`<div class="card"><h3>월별 묶음 · 단품 할인율 <span class="m sub" style="margin:0">최근 12개월</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:.9fr 1.1fr 1.1fr .9fr .8fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>월</span><span>단품 평균 할인</span><span>묶음 평균 할인</span><span>묶음−단품</span><span>묶음 비중</span></div>${mrows}</div></div>`:"";
   return card1+card2+card3;
+}
+/* ===== 판매량 조사: 매트리스 모델별 · 프레임 모델별 · 프레임+매트리스 조합 · 사이즈별, 묶음 구성별 =====
+   에이스침대 침대세트 상품명은 「프레임모델 (매트리스모델) 사이즈 색상」 형태라(예: BRA1439-T (LED일체형) NEW (HT-A) LQ 월넛) 상품명에서 프레임·매트리스·사이즈를 읽어요.
+   프레임세트·매트(단품) 분류는 이름에서 모델을 읽고, 읽을 수 없는 직접 입력 제품은 "분석 불가"로 따로 세어요. */
+const LED_MT_RE=/^(HT|HR|RA|AB|DT|CA|AT|AV|MT)/,LED_SIZE_RE=/(?:^|\s)(SSB|SS|DS|DD|LQ|LK|K3|Q|K|S)(?=[\s(\d]|$)/;
+const ledNorm=t=>String(t||"").normalize("NFKC").toUpperCase();
+const ledMtKey=t=>ledNorm(t).replace(/\s*\d*NEW/g,"").replace(/신형|구형|대리점|백화점/g,"").replace(/[\s\-]/g,"");
+const ledMtLabel=t=>String(t||"").replace(/\s*\d*NEW/gi,"").replace(/\s*(신형|구형|대리점|백화점)/g,"").trim();
+function ledSizeOf(t){const m=LED_SIZE_RE.exec(String(t||"")),z=m?m[1]:"";return z}
+function ledParseSet(name){
+  const n=String(name||""),re=/\(([^)]*)\)/g;let m;
+  while((m=re.exec(n))){
+    const tok=m[1].trim();if(!LED_MT_RE.test(ledNorm(tok)))continue;
+    const before=n.slice(0,m.index).trim().replace(/\s+NEW$/i,""),rest=n.slice(m.index+m[0].length);
+    return{mt:{key:ledMtKey(tok),label:ledMtLabel(tok)},fr:before?{key:ledNorm(before).replace(/\s/g,""),label:before}:null,size:ledSizeOf(rest)};
+  }
+  return{};
+}
+function ledKind(x){
+  const name=String(x.item||"").trim();if(!name)return null;
+  const cat=ledCatOf(x),ps=ledParseSet(name);
+  if(ps.mt)return ps;
+  const cut=t=>{const m=LED_SIZE_RE.exec(t);return(m?t.slice(0,m.index):t).trim()};
+  if(/^프레임세트/.test(cat)||/^F-\s/.test(name)){const l=cut(name.replace(/^F-\s*/,"")).replace(/\s+NEW$/i,"");return l?{fr:{key:ledNorm(l).replace(/\s/g,""),label:l},size:ledSizeOf(name)}:null}
+  if(/매트/.test(cat)||/\([MHBS]\)/.test(name)){const l=cut(name).replace(/\([MHBS]\)\s*$/,"").trim();return l?{mt:{key:ledMtKey(l),label:ledMtLabel(l)},size:ledSizeOf(name)}:null}
+  return null;
+}
+function ledSalesData(rows){
+  const ex=ledExpand(rows),T={mt:{},fr:{},combo:{},size:{}};let un=0;
+  const add=(g,key,label,x)=>{const o=(g[key]=g[key]||{label,qty:0,rows:[]});o.qty+=x.qty||1;o.rows.push(x)};
+  ex.forEach(x=>{const k=ledKind(x);if(!k||(!k.mt&&!k.fr)){un++;return}
+    if(k.mt)add(T.mt,k.mt.key,k.mt.label,x);if(k.fr)add(T.fr,k.fr.key,k.fr.label,x);
+    if(k.mt&&k.fr)add(T.combo,k.fr.key+"|"+k.mt.key,k.fr.label+" + "+k.mt.label,x);if(k.size)add(T.size,k.size,k.size,x)});
+  const fin=g=>Object.values(g).map(o=>({label:o.label,qty:o.qty,a:ledAgg(o.rows)})).sort((p,q)=>q.qty-p.qty||q.a.P-p.a.P);
+  return{mt:fin(T.mt),fr:fin(T.fr),combo:fin(T.combo),size:fin(T.size),un,total:ex.length};
+}
+let ledSalesOpen={};
+function ledSalesMore(k){ledSalesOpen[k]=!ledSalesOpen[k];render(true)}
+function ledSalesTable(k,title,list,hint){
+  if(!list.length)return"";
+  const tq=list.reduce((a,o)=>a+o.qty,0),open=!!ledSalesOpen[k],shown=open?list:list.slice(0,10);
+  const g="display:grid;grid-template-columns:1.8fr .75fr 1.1fr .8fr 1.1fr;gap:4px;align-items:center;font-size:13px;padding:8px 6px;border-top:.5px solid var(--sep)";
+  return `<div class="card"><h3>${title} <span class="m sub" style="margin:0">${hint||"판매 수량 순"}</span></h3><div class="body" style="padding:6px 4px"><div class="m" style="display:grid;grid-template-columns:1.8fr .75fr 1.1fr .8fr 1.1fr;gap:4px;padding:0 6px 4px;font-size:12px"><span>이름</span><span>수량</span><span>판매가</span><span>평균 할인</span><span>남는 금액</span></div>
+  ${shown.map((o,i)=>`<div style="${g}"><b style="word-break:break-all">${i+1}. ${esc(o.label.length>34?o.label.slice(0,34)+"…":o.label)}</b><span>${o.qty}개<br><span class="m" style="font-size:11px">${Math.round(o.qty/tq*1000)/10}%</span></span><span>${won(o.a.P)}</span><span>${o.a.disc}%</span><b style="${o.a.net<0?"color:var(--red)":""}">${ledSigned(o.a.net)}</b></div>`).join("")}
+  ${list.length>10?`<div style="padding:8px 6px"><button class="btn ghost" onclick="ledSalesMore('${k}')">${open?"접기":"전체 "+list.length+"개 보기"}</button></div>`:""}</div></div>`;
+}
+function ledSalesCards(rows){
+  if(!rows.length)return"";
+  const d=ledSalesData(rows);if(!d.mt.length&&!d.fr.length)return`<div class="card"><h3>매트리스·프레임 판매량</h3><div class="body"><div class="m">이 기간에 모델을 읽을 수 있는 제품(침대세트·프레임세트·매트)이 없어요. 제품을 단가표·가격표에서 골라 입력하면 상품명에서 프레임과 매트리스를 구분해요.</div></div></div>`;
+  const note=`<div class="card"><div class="body"><div class="m"><b>매트리스·프레임 판매량</b> · ${ledAllScope?"전체 기간":"이 달"}${ledSel?" · "+esc(ledSel):""}<br>침대세트 상품명(프레임모델 (매트리스모델) 사이즈 색상)에서 프레임과 매트리스를 나눠 세어요. 침대세트 1개는 프레임 1개와 매트리스 1개로 각각 세요. 읽을 수 없는 제품(직접 입력 등) ${d.un}줄은 빠졌어요(전체 제품 줄 ${d.total}개).</div></div></div>`;
+  return note+ledSalesTable("mt","매트리스 모델별 판매량",d.mt)+ledSalesTable("fr","프레임 모델별 판매량",d.fr)+ledSalesTable("combo","프레임 + 매트리스 조합",d.combo,"어떤 조합이 많이 나가나")+ledSalesTable("size","사이즈별 판매량",d.size);
+}
+/* 묶음 구성별: 묶음 주문에 들어간 분류 조합과, 같이 팔린 제품 쌍 */
+function ledComboData(rows){
+  const bund=rows.filter(ledIsBundle),cm={},pm={};
+  bund.forEach(x=>{
+    const ls=ledLines(x),cats=[...new Set(ls.map(ledCatOf))].sort((a,b)=>a.localeCompare(b,"ko")),key=cats.join(" + ");(cm[key]=cm[key]||[]).push(x);
+    const names=[...new Set(ls.map(l=>String(l.item||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ko"));
+    for(let i=0;i<names.length;i++)for(let j=i+1;j<names.length;j++){const k=names[i]+" + "+names[j];(pm[k]=pm[k]||[]).push(x)}
+  });
+  const fin=g=>Object.entries(g).map(([k,r])=>({label:k,a:ledAgg(r)})).sort((p,q)=>q.a.n-p.a.n||q.a.P-p.a.P);
+  return{combos:fin(cm),pairs:fin(pm),n:bund.length};
+}
+function ledComboCards(rows){
+  const d=ledComboData(rows);if(!d.n)return"";
+  const tbl=(title,list,hint)=>list.length?`<div class="card"><h3>${title} <span class="m sub" style="margin:0">${hint}</span></h3><div class="body" style="padding:6px 4px">${ledAggHead("구성")}${list.slice(0,10).map((o,i)=>ledAggRow((i+1)+". "+esc(o.label.length>28?o.label.slice(0,28)+"…":o.label),o.a,false,"")).join("")}</div></div>`:"";
+  return tbl("묶음 구성별 (분류 조합)",d.combos,"묶음 주문 "+d.n+"건 · 많은 순")+tbl("같이 팔린 제품 쌍",d.pairs,"한 주문에 같이 들어간 제품 · 많은 순");
 }
 /* 제품별 할인율 순위: 이 달 판매에서 제품마다 평균 할인율이 높은 순서 */
 function ledDiscRank(rows){
@@ -1284,6 +1351,10 @@ function ledAnalysisCsv(){
    [...new Set(rows.map(ledSl))].sort((a,b)=>a.localeCompare(b,"ko")).forEach(n=>{const q=ledBundleSplit(rows.filter(x=>ledSl(x)===n)),a=ledAgg(q.single),b=ledAgg(q.bund);line([n,a.n,a.n?a.disc:"",a.n?a.rate:"",b.n,b.n?b.disc:"",b.n?b.rate:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])});
    sec("월별 묶음·단품 평균 할인율(%) ("+(ledSel||"전체 판매자")+")");line(["월","단품 건수","단품 평균 할인율(%)","묶음 건수","묶음 평균 할인율(%)","묶음-단품(%p)","묶음 비중(%)"]);
    [...new Set(D.ledger.filter(ledMatch).map(x=>x.date.slice(0,7)))].sort().reverse().forEach(k=>{const q=ledBundleSplit(D.ledger.filter(x=>x.date.startsWith(k)&&ledMatch(x))),a=ledAgg(q.single),b=ledAgg(q.bund);line([k,a.n,a.n?a.disc:"",b.n,b.n?b.disc:"",a.n&&b.n?Math.round((b.disc-a.disc)*10)/10:"",a.n+b.n?Math.round(b.n/(a.n+b.n)*100):""])})}
+  {const cd=ledComboData(rows);sec("묶음 구성별 (분류 조합)");line(aggHead("구성"));cd.combos.forEach(o=>line(aggRow(o.label,o.a)));
+   sec("같이 팔린 제품 쌍");line(aggHead("제품 쌍"));cd.pairs.forEach(o=>line(aggRow(o.label,o.a)));
+   const sd=ledSalesData(rows),sl=(t,list)=>{sec(t+" ("+(ledAllScope?"전체 기간":m)+")");line(["이름","판매 수량","주문 줄 수","판매가 합계","평균 할인율(%)","남는 금액","남는 비율(%)"]);list.forEach(o=>line([o.label,o.qty,o.a.n,o.a.P,o.a.disc,o.a.net,o.a.rate]))};
+   sl("매트리스 모델별 판매량",sd.mt);sl("프레임 모델별 판매량",sd.fr);sl("프레임 + 매트리스 조합",sd.combo);sl("사이즈별 판매량",sd.size);line(["읽을 수 없는 제품 줄",sd.un])}
   const cm={};ledExpand(rows).forEach(x=>{const k=ledCatOf(x);(cm[k]=cm[k]||[]).push(x)});
   sec("제품 분류별 ("+(ledAllScope?"전체 기간":m)+")");line(aggHead("분류"));Object.entries(cm).map(([k,r])=>[k,ledAgg(r)]).sort((p,q)=>q[1].disc-p[1].disc).forEach(([k,a])=>line(aggRow(k,a)));
   {const t=ledSellerCat(rows);sec("판매자 × 제품 분류 ("+(ledAllScope?"전체 기간":m)+")");line(["판매자",...t.cols.flatMap(c=>[c+" 건수",c+" 평균 할인율(%)",c+" 남는 비율(%)",c+" 남는 금액"])]);
