@@ -342,7 +342,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 /* 오늘 할 일: 매일 루틴(D.routine, 날마다 체크 초기화) + 오늘만 할 일(D.todo) */
 const RT_TEST=["[테스트] 아침에 물 한 잔 마시기","[테스트] 오늘 할 일 3개 적기"];
 const RT_OLD="아침 스트레칭|컨텐츠 1개 진행|댓글·DM 확인|수익 지표 체크|내일 할 일 3개 적기";
-const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,ledGoals:{},ledGoalsM:{},ledGoalBy:"real",u:0},revenue:[],ledger:[],prices:[],dday:[],todo:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
+const seed=()=>({updated:0,del:{},set:{staff:[],agents:[],brands:[],links:[],stage:1,pins:null,goal:1000000,ledGoals:{},ledGoalsM:{},ledGoalBy:"real",u:0},revenue:[],ledger:[],ledtrash:[],prices:[],dday:[],todo:[],contents:[],tasks:[],stock:[],msgs:[],events:[],inv:[],invreq:[],invlog:[],proto:[],protorun:[],pushsubs:[],sop:[
   {id:uid(),title:"블로그 발행 SOP",steps:["키워드 선정","초안 작성","사진 선별·보정","SEO 점검","발행 후 인스타 공유"]},
   {id:uid(),title:"인스타 릴스 SOP",steps:["후킹 문장 정하기","영상 컷 편집","자막·BGM","캡션·해시태그","예약 발행"]}],
   routine:{date:today(),u:0,items:RT_TEST.map(n=>[n,0])}});
@@ -384,7 +384,7 @@ function setTheme(v){CFG.theme=v;saveCfg();applyTheme();render()}
 const themeCard=()=>`<div class="card"><h3>화면 모드</h3><div class="body"><div class="tabs">${[["auto","자동"],["light","라이트"],["dark","다크"]].map(([k,n])=>`<button class="${(CFG.theme||"auto")===k?"on":""}" onclick="setTheme('${k}')">${n}</button>`).join("")}</div><div class="m sub" style="margin-bottom:0">자동은 기기의 라이트·다크 설정을 따라가요.</div></div></div>`;
 const setSync=t=>{const e=$("#sync");if(e)e.textContent=t};
 const gh=(path,opt={})=>fetch("https://api.github.com"+path,{...opt,headers:{Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json","Content-Type":"application/json"}});
-const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs","ledger","prices","dday","todo"];
+const LISTS=["contents","tasks","stock","sop","revenue","msgs","events","inv","invreq","invlog","proto","protorun","pushsubs","ledger","ledtrash","prices","dday","todo"];
 let SNAP={};
 const resnap=()=>{SNAP={};LISTS.forEach(l=>D[l].forEach(it=>{const{u,...r}=it;SNAP[it.id]=JSON.stringify(r)}))};
 resnap();
@@ -413,7 +413,89 @@ function merge(a,b){
    o.routine={date:dt,u:base.u||0,items:base.items.map(x=>[x[0],on.has(x[0])?1:0])}}
   return o;
 }
-const persist=()=>{try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}};
+/* ---------- 장부 안전장치 ----------
+   장부 기록(D.ledger)이 사라지지 않도록 ① 이 기기의 보조 저장소(IndexedDB "rino-safe")에 자동 복사(최신본 + 날짜별 30일 + 지우기·불러오기 직전본),
+   ② 지운 기록은 휴지통(D.ledtrash, 동기화됨)에 90일 보관, ③ 시작할 때 장부가 비어 있는데 보조 저장소에 있으면 되살리고, ④ 백업 파일(JSON) 받기·합쳐 불러오기를 제공해요. */
+let LS_INFO=null,LS_ASKED=0,_lsT=0,LS_PERSIST=0;
+const lsDb=()=>new Promise(ok=>{try{const r=indexedDB.open("rino-safe",1);r.onupgradeneeded=()=>r.result.createObjectStore("k");r.onsuccess=()=>ok(r.result);r.onerror=()=>ok(null)}catch{ok(null)}});
+const lsReq=(mode,f)=>lsDb().then(db=>!db?null:new Promise(ok=>{try{const t=db.transaction("k",mode),r=f(t.objectStore("k"));t.oncomplete=()=>ok(r&&"result"in r?r.result:true);t.onerror=t.onabort=()=>ok(null)}catch{ok(null)}}));
+const lsPut=(k,v)=>lsReq("readwrite",o=>o.put(v,k));
+const lsGet=k=>lsReq("readonly",o=>o.get(k));
+const lsKeys=()=>lsReq("readonly",o=>o.getAllKeys()).then(r=>Array.isArray(r)?r:[]);
+const lsDel=k=>lsReq("readwrite",o=>o.delete(k));
+const lsPayload=()=>({at:Date.now(),ledger:D.ledger,prices:D.prices,goals:{ledGoals:D.set.ledGoals,ledGoalsM:D.set.ledGoalsM,ledGoalBy:D.set.ledGoalBy},trash:D.ledtrash});
+async function lsPrune(){
+  const ks=await lsKeys(),keep=(pre,n)=>ks.filter(k=>String(k).startsWith(pre)).sort().slice(0,-n);
+  for(const k of [...keep("snap-",30),...keep("pre-",20)])await lsDel(k);
+}
+/* force=true면 장부가 비어도 최신본을 덮어써요(마지막 기록을 일부러 지운 경우). 평소엔 비어 있으면 건드리지 않아 전체 삭제 사고에서 최신본이 남아요 */
+async function lsWrite(force){
+  if(!D.ledger.length&&!force)return;
+  if(!LS_PERSIST){LS_PERSIST=1;try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch{}}
+  const pl=lsPayload();await lsPut("latest",pl);if(D.ledger.length){await lsPut("snap-"+today(),pl);lsPrune()}
+  LS_INFO=null;
+}
+function lsSchedule(){clearTimeout(_lsT);_lsT=setTimeout(()=>lsWrite(false),1500)}
+async function lsSnapNow(tag){if(!D.ledger.length&&!D.ledtrash.length)return;await lsPut("pre-"+new Date().toISOString().replace(/[:.]/g,"-")+"-"+tag,lsPayload());lsPrune()}
+/* 스냅샷의 기록 중 지금 없는 것만 되살려요(있는 기록은 그대로). 지운 표시가 남아 있어도 풀어요 */
+function lsMergeIn(sn){
+  let n=0;const have=new Set(D.ledger.map(x=>x.id)),hp=new Set(D.prices.map(x=>x.id)),now=Date.now();
+  (sn.ledger||[]).forEach(r=>{if(!r||!r.id||have.has(r.id))return;delete D.del[r.id];delete D.del["led-"+r.id];const{u,...c}=r;D.ledger.push({...c,u:now});n++});
+  (sn.prices||[]).forEach(r=>{if(!r||!r.id||hp.has(r.id))return;delete D.del[r.id];const{u,...c}=r;D.prices.push({...c,u:now})});
+  const g=sn.goals||{};if(g.ledGoals&&!Object.keys(D.set.ledGoals||{}).length&&Object.keys(g.ledGoals).length){D.set.ledGoals=g.ledGoals;D.set.u=now}
+  if(g.ledGoalsM&&!Object.keys(D.set.ledGoalsM||{}).length&&Object.keys(g.ledGoalsM).length){D.set.ledGoalsM=g.ledGoalsM;D.set.u=now}
+  if(n){try{ledRevSync()}catch{}}return n;
+}
+async function lsBootRestore(){
+  try{if(D.ledger.length)return;const sn=await lsGet("latest");if(!sn||!(sn.ledger||[]).length)return;
+    const n=lsMergeIn(sn);if(n){save();try{render()}catch{}toast(`장부 ${n}건을 이 기기의 보조 저장소에서 되살렸어요`)}}catch{}
+}
+async function lsInfo(){
+  const ks=await lsKeys(),snaps=[];
+  for(const k of ks.filter(k=>/^(snap|pre)-/.test(String(k))).sort().reverse()){const v=await lsGet(k);if(v&&v.ledger)snaps.push({k,at:v.at||0,n:v.ledger.length})}
+  const l=await lsGet("latest");LS_INFO={ok:ks.length>0||l!==null,snaps:snaps.slice(0,40),latest:l?{at:l.at,n:(l.ledger||[]).length}:null};
+  if(page==="revenue"||page==="inventory")render(true);
+}
+async function lsRestore(k){
+  const sn=await lsGet(k);if(!sn){alert("그 백업을 읽지 못했어요");return}
+  const miss=(sn.ledger||[]).filter(r=>!D.ledger.some(x=>x.id===r.id)).length;
+  if(!confirm(`${new Date(sn.at||0).toLocaleString("ko-KR")} 백업에서 지금 장부에 없는 기록 ${miss}건을 되살릴까요? (있는 기록은 그대로 두고 빠진 것만 추가해요)`))return;
+  await lsSnapNow("restore-before");const n=lsMergeIn(sn);save();LS_INFO=null;render();toast(n?`${n}건을 되살렸어요`:"되살릴 기록이 없었어요 (모두 이미 있어요)");
+}
+function lsExport(){
+  const o={kind:"rino-ledger-backup",v:1,...lsPayload()},a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));a.download="장부백업-"+today()+".json";a.click();
+  CFG.lsFileAt=Date.now();saveCfg();render(true);
+}
+function lsImport(f){
+  if(!f||!isAdmin())return;
+  f.text().then(async t=>{try{const o=JSON.parse(t);if(o.kind!=="rino-ledger-backup"||!Array.isArray(o.ledger))throw 0;
+    const miss=o.ledger.filter(r=>r&&r.id&&!D.ledger.some(x=>x.id===r.id)).length;
+    if(!confirm(`백업 파일에서 지금 장부에 없는 기록 ${miss}건을 합칠까요? (있는 기록은 그대로 두고 빠진 것만 추가해요)`))return;
+    await lsSnapNow("import-before");const n=lsMergeIn(o);save();LS_INFO=null;render();toast(n?`${n}건을 합쳤어요`:"합칠 기록이 없었어요 (모두 이미 있어요)")}catch{alert("장부 백업 파일이 아니에요. ‘백업 파일 받기’로 만든 파일을 골라 주세요")}});
+}
+function ledRestoreTrash(id){
+  if(!isAdmin())return;const t=D.ledtrash.find(x=>x.id===id);if(!t)return;const r=t.rec;
+  if(D.ledger.some(x=>x.id===r.id)){toast("이미 장부에 있어요");return}
+  delete D.del[r.id];delete D.del["led-"+r.id];D.ledger.push({...r,u:Date.now()});D.ledtrash=D.ledtrash.filter(x=>x.id!==id);
+  try{ledRevSync()}catch{}ledM=r.date.slice(0,7);save();render();toast("장부로 되살렸어요")
+}
+function ledPurgeTrash(id){if(!isAdmin()||!confirm("휴지통에서 완전히 지울까요? (되살릴 수 없어요)"))return;D.ledtrash=D.ledtrash.filter(x=>x.id!==id);save();render()}
+function ledSafeCard(){
+  if(!LS_INFO&&!LS_ASKED){LS_ASKED=1;lsInfo()}
+  if(!LS_INFO)LS_ASKED=0;
+  const I=LS_INFO,fmt=t=>t?new Date(t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"-";
+  const fileOld=!CFG.lsFileAt||Date.now()-CFG.lsFileAt>30*864e5,tr=[...D.ledtrash].sort((a,b)=>b.at-a.at);
+  return `<div class="card"><h3>🛡 장부 안전장치</h3><div class="body"><div class="m" style="line-height:1.8">
+  장부 <b>${D.ledger.length}건</b> · ${I?(I.ok?"✅ 이 기기 보조 저장소에 자동 백업 중":"⚠️ 보조 저장소를 쓸 수 없어요 (백업 파일을 꼭 받아 두세요)"):"저장 상태 확인 중…"}<br>
+  ${I&&I.latest?`최신 자동 백업 ${fmt(I.latest.at)} (${I.latest.n}건) · 보관본 ${I.snaps.length}개 (날짜별 30일 + 지우기·불러오기 직전본)`:""}<br>
+  ${fileOld?"⚠️ 백업 파일을 "+(CFG.lsFileAt?"받은 지 30일이 넘었어요":"아직 받지 않았어요")+". 한 달에 한 번 받아 두세요.":"백업 파일 마지막 저장 "+fmt(CFG.lsFileAt)}</div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin:8px 0"><button class="btn" onclick="lsExport()">백업 파일 받기</button><label class="btn ghost" style="cursor:pointer">백업 파일 합치기<input type="file" accept=".json,application/json" hidden onchange="lsImport(this.files[0]);this.value=''"></label></div>
+  ${I&&I.snaps.length?`<details style="margin-top:6px"><summary class="m" style="cursor:pointer">자동 백업에서 되살리기 (${I.snaps.length}개)</summary>${I.snaps.map(x=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><span class="grow m">${fmt(x.at)} · ${x.n}건 ${String(x.k).startsWith("pre-")?"· "+(String(x.k).includes("delete")?"지우기 직전":String(x.k).includes("import")?"불러오기 직전":"복원 직전"):""}</span><button class="pill" style="background:var(--g)" onclick="lsRestore('${esc(String(x.k))}')">되살리기</button></div>`).join("")}</details>`:""}
+  <details style="margin-top:6px" ${tr.length?"open":""}><summary class="m" style="cursor:pointer">🗑 휴지통 (${tr.length}건 · 90일 보관)</summary>${tr.map(t=>`<div class="row" style="gap:8px;padding:6px 0;border-top:.5px solid var(--sep)"><div class="grow"><div class="t" style="font-size:14px">${esc(t.rec.item||"(제품 미입력)")} <span class="m">${esc((t.rec.date||"").slice(5))}${t.rec.seller?" · "+esc(t.rec.seller):""}</span></div><div class="m">판매가 ${won(+t.rec.price||0)} · 지운 날 ${fmt(t.at)}</div></div><button class="pill" style="background:var(--g)" onclick="ledRestoreTrash('${t.id}')">되살리기</button><button class="icon del" style="width:28px;height:28px" onclick="ledPurgeTrash('${t.id}')" aria-label="완전 삭제">✕</button></div>`).join("")||'<div class="m" style="padding:6px 0">비어 있어요. 장부에서 지운 기록은 여기로 와요.</div>'}</details>
+  </div></div>`;
+}
+const persist=()=>{try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}try{lsSchedule()}catch{}};
 async function fetchRemote(){
   const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw new Error(r.status);
   const f=(await r.json()).files["rino-workspace.json"];if(!f)return null;
@@ -1029,7 +1111,12 @@ function ledSave(){
   if(ledEdit){const e=D.ledger.find(x=>x.id===ledEdit);if(e)Object.assign(e,rec)}else D.ledger.push({id:uid(),by:curName(),...rec});
   ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요 · 할인 후 판매액이 수익에 잡혔어요");
 }
-function ledDel(id){if(!isAdmin()||!confirm("이 장부 기록을 지울까요?"))return;D.ledger=D.ledger.filter(x=>x.id!==id);D.revenue=D.revenue.filter(x=>x.id!=="led-"+id);save();render()}
+function ledDel(id){
+  if(!isAdmin())return;const e=D.ledger.find(x=>x.id===id);if(!e||!confirm("이 장부 기록을 지울까요? (휴지통에 90일 보관돼요)"))return;
+  lsSnapNow("delete");const{u,...rec}=e;D.ledtrash.push({id:uid(),at:Date.now(),rec});
+  const cut=Date.now()-90*864e5;D.ledtrash=D.ledtrash.filter(x=>x.at>cut);
+  D.ledger=D.ledger.filter(x=>x.id!==id);D.revenue=D.revenue.filter(x=>x.id!=="led-"+id);save();render();lsWrite(true);toast("휴지통으로 옮겼어요 · 장부 맨 아래 「장부 안전장치」에서 되살릴 수 있어요")
+}
 function ledCsv(){
   const m=ledM||today().slice(0,7),rows=D.ledger.filter(x=>x.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
   const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
@@ -1083,6 +1170,7 @@ function ledView(cur){
     <div class="m">− 할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.memo?`<div class="m">${esc(x.memo)}</div>`:""}</div>
     <div style="text-align:right"><b style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</b><div class="m">${c.rate}%</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}).join("")||'<div class="empty">이 달 장부가 비어 있어요. ＋ 장부 기록으로 첫 판매를 남겨 보세요.</div>'}</div></div>
+  ${ledSafeCard()}
   <div class="m sub" style="margin:8px 4px">남는 금액 = 할인 후 판매액 − 배송료 − 물건대금 − 기타 비용 − 부가세(선택) − 카드수수료 − 기타 세율이에요. 세금·수수료는 할인 후 판매액 기준이며, 매입 부가세 공제는 반영하지 않았어요. 수익 화면의 수익 기록과는 따로 저장돼요. 판매자별 평균 할인은 판매가 대비 할인액(금액 기준), 남는 비율은 판매가 대비 남는 금액이에요. 판매자를 입력하지 않은 기록은 “미지정”으로 묶여요.</div>`;
 }
 /* ---------- 단가표 (에이스침대 제품별 판매가·납부 단가) ----------
@@ -2007,7 +2095,7 @@ function vaultCard(){
 function connectSync(){if(connGuard())return;CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value.trim()||CFG.gistId||"";saveCfg();sdClear("tk","gi");if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
 function disconnectSync(){if(connGuard())return;delete CFG.token;saveCfg();sdClear("tk");setSync("● 자동 저장");render()}
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
-function importJson(f){if(!f)return;f.text().then(t=>{try{D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
+function importJson(f){if(!f)return;f.text().then(async t=>{try{await lsSnapNow("import-all");D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
 
 /* ---------- 업무 절차 (절차 문서 · 실행 체크 · 완료 기록) ----------
    절차는 D.proto, 실행 기록은 D.protorun 에 저장되고 기존 클라우드 동기화로 합쳐져요.
@@ -3486,7 +3574,7 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&s
   wake();window.fabWake=wake;
 })();
 (function boot(){
-  cfgRestore();
+  cfgRestore();setTimeout(lsBootRestore,1500);setTimeout(lsBootRestore,6000);
   try{const m0=me();if(CFG.bio&&CFG.bio.id&&m0&&!m0.open)lockShow()}catch{}
   bioCheck();
   /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
