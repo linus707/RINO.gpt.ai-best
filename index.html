@@ -1427,8 +1427,8 @@ function ledOpen(id){
   <div class="m" style="margin-top:6px"><b>고객 정보</b> <span class="sub">(선택 · 이 앱과 비공개 동기화에만 저장돼요)</span></div>
   <div class="filters"><label class="m">성함<input id="ledcn" maxlength="20" placeholder="고객 성함" value="${esc(v.cname||"")}" autocomplete="off"></label><label class="m">연락처<input id="ledcp" type="tel" maxlength="20" inputmode="tel" placeholder="010-0000-0000" value="${esc(v.cphone||"")}" autocomplete="off"></label></div>
   <label class="m">주소<input id="ledca" maxlength="100" placeholder="배송지 주소" value="${esc(v.caddr||"")}" autocomplete="off"></label>
-  <label class="m">판매일<input id="ledd" type="date" value="${esc(v.date)}"></label>
-  <label class="m">배송 예정일 <span class="sub">(선택 · Celender에 제품배송 일정으로 올라가요)</span><input id="ledship" type="date" value="${esc(v.shipDate||"")}"></label>
+  <div class="filters"><label class="m">판매일<input id="ledd" type="date" value="${esc(v.date)}"></label><label class="m"><b>🚚 배송 예정일</b><input id="ledship" type="date" value="${esc(v.shipDate||"")}"></label></div>
+  <div class="m sub" style="margin:-2px 0 4px">배송 예정일을 넣고 저장하면 Celender에 「제품배송」 일정이 자동으로 올라가요.</div>
   <div class="m" style="margin-top:6px"><b>제품</b> <span class="sub">(여러 개면 ＋ 제품 추가)</span></div>
   <div id="lllist">${llHtml()}</div>
   <button class="btn ghost" type="button" onclick="llAdd()">＋ 제품 추가</button>
@@ -1501,7 +1501,7 @@ function ledSave(){
   rec.dueDate=($("#leddue")||{}).value||"";
   rec.shipDate=($("#ledship")||{}).value||"";
   if(ledEdit){const e=D.ledger.find(x=>x.id===ledEdit);if(e){if((e.shipDate||"")!==rec.shipDate)delete D.del["ship-"+e.id];Object.assign(e,rec)}}else D.ledger.push({id:uid(),by:curName(),...rec});
-  ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요 · 할인 후 판매액이 수익에 잡혔어요");
+  ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast(rec.shipDate?"장부에 기록했어요 · 배송 일정("+rec.shipDate.slice(5)+")이 Celender에 올라갔어요":"장부에 기록했어요 · 할인 후 판매액이 수익에 잡혔어요");
 }
 function ledDel(id){
   if(dataGuard())return;if(!isAdmin())return;const e=D.ledger.find(x=>x.id===id);if(!e||!confirm("이 장부 기록을 지울까요? (휴지통에 90일 보관돼요)"))return;
