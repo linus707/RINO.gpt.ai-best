@@ -318,7 +318,7 @@ IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","착수","--idea"],["report","보고","--ready"],["make","제작중","--make"],["review","검수","--review"],["done","발행완료","--done"]];
 const stKey=k=>k==="ready"?"review":k;
-const PAGES=[["home","🏠","홈"],["todo","☑️","오늘 할 일",1],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","일정표"],["dday","⏳","디데이"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
+const PAGES=[["home","🏠","홈"],["todo","☑️","오늘 할 일",1],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","Celender"],["dday","⏳","디데이"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
 const NAV_GROUPS=[["",["home","messenger"]],["일하기",["todo","schedule","dday","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
@@ -446,7 +446,7 @@ function lsMergeIn(sn,only){
   const now=Date.now(),res={};
   (only?[only]:SAFE_LISTS).forEach(l=>{
     const have=new Set(D[l].map(x=>x.id));let n=0;
-    (sn[l]||[]).forEach(r=>{if(!r||!r.id||have.has(r.id))return;delete D.del[r.id];if(l==="ledger")delete D.del["led-"+r.id];const{u,...c}=r;if(l==="events"){delete c.nid;delete c.nh}D[l].push({...c,u:now});n++});
+    (sn[l]||[]).forEach(r=>{if(!r||!r.id||have.has(r.id))return;delete D.del[r.id];if(l==="ledger"){delete D.del["led-"+r.id];delete D.del["ship-"+r.id]}const{u,...c}=r;if(l==="events"){delete c.nid;delete c.nh}D[l].push({...c,u:now});n++});
     res[l]=n;
   });
   if(!only||only==="ledger"){
@@ -498,7 +498,7 @@ function trashPut(kind,e){
 function ledRestoreTrash(id){
   if(!isAdmin())return;const t=D.ledtrash.find(x=>x.id===id);if(!t)return;const kind=t.kind||"ledger",l=TRASH_LIST[kind]||"ledger",r={...t.rec};
   if(D[l].some(x=>x.id===r.id)){toast("이미 있어요");return}
-  delete D.del[r.id];if(kind==="ledger")delete D.del["led-"+r.id];if(kind==="events"){delete r.nid;delete r.nh}
+  delete D.del[r.id];if(kind==="ledger"){delete D.del["led-"+r.id];delete D.del["ship-"+r.id]}if(kind==="events"){delete r.nid;delete r.nh}
   D[l].push({...r,u:Date.now()});D.ledtrash=D.ledtrash.filter(x=>x.id!==id);
   if(kind==="ledger"){try{ledRevSync()}catch{}ledM=(r.date||today()).slice(0,7)}
   save();render();toast(SAFE_NAME[kind]+" 기록을 되살렸어요")
@@ -653,7 +653,7 @@ const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼
   </div></div>`};
 bgAll().then(l=>{BG.list=l;if(l.length)render()});
 /* 하단 탭 */
-const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["schedule","📅","일정"],["messenger","💬","메신저"]];
+const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["schedule","📅","Celender"],["messenger","💬","메신저"]];
 const tabsNow=()=>isAdmin()?[TABS_BASE[0],["todo","☑️","할 일"],...TABS_BASE.slice(1)]:TABS_BASE;
 function tabbar(){
   const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
@@ -1249,6 +1249,22 @@ function ledCatLoad(){
 }
 /* 장부 → 수익 자동 연결: 장부 기록 하나마다 에이스침대(슬립) 수익 기록 하나를 같은 id("led-"+장부id)로 만들어요.
    금액은 할인 후 판매액(판매가 − 할인액, 고객이 실제로 낸 금액)이에요. id가 고정이라 여러 기기에서 돌려도 겹치지 않고, 수익 기록 탭에서 지운 건은 다시 만들지 않아요. */
+/* 배송예정일 → Celender: 장부 기록의 배송 예정일(shipDate)마다 "제품배송" 일정 하나를 같은 id("ship-"+장부id)로 만들고, 날짜·제목은 장부가 기준이에요.
+   예정일을 지우거나 기록을 지우면 일정도 지워요. 일정을 직접 지운 건 예정일을 바꾸기 전까지 다시 만들지 않아요. */
+function ledShipSync(){
+  const want=new Map();
+  D.ledger.forEach(r=>{if(r.shipDate&&/^\d{4}-\d{2}-\d{2}$/.test(r.shipDate))want.set("ship-"+r.id,r)});
+  want.forEach((r,id)=>{
+    if(D.del[id])return;
+    const title=("🚚 배송 · "+(r.item||"제품")+(r.cname?" · "+r.cname:"")).slice(0,80),memo="장부에서 자동으로 올라온 배송 일정이에요. 날짜는 장부 기록의 배송 예정일을 고쳐 주세요.",e=D.events.find(x=>x.id===id);
+    if(e){if(e.date!==r.shipDate||e.title!==title||e.cat!=="delivery"){e.date=r.shipDate;e.end="";e.title=title;e.cat="delivery";e.memo=memo}}
+    else D.events.push({id,by:"장부",led:r.id,title,date:r.shipDate,end:"",time:"",cat:"delivery",color:"",memo});
+  });
+  D.events=D.events.filter(e=>{
+    if(!e.led||want.has(e.id))return true;
+    if(e.nid){D.set.calDel=[...(D.set.calDel||[]),e.nid];D.set.u=Date.now()}return false;
+  });
+}
 function ledRevSync(){
   try{D.ledger.forEach(e=>{
     const id="led-"+e.id,amt=Math.max(0,ledCalc(e).real);if(D.del[id]||!amt)return;
@@ -1256,6 +1272,7 @@ function ledRevSync(){
     if(r){r.amount=amt;r.date=e.date;r.memo=memo;r.co=REV_GOAL}
     else D.revenue.push({id,date:e.date,co:REV_GOAL,ch:"furn",amount:amt,memo});
   })}catch{}
+  try{ledShipSync()}catch{}
 }
 ledRevSync();
 /* ===== 결제·회계: 기록마다 전체 결제금액, 결제 내역(계약금·중도금·잔금·전액·취소), 결제방식(카드·현금·현금영수증·계좌이체·기타)을 남기고
@@ -1411,6 +1428,7 @@ function ledOpen(id){
   <div class="filters"><label class="m">성함<input id="ledcn" maxlength="20" placeholder="고객 성함" value="${esc(v.cname||"")}" autocomplete="off"></label><label class="m">연락처<input id="ledcp" type="tel" maxlength="20" inputmode="tel" placeholder="010-0000-0000" value="${esc(v.cphone||"")}" autocomplete="off"></label></div>
   <label class="m">주소<input id="ledca" maxlength="100" placeholder="배송지 주소" value="${esc(v.caddr||"")}" autocomplete="off"></label>
   <label class="m">판매일<input id="ledd" type="date" value="${esc(v.date)}"></label>
+  <label class="m">배송 예정일 <span class="sub">(선택 · Celender에 제품배송 일정으로 올라가요)</span><input id="ledship" type="date" value="${esc(v.shipDate||"")}"></label>
   <div class="m" style="margin-top:6px"><b>제품</b> <span class="sub">(여러 개면 ＋ 제품 추가)</span></div>
   <div id="lllist">${llHtml()}</div>
   <button class="btn ghost" type="button" onclick="llAdd()">＋ 제품 추가</button>
@@ -1481,19 +1499,20 @@ function ledSave(){
   paySync();rec.pays=PAY.map(p=>({kind:PAY_KINDS.includes(p.kind)?p.kind:"전액",date:p.date||today(),method:PAY_METHODS.includes(p.method)?p.method:"기타",amount:wn(p.amount)})).filter(p=>p.amount>0);
   {const tt=wn(($("#ledtot")||{}).value);rec.total=tt>0&&tt!==c.real?tt:0}
   rec.dueDate=($("#leddue")||{}).value||"";
-  if(ledEdit){const e=D.ledger.find(x=>x.id===ledEdit);if(e)Object.assign(e,rec)}else D.ledger.push({id:uid(),by:curName(),...rec});
+  rec.shipDate=($("#ledship")||{}).value||"";
+  if(ledEdit){const e=D.ledger.find(x=>x.id===ledEdit);if(e){if((e.shipDate||"")!==rec.shipDate)delete D.del["ship-"+e.id];Object.assign(e,rec)}}else D.ledger.push({id:uid(),by:curName(),...rec});
   ledRevSync();ledM=rec.date.slice(0,7);ledEdit="";closeModal();save();render();toast("장부에 기록했어요 · 할인 후 판매액이 수익에 잡혔어요");
 }
 function ledDel(id){
   if(dataGuard())return;if(!isAdmin())return;const e=D.ledger.find(x=>x.id===id);if(!e||!confirm("이 장부 기록을 지울까요? (휴지통에 90일 보관돼요)"))return;
   lsSnapNow("delete");trashPut("ledger",e);
-  D.ledger=D.ledger.filter(x=>x.id!==id);D.revenue=D.revenue.filter(x=>x.id!=="led-"+id);save();render();lsWrite(true);toast("휴지통으로 옮겼어요 · 설정 > 데이터·스킬 > 데이터 보호에서 되살릴 수 있어요")
+  D.ledger=D.ledger.filter(x=>x.id!==id);D.revenue=D.revenue.filter(x=>x.id!=="led-"+id);try{ledShipSync()}catch{}save();render();lsWrite(true);toast("휴지통으로 옮겼어요 · 설정 > 데이터·스킬 > 데이터 보호에서 되살릴 수 있어요")
 }
 function ledCsv(){
   const m=ledM||today().slice(0,7),rows=D.ledger.filter(x=>x.date.startsWith(m)&&ledMatch(x)).sort((a,b)=>a.date.localeCompare(b.date));
   const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
-  const out=[["날짜","판매자","고객 성함","연락처","주소","제품·수량","코드","판매가","출고가","공급가","할인율(%)","할인액","할인 후 판매액","배송료","물건대금","기타 비용","기타 내용","부가세","카드수수료(%)","카드수수료","기타 세율(%)","기타 세금","이익금","이익률(%)","전체 결제금액","받은 금액","미수금","잔금 예정일","결제 내역","비고"].map(q).join(",")];
-  rows.forEach(x=>{const c=ledCalc(x);out.push([x.date,ledSl(x),x.cname||"",x.cphone||"",x.caddr||"",(x.lines||[]).length?x.lines.map(l=>(l.item||"제품")+" x"+(l.qty||1)).join(" / "):x.item,x.code||"",c.price,x.out||"",x.sup||"",c.disc,c.da,c.real,c.ship,c.cost,c.etc,x.etcNote||"",c.va,c.card,c.ca,c.tax,c.ta,c.net,c.rate,ledPayInfo(x).total,ledPayInfo(x).net,Math.max(0,ledPayInfo(x).due),x.dueDate||"",ledPayInfo(x).pays.map(p=>p.kind+" "+p.date+" "+p.method+" "+(p.kind==="취소"?"-":"")+p.amount).join(" / "),x.memo].map(q).join(","))});
+  const out=[["날짜","판매자","고객 성함","연락처","주소","제품·수량","코드","판매가","출고가","공급가","할인율(%)","할인액","할인 후 판매액","배송료","물건대금","기타 비용","기타 내용","부가세","카드수수료(%)","카드수수료","기타 세율(%)","기타 세금","이익금","이익률(%)","전체 결제금액","받은 금액","미수금","잔금 예정일","배송 예정일","결제 내역","비고"].map(q).join(",")];
+  rows.forEach(x=>{const c=ledCalc(x);out.push([x.date,ledSl(x),x.cname||"",x.cphone||"",x.caddr||"",(x.lines||[]).length?x.lines.map(l=>(l.item||"제품")+" x"+(l.qty||1)).join(" / "):x.item,x.code||"",c.price,x.out||"",x.sup||"",c.disc,c.da,c.real,c.ship,c.cost,c.etc,x.etcNote||"",c.va,c.card,c.ca,c.tax,c.ta,c.net,c.rate,ledPayInfo(x).total,ledPayInfo(x).net,Math.max(0,ledPayInfo(x).due),x.dueDate||"",x.shipDate||"",ledPayInfo(x).pays.map(p=>p.kind+" "+p.date+" "+p.method+" "+(p.kind==="취소"?"-":"")+p.amount).join(" / "),x.memo].map(q).join(","))});
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+out.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="에이스침대-장부-"+m+".csv";a.click();
 }
 /* 분석 CSV: 지금 화면(월·판매자 선택·기간 범위)의 집계를 한 파일에 구역별로 담아요. 엑셀에서 열면 구역 사이 빈 줄로 나뉘어요. */
@@ -1534,7 +1553,7 @@ function ledAnalysisCsv(){
 }
 function ledRowHtml(x,c,full){return `<div style="padding:10px 0;border-top:.5px solid var(--sep)"><div class="row" style="gap:8px"><div class="grow"><div class="t">${esc(x.item||"(제품 미입력)")} <span class="m">${esc(full?x.date:x.date.slice(5))}${x.seller?" · "+esc(x.seller):""}</span></div>${(x.lines||[]).length>1?`<div class="m">제품 ${x.lines.length}개: ${x.lines.map(l=>esc((l.item||"제품")+(l.qty>1?" ×"+l.qty:""))).join(", ")}</div>`:((x.lines||[])[0]&&x.lines[0].qty>1?`<div class="m">수량 ${x.lines[0].qty}개</div>`:"")}${x.cname||x.cphone||x.caddr?`<div class="m">👤 ${x.cname||x.cphone?`<a href="#" style="font-weight:600" onclick="ledCustOpen('${x.id}');return false" title="이 고객의 구매 이력 모아 보기">${esc(x.cname||x.cphone)}</a>`:""}${x.cname&&x.cphone?" · "+esc(x.cphone):""}${x.caddr?`<br>📍 ${esc(x.caddr)}`:""}</div>`:""}
     <div class="m">판매가 ${won(c.price)}${x.out||x.sup?` (출고가 ${x.out?won(x.out):"–"} · 공급가 ${x.sup?won(x.sup):"–"})`:""}</div>
-    <div class="m">− ${x.bundle?"합산 ":""}할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${ledPayLine(x)}${x.memo?`<div class="m">📝 비고: ${esc(x.memo)}</div>`:""}</div>
+    <div class="m">− ${x.bundle?"합산 ":""}할인 ${c.disc}% (${won(c.da)}) − 배송 ${won(c.ship)} − 물건대금 ${won(c.cost)}${c.etc?` − 기타 ${won(c.etc)}${x.etcNote?"("+esc(x.etcNote)+")":""}`:""}${c.fees?` − 세금·수수료 ${won(c.fees)}`:""}</div>${x.shipDate?`<div class="m">🚚 배송 예정 ${esc(x.shipDate)}</div>`:""}${ledPayLine(x)}${x.memo?`<div class="m">📝 비고: ${esc(x.memo)}</div>`:""}</div>
     <div style="text-align:right"><div class="m" style="font-size:11px">결제금액</div><b>${won(ledPayInfo(x).total)}</b><div class="m" style="font-size:11px;margin-top:2px">이익금 <span style="${c.net<0?"color:var(--red)":""}">${ledSigned(c.net)}</span> (${c.rate}%)</div></div>
     <button class="icon" style="width:32px;height:32px" onclick="ledOpen('${x.id}')" aria-label="고치기">✎</button><button class="icon del" style="width:32px;height:32px" onclick="ledDel('${x.id}')" aria-label="삭제">✕</button></div></div>`}
 /* 검색창은 기간과 상관없이 전체 장부에서 찾아요. 입력할 때 결과 칸만 다시 그려서 글자 입력이 끊기지 않아요 */
@@ -2884,7 +2903,7 @@ function homeToday(){
   const sch=`<div class="card hcard"><h3>오늘 일정 <span class="m sub" style="margin:0">${sd.getMonth()+1}월 ${sd.getDate()}일 (${WD[sd.getDay()]})</span></h3><div class="body">
     ${items.map(x=>`<div class="schrow" style="cursor:pointer" onclick="homeSch()"><i class="schbar" style="background:${x.color}"></i><div class="grow"><div class="t">${esc(x.title)}</div><div class="m">${x.time?esc(x.time)+" · ":""}${esc(x.label)}</div></div></div>`).join("")||'<div class="empty">오늘 일정이 없어요</div>'}
     ${more>0?`<div class="m sub">외 ${more}건</div>`:""}
-    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="homeSch()">일정표 열기${nt?` · 내일 ${nt}건`:""}</button><button class="pill" style="background:var(--make)" onclick="homeAddEv()">＋ 일정 추가</button></div></div></div>`;
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="homeSch()">Celender 열기${nt?` · 내일 ${nt}건`:""}</button><button class="pill" style="background:var(--make)" onclick="homeAddEv()">＋ 일정 추가</button></div></div></div>`;
   const nt2=`<div class="card hcard"><h3>공지</h3><div class="body">
     ${notices.map(m=>`<div class="schrow" style="cursor:pointer" onclick="homeNotice()"><i class="schbar" style="background:var(--accent)"></i><div class="grow"><div class="t" style="font-weight:500;white-space:pre-wrap">${esc((m.text||"[사진]").replace(/\s+/g," ").slice(0,90))}${m.img?" 📷":""}</div><div class="m">${homeDay(m.t)} · ${esc(dn(m.by))}</div></div></div>`).join("")||`<div class="empty">아직 공지가 없어요${isAdmin()?" · 메신저의 공지사항에 글을 올리면 여기에 보여요":""}</div>`}
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="pill" style="background:var(--g)" onclick="homeNotice()">공지 전체 보기</button>${isAdmin()?`<button class="pill" style="background:var(--make)" onclick="homeNotice()">공지 쓰기</button>`:""}</div></div></div>`;
@@ -2919,7 +2938,8 @@ function schDetail(src,id){
   if(src==="ev"){
     const e=D.events.find(x=>String(x.id)===nid);if(!e)return;const c=schCat(e.cat);
     t=e.title;color=evColor(e);label=c[1];when=e.date+(e.end&&e.end>e.date?" ~ "+e.end:"")+(e.time?" "+e.time:"");body=e.memo||"";if(e.by)meta.push("작성 "+dn(e.by));
-    if(schCan(e))btns=`<button class="btn" onclick="closeModal();schPick('${esc(e.date)}');schEditOpen('${e.id}')">수정</button><button class="btn ghost" onclick="closeModal();schDel('${e.id}')">삭제</button>`;
+    if(e.led){btns=`<button class="btn" onclick="closeModal();revCo=REV_GOAL;revTab='led';ledTab='rec';go('revenue');ledOpen('${esc(e.led)}')">장부 기록 열기</button>`;if(schCan(e))btns+=`<button class="btn ghost" onclick="closeModal();schDel('${e.id}')">삭제</button>`}
+    else if(schCan(e))btns=`<button class="btn" onclick="closeModal();schPick('${esc(e.date)}');schEditOpen('${e.id}')">수정</button><button class="btn ghost" onclick="closeModal();schDel('${e.id}')">삭제</button>`;
   }else if(src==="ct"){
     const c=D.contents.find(x=>String(x.id)===nid);if(!c)return;
     t=c.title;color="#5ac8fa";label="컨텐츠 마감";when=c.due||"";body=c.memo||"";const st=stInfo(c.stage);if(st)meta.push("단계 "+st[1]);if(c.by)meta.push("담당 "+dn(c.by));if(c.brand)meta.push(c.brand);
@@ -3020,12 +3040,12 @@ async function calCheck(){
 }
 function calFlag(k,on){CFG[k]=on?1:0;saveCfg();render(true)}
 const calCard=()=>{const ok=calReady();return `<div class="card"><h3>📆 Notion 캘린더 연동</h3><div class="body">
-  <div class="m sub">일정표와 Notion '스케쥴' 데이터베이스를 서로 맞춰요. 설정 방법은 저장소 worker/README.md 의 "Notion 일정 연동" 장을 보세요. Notion 값은 워커의 Secret에만 넣고, 여기에는 접속 키만 넣어요.</div>
+  <div class="m sub">Celender와 Notion '스케쥴' 데이터베이스를 서로 맞춰요. 설정 방법은 저장소 worker/README.md 의 "Notion 일정 연동" 장을 보세요. Notion 값은 워커의 Secret에만 넣고, 여기에는 접속 키만 넣어요.</div>
   <div class="form" style="border:0;padding:0">
    <input id="cwurl" placeholder="워커 주소 (비워 두면 푸시 워커 주소를 써요)" value="${esc(CFG.calWorker||"")}">
    <input id="ckey" type="password" autocomplete="off" placeholder="${CFG.calKey?"접속 키 저장됨 ✓ (바꾸려면 새로 입력)":"접속 키 (워커의 CAL_KEY와 같은 값)"}">
    <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" onclick="calSave()">저장</button><button class="btn" onclick="calCheck()">연결 확인</button><button class="btn" ${ok?"":"disabled"} onclick="calSync(true)">지금 동기화</button><button class="btn ghost" onclick="calClear()">지우기</button></div>
-   <label class="m"><input type="checkbox" style="width:auto" ${CFG.calOn!==0?"checked":""} onchange="calFlag('calOn',this.checked)"> 일정표를 열 때와 일정을 고칠 때 자동으로 동기화</label>
+   <label class="m"><input type="checkbox" style="width:auto" ${CFG.calOn!==0?"checked":""} onchange="calFlag('calOn',this.checked)"> Celender를 열 때와 일정을 고칠 때 자동으로 동기화</label>
    <label class="m"><input type="checkbox" style="width:auto" ${CFG.calUp!==0?"checked":""} onchange="calFlag('calUp',this.checked)"> 앱 일정을 Notion에 올리기</label>
    <label class="m"><input type="checkbox" style="width:auto" ${CFG.calDown!==0?"checked":""} onchange="calFlag('calDown',this.checked)"> Notion 일정을 앱으로 가져오기 (상태가 ‘일정 📅’인 항목)</label>
    <div class="m sub">${ok?(CFG.calAt?"마지막 동기화 "+new Date(CFG.calAt).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"아직 동기화한 적이 없어요"):"아직 연결 전이에요"}${_calMsg?" · "+esc(_calMsg):""}</div>
@@ -3056,7 +3076,7 @@ views.schedule=()=>{
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${SCH_PAL.map(c=>`<button type="button" aria-label="색 ${c}" onclick="schSetColor('${c}')" style="width:28px;height:28px;border-radius:50%;border:${c===curCol?"3px solid var(--text,#000)":"2px solid transparent"};background:${c};padding:0"></button>`).join("")}<label class="m" style="display:flex;align-items:center;gap:4px">직접<input type="color" value="${curCol}" onchange="schSetColor(this.value)" style="width:34px;height:28px;padding:0;border:0;background:none"></label>${schColor?`<button type="button" class="btn ghost" style="padding:4px 10px" onclick="schSetColor('')">기본색</button>`:""}</div>
     <textarea id="sM" rows="2" placeholder="메모 (선택)">${esc(ed.memo||"")}</textarea>
     <div class="row" style="gap:8px"><button class="btn grow" onclick="schSave()">${schEdit==="new"?"추가":"저장"}</button><button class="btn ghost" onclick="schCancel()">취소</button></div></div>`:"";
-  return `<h1>일정표</h1><div class="sub">날짜에는 제목만 보여요. 일정을 누르면 내용을 자세히 볼 수 있어요</div>
+  return `<h1>Celender</h1><div class="sub">날짜에는 제목만 보여요. 일정을 누르면 내용을 자세히 볼 수 있어요</div>
   <div class="row" style="gap:8px;margin:6px 0 10px"><button class="icon" onclick="schMove(-1)" aria-label="이전 달">‹</button><b class="grow" style="text-align:center;font-size:18px">${y}년 ${m}월</b><button class="icon" onclick="schMove(1)" aria-label="다음 달">›</button><button class="pill" style="background:var(--make)" onclick="schNow()">이번 달</button></div>
   <div class="chips">겹쳐 보기 <button class="${L.content?"on":""}" onclick="schLayer('content')">컨텐츠 마감</button></div>
   <div class="sgrid">${WD.map((w,i)=>`<div class="swd ${i===0?"sun":""}">${w}</div>`).join("")}${grid}</div>
