@@ -605,7 +605,7 @@ async function syncNow(){
       const files={"rino-workspace.json":{content:JSON.stringify(D)}};
       let r;
       if(CFG.gistId)r=await gh("/gists/"+CFG.gistId,{method:"PATCH",body:JSON.stringify({files})});
-      else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Rino workspace data",public:false,files})});if(r.ok){CFG.gistId=(await r.json()).id;saveCfg()}}
+      else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"rino-workspace",public:false,files})});if(r.ok){CFG.gistId=(await r.json()).id;saveCfg()}}
       if(!r.ok)throw new Error(r.status);
     }
     setSync("☁ 동기화됨");SYNC_OK=true;if(CFG.fresh){delete CFG.fresh;saveCfg()}try{pushKick()}catch{}
