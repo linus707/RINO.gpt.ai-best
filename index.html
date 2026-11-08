@@ -546,10 +546,20 @@ function dataProtectCard(){
   </div></div>`;
 }
 const persist=()=>{try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}try{lsSchedule()}catch{}};
+/* 바뀐 게 없으면 GitHub가 304(변경 없음)만 돌려줘서 자주 확인해도 가볍고 사용량 한도에 잡히지 않아요.
+   지난번 받은 원문(_rText)을 매번 새로 풀어 쓰므로, 화면에서 고친 내용이 이 사본에 섞이지 않아요. */
+let _rTag="",_rText=null,_rGist="";
 async function fetchRemote(){
-  const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw new Error(r.status);
-  const f=(await r.json()).files["rino-workspace.json"];if(!f)return null;
-  return norm(JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content));
+  if(_rGist!==CFG.gistId){_rTag="";_rText=null;_rGist=CFG.gistId}
+  const h={Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json"};
+  if(_rTag&&_rText!==null)h["If-None-Match"]=_rTag;
+  const r=await fetch("https://api.github.com/gists/"+CFG.gistId,{headers:h,cache:"no-store"});
+  if(r.status===304&&_rText!==null)return norm(JSON.parse(_rText));
+  if(!r.ok)throw new Error(r.status);
+  const f=(await r.json()).files["rino-workspace.json"];if(!f){_rTag="";_rText=null;return null}
+  const t=f.truncated?await(await fetch(f.raw_url,{cache:"no-store"})).text():f.content;
+  _rText=t;_rTag=r.headers.get("ETag")||"";
+  return norm(JSON.parse(t));
 }
 let _busy=false,_again=false,SYNC_OK=false;
 async function syncNow(){
@@ -577,6 +587,13 @@ const pull=syncNow,push=syncNow;
 let _t;
 const save=()=>{stamp();D.updated=Date.now();persist();clearTimeout(_t);if(CFG.token)_t=setTimeout(syncNow,1500)};
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncNow()});
+/* 실시간 반영: 앱이 화면에 떠 있는 동안 어느 화면에서든 10초마다 다른 기기(PC·스마트폰)에서 고친 내용을 받아 와요.
+   글을 입력하는 중이거나 창(모달)이 열려 있으면 화면이 다시 그려져 입력이 끊기지 않도록 그 차례는 건너뛰어요(메신저 화면은 예전처럼 항상 받아 와요). */
+const LIVE_MS=10000;
+const _editing=()=>{const a=document.activeElement,m=$("#modal");return !!((m&&m.classList.contains("open"))||(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))))};
+setInterval(()=>{if(document.hidden||!CFG.token||!CFG.gistId||!navigator.onLine)return;if(page!=="messenger"&&_editing())return;syncNow()},LIVE_MS);
+window.addEventListener("online",()=>{if(CFG.token)syncNow()});
+window.addEventListener("pageshow",e=>{if(e.persisted&&CFG.token)syncNow()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 
 /* ── 배경 사진 (이 기기에만 저장) ── */
@@ -3493,7 +3510,7 @@ views.messenger=()=>{
    <div class="m sub">${CFG.token?"클라우드 동기화로 직원들과 주고받아요":"클라우드 동기화가 꺼져 있어서 이 기기에서만 보여요 (설정에서 연결)"} · 보낸 사람 이름은 로그인 이름이에요</div>
    <button class="pill" style="background:${nOn?"var(--done)":"var(--make)"}" onclick="mNotifOn()">${MS.push?"✓ 푸시 켜짐 (앱이 꺼져 있어도 와요)":nOn?"✓ 알림 켜짐 (앱이 열려 있을 때)":"이 기기 알림 켜기"}</button>${MS.push?'<button class="pill" style="background:var(--mut)" onclick="pushOff()">푸시 끄기</button>':""}</div></div></div>`;
 };
-setInterval(()=>{if(!document.hidden&&page==="messenger"&&CFG.token)syncNow()},15000);
+/* 메신저 화면 15초 확인은 위의 실시간 반영(10초, 모든 화면)이 대신해요 */
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&page==="messenger"&&CFG.token)syncNow()});
 
 /* ---------- 사업자 설립 룸 (세움과 대화 · 단계 · 자료) ----------
