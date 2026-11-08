@@ -2341,6 +2341,19 @@ async function authPost(path,body){
   let j={};try{j=await r.json()}catch{}
   return {ok:r.ok,status:r.status,j};
 }
+/* 로그인 서버(워커)가 Gist를 읽거나 쓰지 못했을 때, 원인별로 고칠 곳을 알려 줘요 */
+function authFail(r,what){
+  const d=String(r.j&&r.j.detail||"");
+  if(r.status===502&&d){
+    const m=d.match(/gist( save)? (\d{3})/),save=m&&m[1],code=m?+m[2]:0;
+    const why=code===401?"로그인 서버의 GIST_TOKEN이 만료됐거나 틀렸어요. Cloudflare 워커 → 설정 → 변수와 비밀값에서 GIST_TOKEN을 앱 동기화에 쓰는 토큰으로 다시 넣어 주세요."
+      :code===404?(save?"로그인 서버의 토큰에 Gist 쓰기 권한이 없어요. GIST_TOKEN을 Gist 읽기·쓰기 권한이 있는 토큰으로 바꿔 주세요.":"로그인 서버의 GIST_ID가 틀렸거나 토큰이 그 Gist를 볼 수 없어요. GIST_ID를 확인해 주세요.")
+      :code===403?(save?"로그인 서버의 토큰에 Gist 쓰기 권한이 없어요. GIST_TOKEN을 Gist 읽기·쓰기 권한이 있는 토큰으로 바꿔 주세요.":"GitHub가 로그인 서버의 요청을 막았어요(권한 또는 사용량 한도). 잠시 뒤 다시 해 보세요.")
+      :code===422?"Gist에 저장하지 못했어요(형식 오류). 관리자에게 알려 주세요.":"";
+    return alert((what+" (502)")+"\n\n"+(why||"원인: "+d+"\n관리자에게 이 문구를 알려 주세요."));
+  }
+  alert(AUTH_ERR[r.j.error]||what+" ("+r.status+")");
+}
 const AUTH_ERR={reset:"비밀번호가 초기화됐어요. 같은 이메일로 다시 가입 신청해 주세요",invalid:"이메일 또는 비밀번호가 맞지 않아요",pending:"아직 관리자 승인 전이에요. 승인되면 로그인할 수 있어요",denied:"사용할 수 없는 계정이에요. 관리자에게 문의해 주세요",exists:"이미 가입된 이메일이에요. 로그인해 주세요","slow down":"시도가 너무 많아요. 15분쯤 뒤에 다시 해 주세요","not configured":"로그인 서버 설정이 끝나지 않았어요. 관리자에게 알려 주세요","too many pending":"승인 대기 중인 신청이 많아요. 잠시 뒤에 다시 해 주세요"};
 async function acctLogin(){
   if(_authBusy)return;
@@ -2350,7 +2363,7 @@ async function acctLogin(){
   _authBusy=true;const b=$("#abtn");if(b){b.disabled=true;b.textContent="확인 중…"}
   try{
     const r=await authPost("/login",{email:em,ph:await preHash(em,pw)});
-    if(!r.ok||!r.j.token){alert(AUTH_ERR[r.j.error]||"로그인하지 못했어요 ("+r.status+")");return}
+    if(!r.ok||!r.j.token){authFail(r,"로그인하지 못했어요");return}
     CFG.token=r.j.token;CFG.gistId=r.j.gist;CFG.invited=true;saveCfg();
     ME={acct:1,email:em,name:r.j.name||em,role:r.j.role==="admin"?"admin":"staff"};
     const store=$("#alk")&&$("#alk").checked?localStorage:sessionStorage;
@@ -2369,7 +2382,7 @@ async function acctSignup(){
   _authBusy=true;const b=$("#sbtn");if(b){b.disabled=true;b.textContent="신청 중…"}
   try{
     const r=await authPost("/signup",{email:em,name:nm,ph:await preHash(em,pw)});
-    if(!r.ok){alert(AUTH_ERR[r.j.error]||"가입 신청을 하지 못했어요 ("+r.status+")");return}
+    if(!r.ok){authFail(r,"가입 신청을 하지 못했어요");return}
     LOCK_MODE="sent";render();
   }catch(e){alert(e.message==="noworker"?"로그인 서버 주소가 아직 설정되지 않았어요. 관리자에게 알려 주세요":"인터넷 연결을 확인해 주세요")}
   finally{_authBusy=false;const b2=$("#sbtn");if(b2){b2.disabled=false;b2.textContent="가입 신청"}}

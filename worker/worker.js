@@ -323,8 +323,21 @@ export default {
     const cors = { 'Access-Control-Allow-Origin': okOrigin ? origin : allowed[0], 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'content-type, x-cal-key', Vary: 'Origin' };
     const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json', ...cors } });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+    if (url.pathname === '/health' && url.searchParams.get('check') === '1') {
+      const out = { ok: true, version: 5, gist_token: !!env.GIST_TOKEN, gist_id: !!env.GIST_ID };
+      if (env.GIST_TOKEN && env.GIST_ID) {
+        try {
+          const r = await fetch(`${API}/gists/${env.GIST_ID}`, { method: 'HEAD', headers: { Authorization: `Bearer ${env.GIST_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'linus-push-worker' } });
+          out.gist_read = r.status;
+          const sc = r.headers.get('x-oauth-scopes');
+          out.token_type = sc === null ? 'fine-grained' : 'classic';
+          if (sc !== null) out.gist_write = sc.split(',').map((x) => x.trim()).includes('gist');
+        } catch (e) { out.gist_read = 'error'; }
+      }
+      return new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
     if (url.pathname === '/health') {
-      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), auth: !!(env.GIST_TOKEN && env.GIST_ID), version: 4 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
+      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), auth: !!(env.GIST_TOKEN && env.GIST_ID), version: 5 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
     }
     if (url.pathname === '/notify' && req.method === 'POST') {
       if (!okOrigin) return json({ error: 'forbidden' }, 403);
@@ -351,7 +364,8 @@ export default {
         const r = await (url.pathname === '/signup' ? signup : login)(body, ip, env);
         return json(r.body, r.status);
       } catch (e) {
-        return json({ error: 'failed' }, 502);
+        // 원인(예: 'gist 401', 'gist save 403')만 알려 줘요. 토큰·내용은 넣지 않아요.
+        return json({ error: 'failed', detail: String((e && e.message) || e).slice(0, 80) }, 502);
       }
     }
     if (url.pathname === '/cal' && req.method === 'POST') {
