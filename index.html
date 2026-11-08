@@ -396,8 +396,10 @@ function cfgRestore(){
   }catch{}}});
 }
 /* 설정 칸에 쓰던 값(토큰·저장소 등)은 저장 버튼을 누르기 전이라도 입력하는 즉시 기기에 남겨요. 화면이 새로 그려져도 되살려요 */
-const SD_KEY="rino-sdraft",SD_IDS=["tk","gi","wr","wb","wt","iwt","ak","aw","pwurl","cwurl"];
+const SD_KEY="rino-sdraft",SD_IDS=["tk","wr","wb","wt","iwt","ak","aw","pwurl","cwurl"];
 let SD={};try{SD=JSON.parse(localStorage.getItem(SD_KEY))||{}}catch{}
+/* Gist ID 칸은 입력하다 만 글자 대신 항상 실제로 저장된 ID를 보여 줘요 */
+if(SD.gi!==undefined){delete SD.gi;try{localStorage.setItem(SD_KEY,JSON.stringify(SD))}catch{}}
 const sdSave=()=>{try{localStorage.setItem(SD_KEY,JSON.stringify(SD))}catch{}};
 const sdClear=(...ids)=>{ids.forEach(i=>delete SD[i]);sdSave()};
 document.addEventListener("input",e=>{const t=e.target;if(t&&SD_IDS.includes(t.id)&&t.closest&&t.closest("#app")){SD[t.id]=t.value;sdSave()}},true);
