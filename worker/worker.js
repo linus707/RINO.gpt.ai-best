@@ -184,6 +184,12 @@ export async function signup(body, ip, env, deps = {}) {
   mark(`su:${ip}`);
   const { A, headers } = await loadAccts(env, doFetch);
   const u = A.users.find((x) => x.email === email);
+  if (u && u.status === 'reset') { // 관리자가 비밀번호를 초기화한 계정: 새 비밀번호로 다시 승인 대기
+    const salt = randHex(16);
+    Object.assign(u, { name, status: 'pending', salt, h: await sha256hex(`${salt}:${ph}`), at: Date.now(), u: Date.now() });
+    await saveAccts(env, A, headers, doFetch);
+    return { status: 200, body: { ok: true, status: 'pending' } };
+  }
   if (u) return u.status === 'pending' ? { status: 200, body: { ok: true, status: 'pending' } } : { status: 409, body: { error: 'exists' } };
   if (A.users.filter((x) => x.status === 'pending').length >= 100) return { status: 429, body: { error: 'too many pending' } };
   const salt = randHex(16), now = Date.now();
@@ -199,6 +205,7 @@ export async function login(body, ip, env, deps = {}) {
   if (over(`lf:${email}`, 5, 900000) || over(`li:${ip}`, 20, 900000)) return { status: 429, body: { error: 'slow down' } };
   const { A } = await loadAccts(env, doFetch);
   const u = A.users.find((x) => x.email === email);
+  if (u && u.status === 'reset') return { status: 403, body: { error: 'reset' } };
   const ok = !!u && u.salt && sameKey(await sha256hex(`${u.salt}:${ph}`), u.h || '');
   if (!ok) { mark(`lf:${email}`); mark(`li:${ip}`); return { status: 401, body: { error: 'invalid' } }; }
   if (u.status === 'pending') return { status: 403, body: { error: 'pending' } };
