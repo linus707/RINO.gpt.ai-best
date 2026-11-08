@@ -556,7 +556,8 @@ async function fetchRemote(){
   const r=await fetch("https://api.github.com/gists/"+CFG.gistId,{headers:h,cache:"no-store"});
   if(r.status===304&&_rText!==null)return norm(JSON.parse(_rText));
   if(!r.ok)throw new Error(r.status);
-  const f=(await r.json()).files["rino-workspace.json"];if(!f){_rTag="";_rText=null;return null}
+  const fs=(await r.json()).files||{};await acctIngest(fs["accounts.json"]);
+  const f=fs["rino-workspace.json"];if(!f){_rTag="";_rText=null;return null}
   const t=f.truncated?await(await fetch(f.raw_url,{cache:"no-store"})).text():f.content;
   _rText=t;_rTag=r.headers.get("ETag")||"";
   return norm(JSON.parse(t));
@@ -775,7 +776,7 @@ const views={
 home(){
   const t=today();
   return `<div class="hero idn"><div><div class="sub">Linus Company</div></div></div>
-  ${syncCard()}
+  ${acctHomeCard()}${syncCard()}
   <div class="card idcard"><div class="body"><div class="idl">Linus personal academy</div>
   <div class="idt">A little comfort for your everyday — 지친 하루에 작은 위로를 가치로 하는 브랜드 컴퍼니</div>
   <div class="idb">${coList().filter(c=>c.tag!=="공통").map(c=>{const u=brandUrl(c);return u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}<i>↗</i></a>`:`<span ${isAdmin()?`onclick="go('settings')" style="cursor:pointer" title="설정에서 링크 넣기"`:""}>${esc(c.name)}</span>`}).join("")}</div>
@@ -2270,13 +2271,139 @@ async function hashPw(pw,salt){
 }
 const hashAdmin=(pw,p)=>p.av===2?hashPw(pw,p.asalt):hashPin(pw,p.salt);
 function me(){
+  if(ME&&ME.acct){
+    if(!CFG.token)return null;
+    if(ACCTS){const u=acctList().find(x=>x.email===ME.email);if(!u||u.status!=="approved"||(u.role==="admin"?"admin":"staff")!==ME.role)return null}
+    return ME;
+  }
   const p=D.set.pins;
-  if(!p)return CFG.invited?null:{role:"admin",name:"관리자",open:true};
+  /* 처음 여는 기기(CFG.fresh)·초대 링크 기기·이메일 계정이 있는 곳은 비밀번호 없이 열리지 않고 로그인 화면부터 보여요 */
+  if(!p)return (CFG.invited||CFG.fresh||acctList().length)?null:{role:"admin",name:"관리자",open:true};
   if(ME&&ME.h===(ME.role==="admin"?p.a:p.s))return ME;
   return null;
 }
 const isAdmin=()=>{const m=me();return !!m&&m.role==="admin"};
 const curName=()=>{const m=me();return m?m.name:""};
+/* ---------- 이메일 계정: 회원가입 → 관리자 승인 → 로그인 ----------
+   계정 목록은 동기화 Gist의 accounts.json 에 있어요. 처음 여는 기기도 로그인할 수 있도록 로그인 확인은 푸시 워커(/login)가 해요.
+   비밀번호는 이 기기에서 PBKDF2(30만 회)로 바꾼 값만 워커로 보내요. 원문은 어디에도 저장하지 않아요. */
+const AUTH_WORKER="";/* 로그인 서버(푸시 워커) 주소. 새 기기는 이 주소로 로그인해요 */
+const authWorker=()=>{const u=AUTH_WORKER||(D.set.push&&D.set.push.worker)||CFG.pushWorkerBak||"";return /^https:\/\/[^\s/]+(\/\S*)?$/.test(u)?u.replace(/\/+$/,""):""};
+let ACCTS=null,_aText=null;
+const acctList=()=>ACCTS&&Array.isArray(ACCTS.users)?ACCTS.users:[];
+async function acctIngest(f){
+  let t="";try{t=f?(f.truncated?await(await fetch(f.raw_url,{cache:"no-store"})).text():f.content):""}catch{return}
+  if(t===_aText)return;
+  const before=!!me();_aText=t;
+  try{const j=JSON.parse(t||"{}");ACCTS=j&&Array.isArray(j.users)?j:{v:1,users:[]}}catch{ACCTS={v:1,users:[]}}
+  if(before!==!!me()||(isAdmin()&&(page==="settings"||page==="home")&&!_editing()))try{render()}catch{}
+}
+const normEmail=e=>String(e||"").trim().toLowerCase();
+const EMAIL_OK=e=>/^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/.test(e);
+async function preHash(email,pw){
+  const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveBits"]);
+  const b=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:new TextEncoder().encode("linus-acct:"+email),iterations:300000},k,256);
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+let LOCK_MODE="login",_authBusy=false;
+function lockGo(m){LOCK_MODE=m;render()}
+async function authPost(path,body){
+  const w=authWorker();if(!w)throw new Error("noworker");
+  const r=await fetch(w+path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  let j={};try{j=await r.json()}catch{}
+  return {ok:r.ok,status:r.status,j};
+}
+const AUTH_ERR={invalid:"이메일 또는 비밀번호가 맞지 않아요",pending:"아직 관리자 승인 전이에요. 승인되면 로그인할 수 있어요",denied:"사용할 수 없는 계정이에요. 관리자에게 문의해 주세요",exists:"이미 가입된 이메일이에요. 로그인해 주세요","slow down":"시도가 너무 많아요. 15분쯤 뒤에 다시 해 주세요","not configured":"로그인 서버 설정이 끝나지 않았어요. 관리자에게 알려 주세요","too many pending":"승인 대기 중인 신청이 많아요. 잠시 뒤에 다시 해 주세요"};
+async function acctLogin(){
+  if(_authBusy)return;
+  const em=normEmail($("#ae").value),pw=$("#ap").value;
+  if(!EMAIL_OK(em)){alert("이메일 주소를 확인해 주세요");return}
+  if(!pw){alert("비밀번호를 입력해 주세요");return}
+  _authBusy=true;const b=$("#abtn");if(b){b.disabled=true;b.textContent="확인 중…"}
+  try{
+    const r=await authPost("/login",{email:em,ph:await preHash(em,pw)});
+    if(!r.ok||!r.j.token){alert(AUTH_ERR[r.j.error]||"로그인하지 못했어요 ("+r.status+")");return}
+    CFG.token=r.j.token;CFG.gistId=r.j.gist;CFG.invited=true;saveCfg();
+    ME={acct:1,email:em,name:r.j.name||em,role:r.j.role==="admin"?"admin":"staff"};
+    const store=$("#alk")&&$("#alk").checked?localStorage:sessionStorage;
+    try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY);store.setItem(ME_KEY,JSON.stringify(ME))}catch{}
+    page="home";LOCK_MODE="login";render();syncNow();
+  }catch(e){alert(e.message==="noworker"?"로그인 서버 주소가 아직 설정되지 않았어요. 관리자에게 알려 주세요":"인터넷 연결을 확인해 주세요")}
+  finally{_authBusy=false;const b2=$("#abtn");if(b2){b2.disabled=false;b2.textContent="로그인"}}
+}
+async function acctSignup(){
+  if(_authBusy)return;
+  const nm=$("#sn").value.trim(),em=normEmail($("#se").value),pw=$("#sp").value,pw2=$("#sp2").value;
+  if(!nm){alert("이름을 입력해 주세요");return}
+  if(!EMAIL_OK(em)){alert("이메일 주소를 확인해 주세요");return}
+  if(pw.length<8||!/[A-Za-z]/.test(pw)||!/\d/.test(pw)){alert("비밀번호는 영문과 숫자를 섞어 8자 이상으로 만들어 주세요");return}
+  if(pw!==pw2){alert("비밀번호 확인이 달라요");return}
+  _authBusy=true;const b=$("#sbtn");if(b){b.disabled=true;b.textContent="신청 중…"}
+  try{
+    const r=await authPost("/signup",{email:em,name:nm,ph:await preHash(em,pw)});
+    if(!r.ok){alert(AUTH_ERR[r.j.error]||"가입 신청을 하지 못했어요 ("+r.status+")");return}
+    LOCK_MODE="sent";render();
+  }catch(e){alert(e.message==="noworker"?"로그인 서버 주소가 아직 설정되지 않았어요. 관리자에게 알려 주세요":"인터넷 연결을 확인해 주세요")}
+  finally{_authBusy=false;const b2=$("#sbtn");if(b2){b2.disabled=false;b2.textContent="가입 신청"}}
+}
+/* 관리자: 가입 승인·거절·사용 중지·역할 변경 (accounts.json 을 바로 고쳐요) */
+let ACCT_KEYS=[];
+async function acctSave(fn){
+  if(!isAdmin())return;
+  if(!CFG.token||!CFG.gistId){alert("클라우드 동기화가 연결된 기기에서만 할 수 있어요");return}
+  try{
+    const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw new Error(r.status);
+    const f=((await r.json()).files||{})["accounts.json"];
+    let A={v:1,users:[]};try{const t=f?(f.truncated?await(await fetch(f.raw_url,{cache:"no-store"})).text():f.content):"";const j=JSON.parse(t||"{}");if(j&&Array.isArray(j.users))A=j}catch{}
+    if(fn(A)===false)return;
+    const t=JSON.stringify(A,null,1);
+    const w=await gh("/gists/"+CFG.gistId,{method:"PATCH",body:JSON.stringify({files:{"accounts.json":{content:t}}})});
+    if(!w.ok)throw new Error(w.status);
+    ACCTS=A;_aText=t;_rTag="";toast("저장했어요");render();
+  }catch{alert("저장하지 못했어요. 인터넷 연결과 토큰을 확인해 주세요")}
+}
+function acctAct(i,act){
+  const em=ACCT_KEYS[i];if(!em)return;
+  const self=ME&&ME.acct&&ME.email===em;
+  if(self&&act!=="approve"){alert("지금 로그인한 내 계정은 여기서 막을 수 없어요");return}
+  if(act==="reject"&&!confirm(em+" 가입 신청을 거절할까요?"))return;
+  if(act==="disable"&&!confirm(em+" 계정을 사용 중지할까요? 그 기기에서 바로 로그아웃돼요"))return;
+  const roleSel=$("#arl"+i);
+  acctSave(A=>{const u=A.users.find(x=>x.email===em);if(!u)return false;
+    if(act==="approve"){u.status="approved";if(roleSel)u.role=roleSel.value==="admin"?"admin":"staff";u.ok=Date.now();u.by=curName()}
+    else if(act==="reject")u.status="rejected";
+    else if(act==="disable")u.status="disabled";
+    else if(act==="enable")u.status="approved";
+    u.u=Date.now();
+    if(u.status==="approved"&&u.name&&!D.set.staff.includes(u.name)&&u.role!=="admin"){D.set.staff.push(u.name);D.set.u=Date.now();save()}
+  });
+}
+function acctRole(i,v){
+  const em=ACCT_KEYS[i];if(!em)return;
+  if(ME&&ME.acct&&ME.email===em&&v!=="admin"){alert("지금 로그인한 내 계정의 관리자 권한은 여기서 뺄 수 없어요");render();return}
+  acctSave(A=>{const u=A.users.find(x=>x.email===em);if(!u||u.status==="pending")return false;u.role=v==="admin"?"admin":"staff";u.u=Date.now()});
+}
+const acctPending=()=>acctList().filter(u=>u.status==="pending");
+const acctHomeCard=()=>{if(!isAdmin())return "";const n=acctPending().length;if(!n)return "";
+  return `<div class="card"><h3>📝 가입 승인 대기 ${n}명<button class="pill" style="background:var(--accent)" onclick="go('staff')">확인하기</button></h3></div>`};
+const acctCard=()=>{
+  const L=acctList(),fmtD=t=>t?new Date(t).toLocaleDateString("ko-KR"):"";
+  ACCT_KEYS=L.map(u=>u.email);
+  const ST={approved:["사용 중","var(--done)"],pending:["승인 대기","var(--make)"],rejected:["거절","var(--mut)"],disabled:["사용 중지","var(--mut)"]};
+  const roleSel=(i,u,dis)=>`<select id="arl${i}" style="width:auto" ${dis?"disabled":""} ${u.status==="pending"?"":`onchange="acctRole(${i},this.value)"`}><option value="staff" ${u.role!=="admin"?"selected":""}>직원</option><option value="admin" ${u.role==="admin"?"selected":""}>관리자</option></select>`;
+  const row=(u,i)=>{const s=ST[u.status]||[u.status,"var(--mut)"];
+    const btns=u.status==="pending"?`<button class="btn" onclick="acctAct(${i},'approve')">승인</button><button class="btn ghost" onclick="acctAct(${i},'reject')">거절</button>`
+      :u.status==="approved"?`<button class="btn ghost" onclick="acctAct(${i},'disable')">사용 중지</button>`
+      :`<button class="btn ghost" onclick="acctAct(${i},'enable')">${u.status==="rejected"?"승인":"다시 사용"}</button>`;
+    return `<div class="item"><div class="row" style="gap:8px;flex-wrap:wrap"><div class="grow"><div class="t">${esc(u.name)} <span class="pill" style="background:${s[1]};font-size:11px">${s[0]}</span></div><div class="m">${esc(u.email)} · 신청 ${fmtD(u.at)}</div></div>${roleSel(i,u,u.status==="rejected"||u.status==="disabled")}${btns}</div></div>`};
+  const order=L.map((u,i)=>[u,i]).sort((a,b)=>(a[0].status==="pending"?0:1)-(b[0].status==="pending"?0:1)||(b[0].at||0)-(a[0].at||0));
+  const n=acctPending().length;
+  return `<div class="card"><h3>📝 회원가입·계정 ${n?`<span class="pill" style="background:var(--make)">${n}명 대기</span>`:""}</h3><div class="body">
+  <div class="m sub">직원은 로그인 화면의 <b>회원가입</b>에서 이름·이메일·비밀번호로 신청해요. 여기서 <b>승인</b>해야 로그인할 수 있고, 역할(직원·관리자)에 따라 보이는 메뉴가 달라져요.</div>
+  ${authWorker()?"":'<div class="m low" style="margin:6px 0">⚠️ 로그인 서버 주소가 없어요. 설정 → 연결·동기화 → 푸시 알림 서버에 워커 주소를 넣어 주세요.</div>'}
+  ${!CFG.token?'<div class="empty">클라우드 동기화를 연결하면 가입 신청이 보여요</div>':!ACCTS?'<div class="empty">불러오는 중…</div>':L.length?order.map(([u,i])=>row(u,i)).join(""):'<div class="empty">아직 가입 신청이 없어요</div>'}
+  </div></div>`;
+};
 const LF_KEY="rino-lf";
 function loginFails(){try{return JSON.parse(localStorage.getItem(LF_KEY))||{n:0,t:0}}catch{return{n:0,t:0}}}
 async function login(){
@@ -2297,22 +2424,48 @@ async function login(){
   try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY);store.setItem(ME_KEY,JSON.stringify(ME))}catch{}
   page="home";render();
 }
-function logout(){ME=null;try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY)}catch{}$("#drawer").classList.remove("open");render()}
+function logout(){ME=null;LOCK_MODE="login";try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY)}catch{}$("#drawer").classList.remove("open");render()}
 function lockRole(v){
   $("#lnw").style.display=v==="admin"?"none":"block";$("#liw").style.display=v==="admin"&&D.set.pins&&D.set.pins.aid?"block":"none";
   const e=$("#lp");e.placeholder=v==="admin"?(D.set.pins&&D.set.pins.aid?"비밀번호":"비밀번호 또는 PIN"):"PIN";e.inputMode=v==="admin"?"text":"numeric";e.autocomplete=v==="admin"?"current-password":"off";
 }
 const lockView=()=>{
-  if(!D.set.pins)return `<div class="card lock"><h3>불러오는 중…</h3><div class="body"><div class="empty">관리자가 보낸 초대 링크로 접속하셨어요. 데이터를 가져오는 중이에요. 계속 이 화면이면 관리자에게 링크를 다시 받아 주세요.</div></div></div>`;
+  const noW=authWorker()?"":'<div class="m low" style="margin:8px 0">⚠️ 로그인 서버가 아직 연결되지 않았어요. 관리자에게 알려 주세요.</div>';
+  if(LOCK_MODE==="sent")return `<div class="lock"><h1>Linus Company</h1><div class="sub">가입 신청이 접수됐어요</div>
+  <div class="m" style="margin:10px 0 16px">관리자가 승인하면 같은 이메일과 비밀번호로 로그인할 수 있어요.</div>
+  <button class="btn" style="width:100%" onclick="lockGo('login')">로그인 화면으로</button></div>`;
+  if(LOCK_MODE==="signup")return `<div class="lock"><h1>회원가입</h1><div class="sub">가입 후 관리자 승인이 끝나면 로그인돼요</div>${noW}
+  <form class="form" onsubmit="acctSignup();return false">
+  <input id="sn" placeholder="이름" autocomplete="name">
+  <input id="se" type="email" placeholder="이메일" autocomplete="email" autocapitalize="off" spellcheck="false">
+  <input id="sp" type="password" placeholder="비밀번호 (영문+숫자 8자 이상)" autocomplete="new-password">
+  <input id="sp2" type="password" placeholder="비밀번호 확인" autocomplete="new-password">
+  <button class="btn" id="sbtn" type="submit">가입 신청</button></form>
+  <div class="m" style="text-align:center;margin-top:12px">이미 계정이 있나요? <a href="#" onclick="lockGo('login');return false">로그인</a></div></div>`;
+  return `<div class="lock"><h1>Linus Company</h1><div class="sub">이메일로 로그인해 주세요</div>${noW}
+  <form class="form" onsubmit="acctLogin();return false">
+  <input id="ae" type="email" placeholder="이메일" autocomplete="username" autocapitalize="off" spellcheck="false">
+  <input id="ap" type="password" placeholder="비밀번호" autocomplete="current-password">
+  <label class="m"><input id="alk" type="checkbox" style="width:auto"> 이 기기에서 로그인 상태 유지</label>
+  <button class="btn" id="abtn" type="submit">로그인</button></form>
+  <div class="m" style="text-align:center;margin-top:12px">계정이 없나요? <a href="#" onclick="lockGo('signup');return false">회원가입</a></div>
+  ${legacyLock()}</div>`;
+};
+/* 예전 방식(관리자 아이디·직원 PIN)과 토큰 직접 연결은 접어 둔 칸에 남겨요. 이메일 계정으로 옮기는 동안 잠기지 않도록 하는 비상구예요 */
+const legacyLock=()=>{
+  if(!D.set.pins)return `<details style="margin-top:16px"><summary class="m" style="cursor:pointer">관리자: 토큰으로 직접 연결</summary>
+  <div class="form" style="border:0;padding:8px 0 0"><input id="qtk" type="password" placeholder="GitHub 토큰 (ghp_…)" autocomplete="off"><input id="qgi" placeholder="Gist ID" autocomplete="off"><button class="btn ghost" onclick="connectQuick()">연결하고 가져오기</button></div></details>`;
+  return `<details style="margin-top:16px"><summary class="m" style="cursor:pointer">예전 방식으로 로그인 (관리자 아이디 · 직원 PIN)</summary>${legacyForm()}</details>`;
+};
+const legacyForm=()=>{
   const p=D.set.pins;let lr="";try{lr=localStorage.getItem("rino-lr")||""}catch{}if(!lr)lr=p.aid?"admin":"staff";
   const adm=lr==="admin";
-  return `<div class="lock"><h1>Linus Company</h1><div class="sub">로그인해 주세요</div>
-  <form class="form" onsubmit="login();return false"><select id="lr" onchange="lockRole(this.value)"><option value="staff" ${adm?"":"selected"}>직원</option><option value="admin" ${adm?"selected":""}>관리자</option></select>
+  return `<form class="form" style="border:0;padding:8px 0 0" onsubmit="login();return false"><select id="lr" onchange="lockRole(this.value)"><option value="staff" ${adm?"":"selected"}>직원</option><option value="admin" ${adm?"selected":""}>관리자</option></select>
   <div id="lnw" style="display:${adm?"none":"block"}"><input id="ln" list="stl" placeholder="내 이름" autocomplete="off"><datalist id="stl">${D.set.staff.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
   <div id="liw" style="display:${adm&&p.aid?"block":"none"}"><input id="li" placeholder="아이디" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
   <input id="lp" type="password" ${adm?'':'inputmode="numeric"'} placeholder="${adm?(p.aid?"비밀번호":"비밀번호 또는 PIN"):"PIN"}" autocomplete="${adm?"current-password":"off"}">
   <label class="m"><input id="lk" type="checkbox" style="width:auto"> 이 기기에서 로그인 상태 유지</label>
-  <button class="btn" type="submit">로그인</button></form></div>`;
+  <button class="btn" type="submit">로그인</button></form>`;
 };
 
 const staffParts=()=>{
@@ -2336,7 +2489,7 @@ const staffParts=()=>{
   `<div class="m sub">이 링크를 열면 직원 기기가 자동으로 연결돼요. <b>링크 안에 저장소 접근 키가 들어 있어요.</b> 카카오톡 1:1처럼 믿을 수 있는 곳으로만 보내고, 이 앱 전용 GitHub 계정의 토큰을 쓰세요.</div>
   <div class="form" style="border:0;padding:0"><input id="inv" readonly value="${esc(link)}" onfocus="this.select()"><button class="btn" onclick="navigator.clipboard.writeText($('#inv').value).then(()=>alert('복사했어요'))">링크 복사</button></div>`}</div></div>`};
 };
-views.staff=()=>{const x=staffParts();return `<h1>직원 관리</h1><div class="sub">직원 명단, 로그인 PIN, 초대 링크</div>${x.roster}${x.agents}${x.login}${x.invite}`};
+views.staff=()=>{const x=staffParts();return `<h1>직원 관리</h1><div class="sub">회원가입 승인, 직원 명단, 로그인 PIN, 초대 링크</div>${acctCard()}${x.roster}${x.agents}${x.login}${x.invite}`};
 function addStaff(){if(!isAdmin())return;const n=$("#sname").value.trim();if(!n||D.set.staff.includes(n))return;D.set.staff.push(n);D.set.u=Date.now();save();render()}
 function rmStaff(i){if(!isAdmin())return;if(!confirm("명단에서 뺄까요?"))return;D.set.staff.splice(i,1);D.set.u=Date.now();save();render()}
 async function setPins(){
@@ -2467,7 +2620,7 @@ function setTabSet(k){setTabK=k;render();window.scrollTo(0,0);if(k==="link")conn
 const orgBody=()=>views.org().replace("<h1>조직도</h1>","");
 function setSection(k){
   const adm=isAdmin(),x=staffParts();
-  if(k==="people")return `<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
+  if(k==="people")return `${adm?`<h3 class="setsec">회원가입 승인</h3>${acctCard()}`:""}<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
   if(k==="link")return `${connCard()}${vaultCard()}${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${adm?calCard():""}${aiCardUi()}`;
   if(k==="look")return `${bgCard()}${adm?brandCard():""}${themeCard()}${adm?brandLinkCard():""}`;
   if(k==="data")return `${adm?dataProtectCard():""}${adm?ledExportCard():""}${backupCardUi()}${importCardUi()}${skillCard()}`;
