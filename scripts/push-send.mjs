@@ -15,7 +15,8 @@ export async function run(env = process.env, deps = {}) {
   const wp = deps.webpush || webpush;
   const now = deps.now || Date.now();
   const log = deps.log || console.log;
-  const { SYNC_GIST_TOKEN, SYNC_GIST_ID, VAPID_PRIVATE_KEY } = env;
+  // 비밀값에 앞뒤 공백·줄바꿈이 섞여 들어가도(복사·붙여넣기) 404가 나지 않게 다듬어요. Gist ID는 주소 전체를 넣어도 끝의 ID만 써요
+  const { SYNC_GIST_TOKEN, SYNC_GIST_ID, VAPID_PRIVATE_KEY } = Object.fromEntries(Object.entries(env).map(([k, v]) => [k, typeof v === 'string' ? (k === 'SYNC_GIST_ID' ? (v.trim().match(/([0-9a-f]{20,40})\/?$/i) || [, v.trim()])[1] : v.trim()) : v]));
   const subject = env.VAPID_SUBJECT || 'mailto:admin@linuscompany.co.kr';
   if (!SYNC_GIST_TOKEN || !SYNC_GIST_ID || !VAPID_PRIVATE_KEY) {
     log('필요한 비밀값(SYNC_GIST_TOKEN, SYNC_GIST_ID, VAPID_PRIVATE_KEY)이 아직 없어서 건너뜀');

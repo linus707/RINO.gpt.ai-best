@@ -2324,7 +2324,7 @@ const curName=()=>{const m=me();return m?m.name:""};
    계정 목록은 동기화 Gist의 accounts.json 에 있어요. 처음 여는 기기도 로그인할 수 있도록 로그인 확인은 푸시 워커(/login)가 해요.
    비밀번호는 이 기기에서 PBKDF2(30만 회)로 바꾼 값만 워커로 보내요. 원문은 어디에도 저장하지 않아요. */
 const AUTH_WORKER="";/* 로그인 서버(푸시 워커) 주소. 새 기기는 이 주소로 로그인해요 */
-const authWorker=()=>{const u=AUTH_WORKER||(D.set.push&&D.set.push.worker)||CFG.pushWorkerBak||"";return /^https:\/\/[^\s/]+(\/\S*)?$/.test(u)?u.replace(/\/+$/,""):""};
+const authWorker=()=>{const u=AUTH_WORKER||(D.set.push&&D.set.push.worker)||CFG.pushWorkerBak||CFG.authWorker||"";return /^https:\/\/[^\s/]+(\/\S*)?$/.test(u)?u.replace(/\/+$/,""):""};
 let ACCTS=null,_aText=null;
 const acctList=()=>ACCTS&&Array.isArray(ACCTS.users)?ACCTS.users:[];
 async function acctIngest(f){
@@ -2342,6 +2342,12 @@ async function preHash(email,pw){
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 let LOCK_MODE="login",_authBusy=false;
+async function setAuthWorker(){
+  let u=($("#awurl").value||"").trim().replace(/\/+$/,"");if(u&&!/^https?:\/\//.test(u))u="https://"+u;
+  if(!/^https:\/\/[^\s/]+\.[^\s/]+$/.test(u)){alert("주소 형식이 아니에요. 예) https://linus-push.이름.workers.dev");return}
+  try{const r=await fetch(u+"/health",{cache:"no-store"});const j=await r.json();if(!j.ok||!j.auth){alert("그 주소는 로그인 서버가 아니거나 설정이 끝나지 않았어요");return}}catch{alert("그 주소에 연결하지 못했어요. 주소를 확인해 주세요");return}
+  CFG.authWorker=u;saveCfg();toast("로그인 서버에 연결했어요");render();
+}
 function lockGo(m){LOCK_MODE=m;render()}
 async function authPost(path,body){
   const w=authWorker();if(!w)throw new Error("noworker");
@@ -2452,7 +2458,7 @@ const acctCard=()=>{
   const n=acctPending().length;
   return `<div class="card"><h3>📝 회원가입·계정 ${n?`<span class="pill" style="background:var(--make)">${n}명 대기</span>`:""}</h3><div class="body">
   <div class="m sub">직원은 로그인 화면의 <b>회원가입</b>에서 이름·이메일·비밀번호로 신청해요. 여기서 <b>승인</b>해야 로그인할 수 있고, 역할(직원·관리자)에 따라 보이는 메뉴가 달라져요.</div>
-  ${authWorker()?"":'<div class="m low" style="margin:6px 0">⚠️ 로그인 서버 주소가 없어요. 설정 → 연결·동기화 → 푸시 알림 서버에 워커 주소를 넣어 주세요.</div>'}
+  ${authWorker()?`<div class="m sub" style="margin:8px 0 4px"><b>📲 새 기기 연결 링크</b> — 직원 폰·매장 태블릿에서 이 링크를 <b>한 번</b> 열면 로그인·회원가입이 돼요. 토큰은 들어 있지 않아요.</div><div class="row" style="gap:6px;margin-bottom:10px"><input id="authlink" readonly value="${esc(location.origin+"/#auth="+encodeURIComponent(authWorker()))}" onfocus="this.select()" style="flex:1;min-width:0"><button class="btn" onclick="navigator.clipboard.writeText($('#authlink').value).then(()=>toast('복사했어요'),()=>{$('#authlink').select();alert('길게 눌러 복사해 주세요')})">복사</button></div>`:'<div class="m low" style="margin:6px 0">⚠️ 로그인 서버 주소가 없어요. 설정 → 연결·동기화 → 푸시 알림 서버에 워커 주소를 넣어 주세요.</div>'}
   ${!CFG.token?'<div class="empty">클라우드 동기화를 연결하면 가입 신청이 보여요</div>':!ACCTS?'<div class="empty">불러오는 중…</div>':L.length?order.map(([u,i])=>row(u,i)).join(""):'<div class="empty">아직 가입 신청이 없어요</div>'}
   </div></div>`;
 };
@@ -2483,7 +2489,7 @@ function lockRole(v){
 }
 const AUTH_ICO=`<div class="ico"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>`;
 const lockView=()=>{
-  const noW=authWorker()?"":'<div class="warn">⚠️ 로그인 서버가 아직 연결되지 않았어요. 관리자에게 알려 주세요.</div>';
+  const noW=authWorker()?"":`<div class="warn">⚠️ 이 기기는 아직 로그인 서버에 연결되지 않았어요. 관리자에게 받은 <b>새 기기 연결 링크</b>를 열거나, 아래에 로그인 서버 주소를 넣어 주세요.<div style="display:flex;gap:6px;margin-top:8px"><input class="in" id="awurl" placeholder="https://….workers.dev" style="margin:0;height:40px;font-size:14px" autocapitalize="off" spellcheck="false"><button class="go" style="width:auto;height:40px;padding:0 14px;font-size:14px" onclick="setAuthWorker()">연결</button></div></div>`;
   if(LOCK_MODE==="sent")return `<div class="auth">${AUTH_ICO}<h1>가입 신청 완료</h1><div class="lead">관리자가 승인하면 같은 이메일과 비밀번호로<br>로그인할 수 있어요.</div>
   <button class="go" onclick="lockGo('login')">로그인 화면으로</button></div>`;
   if(LOCK_MODE==="forgot")return `<div class="auth">${AUTH_ICO}<h1>비밀번호 찾기</h1><div class="lead">보안을 위해 비밀번호는 관리자만 초기화할 수 있어요.</div>
@@ -4301,6 +4307,8 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&s
   try{const m0=me();if(CFG.bio&&CFG.bio.id&&m0&&!m0.open)lockShow()}catch{}
   bioCheck();
   /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
+  /* 새 기기 연결 링크(#auth=워커주소): 로그인 서버 주소만 이 기기에 저장해요. 토큰은 들어 있지 않아요 */
+  try{if(location.hash.startsWith("#auth=")){const u=decodeURIComponent(location.hash.slice(6)).trim().replace(/\/+$/,"");if(/^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(u)||/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}$/i.test(u)){CFG.authWorker=u;saveCfg();setTimeout(()=>{try{toast("로그인 서버에 연결했어요. 이제 로그인할 수 있어요");render()}catch{}},300)}history.replaceState(null,"",location.pathname)}}catch{}
   try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
   /* 알림을 눌러 들어오면(?chat=… / ?messenger=1) 메신저로 바로 가요 */
   try{const q=new URLSearchParams(location.search);if(q.has("ledger")){if(me()&&isAdmin()){revCo=REV_GOAL;revTab="led";ledTab=q.get("ledger")==="pay"?"pay":"sum";page="revenue"}history.replaceState(null,"",location.pathname)}else if(q.has("chat")||q.has("messenger")){if(me()){page="messenger";const rq=q.get("room");if(rq&&mrooms().some(r=>r.id===rq)){mRoom=rq;mForce=true}}history.replaceState(null,"",location.pathname)}}catch{}

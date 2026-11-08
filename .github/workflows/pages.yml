@@ -22,6 +22,11 @@ jobs:
         run: |
           mkdir _site
           cp index.html price.html pos.html prices.json offline.html sw.js manifest.webmanifest icon.svg icon-*.png CNAME _site/
+      - name: Put login server address into the site
+        run: node scripts/inject-auth.mjs _site/index.html
+        env:
+          SYNC_GIST_TOKEN: ${{ secrets.SYNC_GIST_TOKEN }}
+          SYNC_GIST_ID: ${{ secrets.SYNC_GIST_ID }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

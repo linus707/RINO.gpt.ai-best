@@ -316,6 +316,9 @@ async function calHandle(req, env, json) {
 
 export default {
   async fetch(req, env) {
+    // 비밀값에 앞뒤 공백·줄바꿈이 섞여도 동작하게 다듬고, GIST_ID는 주소 전체를 넣어도 끝의 ID만 써요
+    const gid = String(env.GIST_ID || '').trim();
+    env = { ...env, GIST_TOKEN: String(env.GIST_TOKEN || '').trim(), GIST_ID: (gid.match(/([0-9a-f]{20,40})\/?$/i) || [, gid])[1] };
     const url = new URL(req.url);
     const origin = req.headers.get('Origin') || '';
     const allowed = (env.ALLOWED_ORIGIN || 'https://linuscompany.co.kr').split(',').map((s) => s.trim());
