@@ -42,6 +42,9 @@ button{cursor:pointer;-webkit-appearance:none;appearance:none}
 #bgph .bgimg svg{width:100%;height:100%;display:block}
 #bgph .bgdim{position:absolute;inset:0;transition:background .3s}
 #bgph.show .bgdim:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,0) 32%,rgba(0,0,0,.18))}
+#posbox{display:none;position:fixed;z-index:3;background:var(--bg,#f2f2f7)}#posbox iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+body.posmode .fab{display:none!important}
+.posbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px}.posbar h1{margin:0;font-size:24px}.posbar a{font-size:14px;font-weight:600;color:var(--accent);text-decoration:none}
 main{position:relative;z-index:1;padding:calc(14px + env(safe-area-inset-top)) 16px 120px;max-width:1040px;margin:0 auto}
 /* 소재(머티리얼) */
 .glass,.card,.form,.doc,.tile,.lock,.stat,.chathead,.composer,.chatlist{background:var(--mat);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8)}
@@ -274,6 +277,34 @@ body.staff .del{display:none}
  .fab.chat{right:28px;bottom:100px}
 }
 body.out main{max-width:760px;margin:0 auto}
+/* 로그인·회원가입: 배경 사진 없이 밝은 바탕 + 흰 카드 */
+body.out{background:#f5f6f8!important}
+body.out #bgph,body.out header{display:none!important}
+.auth{max-width:440px;margin:64px auto 40px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:44px 40px 36px;box-shadow:0 1px 3px rgba(16,24,40,.05);color:#1f2937;color-scheme:light}
+.auth .ico{display:flex;justify-content:center;color:#c8553d;margin-bottom:16px}
+.auth h1{font-size:26px;font-weight:700;text-align:center;margin:0 0 10px;color:#1f2937;letter-spacing:-.02em}
+.auth .lead{text-align:center;color:#6b7280;font-size:15px;line-height:1.5;margin:0 0 30px}
+.auth label.f{display:block;font-size:15px;font-weight:600;color:#374151;margin:0 0 8px}
+.auth label.f i{color:#c8553d;font-style:normal}
+.auth .hint{font-size:13px;color:#9ca3af;margin:-12px 0 18px}
+.auth input.in{display:block;width:100%;height:50px;border:1px solid #d1d5db;border-radius:8px;background:#fff!important;color:#111827!important;padding:0 14px;font-size:16px;margin:0 0 20px;box-sizing:border-box;box-shadow:none;-webkit-appearance:none}
+.auth input.in::placeholder{color:#9ca3af}
+.auth input.in:focus{outline:none;border-color:#c8553d;box-shadow:0 0 0 3px rgba(200,85,61,.15)}
+.auth .ck{display:flex;align-items:center;gap:10px;font-size:15px;color:#374151;margin:0 0 22px;cursor:pointer}
+.auth .ck input{width:20px;height:20px;accent-color:#c8553d;margin:0;flex:none}
+.auth .go{display:block;width:100%;height:52px;border:0;border-radius:8px;background:#c8553d;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+.auth .go:hover{background:#b44a33}.auth .go:disabled{opacity:.6;cursor:default}
+.auth .forgot{display:inline-block;margin-top:14px;font-size:15px;color:#4b5563;text-decoration:none}
+.auth .alt{text-align:center;margin-top:30px;color:#6b7280;font-size:15px}
+.auth .alt a{color:#c8553d;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.auth .warn{background:#fef2f2;color:#b91c1c;border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5;margin:0 0 20px}
+.auth .note{background:#f9fafb;border:1px solid #f0f0f0;border-radius:8px;padding:14px;font-size:14px;color:#4b5563;line-height:1.6;margin:0 0 22px}
+.auth details{margin-top:26px;border-top:1px solid #f0f0f0;padding-top:14px;color:#6b7280;font-size:13px}
+.auth details summary{cursor:pointer}
+.auth details .form{background:none!important;box-shadow:none!important;border:0!important;padding:10px 0 0!important}
+.auth details input,.auth details select{background:#fff!important;color:#111827!important;border:1px solid #d1d5db!important}
+.auth h1,.auth .lead{word-break:keep-all}
+@media(max-width:480px){.auth{margin:28px 14px;padding:34px 22px 28px}.auth h1{font-size:23px}}
 .docimg{max-width:100%;border-radius:12px;margin:8px 0;display:block;background:#f4efe9;min-height:40px}
 </style>
 </head>
@@ -290,6 +321,7 @@ body.out main{max-width:760px;margin:0 auto}
   <div id="who"></div>
 </nav><div class="shade"></div></div>
 <main id="app"></main>
+<div id="posbox" aria-label="매장 POS"></div>
 <button class="fab" id="fab" aria-label="업무 추가" onclick="openTaskModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <button class="fab chat" id="chatfab" aria-label="직원에게 지시" onclick="go('chat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4c4.6 0 8 2.9 8 6.6S16.6 17.2 12 17.2c-.9 0-1.7-.1-2.5-.3L5.5 19l.9-3.4C5 14.4 4 12.6 4 10.6 4 6.9 7.4 4 12 4z"/></svg><i id="chatbadge"></i></button>
 <nav id="tabbar" aria-label="하단 메뉴"></nav>
@@ -309,6 +341,7 @@ const IC={
  routine:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/>',
  revenue:'<path d="M5.5 20V11M12 20V4M18.5 20v-6"/>',
  staff:'<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.4-3.2 2.7-5 5.5-5s5.1 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.5"/><path d="M16.5 14.7c2.4.1 3.8 1.7 4 4"/>',
+ pos:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10M12 16v4M7 8h6M7 11h4"/>',
  settings:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
  more:'<circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
 };
@@ -318,8 +351,8 @@ IC.biz='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0
 const CH={blog:"세계여행 블로그",furn:"가구 브랜드",photo:"스트릿포토 인스타"};
 const ST=[["idea","착수","--idea"],["report","보고","--ready"],["make","제작중","--make"],["review","검수","--review"],["done","발행완료","--done"]];
 const stKey=k=>k==="ready"?"review":k;
-const PAGES=[["home","🏠","홈"],["todo","☑️","오늘 할 일",1],["contents","🗂️","컨텐츠"],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","Celender"],["dday","⏳","디데이"],["inventory","📦","물품·재고"],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",0,1],["settings","⚙️","설정",1]];
-const NAV_GROUPS=[["",["home","messenger"]],["일하기",["todo","schedule","dday","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
+const PAGES=[["home","🏠","홈"],["todo","☑️","오늘 할 일",1],["contents","🗂️","컨텐츠",1],["tasks","✅","업무"],["chat","💬","AI 직원 지시",1],["messenger","💬","메신저"],["biz","🧑‍💼","사업자 설립",1],["schedule","📅","Celender"],["dday","⏳","디데이"],["pos","🧾","매장 POS"],["inventory","📦","물품·재고",1],["org","🏛️","조직도",1],["proto","📋","업무 절차"],["revenue","💰","수익",1],["staff","👥","직원 관리",1],["doc","📄","초안 보기",1,1],["settings","⚙️","설정",1]];
+const NAV_GROUPS=[["",["home","messenger"]],["일하기",["todo","pos","schedule","dday","inventory"]],["컨텐츠·수익",["contents","revenue"]],["",["settings"]]];
 const msgUnreadAll=()=>{try{return mrooms().reduce((a,r)=>a+mUnread(r.id),0)}catch{return 0}};
 function navBadge(k){
   try{
@@ -368,8 +401,10 @@ function cfgRestore(){
   }catch{}}});
 }
 /* 설정 칸에 쓰던 값(토큰·저장소 등)은 저장 버튼을 누르기 전이라도 입력하는 즉시 기기에 남겨요. 화면이 새로 그려져도 되살려요 */
-const SD_KEY="rino-sdraft",SD_IDS=["tk","gi","wr","wb","wt","iwt","ak","aw","pwurl","cwurl"];
+const SD_KEY="rino-sdraft",SD_IDS=["tk","wr","wb","wt","iwt","ak","aw","pwurl","cwurl"];
 let SD={};try{SD=JSON.parse(localStorage.getItem(SD_KEY))||{}}catch{}
+/* Gist ID 칸은 입력하다 만 글자 대신 항상 실제로 저장된 ID를 보여 줘요 */
+if(SD.gi!==undefined){delete SD.gi;try{localStorage.setItem(SD_KEY,JSON.stringify(SD))}catch{}}
 const sdSave=()=>{try{localStorage.setItem(SD_KEY,JSON.stringify(SD))}catch{}};
 const sdClear=(...ids)=>{ids.forEach(i=>delete SD[i]);sdSave()};
 document.addEventListener("input",e=>{const t=e.target;if(t&&SD_IDS.includes(t.id)&&t.closest&&t.closest("#app")){SD[t.id]=t.value;sdSave()}},true);
@@ -546,10 +581,21 @@ function dataProtectCard(){
   </div></div>`;
 }
 const persist=()=>{try{localStorage.setItem("rino-ws",JSON.stringify(D))}catch{}try{lsSchedule()}catch{}};
+/* 바뀐 게 없으면 GitHub가 304(변경 없음)만 돌려줘서 자주 확인해도 가볍고 사용량 한도에 잡히지 않아요.
+   지난번 받은 원문(_rText)을 매번 새로 풀어 쓰므로, 화면에서 고친 내용이 이 사본에 섞이지 않아요. */
+let _rTag="",_rText=null,_rGist="";
 async function fetchRemote(){
-  const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw new Error(r.status);
-  const f=(await r.json()).files["rino-workspace.json"];if(!f)return null;
-  return norm(JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content));
+  if(_rGist!==CFG.gistId){_rTag="";_rText=null;_rGist=CFG.gistId}
+  const h={Authorization:"Bearer "+CFG.token,Accept:"application/vnd.github+json"};
+  if(_rTag&&_rText!==null)h["If-None-Match"]=_rTag;
+  const r=await fetch("https://api.github.com/gists/"+CFG.gistId,{headers:h,cache:"no-store"});
+  if(r.status===304&&_rText!==null)return norm(JSON.parse(_rText));
+  if(!r.ok)throw new Error(r.status);
+  const fs=(await r.json()).files||{};await acctIngest(fs["accounts.json"]);
+  const f=fs["rino-workspace.json"];if(!f){_rTag="";_rText=null;return null}
+  const t=f.truncated?await(await fetch(f.raw_url,{cache:"no-store"})).text():f.content;
+  _rText=t;_rTag=r.headers.get("ETag")||"";
+  return norm(JSON.parse(t));
 }
 let _busy=false,_again=false,SYNC_OK=false;
 async function syncNow(){
@@ -566,7 +612,7 @@ async function syncNow(){
       const files={"rino-workspace.json":{content:JSON.stringify(D)}};
       let r;
       if(CFG.gistId)r=await gh("/gists/"+CFG.gistId,{method:"PATCH",body:JSON.stringify({files})});
-      else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Rino workspace data",public:false,files})});if(r.ok){CFG.gistId=(await r.json()).id;saveCfg()}}
+      else{r=await gh("/gists",{method:"POST",body:JSON.stringify({description:"rino-workspace",public:false,files})});if(r.ok){CFG.gistId=(await r.json()).id;saveCfg()}}
       if(!r.ok)throw new Error(r.status);
     }
     setSync("☁ 동기화됨");SYNC_OK=true;if(CFG.fresh){delete CFG.fresh;saveCfg()}try{pushKick()}catch{}
@@ -577,6 +623,13 @@ const pull=syncNow,push=syncNow;
 let _t;
 const save=()=>{stamp();D.updated=Date.now();persist();clearTimeout(_t);if(CFG.token)_t=setTimeout(syncNow,1500)};
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncNow()});
+/* 실시간 반영: 앱이 화면에 떠 있는 동안 어느 화면에서든 10초마다 다른 기기(PC·스마트폰)에서 고친 내용을 받아 와요.
+   글을 입력하는 중이거나 창(모달)이 열려 있으면 화면이 다시 그려져 입력이 끊기지 않도록 그 차례는 건너뛰어요(메신저 화면은 예전처럼 항상 받아 와요). */
+const LIVE_MS=10000;
+const _editing=()=>{const a=document.activeElement,m=$("#modal");return !!((m&&m.classList.contains("open"))||(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))))};
+setInterval(()=>{if(document.hidden||!CFG.token||!CFG.gistId||!navigator.onLine)return;if(page!=="messenger"&&_editing())return;syncNow()},LIVE_MS);
+window.addEventListener("online",()=>{if(CFG.token)syncNow()});
+window.addEventListener("pageshow",e=>{if(e.persisted&&CFG.token)syncNow()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 
 /* ── 배경 사진 (이 기기에만 저장) ── */
@@ -654,7 +707,8 @@ const bgCard=()=>{const c=bgDef(),a=bgItems();return `<div class="card"><h3>🖼
 bgAll().then(l=>{BG.list=l;if(l.length)render()});
 /* 하단 탭 */
 const TABS_BASE=[["home","🏠","홈"],["contents","🗂️","컨텐츠"],["schedule","📅","Celender"],["messenger","💬","메신저"]];
-const tabsNow=()=>isAdmin()?[TABS_BASE[0],["todo","☑️","할 일"],...TABS_BASE.slice(1)]:TABS_BASE;
+/* 직원 하단 탭에는 컨텐츠가 없어요(관리자 전용) */
+const tabsNow=()=>isAdmin()?[TABS_BASE[0],["todo","☑️","할 일"],...TABS_BASE.slice(1)]:[TABS_BASE[0],["pos","🧾","POS"],...TABS_BASE.slice(2)];
 function tabbar(){
   const m=me(),T=tabsNow();$("#tabbar").innerHTML=m?T.map(([k,i,n])=>`<button class="${page===k?"on":""}" onclick="go('${k}')">${ic(k,25)}<span>${n}</span>${navBadge(k)?`<i class="tbb">${navBadge(k)>99?"99+":navBadge(k)}</i>`:""}</button>`).join("")+`<button class="${T.some(t=>t[0]===page)?"":"on"}" onclick="nav();$('#drawer').classList.add('open')">${ic("more",25)}<span>더보기</span></button>`:"";
 }
@@ -758,7 +812,7 @@ const views={
 home(){
   const t=today();
   return `<div class="hero idn"><div><div class="sub">Linus Company</div></div></div>
-  ${syncCard()}
+  ${acctHomeCard()}${syncCard()}
   <div class="card idcard"><div class="body"><div class="idl">Linus personal academy</div>
   <div class="idt">A little comfort for your everyday — 지친 하루에 작은 위로를 가치로 하는 브랜드 컴퍼니</div>
   <div class="idb">${coList().filter(c=>c.tag!=="공통").map(c=>{const u=brandUrl(c);return u?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}<i>↗</i></a>`:`<span ${isAdmin()?`onclick="go('settings')" style="cursor:pointer" title="설정에서 링크 넣기"`:""}>${esc(c.name)}</span>`}).join("")}</div>
@@ -2253,13 +2307,161 @@ async function hashPw(pw,salt){
 }
 const hashAdmin=(pw,p)=>p.av===2?hashPw(pw,p.asalt):hashPin(pw,p.salt);
 function me(){
+  if(ME&&ME.acct){
+    if(!CFG.token)return null;
+    if(ACCTS){const u=acctList().find(x=>x.email===ME.email);if(!u||u.status!=="approved"||(u.role==="admin"?"admin":"staff")!==ME.role)return null}
+    return ME;
+  }
   const p=D.set.pins;
-  if(!p)return CFG.invited?null:{role:"admin",name:"관리자",open:true};
+  /* 처음 여는 기기(CFG.fresh)·초대 링크 기기·이메일 계정이 있는 곳은 비밀번호 없이 열리지 않고 로그인 화면부터 보여요 */
+  if(!p)return (CFG.invited||CFG.fresh||acctList().length)?null:{role:"admin",name:"관리자",open:true};
   if(ME&&ME.h===(ME.role==="admin"?p.a:p.s))return ME;
   return null;
 }
 const isAdmin=()=>{const m=me();return !!m&&m.role==="admin"};
 const curName=()=>{const m=me();return m?m.name:""};
+/* ---------- 이메일 계정: 회원가입 → 관리자 승인 → 로그인 ----------
+   계정 목록은 동기화 Gist의 accounts.json 에 있어요. 처음 여는 기기도 로그인할 수 있도록 로그인 확인은 푸시 워커(/login)가 해요.
+   비밀번호는 이 기기에서 PBKDF2(30만 회)로 바꾼 값만 워커로 보내요. 원문은 어디에도 저장하지 않아요. */
+const AUTH_WORKER="";/* 로그인 서버(푸시 워커) 주소. 새 기기는 이 주소로 로그인해요 */
+const authWorker=()=>{const u=AUTH_WORKER||(D.set.push&&D.set.push.worker)||CFG.pushWorkerBak||CFG.authWorker||"";return /^https:\/\/[^\s/]+(\/\S*)?$/.test(u)?u.replace(/\/+$/,""):""};
+let ACCTS=null,_aText=null;
+const acctList=()=>ACCTS&&Array.isArray(ACCTS.users)?ACCTS.users:[];
+async function acctIngest(f){
+  let t="";try{t=f?(f.truncated?await(await fetch(f.raw_url,{cache:"no-store"})).text():f.content):""}catch{return}
+  if(t===_aText)return;
+  const before=!!me();_aText=t;
+  try{const j=JSON.parse(t||"{}");ACCTS=j&&Array.isArray(j.users)?j:{v:1,users:[]}}catch{ACCTS={v:1,users:[]}}
+  if(before!==!!me()||(isAdmin()&&(page==="settings"||page==="home")&&!_editing()))try{render()}catch{}
+}
+const normEmail=e=>String(e||"").trim().toLowerCase();
+const EMAIL_OK=e=>/^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/.test(e);
+async function preHash(email,pw){
+  const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveBits"]);
+  const b=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:new TextEncoder().encode("linus-acct:"+email),iterations:300000},k,256);
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+let LOCK_MODE="login",_authBusy=false;
+async function setAuthWorker(){
+  let u=($("#awurl").value||"").trim().replace(/\/+$/,"");if(u&&!/^https?:\/\//.test(u))u="https://"+u;
+  if(!/^https:\/\/[^\s/]+\.[^\s/]+$/.test(u)){alert("주소 형식이 아니에요. 예) https://linus-push.이름.workers.dev");return}
+  try{const r=await fetch(u+"/health",{cache:"no-store"});const j=await r.json();if(!j.ok||!j.auth){alert("그 주소는 로그인 서버가 아니거나 설정이 끝나지 않았어요");return}}catch{alert("그 주소에 연결하지 못했어요. 주소를 확인해 주세요");return}
+  CFG.authWorker=u;saveCfg();toast("로그인 서버에 연결했어요");render();
+}
+function lockGo(m){LOCK_MODE=m;render()}
+async function authPost(path,body){
+  const w=authWorker();if(!w)throw new Error("noworker");
+  const r=await fetch(w+path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  let j={};try{j=await r.json()}catch{}
+  return {ok:r.ok,status:r.status,j};
+}
+/* 로그인 서버(워커)가 Gist를 읽거나 쓰지 못했을 때, 원인별로 고칠 곳을 알려 줘요 */
+function authFail(r,what){
+  const d=String(r.j&&r.j.detail||"");
+  if(r.status===502&&d){
+    const m=d.match(/gist( save)? (\d{3})/),save=m&&m[1],code=m?+m[2]:0;
+    const why=code===401?"로그인 서버의 GIST_TOKEN이 만료됐거나 틀렸어요. Cloudflare 워커 → 설정 → 변수와 비밀값에서 GIST_TOKEN을 앱 동기화에 쓰는 토큰으로 다시 넣어 주세요."
+      :code===404?(save?"로그인 서버의 토큰에 Gist 쓰기 권한이 없어요. GIST_TOKEN을 Gist 읽기·쓰기 권한이 있는 토큰으로 바꿔 주세요.":"로그인 서버의 GIST_ID가 틀렸거나 토큰이 그 Gist를 볼 수 없어요. GIST_ID를 확인해 주세요.")
+      :code===403?(save?"로그인 서버의 토큰에 Gist 쓰기 권한이 없어요. GIST_TOKEN을 Gist 읽기·쓰기 권한이 있는 토큰으로 바꿔 주세요.":"GitHub가 로그인 서버의 요청을 막았어요(권한 또는 사용량 한도). 잠시 뒤 다시 해 보세요.")
+      :code===422?"Gist에 저장하지 못했어요(형식 오류). 관리자에게 알려 주세요.":"";
+    return alert((what+" (502)")+"\n\n"+(why||"원인: "+d+"\n관리자에게 이 문구를 알려 주세요."));
+  }
+  alert(AUTH_ERR[r.j.error]||what+" ("+r.status+")");
+}
+const AUTH_ERR={reset:"비밀번호가 초기화됐어요. 같은 이메일로 다시 가입 신청해 주세요",invalid:"이메일 또는 비밀번호가 맞지 않아요",pending:"아직 관리자 승인 전이에요. 승인되면 로그인할 수 있어요",denied:"사용할 수 없는 계정이에요. 관리자에게 문의해 주세요",exists:"이미 가입된 이메일이에요. 로그인해 주세요","slow down":"시도가 너무 많아요. 15분쯤 뒤에 다시 해 주세요","not configured":"로그인 서버 설정이 끝나지 않았어요. 관리자에게 알려 주세요","too many pending":"승인 대기 중인 신청이 많아요. 잠시 뒤에 다시 해 주세요"};
+async function acctLogin(){
+  if(_authBusy)return;
+  const em=normEmail($("#ae").value),pw=$("#ap").value;
+  if(!EMAIL_OK(em)){alert("이메일 주소를 확인해 주세요");return}
+  if(!pw){alert("비밀번호를 입력해 주세요");return}
+  _authBusy=true;const b=$("#abtn");if(b){b.disabled=true;b.textContent="확인 중…"}
+  try{
+    const r=await authPost("/login",{email:em,ph:await preHash(em,pw)});
+    if(!r.ok||!r.j.token){authFail(r,"로그인하지 못했어요");return}
+    CFG.token=r.j.token;CFG.gistId=r.j.gist;CFG.invited=true;saveCfg();
+    ME={acct:1,email:em,name:r.j.name||em,role:r.j.role==="admin"?"admin":"staff"};
+    const store=$("#alk")&&$("#alk").checked?localStorage:sessionStorage;
+    try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY);store.setItem(ME_KEY,JSON.stringify(ME))}catch{}
+    page="home";LOCK_MODE="login";render();syncNow();
+  }catch(e){alert(e.message==="noworker"?"로그인 서버 주소가 아직 설정되지 않았어요. 관리자에게 알려 주세요":"인터넷 연결을 확인해 주세요")}
+  finally{_authBusy=false;const b2=$("#abtn");if(b2){b2.disabled=false;b2.textContent="로그인"}}
+}
+async function acctSignup(){
+  if(_authBusy)return;
+  const nm=$("#sn").value.trim(),em=normEmail($("#se").value),pw=$("#sp").value,pw2=$("#sp2").value;
+  if(!nm){alert("이름을 입력해 주세요");return}
+  if(!EMAIL_OK(em)){alert("이메일 주소를 확인해 주세요");return}
+  if(pw.length<8||!/[A-Za-z]/.test(pw)||!/\d/.test(pw)){alert("비밀번호는 영문과 숫자를 섞어 8자 이상으로 만들어 주세요");return}
+  if(pw!==pw2){alert("비밀번호 확인이 달라요");return}
+  _authBusy=true;const b=$("#sbtn");if(b){b.disabled=true;b.textContent="신청 중…"}
+  try{
+    const r=await authPost("/signup",{email:em,name:nm,ph:await preHash(em,pw)});
+    if(!r.ok){authFail(r,"가입 신청을 하지 못했어요");return}
+    LOCK_MODE="sent";render();
+  }catch(e){alert(e.message==="noworker"?"로그인 서버 주소가 아직 설정되지 않았어요. 관리자에게 알려 주세요":"인터넷 연결을 확인해 주세요")}
+  finally{_authBusy=false;const b2=$("#sbtn");if(b2){b2.disabled=false;b2.textContent="가입 신청"}}
+}
+/* 관리자: 가입 승인·거절·사용 중지·역할 변경 (accounts.json 을 바로 고쳐요) */
+let ACCT_KEYS=[];
+async function acctSave(fn){
+  if(!isAdmin())return;
+  if(!CFG.token||!CFG.gistId){alert("클라우드 동기화가 연결된 기기에서만 할 수 있어요");return}
+  try{
+    const r=await gh("/gists/"+CFG.gistId);if(!r.ok)throw new Error(r.status);
+    const f=((await r.json()).files||{})["accounts.json"];
+    let A={v:1,users:[]};try{const t=f?(f.truncated?await(await fetch(f.raw_url,{cache:"no-store"})).text():f.content):"";const j=JSON.parse(t||"{}");if(j&&Array.isArray(j.users))A=j}catch{}
+    if(fn(A)===false)return;
+    const t=JSON.stringify(A,null,1);
+    const w=await gh("/gists/"+CFG.gistId,{method:"PATCH",body:JSON.stringify({files:{"accounts.json":{content:t}}})});
+    if(!w.ok)throw new Error(w.status);
+    ACCTS=A;_aText=t;_rTag="";toast("저장했어요");render();
+  }catch{alert("저장하지 못했어요. 인터넷 연결과 토큰을 확인해 주세요")}
+}
+function acctAct(i,act){
+  const em=ACCT_KEYS[i];if(!em)return;
+  const self=ME&&ME.acct&&ME.email===em;
+  if(self&&act!=="approve"){alert("지금 로그인한 내 계정은 여기서 막을 수 없어요");return}
+  if(act==="reject"&&!confirm(em+" 가입 신청을 거절할까요?"))return;
+  if(act==="disable"&&!confirm(em+" 계정을 사용 중지할까요? 그 기기에서 바로 로그아웃돼요"))return;
+  if(act==="reset"&&!confirm(em+" 비밀번호를 초기화할까요? 그 사람은 로그아웃되고, 같은 이메일로 다시 가입 신청 → 승인을 받아야 해요"))return;
+  const roleSel=$("#arl"+i);
+  acctSave(A=>{const u=A.users.find(x=>x.email===em);if(!u)return false;
+    if(act==="approve"){u.status="approved";if(roleSel)u.role=roleSel.value==="admin"?"admin":"staff";u.ok=Date.now();u.by=curName()}
+    else if(act==="reject")u.status="rejected";
+    else if(act==="disable")u.status="disabled";
+    else if(act==="enable")u.status="approved";
+    else if(act==="reset"){u.status="reset";delete u.h;delete u.salt}
+    u.u=Date.now();
+    if(u.status==="approved"&&u.name&&!D.set.staff.includes(u.name)&&u.role!=="admin"){D.set.staff.push(u.name);D.set.u=Date.now();save()}
+  });
+}
+function acctRole(i,v){
+  const em=ACCT_KEYS[i];if(!em)return;
+  if(ME&&ME.acct&&ME.email===em&&v!=="admin"){alert("지금 로그인한 내 계정의 관리자 권한은 여기서 뺄 수 없어요");render();return}
+  acctSave(A=>{const u=A.users.find(x=>x.email===em);if(!u||u.status==="pending")return false;u.role=v==="admin"?"admin":"staff";u.u=Date.now()});
+}
+const acctPending=()=>acctList().filter(u=>u.status==="pending");
+const acctHomeCard=()=>{if(!isAdmin())return "";const n=acctPending().length;if(!n)return "";
+  return `<div class="card"><h3>📝 가입 승인 대기 ${n}명<button class="pill" style="background:var(--accent)" onclick="go('staff')">확인하기</button></h3></div>`};
+const acctCard=()=>{
+  const L=acctList(),fmtD=t=>t?new Date(t).toLocaleDateString("ko-KR"):"";
+  ACCT_KEYS=L.map(u=>u.email);
+  const ST={approved:["사용 중","var(--done)"],pending:["승인 대기","var(--make)"],rejected:["거절","var(--mut)"],reset:["비밀번호 초기화됨","var(--make)"],disabled:["사용 중지","var(--mut)"]};
+  const roleSel=(i,u,dis)=>`<select id="arl${i}" style="width:auto" ${dis?"disabled":""} ${u.status==="pending"?"":`onchange="acctRole(${i},this.value)"`}><option value="staff" ${u.role!=="admin"?"selected":""}>직원</option><option value="admin" ${u.role==="admin"?"selected":""}>관리자</option></select>`;
+  const row=(u,i)=>{const s=ST[u.status]||[u.status,"var(--mut)"];
+    const btns=u.status==="pending"?`<button class="btn" onclick="acctAct(${i},'approve')">승인</button><button class="btn ghost" onclick="acctAct(${i},'reject')">거절</button>`
+      :u.status==="approved"?`<button class="btn ghost" onclick="acctAct(${i},'reset')">비밀번호 초기화</button><button class="btn ghost" onclick="acctAct(${i},'disable')">사용 중지</button>`
+      :u.status==="reset"?`<span class="m">다시 가입 신청을 기다리는 중</span>`
+      :`<button class="btn ghost" onclick="acctAct(${i},'enable')">${u.status==="rejected"?"승인":"다시 사용"}</button>`;
+    return `<div class="item"><div class="row" style="gap:8px;flex-wrap:wrap"><div class="grow"><div class="t">${esc(u.name)} <span class="pill" style="background:${s[1]};font-size:11px">${s[0]}</span></div><div class="m">${esc(u.email)} · 신청 ${fmtD(u.at)}</div></div>${roleSel(i,u,u.status!=="approved"&&u.status!=="pending")}${btns}</div></div>`};
+  const order=L.map((u,i)=>[u,i]).sort((a,b)=>(a[0].status==="pending"?0:1)-(b[0].status==="pending"?0:1)||(b[0].at||0)-(a[0].at||0));
+  const n=acctPending().length;
+  return `<div class="card"><h3>📝 회원가입·계정 ${n?`<span class="pill" style="background:var(--make)">${n}명 대기</span>`:""}</h3><div class="body">
+  <div class="m sub">직원은 로그인 화면의 <b>회원가입</b>에서 이름·이메일·비밀번호로 신청해요. 여기서 <b>승인</b>해야 로그인할 수 있고, 역할(직원·관리자)에 따라 보이는 메뉴가 달라져요.</div>
+  ${authWorker()?`<div class="m sub" style="margin:8px 0 4px"><b>📲 새 기기 연결 링크</b> — 직원 폰·매장 태블릿에서 이 링크를 <b>한 번</b> 열면 로그인·회원가입이 돼요. 토큰은 들어 있지 않아요.</div><div class="row" style="gap:6px;margin-bottom:10px"><input id="authlink" readonly value="${esc(location.origin+"/#auth="+encodeURIComponent(authWorker()))}" onfocus="this.select()" style="flex:1;min-width:0"><button class="btn" onclick="navigator.clipboard.writeText($('#authlink').value).then(()=>toast('복사했어요'),()=>{$('#authlink').select();alert('길게 눌러 복사해 주세요')})">복사</button></div>`:'<div class="m low" style="margin:6px 0">⚠️ 로그인 서버 주소가 없어요. 설정 → 연결·동기화 → 푸시 알림 서버에 워커 주소를 넣어 주세요.</div>'}
+  ${!CFG.token?'<div class="empty">클라우드 동기화를 연결하면 가입 신청이 보여요</div>':!ACCTS?'<div class="empty">불러오는 중…</div>':L.length?order.map(([u,i])=>row(u,i)).join(""):'<div class="empty">아직 가입 신청이 없어요</div>'}
+  </div></div>`;
+};
 const LF_KEY="rino-lf";
 function loginFails(){try{return JSON.parse(localStorage.getItem(LF_KEY))||{n:0,t:0}}catch{return{n:0,t:0}}}
 async function login(){
@@ -2280,22 +2482,53 @@ async function login(){
   try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY);store.setItem(ME_KEY,JSON.stringify(ME))}catch{}
   page="home";render();
 }
-function logout(){ME=null;try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY)}catch{}$("#drawer").classList.remove("open");render()}
+function logout(){ME=null;LOCK_MODE="login";try{localStorage.removeItem(ME_KEY);sessionStorage.removeItem(ME_KEY)}catch{}$("#drawer").classList.remove("open");render()}
 function lockRole(v){
   $("#lnw").style.display=v==="admin"?"none":"block";$("#liw").style.display=v==="admin"&&D.set.pins&&D.set.pins.aid?"block":"none";
   const e=$("#lp");e.placeholder=v==="admin"?(D.set.pins&&D.set.pins.aid?"비밀번호":"비밀번호 또는 PIN"):"PIN";e.inputMode=v==="admin"?"text":"numeric";e.autocomplete=v==="admin"?"current-password":"off";
 }
+const AUTH_ICO=`<div class="ico"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>`;
 const lockView=()=>{
-  if(!D.set.pins)return `<div class="card lock"><h3>불러오는 중…</h3><div class="body"><div class="empty">관리자가 보낸 초대 링크로 접속하셨어요. 데이터를 가져오는 중이에요. 계속 이 화면이면 관리자에게 링크를 다시 받아 주세요.</div></div></div>`;
+  const noW=authWorker()?"":`<div class="warn">⚠️ 이 기기는 아직 로그인 서버에 연결되지 않았어요. 관리자에게 받은 <b>새 기기 연결 링크</b>를 열거나, 아래에 로그인 서버 주소를 넣어 주세요.<div style="display:flex;gap:6px;margin-top:8px"><input class="in" id="awurl" placeholder="https://….workers.dev" style="margin:0;height:40px;font-size:14px" autocapitalize="off" spellcheck="false"><button class="go" style="width:auto;height:40px;padding:0 14px;font-size:14px" onclick="setAuthWorker()">연결</button></div></div>`;
+  if(LOCK_MODE==="sent")return `<div class="auth">${AUTH_ICO}<h1>가입 신청 완료</h1><div class="lead">관리자가 승인하면 같은 이메일과 비밀번호로<br>로그인할 수 있어요.</div>
+  <button class="go" onclick="lockGo('login')">로그인 화면으로</button></div>`;
+  if(LOCK_MODE==="forgot")return `<div class="auth">${AUTH_ICO}<h1>비밀번호 찾기</h1><div class="lead">보안을 위해 비밀번호는 관리자만 초기화할 수 있어요.</div>
+  <div class="note">1. 관리자에게 가입한 <b>이메일 주소</b>를 알려 주세요.<br>2. 관리자가 <b>비밀번호 초기화</b>를 누르면,<br>3. 같은 이메일로 <b>다시 가입 신청</b>하고 승인을 받으면 돼요.</div>
+  <button class="go" onclick="lockGo('login')">로그인 화면으로</button>
+  <div class="alt">초기화를 받았나요? <a href="#" onclick="lockGo('signup');return false">다시 가입하기</a></div></div>`;
+  if(LOCK_MODE==="signup")return `<div class="auth">${AUTH_ICO}<h1>Linus Company 회원가입</h1><div class="lead">가입 신청 후 관리자 승인이 끝나면 로그인할 수 있어요.</div>${noW}
+  <form onsubmit="acctSignup();return false" novalidate>
+  <label class="f" for="sn">이름 <i>*</i></label><input class="in" id="sn" placeholder="홍길동" autocomplete="name">
+  <label class="f" for="se">이메일 <i>*</i></label><input class="in" id="se" type="email" placeholder="name@example.com" autocomplete="email" autocapitalize="off" spellcheck="false">
+  <label class="f" for="sp">비밀번호 <i>*</i></label><input class="in" id="sp" type="password" autocomplete="new-password"><div class="hint">영문과 숫자를 섞어 8자 이상</div>
+  <label class="f" for="sp2">비밀번호 확인 <i>*</i></label><input class="in" id="sp2" type="password" autocomplete="new-password">
+  <button class="go" id="sbtn" type="submit">가입 신청</button></form>
+  <div class="alt">이미 계정이 있으신가요? <a href="#" onclick="lockGo('login');return false">로그인</a></div></div>`;
+  return `<div class="auth">${AUTH_ICO}<h1>Linus Company 로그인</h1><div class="lead">Linus Company 직원 계정으로 로그인해 주세요.</div>${noW}
+  <form onsubmit="acctLogin();return false" novalidate>
+  <label class="f" for="ae">이메일 <i>*</i></label><input class="in" id="ae" type="email" placeholder="name@example.com" autocomplete="username" autocapitalize="off" spellcheck="false">
+  <label class="f" for="ap">비밀번호 <i>*</i></label><input class="in" id="ap" type="password" autocomplete="current-password">
+  <label class="ck"><input id="alk" type="checkbox" checked> 로그인 상태 유지</label>
+  <button class="go" id="abtn" type="submit">로그인</button></form>
+  <a href="#" class="forgot" onclick="lockGo('forgot');return false">비밀번호를 잊으셨나요?</a>
+  <div class="alt">계정이 없으신가요? <a href="#" onclick="lockGo('signup');return false">가입하기</a></div>
+  ${legacyLock()}</div>`;
+};
+/* 예전 방식(관리자 아이디·직원 PIN)과 토큰 직접 연결은 접어 둔 칸에 남겨요. 이메일 계정으로 옮기는 동안 잠기지 않도록 하는 비상구예요 */
+const legacyLock=()=>{
+  if(!D.set.pins)return `<details><summary>관리자: 토큰으로 직접 연결</summary>
+  <div class="form" style="border:0;padding:8px 0 0"><input id="qtk" type="password" placeholder="GitHub 토큰 (ghp_…)" autocomplete="off"><input id="qgi" placeholder="Gist ID" autocomplete="off"><button class="btn ghost" onclick="connectQuick()">연결하고 가져오기</button></div></details>`;
+  return `<details><summary>예전 방식으로 로그인 (관리자 아이디 · 직원 PIN)</summary>${legacyForm()}</details>`;
+};
+const legacyForm=()=>{
   const p=D.set.pins;let lr="";try{lr=localStorage.getItem("rino-lr")||""}catch{}if(!lr)lr=p.aid?"admin":"staff";
   const adm=lr==="admin";
-  return `<div class="lock"><h1>Linus Company</h1><div class="sub">로그인해 주세요</div>
-  <form class="form" onsubmit="login();return false"><select id="lr" onchange="lockRole(this.value)"><option value="staff" ${adm?"":"selected"}>직원</option><option value="admin" ${adm?"selected":""}>관리자</option></select>
+  return `<form class="form" style="border:0;padding:8px 0 0" onsubmit="login();return false"><select id="lr" onchange="lockRole(this.value)"><option value="staff" ${adm?"":"selected"}>직원</option><option value="admin" ${adm?"selected":""}>관리자</option></select>
   <div id="lnw" style="display:${adm?"none":"block"}"><input id="ln" list="stl" placeholder="내 이름" autocomplete="off"><datalist id="stl">${D.set.staff.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
   <div id="liw" style="display:${adm&&p.aid?"block":"none"}"><input id="li" placeholder="아이디" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
   <input id="lp" type="password" ${adm?'':'inputmode="numeric"'} placeholder="${adm?(p.aid?"비밀번호":"비밀번호 또는 PIN"):"PIN"}" autocomplete="${adm?"current-password":"off"}">
   <label class="m"><input id="lk" type="checkbox" style="width:auto"> 이 기기에서 로그인 상태 유지</label>
-  <button class="btn" type="submit">로그인</button></form></div>`;
+  <button class="btn" type="submit">로그인</button></form>`;
 };
 
 const staffParts=()=>{
@@ -2319,7 +2552,7 @@ const staffParts=()=>{
   `<div class="m sub">이 링크를 열면 직원 기기가 자동으로 연결돼요. <b>링크 안에 저장소 접근 키가 들어 있어요.</b> 카카오톡 1:1처럼 믿을 수 있는 곳으로만 보내고, 이 앱 전용 GitHub 계정의 토큰을 쓰세요.</div>
   <div class="form" style="border:0;padding:0"><input id="inv" readonly value="${esc(link)}" onfocus="this.select()"><button class="btn" onclick="navigator.clipboard.writeText($('#inv').value).then(()=>alert('복사했어요'))">링크 복사</button></div>`}</div></div>`};
 };
-views.staff=()=>{const x=staffParts();return `<h1>직원 관리</h1><div class="sub">직원 명단, 로그인 PIN, 초대 링크</div>${x.roster}${x.agents}${x.login}${x.invite}`};
+views.staff=()=>{const x=staffParts();return `<h1>직원 관리</h1><div class="sub">회원가입 승인, 직원 명단, 로그인 PIN, 초대 링크</div>${acctCard()}${x.roster}${x.agents}${x.login}${x.invite}`};
 function addStaff(){if(!isAdmin())return;const n=$("#sname").value.trim();if(!n||D.set.staff.includes(n))return;D.set.staff.push(n);D.set.u=Date.now();save();render()}
 function rmStaff(i){if(!isAdmin())return;if(!confirm("명단에서 뺄까요?"))return;D.set.staff.splice(i,1);D.set.u=Date.now();save();render()}
 async function setPins(){
@@ -2419,10 +2652,11 @@ async function saveInboxToken(){if(connGuard())return;
   }catch(e){alert("연결하지 못했어요: "+(e.message||e))}
 }
 function clearInboxToken(){if(connGuard())return;if(!confirm("지시함 쓰기 토큰을 지울까요? (이미 보낸 지시는 그대로예요)"))return;delete CFG.repoWToken;saveCfg();sdClear("iwt");render()}
-const syncCardUi=()=>`<div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?'<span class="m sub" style="margin:0">연결됨</span>':""}</h3><div class="body">
+const syncCardUi=()=>`<div class="card"><h3>☁ 클라우드 동기화 ${CFG.token?(gistIdBad()?'<span class="m sub low" style="margin:0">⚠ Gist ID 오류</span>':SYNC_OK?'<span class="m sub" style="margin:0">연결됨</span>':'<span class="m sub low" style="margin:0">⚠ 동기화 안 됨</span>'):""}</h3><div class="body">
+  ${CFG.token&&gistIdBad()?`<div class="m low" style="margin:0 0 8px">⚠️ 지금 Gist ID(<b>${esc(CFG.gistId)}</b>)는 올바른 형식이 아니라서 <b>한 번도 동기화되지 않았어요.</b> 데이터는 이 기기에만 있어요.</div><button class="btn" style="margin-bottom:8px" onclick="fixGistId()">새 Gist 만들고 이 기기 데이터 올리기</button>`:""}
   <div class="m sub">내 GitHub 비공개 Gist에 데이터를 저장해요. <a href="https://github.com/settings/tokens/new?scopes=gist&description=rino-workspace" target="_blank" rel="noopener">여기</a>에서 <b>gist 권한만</b> 있는 토큰을 만들어 붙여넣으세요.</div>
   <div class="form" style="border:0;padding:0"><input id="tk" type="password" placeholder="GitHub 토큰 (ghp_…)" value="${esc(CFG.token||"")}" autocomplete="off">
-  <input id="gi" placeholder="Gist ID (두 번째 기기에서만 입력)" value="${esc(CFG.gistId||"")}">
+  <input id="gi" placeholder="Gist ID (두 번째 기기에서만 입력 · 처음이면 비워 두기)" value="${esc(gistIdBad()?"":(CFG.gistId||""))}">
   <button class="btn" onclick="connectSync()">연결 / 지금 동기화</button>
   ${CFG.token?'<button class="btn ghost" onclick="disconnectSync()">연결 해제</button>':""}</div>
   <div class="m sub">${CFG.gistId?"내 Gist ID: <b>"+esc(CFG.gistId)+"</b> — 다른 기기에 같은 토큰과 이 ID를 입력하면 같은 데이터가 보여요.":"첫 연결 시 Gist가 자동으로 만들어져요."}</div></div></div>`;
@@ -2450,7 +2684,7 @@ function setTabSet(k){setTabK=k;render();window.scrollTo(0,0);if(k==="link")conn
 const orgBody=()=>views.org().replace("<h1>조직도</h1>","");
 function setSection(k){
   const adm=isAdmin(),x=staffParts();
-  if(k==="people")return `<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
+  if(k==="people")return `${adm?`<h3 class="setsec">회원가입 승인</h3>${acctCard()}`:""}<h3 class="setsec">조직도</h3>${orgBody()}<h3 class="setsec">직원 명단 · AI 직원 · 초대</h3>${x.roster}${x.agents}${x.invite}`;
   if(k==="link")return `${connCard()}${vaultCard()}${syncCardUi()}${repoCardUi()}${adm?inboxCard():""}${adm?pushCard():""}${adm?calCard():""}${aiCardUi()}`;
   if(k==="look")return `${bgCard()}${adm?brandCard():""}${themeCard()}${adm?brandLinkCard():""}`;
   if(k==="data")return `${adm?dataProtectCard():""}${adm?ledExportCard():""}${backupCardUi()}${importCardUi()}${skillCard()}`;
@@ -2557,7 +2791,18 @@ function vaultCard(){
   <div class="row" style="gap:8px;flex-wrap:wrap">${isAdmin()?`<button class="btn" onclick="vaultAsk('seal')">${v?"다시 암호화해서 보관":"암호화해서 보관"}</button>`:""}${v?`<button class="btn ghost" onclick="vaultAsk('restore')">보관본에서 복원</button>`:""}</div>
   <div class="m sub" style="margin-top:8px"><b>폰에서 쓰는 순서</b> ① 폰에서 앱을 열고 초대 링크(설정 › 직원·조직)나 동기화 토큰+Gist ID로 먼저 연결 ② 관리자 로그인 ③ 이 카드에서 <b>보관본에서 복원</b> ④ 연결 정보 보호의 <b>잠그기</b></div></div></div>`;
 }
-function connectSync(){if(connGuard())return;CFG.token=$("#tk").value.trim();CFG.gistId=$("#gi").value.trim()||CFG.gistId||"";saveCfg();sdClear("tk","gi");if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
+/* Gist ID는 GitHub가 정한 영문·숫자(16진수) 조합이에요. 주소 전체를 붙여 넣어도 끝의 ID만 골라 써요 */
+const gistIdOf=v=>{v=String(v||"").trim();const m=v.match(/([0-9a-f]{20,40})\/?(?:[#?].*)?$/i);return m?m[1].toLowerCase():""};
+const gistIdBad=()=>!!CFG.gistId&&!/^[0-9a-f]{20,40}$/i.test(CFG.gistId);
+function connectSync(){if(connGuard())return;
+  const raw=$("#gi").value.trim(),gid=raw?gistIdOf(raw):"";
+  if(raw&&!gid){alert("Gist ID 형식이 아니에요.\n\nGist ID는 gist.github.com 주소 끝의 영문·숫자 조합(예: 3f9a1c…)이에요. 이름을 직접 지어 넣는 칸이 아니에요.\n\n처음 연결하는 기기라면 이 칸을 비워 두세요. Gist가 자동으로 만들어져요.");return}
+  if(!raw&&CFG.gistId&&!gistIdBad()&&!confirm("Gist ID 칸이 비어 있어요. 새 Gist를 만들어 이 기기 데이터를 올릴까요?\n(다른 기기와 같은 데이터를 쓰려면 취소하고 기존 Gist ID를 넣어 주세요)"))return;
+  CFG.token=$("#tk").value.trim();CFG.gistId=gid;saveCfg();sdClear("tk","gi");if(!CFG.token)return;setSync("☁ 연결 중…");(CFG.gistId?pull():push()).then(()=>render())}
+/* 잘못된 Gist ID(예: 이름을 넣은 경우)를 지우고 새 Gist를 만들어 이 기기 데이터를 올려요 */
+function fixGistId(){if(connGuard())return;if(!CFG.token){alert("먼저 GitHub 토큰을 넣고 연결해 주세요");return}
+  if(!confirm("잘못된 Gist ID를 지우고, 새 Gist를 만들어 이 기기의 데이터를 올릴까요?"))return;
+  CFG.gistId="";saveCfg();sdClear("gi");setSync("☁ 연결 중…");push().then(()=>{render();if(SYNC_OK&&CFG.gistId)alert("새 Gist를 만들었어요.\n\nGist ID: "+CFG.gistId+"\n\n로그인 서버(Cloudflare 워커)의 GIST_ID에도 이 값을 넣어 주세요.");else alert("만들지 못했어요. 토큰에 gist 권한이 있는지 확인해 주세요")})}
 function disconnectSync(){if(connGuard())return;delete CFG.token;saveCfg();sdClear("tk");setSync("● 자동 저장");render()}
 function exportJson(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:"application/json"}));a.download="rino-workspace-"+today()+".json";a.click()}
 function importJson(f){if(!f||dataGuard())return;f.text().then(async t=>{try{await lsSnapNow("import-all");D=norm(JSON.parse(t));save();render();alert("불러왔어요")}catch{alert("파일을 읽을 수 없어요")}})}
@@ -2677,6 +2922,22 @@ function invReqSet(id,st){
   ntfy(`📦 요청 ${st} · ${r.name} × ${r.qty} @${dn(r.by)}`,curName()||"관리자");
   save();render();
 }
+/* ---------- 매장 POS (pos.html) ----------
+   POS는 따로 만든 한 파일 앱(pos.html)이고, 앱 안에서는 화면 밖에 고정된 틀(#posbox)로 보여요.
+   앱 화면이 동기화로 다시 그려져도 POS는 새로 고쳐지지 않아 장바구니·입력이 그대로 있어요.
+   POS 기록(설정·장바구니·주문)은 POS가 정한 대로 이 기기에만 저장돼요. */
+views.pos=()=>`<div class="posbar" id="posbar"><h1>매장 POS</h1><a href="pos.html" target="_blank" rel="noopener">새 창으로 크게 열기 ↗</a></div>`;
+function posFit(){
+  const box=$("#posbox");if(!box)return;
+  const on=page==="pos"&&!!me();document.body.classList.toggle("posmode",on);
+  if(!on){box.style.display="none";return}
+  if(!box.firstChild){const f=document.createElement("iframe");f.src="pos.html";f.title="매장 POS";f.setAttribute("allow","fullscreen");box.appendChild(f)}
+  const bar=$("#posbar"),app=$("#app"),tb=$("#tabbar");
+  const top=bar?bar.getBoundingClientRect().bottom+4:0,l=app.getBoundingClientRect().left;
+  const tbH=tb&&getComputedStyle(tb).display!=="none"?tb.getBoundingClientRect().height:0;
+  Object.assign(box.style,{display:"block",top:Math.max(0,top)+"px",left:Math.max(0,l)+"px",right:"0",bottom:tbH+"px"});
+}
+window.addEventListener("resize",()=>{try{posFit()}catch{}});
 views.inventory=()=>{
   if(!INV_TABS.some(t=>t[0]===invTab)&&invTab!=="log"&&invTab!=="led")invTab="frame";
   const gift=D.inv.filter(x=>invCatOf(x)==="사은품"),giftN=gift.reduce((a,x)=>a+x.qty,0);
@@ -3178,7 +3439,8 @@ views.dday=()=>{
    메시지는 기존 클라우드 동기화(Gist)로 항목 단위로 합쳐져요. 서버가 없는 방식이라
    · 보낸 사람 이름은 로그인 이름이고 PIN은 편의용 잠금이에요(민감한 내용은 쓰지 마세요)
    · 푸시 서버가 없어서, 알림은 앱이 열려 있을 때(15초마다 확인) 와요. */
-const MROOMS0=[{id:"notice",name:"공지사항",ro:1},{id:"alert",name:"알림",ro:1,sys:1}];
+/* 업무 대화: 관리자와 직원(사람)끼리만 이야기하는 방. AI 직원은 들어오지 않고 불러도 대답하지 않아요 */
+const MROOMS0=[{id:"notice",name:"공지사항",ro:1},{id:"talk",name:"업무 대화",human:1},{id:"alert",name:"알림",ro:1,sys:1}];
 /* 대화방: 이름만 정하고, 방 안에서 사람(직원)과 AI 직원을 초대해요. members가 있는 방은 참여자·관리자에게만 보여요. */
 const roomNorm=r=>{const o={...r};o.ai=Array.isArray(r.ai)?r.ai.slice():(r.staff?[r.staff]:[]);if(r.staff&&!Array.isArray(r.members))o.members=[];return o};
 const roomHas=(r,n)=>!Array.isArray(r.members)||isAdmin()||r.members.includes(n);
@@ -3493,7 +3755,7 @@ views.messenger=()=>{
    <div class="m sub">${CFG.token?"클라우드 동기화로 직원들과 주고받아요":"클라우드 동기화가 꺼져 있어서 이 기기에서만 보여요 (설정에서 연결)"} · 보낸 사람 이름은 로그인 이름이에요</div>
    <button class="pill" style="background:${nOn?"var(--done)":"var(--make)"}" onclick="mNotifOn()">${MS.push?"✓ 푸시 켜짐 (앱이 꺼져 있어도 와요)":nOn?"✓ 알림 켜짐 (앱이 열려 있을 때)":"이 기기 알림 켜기"}</button>${MS.push?'<button class="pill" style="background:var(--mut)" onclick="pushOff()">푸시 끄기</button>':""}</div></div></div>`;
 };
-setInterval(()=>{if(!document.hidden&&page==="messenger"&&CFG.token)syncNow()},15000);
+/* 메신저 화면 15초 확인은 위의 실시간 반영(10초, 모든 화면)이 대신해요 */
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&page==="messenger"&&CFG.token)syncNow()});
 
 /* ---------- 사업자 설립 룸 (세움과 대화 · 단계 · 자료) ----------
@@ -3985,7 +4247,7 @@ function render(keepFocus){
   document.body.classList.toggle("staff",!!m&&m.role!=="admin");document.body.classList.toggle("out",!m);
   $("#fab").style.display=m?"flex":"none";
   {const cf=$("#chatfab"),n=m&&isAdmin()?vtasks().filter(t=>!t.done&&agentNames().has(t.who)).length:0;cf.style.display=m&&isAdmin()&&page!=="chat"?"flex":"none";$("#chatbadge").textContent=n?String(n):""}
-  if(!m){$("#crumb").textContent="로그인";applyBg();$("#app").innerHTML=lockView();return}
+  if(!m){$("#crumb").textContent="로그인";applyBg();$("#app").innerHTML=lockView();try{posFit()}catch{}return}
   const pg=PAGES.find(p=>p[0]===page&&(!p[3]||m.role==="admin"));if(!pg)page="home";
   nav();tabbar();applyBg();
   if(AG_READY&&(!CFG.token||SYNC_OK)&&isAdmin()&&!D.set.agents.length&&!D.set.agentsOff){seedAgents(true);return}
@@ -3996,6 +4258,7 @@ function render(keepFocus){
   if(page==="settings"){sdRestore();connApplyLock()}
   if(page==="doc")setTimeout(hydrateDocImgs,0);
   if(page==="messenger")msgrAfter();
+  try{posFit()}catch{}
   if(page==="chat"){const lg=$("#chatlog");if(lg)lg.scrollTop=lg.scrollHeight}
   if(page==="chat"||page==="home"||page==="messenger")pollResults(false);
   if(keepFocus){const el=$("input[oninput]");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
@@ -4044,6 +4307,8 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1&&s
   try{const m0=me();if(CFG.bio&&CFG.bio.id&&m0&&!m0.open)lockShow()}catch{}
   bioCheck();
   /* 초대 링크(#invite=...)로 들어오면 연결 정보를 저장하고 주소창에서 지워요 */
+  /* 새 기기 연결 링크(#auth=워커주소): 로그인 서버 주소만 이 기기에 저장해요. 토큰은 들어 있지 않아요 */
+  try{if(location.hash.startsWith("#auth=")){const u=decodeURIComponent(location.hash.slice(6)).trim().replace(/\/+$/,"");if(/^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(u)||/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}$/i.test(u)){CFG.authWorker=u;saveCfg();setTimeout(()=>{try{toast("로그인 서버에 연결했어요. 이제 로그인할 수 있어요");render()}catch{}},300)}history.replaceState(null,"",location.pathname)}}catch{}
   try{if(location.hash.startsWith("#invite=")){const j=JSON.parse(atob(location.hash.slice(8)));if(j.t&&j.g){CFG.token=j.t;CFG.gistId=j.g;CFG.invited=true;saveCfg()}history.replaceState(null,"",location.pathname)}}catch{}
   /* 알림을 눌러 들어오면(?chat=… / ?messenger=1) 메신저로 바로 가요 */
   try{const q=new URLSearchParams(location.search);if(q.has("ledger")){if(me()&&isAdmin()){revCo=REV_GOAL;revTab="led";ledTab=q.get("ledger")==="pay"?"pay":"sum";page="revenue"}history.replaceState(null,"",location.pathname)}else if(q.has("chat")||q.has("messenger")){if(me()){page="messenger";const rq=q.get("room");if(rq&&mrooms().some(r=>r.id===rq)){mRoom=rq;mForce=true}}history.replaceState(null,"",location.pathname)}}catch{}

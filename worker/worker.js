@@ -140,6 +140,80 @@ function throttled(ip) {
 }
 
 
+/* ---------- 이메일 계정: 회원가입(POST /signup) · 로그인(POST /login) ----------
+   계정 목록은 같은 비공개 Gist의 accounts.json 에 있어요. 가입하면 '승인 대기'로 들어가고, 관리자가 앱 「직원 관리」에서 승인해야 로그인돼요.
+   비밀번호는 앱이 먼저 PBKDF2(30만 회)로 바꾼 값(ph)만 보내고, 워커는 계정마다 다른 소금(salt)을 붙여 SHA-256으로 한 번 더 바꿔 저장해요.
+   비밀번호 원문은 워커에도 Gist에도 남지 않아요. */
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
+const PH_RE = /^[0-9a-f]{64}$/;
+const hex = (buf) => Array.from(new Uint8Array(buf)).map((x) => x.toString(16).padStart(2, '0')).join('');
+const sha256hex = async (s) => hex(await crypto.subtle.digest('SHA-256', te.encode(s)));
+const randHex = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
+const normEmail = (e) => String(e || '').trim().toLowerCase();
+
+export async function loadAccts(env, doFetch = fetch) {
+  const headers = { Authorization: `Bearer ${env.GIST_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'linus-push-worker' };
+  const r = await doFetch(`${API}/gists/${env.GIST_ID}`, { headers });
+  if (!r.ok) throw new Error(`gist ${r.status}`);
+  const f = ((await r.json()).files || {})['accounts.json'];
+  const text = f ? (f.truncated ? await (await doFetch(f.raw_url, { headers })).text() : f.content) : '';
+  let A = { v: 1, users: [] };
+  try { const j = JSON.parse(text || '{}'); if (j && Array.isArray(j.users)) A = j; } catch {}
+  return { A, headers };
+}
+async function saveAccts(env, A, headers, doFetch = fetch) {
+  const r = await doFetch(`${API}/gists/${env.GIST_ID}`, { method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ files: { 'accounts.json': { content: JSON.stringify(A, null, 1) } } }) });
+  if (!r.ok) throw new Error(`gist save ${r.status}`);
+}
+
+// 실패·가입 횟수 제한 (워커 인스턴스마다 따로 세는 간단한 방식)
+const tries = new Map();
+function over(key, limit, windowMs) {
+  const now = Date.now(), a = (tries.get(key) || []).filter((t) => now - t < windowMs);
+  tries.set(key, a);
+  if (tries.size > 2000) for (const k of tries.keys()) { tries.delete(k); if (tries.size < 1000) break; }
+  return a.length >= limit;
+}
+const mark = (key) => { const a = tries.get(key) || []; a.push(Date.now()); tries.set(key, a); };
+
+export async function signup(body, ip, env, deps = {}) {
+  const doFetch = deps.fetch || fetch;
+  const email = normEmail(body.email), name = clip(body.name, 30), ph = String(body.ph || '');
+  if (!EMAIL_RE.test(email) || !name || !PH_RE.test(ph)) return { status: 400, body: { error: 'bad request' } };
+  if (over(`su:${ip}`, 5, 3600000)) return { status: 429, body: { error: 'slow down' } };
+  mark(`su:${ip}`);
+  const { A, headers } = await loadAccts(env, doFetch);
+  const u = A.users.find((x) => x.email === email);
+  if (u && u.status === 'reset') { // 관리자가 비밀번호를 초기화한 계정: 새 비밀번호로 다시 승인 대기
+    const salt = randHex(16);
+    Object.assign(u, { name, status: 'pending', salt, h: await sha256hex(`${salt}:${ph}`), at: Date.now(), u: Date.now() });
+    await saveAccts(env, A, headers, doFetch);
+    return { status: 200, body: { ok: true, status: 'pending' } };
+  }
+  if (u) return u.status === 'pending' ? { status: 200, body: { ok: true, status: 'pending' } } : { status: 409, body: { error: 'exists' } };
+  if (A.users.filter((x) => x.status === 'pending').length >= 100) return { status: 429, body: { error: 'too many pending' } };
+  const salt = randHex(16), now = Date.now();
+  A.users.push({ email, name, role: 'staff', status: 'pending', salt, h: await sha256hex(`${salt}:${ph}`), at: now, u: now });
+  await saveAccts(env, A, headers, doFetch);
+  return { status: 200, body: { ok: true, status: 'pending' } };
+}
+
+export async function login(body, ip, env, deps = {}) {
+  const doFetch = deps.fetch || fetch;
+  const email = normEmail(body.email), ph = String(body.ph || '');
+  if (!EMAIL_RE.test(email) || !PH_RE.test(ph)) return { status: 400, body: { error: 'bad request' } };
+  if (over(`lf:${email}`, 5, 900000) || over(`li:${ip}`, 20, 900000)) return { status: 429, body: { error: 'slow down' } };
+  const { A } = await loadAccts(env, doFetch);
+  const u = A.users.find((x) => x.email === email);
+  if (u && u.status === 'reset') return { status: 403, body: { error: 'reset' } };
+  const ok = !!u && u.salt && sameKey(await sha256hex(`${u.salt}:${ph}`), u.h || '');
+  if (!ok) { mark(`lf:${email}`); mark(`li:${ip}`); return { status: 401, body: { error: 'invalid' } }; }
+  if (u.status === 'pending') return { status: 403, body: { error: 'pending' } };
+  if (u.status !== 'approved') return { status: 403, body: { error: 'denied' } };
+  tries.delete(`lf:${email}`);
+  return { status: 200, body: { ok: true, token: env.GIST_TOKEN, gist: env.GIST_ID, role: u.role === 'admin' ? 'admin' : 'staff', name: u.name, email } };
+}
+
 /* ---------- Notion 일정표 연동 (POST /cal) ----------
    앱 일정표 ↔ Notion '스케쥴' 데이터베이스. 비밀값: NOTION_TOKEN(내부 통합 토큰), NOTION_DB_ID(데이터베이스 ID), CAL_KEY(앱과 나눠 가진 접속 키)
    앱이 보낸 일정만 쓰고(최대 20건), 지운 일정은 Notion 휴지통으로 보내요(복구 가능). 보관·삭제 외에 Notion 데이터를 지우지 않아요. */
@@ -242,6 +316,9 @@ async function calHandle(req, env, json) {
 
 export default {
   async fetch(req, env) {
+    // 비밀값에 앞뒤 공백·줄바꿈이 섞여도 동작하게 다듬고, GIST_ID는 주소 전체를 넣어도 끝의 ID만 써요
+    const gid = String(env.GIST_ID || '').trim();
+    env = { ...env, GIST_TOKEN: String(env.GIST_TOKEN || '').trim(), GIST_ID: (gid.match(/([0-9a-f]{20,40})\/?$/i) || [, gid])[1] };
     const url = new URL(req.url);
     const origin = req.headers.get('Origin') || '';
     const allowed = (env.ALLOWED_ORIGIN || 'https://linuscompany.co.kr').split(',').map((s) => s.trim());
@@ -249,8 +326,21 @@ export default {
     const cors = { 'Access-Control-Allow-Origin': okOrigin ? origin : allowed[0], 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'content-type, x-cal-key', Vary: 'Origin' };
     const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json', ...cors } });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+    if (url.pathname === '/health' && url.searchParams.get('check') === '1') {
+      const out = { ok: true, version: 5, gist_token: !!env.GIST_TOKEN, gist_id: !!env.GIST_ID };
+      if (env.GIST_TOKEN && env.GIST_ID) {
+        try {
+          const r = await fetch(`${API}/gists/${env.GIST_ID}`, { method: 'HEAD', headers: { Authorization: `Bearer ${env.GIST_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'linus-push-worker' } });
+          out.gist_read = r.status;
+          const sc = r.headers.get('x-oauth-scopes');
+          out.token_type = sc === null ? 'fine-grained' : 'classic';
+          if (sc !== null) out.gist_write = sc.split(',').map((x) => x.trim()).includes('gist');
+        } catch (e) { out.gist_read = 'error'; }
+      }
+      return new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
     if (url.pathname === '/health') {
-      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), version: 3 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
+      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), auth: !!(env.GIST_TOKEN && env.GIST_ID), version: 5 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
     }
     if (url.pathname === '/notify' && req.method === 'POST') {
       if (!okOrigin) return json({ error: 'forbidden' }, 403);
@@ -264,6 +354,21 @@ export default {
         return json(r.body, r.status);
       } catch (e) {
         return json({ error: 'failed' }, 502);
+      }
+    }
+    if ((url.pathname === '/signup' || url.pathname === '/login') && req.method === 'POST') {
+      if (!okOrigin) return json({ error: 'forbidden' }, 403);
+      const ip = req.headers.get('CF-Connecting-IP') || 'x';
+      if (throttled(ip)) return json({ error: 'slow down' }, 429);
+      if (!(env.GIST_TOKEN && env.GIST_ID)) return json({ error: 'not configured' }, 503);
+      let body = {};
+      try { body = (await req.json()) || {}; } catch { return json({ error: 'bad request' }, 400); }
+      try {
+        const r = await (url.pathname === '/signup' ? signup : login)(body, ip, env);
+        return json(r.body, r.status);
+      } catch (e) {
+        // 원인(예: 'gist 401', 'gist save 403')만 알려 줘요. 토큰·내용은 넣지 않아요.
+        return json({ error: 'failed', detail: String((e && e.message) || e).slice(0, 80) }, 502);
       }
     }
     if (url.pathname === '/cal' && req.method === 'POST') {
