@@ -1974,8 +1974,11 @@ async function staffSessions(){
   try{_sess=JSON.parse(localStorage.getItem("rino-sess")||"null")}catch{}
   const repo=instrRepo();
   if(repo&&CFG.repoToken){
-    try{const r=await ghRepo(`/repos/${repo}/contents/tools/staff_sessions.json?ref=${encodeURIComponent((CFG.repoBranch||"work").trim()||"work")}`);
-      if(r.ok){const j=JSON.parse(b64text((await r.json()).content));_sess=Object.fromEntries((j.staff||[]).map(s=>[s.agent,s.session_id]));try{localStorage.setItem("rino-sess",JSON.stringify(_sess))}catch{}}}catch{}
+    const br=encodeURIComponent((CFG.repoBranch||"work").trim()||"work"),got={};
+    for(const f of ["staff_sessions","work_sessions"]){/* 옛 개인 세션 → 새 작업 세션 순으로 읽어 새 것이 이겨요 */
+      try{const r=await ghRepo(`/repos/${repo}/contents/tools/${f}.json?ref=${br}`);
+        if(r.ok){const j=JSON.parse(b64text((await r.json()).content));(j.sessions||j.staff||[]).forEach(s=>{if(s.agent&&s.session_id)got[s.agent]=s.session_id})}}catch{}}
+    if(Object.keys(got).length){_sess=got;try{localStorage.setItem("rino-sess",JSON.stringify(_sess))}catch{}}
   }
   return _sess||{};
 }
@@ -1988,6 +1991,7 @@ async function runNow(id){
   if(!x.as){x.as="sent";save();render()}
   try{await navigator.clipboard.writeText(txt)}catch{}
   if(sid){window.open("https://claude.ai/code/"+encodeURIComponent(sid),"_blank","noopener");toast("직원 세션을 열었어요 · 복사된 문구를 붙여넣고 보내면 바로 시작해요")}
+  else if(x.inbox&&CFG.repoWToken){await startNow(id);toast(x.who+"은(는) 개인 세션이 없어서 자동 착수(▶ 시작)로 보냈어요 · 1~2분 뒤 컨텐츠를 새로고침해 주세요")}
   else alert("직원 세션 주소를 찾지 못했어요. 지시함 연결(읽기 토큰)을 저장하면 자동으로 열려요.\n\n복사된 문구를 그 직원의 Claude 세션에 붙여넣어 주세요:\n\n"+txt);
 }
 const AS_FROM={"지시됨":"sent","착수":"work","보고":"rep","검증완료":"ok","반려":"sent"};
