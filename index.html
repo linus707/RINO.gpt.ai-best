@@ -2944,17 +2944,13 @@ function posFit(){
 }
 window.addEventListener("resize",()=>{try{posFit()}catch{}});
 views.inventory=()=>{
-  if(!INV_TABS.some(t=>t[0]===invTab)&&invTab!=="log"&&invTab!=="led")invTab="frame";
+  if(!INV_TABS.some(t=>t[0]===invTab))invTab="frame";
   const gift=D.inv.filter(x=>invCatOf(x)==="사은품"),giftN=gift.reduce((a,x)=>a+x.qty,0);
-  const tabs=[...INV_TABS.map(([k,n])=>[k,`${n} ${invCnt(k)}`]),["log","기록"],["led","장부"]];
+  /* 기록·장부 탭은 2026-11-10 대표 지시로 뺐어요(장부는 수익 → 장부에서 봐요, 입출고 기록 데이터는 계속 쌓여요) */
+  const tabs=INV_TABS.map(([k,n])=>[k,`${n} ${invCnt(k)}`]);
   const head=`<h1>물품·재고</h1><div class="sub">에이스침대 매장의 프레임·매트리스·기타 가구와 사은품 재고예요. 부족하면 빨간색으로 보여요</div>
   <div class="stats">${stat("전체 품목",D.inv.length)}${stat("부족 품목",invLowN())}${stat("사은품 재고",giftN+"개")}</div>
   <div class="tabs setTabs">${tabs.map(([k,n])=>`<button class="${invTab===k?"on":""}" onclick="invTabSet('${k}')">${n}</button>`).join("")}</div>`;
-  if(invTab==="led")return head+ledView(today().slice(0,7));
-  if(invTab==="log"){
-    const L=D.invlog.slice().sort((a,b)=>b.t-a.t).slice(0,100);
-    return head+(L.map(l=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(l.item)} <b style="color:${l.delta>0?"#34c759":"#ff3b30"}">${l.delta>0?"+":""}${l.delta}</b></div><div class="m">${esc(dn(l.by))} · ${new Date(l.t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${l.note?" · "+esc(l.note):""}</div></div></div></div>`).join("")||'<div class="empty">아직 기록이 없어요. 수량을 늘리거나 줄이면 입고·판매·지급 기록이 남아요</div>');
-  }
   const cat=invTabCat(invTab),q=invQ.trim().toLowerCase(),isGift=cat==="사은품";
   const list=D.inv.filter(x=>invCatOf(x)===cat&&(!q||(x.name+" "+(x.spec||"")+" "+(x.color||"")+" "+(x.loc||"")+" "+(x.memo||"")).toLowerCase().includes(q))&&(!invLow||x.qty<=x.min)).sort((a,b)=>(b.qty<=b.min)-(a.qty<=a.min)||a.name.localeCompare(b.name,"ko"));
   const ed=invEdit==="new"?{name:"",cat,spec:"",color:"",qty:0,unit:isGift?"개":"개",min:isGift?5:0,loc:"",memo:""}:D.inv.find(x=>x.id===invEdit);
