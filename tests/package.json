@@ -1,0 +1,11 @@
+{
+  "name": "linus-site-tests",
+  "private": true,
+  "description": "playwright-cli로 사이트 화면을 실제 브라우저에서 점검하는 자동 테스트",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "@playwright/cli": "0.1.24"
+  }
+}
