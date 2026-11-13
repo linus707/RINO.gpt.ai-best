@@ -1,6 +1,7 @@
 # 리노톡(LinoTalk) 계획서 — Phase 0
 
-> 상태: **승인 대기 중** (코드는 아직 한 줄도 작성하지 않았습니다)
+> 상태: 서버(Phase 2)와 한글 조합 엔진(Phase 4의 로직 부분)을 먼저 구현했습니다. 앱·키보드는 Mac 없이 진행하는 방법 결정 후 시작합니다.
+> 서버 API의 최신 내용은 `server/README.md`가 기준입니다 (구현하면서 `refused` 오류 코드, `reply_reading`, 레벨 이름 `starter`/`beginner`/`intermediate`가 추가됨).
 > 작성일: 2026-11-13
 
 ---
