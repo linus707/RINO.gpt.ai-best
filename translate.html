@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="키보드 번역">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>키보드 번역 · Linus Company</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{--accent:#c8553d;--bg:#f2f2f7;--tx:#1c1c1e;--mut:#6c6c70;--sep:rgba(60,60,67,.16);--fill:rgba(120,120,128,.12);--card:#fff}
+@media (prefers-color-scheme:dark){:root{--accent:#d47a68;--bg:#000;--tx:#f5f5f7;--mut:#98989f;--sep:rgba(84,84,88,.55);--fill:rgba(120,120,128,.28);--card:#1c1c1e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+h1{font-size:26px;margin:0;flex:1}
+a.back{color:var(--accent);text-decoration:none;font-weight:600;font-size:14px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 14px;line-height:1.5}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 10px;margin:0 -16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;font:inherit;font-size:14px;font-weight:600;border:0;border-radius:999px;padding:9px 14px;background:var(--card);color:var(--tx);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);color:#fff}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:10px}
+.row{display:flex;align-items:center;gap:8px}
+.lab{font-size:12px;font-weight:700;color:var(--mut);flex:1;letter-spacing:.02em}
+.lab b{color:var(--accent)}
+textarea{display:block;width:100%;min-height:110px;margin:8px 0 6px;padding:0;border:0;outline:0;resize:none;background:transparent;color:var(--tx);font:inherit;font-size:18px;line-height:1.5}
+textarea::placeholder{color:var(--mut)}
+.out{min-height:84px;margin:8px 0 10px;font-size:18px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.out.dim{color:var(--mut)}
+.back-tr{margin:-2px 0 10px;padding-top:10px;border-top:1px solid var(--sep);font-size:14px;line-height:1.5;color:var(--mut);white-space:pre-wrap}
+.btn{font:inherit;font-size:14px;font-weight:600;border:0;border-radius:12px;padding:10px 14px;background:var(--accent);color:#fff;cursor:pointer}
+.btn.ghost{background:var(--fill);color:var(--tx)}
+.btn.sm{font-size:13px;padding:7px 11px;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.grow{flex:1}
+.count{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
+.count.over{color:var(--accent);font-weight:700}
+.msg{font-size:13px;color:var(--accent);margin:0 4px 10px;line-height:1.5}
+h2{font-size:13px;color:var(--mut);font-weight:700;margin:22px 4px 8px;display:flex;align-items:center}
+h2 span{flex:1}
+h2 button{font:inherit;font-size:13px;font-weight:600;border:0;background:none;color:var(--accent);cursor:pointer;padding:0}
+.hist{list-style:none;margin:0;padding:0;background:var(--card);border-radius:16px;overflow:hidden}
+.hist li{border-bottom:1px solid var(--sep)}
+.hist li:last-child{border-bottom:0}
+.hist button{display:block;width:100%;text-align:left;font:inherit;border:0;background:none;color:var(--tx);padding:11px 14px;cursor:pointer}
+.hist .s{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist .t{font-size:15px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note{font-size:12px;color:var(--mut);line-height:1.6;margin:18px 4px 0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>키보드 번역</h1>
+    <a class="back" href="./">홈으로</a>
+  </header>
+  <p class="sub">한글로 쓰면 고른 언어로, 외국어를 붙여 넣으면 한국어로 바로 바꿔 줘요.</p>
+
+  <div class="chips" id="chips" role="group" aria-label="상대 언어"></div>
+
+  <div class="card">
+    <div class="row">
+      <div class="lab" id="dir"></div>
+      <button class="btn ghost sm" id="paste" type="button">붙여넣기</button>
+      <button class="btn ghost sm" id="clear" type="button">지우기</button>
+    </div>
+    <textarea id="src" placeholder="여기에 입력하거나 붙여 넣으세요" autocapitalize="sentences" aria-label="번역할 글"></textarea>
+    <div class="row"><span class="lab"></span><span class="count" id="count"></span></div>
+  </div>
+
+  <p class="msg" id="msg" role="status" hidden></p>
+
+  <div class="card">
+    <div class="lab">번역 결과</div>
+    <div class="out dim" id="out" aria-live="polite">입력하면 자동으로 번역돼요.</div>
+    <div class="back-tr" id="backTr" hidden></div>
+    <div class="row">
+      <button class="btn grow" id="copy" type="button" disabled>복사</button>
+      <button class="btn ghost" id="share" type="button" disabled hidden>공유</button>
+      <button class="btn ghost" id="check" type="button" disabled>뜻 확인</button>
+    </div>
+  </div>
+
+  <h2 id="histHead" hidden><span>최근 번역</span><button id="histClear" type="button">모두 지우기</button></h2>
+  <ul class="hist" id="hist" hidden></ul>
+
+  <p class="note">
+    번역할 글은 무료 번역 서비스 MyMemory(translated.net)로 전송돼요. 주민번호·카드번호·비밀번호 같은 민감한 내용은 넣지 마세요.
+    최근 번역 기록은 이 기기에만 저장돼요. 무료 한도는 하루 약 5,000자예요.<br>
+    아이폰: Safari 공유 버튼 → <b>홈 화면에 추가</b>를 누르면 앱처럼 쓸 수 있어요.
+  </p>
+</div>
+
+<script>
+'use strict';
+const LANGS = [
+  { code: 'en', name: '영어' }, { code: 'ja', name: '일본어' }, { code: 'zh-CN', name: '중국어' },
+  { code: 'es', name: '스페인어' }, { code: 'fr', name: '프랑스어' }, { code: 'de', name: '독일어' },
+  { code: 'vi', name: '베트남어' }, { code: 'th', name: '태국어' }, { code: 'id', name: '인도네시아어' },
+];
+const MAX_CHARS = 1000;      // 한 번에 번역하는 글자 수 (무료 한도 보호)
+const CHUNK_BYTES = 450;     // MyMemory는 요청당 500바이트까지 받아요
+const API = 'https://api.mymemory.translated.net/get';
+const KEY_LANG = 'tr.lang', KEY_HIST = 'tr.hist';
+const $ = (id) => document.getElementById(id);
+const el = { chips: $('chips'), dir: $('dir'), src: $('src'), count: $('count'), msg: $('msg'), out: $('out'), backTr: $('backTr'),
+  copy: $('copy'), share: $('share'), check: $('check'), paste: $('paste'), clear: $('clear'), hist: $('hist'), histHead: $('histHead'), histClear: $('histClear') };
+
+function store(key, value) {
+  try {
+    if (value === undefined) return JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch { return null; }
+}
+
+let lang = LANGS.some((l) => l.code === store(KEY_LANG)) ? store(KEY_LANG) : 'en';
+let history = Array.isArray(store(KEY_HIST)) ? store(KEY_HIST).filter((h) => h && typeof h.s === 'string' && typeof h.t === 'string') : [];
+let result = null;           // { text, from, to }
+let job = null, timer = 0;
+
+const langName = (code) => code === 'ko' ? '한국어' : code === 'Autodetect' ? '외국어(자동 감지)' : LANGS.find((l) => l.code === code)?.name ?? code;
+const hasHangul = (text) => /[ㄱ-ㆎ가-힣]/.test(text);
+// 한글이 섞여 있으면 "한국어 → 상대 언어", 아니면 "상대 언어 → 한국어"
+// 외국어 쪽은 어떤 언어를 붙여 넣어도 되도록 서버가 언어를 알아내게 해요.
+const direction = (text) => hasHangul(text) ? { from: 'ko', to: lang } : { from: 'Autodetect', to: 'ko' };
+
+const encoder = new TextEncoder();
+const bytes = (s) => encoder.encode(s).length;
+
+// 긴 글을 문장 단위로 잘라 요청 한도(바이트) 안에 맞춰요.
+function chunkLine(line) {
+  const parts = line.match(/[^.!?。！？]+[.!?。！？]*\s*/g) ?? [line];
+  const chunks = [];
+  let cur = '';
+  const push = () => { if (cur.trim()) chunks.push(cur.trim()); cur = ''; };
+  for (const part of parts) {
+    if (bytes(cur + part) <= CHUNK_BYTES) { cur += part; continue; }
+    push();
+    if (bytes(part) <= CHUNK_BYTES) { cur = part; continue; }
+    for (const ch of Array.from(part)) {      // 문장 하나가 한도를 넘으면 글자 단위로 나눠요
+      if (bytes(cur + ch) > CHUNK_BYTES) push();
+      cur += ch;
+    }
+  }
+  push();
+  return chunks;
+}
+
+class TranslateError extends Error {}
+
+async function translateChunk(text, from, to, signal) {
+  const url = `${API}?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(`${from}|${to}`)}`;
+  let data;
+  try {
+    const res = await fetch(url, { signal });
+    if (res.status === 429) throw new TranslateError('오늘 무료 번역 한도를 다 썼어요. 내일 다시 시도해 주세요.');
+    data = await res.json();
+  } catch (err) {
+    if (err instanceof TranslateError || err.name === 'AbortError') throw err;
+    throw new TranslateError(navigator.onLine === false ? '인터넷 연결을 확인해 주세요.' : '번역 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.');
+  }
+  const out = data?.responseData?.translatedText;
+  if (data?.quotaFinished || /MYMEMORY WARNING/i.test(out ?? '')) throw new TranslateError('오늘 무료 번역 한도를 다 썼어요. 내일 다시 시도해 주세요.');
+  if (Number(data?.responseStatus) !== 200 || typeof out !== 'string') throw new TranslateError('번역하지 못했어요. 문장을 조금 바꿔 다시 시도해 주세요.');
+  return out;
+}
+
+async function translate(text, from, to, signal) {
+  const lines = [];
+  for (const line of text.split('\n')) {
+    if (!line.trim()) { lines.push(''); continue; }
+    const done = [];
+    for (const chunk of chunkLine(line)) done.push(await translateChunk(chunk, from, to, signal));
+    lines.push(done.join(' '));
+  }
+  return lines.join('\n');
+}
+
+function showMsg(text) { el.msg.textContent = text ?? ''; el.msg.hidden = !text; }
+
+function setResult(next) {
+  result = next;
+  el.backTr.hidden = true;
+  el.copy.textContent = '복사';
+  el.copy.disabled = el.share.disabled = el.check.disabled = !next;
+  if (next) { el.out.textContent = next.text; el.out.classList.remove('dim'); }
+}
+
+function renderDir() {
+  const text = el.src.value;
+  const d = direction(text.trim() ? text : '가');
+  el.dir.innerHTML = '';
+  el.dir.append(langName(d.from), ' → ');
+  const b = document.createElement('b');
+  b.textContent = langName(d.to);
+  el.dir.append(b);
+  const n = Array.from(text).length;
+  el.count.textContent = `${n.toLocaleString()} / ${MAX_CHARS.toLocaleString()}`;
+  el.count.classList.toggle('over', n > MAX_CHARS);
+}
+
+async function run() {
+  job?.abort();
+  const text = el.src.value.trim();
+  renderDir();
+  if (!text) {
+    showMsg();
+    setResult(null);
+    el.out.textContent = '입력하면 자동으로 번역돼요.';
+    el.out.classList.add('dim');
+    return;
+  }
+  if (Array.from(text).length > MAX_CHARS) {
+    showMsg(`한 번에 ${MAX_CHARS.toLocaleString()}자까지 번역할 수 있어요. 글을 나눠서 넣어 주세요.`);
+    return;
+  }
+  const { from, to } = direction(text);
+  const mine = job = new AbortController();
+  if (!result) { el.out.textContent = '번역 중…'; el.out.classList.add('dim'); }
+  try {
+    const out = await translate(text, from, to, mine.signal);
+    if (mine.signal.aborted) return;
+    showMsg();
+    setResult({ text: out, from, to });
+    remember(text, out);
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    setResult(null);
+    el.out.textContent = '';
+    showMsg(err instanceof TranslateError ? err.message : '번역하지 못했어요. 잠시 후 다시 시도해 주세요.');
+  }
+}
+
+function schedule(delay = 700) { clearTimeout(timer); renderDir(); timer = setTimeout(run, delay); }
+
+function remember(s, t) {
+  // 이어서 치는 중간 문장은 기록을 덮어써요(한 문장이 여러 줄로 쌓이지 않게).
+  if (history[0] && s.startsWith(history[0].s)) history.shift();
+  history = [{ s, t }, ...history.filter((h) => h.s !== s)].slice(0, 20);
+  store(KEY_HIST, history);
+  renderHist();
+}
+
+function renderHist() {
+  el.hist.hidden = el.histHead.hidden = !history.length;
+  el.hist.replaceChildren(...history.map((h) => {
+    const li = document.createElement('li'), btn = document.createElement('button');
+    const s = document.createElement('div'), t = document.createElement('div');
+    btn.type = 'button'; s.className = 's'; t.className = 't';
+    s.textContent = h.s; t.textContent = h.t;
+    btn.append(s, t);
+    btn.addEventListener('click', () => { el.src.value = h.s; window.scrollTo({ top: 0, behavior: 'smooth' }); schedule(0); });
+    li.append(btn);
+    return li;
+  }));
+}
+
+function renderChips() {
+  el.chips.replaceChildren(...LANGS.map((l) => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'chip'; btn.textContent = l.name;
+    btn.setAttribute('aria-pressed', String(l.code === lang));
+    btn.addEventListener('click', () => { lang = l.code; store(KEY_LANG, lang); renderChips(); setResult(null); schedule(0); });
+    return btn;
+  }));
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch {}
+  const ta = document.createElement('textarea');   // 클립보드 권한이 없는 브라우저용
+  ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.append(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch {}
+  ta.remove();
+  return ok;
+}
+
+el.src.addEventListener('input', () => schedule());
+el.clear.addEventListener('click', () => { el.src.value = ''; run(); el.src.focus(); });
+el.paste.addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) { el.src.value = text; schedule(0); }
+  } catch { showMsg('붙여넣기 권한이 없어요. 입력 칸을 길게 눌러 붙여 넣어 주세요.'); el.src.focus(); }
+});
+el.copy.addEventListener('click', async () => {
+  if (!result) return;
+  el.copy.textContent = await copyText(result.text) ? '복사했어요 ✓' : '복사하지 못했어요';
+  setTimeout(() => { el.copy.textContent = '복사'; }, 1600);
+});
+if (navigator.share) {
+  el.share.hidden = false;
+  el.share.addEventListener('click', () => { if (result) navigator.share({ text: result.text }).catch(() => {}); });
+}
+// 번역문을 다시 원래 언어로 돌려 뜻이 맞는지 확인해요.
+el.check.addEventListener('click', async () => {
+  if (!result) return;
+  const cur = result;
+  el.check.disabled = true;
+  el.backTr.hidden = false;
+  el.backTr.textContent = '확인 중…';
+  try {
+    const origin = cur.from === 'ko' ? 'ko' : lang;   // 자동 감지였으면 고른 상대 언어로 되돌려요
+    const back = await translate(cur.text, cur.to, origin, new AbortController().signal);
+    if (result === cur) el.backTr.textContent = `다시 ${langName(origin)}로 옮기면: ${back}`;
+  } catch (err) {
+    if (result === cur) el.backTr.textContent = err instanceof TranslateError ? err.message : '확인하지 못했어요.';
+  } finally {
+    if (result === cur) el.check.disabled = false;
+  }
+});
+el.histClear.addEventListener('click', () => { history = []; store(KEY_HIST, history); renderHist(); });
+
+renderChips();
+renderDir();
+renderHist();
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+name: Build iPhone app
+# 맥 없이 아이폰 앱을 빌드해요. 결과물(서명 안 된 .ipa)은 실행 기록의 Artifacts에서 받아
+# Sideloadly 같은 설치 도구로 아이폰에 넣을 수 있어요.
+on:
+  push:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (no code signing)
+        working-directory: ios/RinoTranslate
+        run: |
+          set -o pipefail
+          xcodebuild -version
+          xcodebuild build \
+            -project RinoTranslate.xcodeproj \
+            -target RinoTranslate \
+            -configuration Release \
+            -sdk iphoneos \
+            SYMROOT="$PWD/build" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            | tee build.log | grep -E "error|warning: unre|BUILD|^\*\*" || true
+          test -d build/Release-iphoneos/RinoTranslate.app || { tail -n 80 build.log; exit 1; }
+      - name: Package .ipa
+        working-directory: ios/RinoTranslate
+        run: |
+          test -d build/Release-iphoneos/RinoTranslate.app/PlugIns/TranslateKeyboard.appex
+          mkdir Payload
+          cp -R build/Release-iphoneos/RinoTranslate.app Payload/
+          zip -qry RinoTranslate-unsigned.ipa Payload
+          ls -lh RinoTranslate-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RinoTranslate-unsigned-ipa
+          path: ios/RinoTranslate/RinoTranslate-unsigned.ipa
+          retention-days: 30
