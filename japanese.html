@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="일본어 회화">
+<meta name="theme-color" content="#F7F5EF">
+<title>일본어 회화 · RINO</title>
+<link rel="manifest" href="japanese.webmanifest">
+<link rel="icon" href="japanese-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="japanese-icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Serif+KR:wght@400;600&family=Playfair+Display:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{--olive:#6B7A5A;--olive-d:#566348;--teal:#5A7D7C;--bg:#F7F5EF;--ink:#22231F;--mut:#7C7E74;--line:#CFCDC2;--tile:#CED2BD;--card:#fff;--dot:#FF5A00;
+  --serif:"Playfair Display","Noto Serif KR","Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif;
+  --sans:"Pretendard Variable",Pretendard,-apple-system,system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:#E9E6DC;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+input,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+#app{overflow-x:hidden;max-width:480px;min-height:100%;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;position:relative}
+#view{flex:1;padding:calc(18px + env(safe-area-inset-top)) 22px 110px}
+#view.flush{padding-left:0;padding-right:0;padding-top:0}
+#tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;display:flex;background:var(--bg);border-top:1px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:5}
+#tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;letter-spacing:.04em;color:var(--teal);padding:6px 0;border-radius:14px}
+#tabs button[aria-current=page]{color:var(--olive-d);font-weight:700;background:rgba(107,122,90,.14)}
+.caps{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut)}
+.caps.teal{color:var(--teal)}
+.serif{font-family:var(--serif)}
+.rule{border:0;border-top:1px solid var(--line);margin:18px 0}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--dot);vertical-align:middle}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--olive);background:rgba(107,122,90,.16);border-radius:999px;padding:5px 11px;font-size:11px;letter-spacing:.08em;white-space:nowrap}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--olive);color:#fff;padding:16px;font-size:16px;font-weight:600;letter-spacing:.06em;border-radius:2px}
+.btn.round{border-radius:999px}
+.btn:active{background:var(--olive-d)}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--teal);font-weight:500;font-size:13px;padding:12px 10px}
+.btn.sm{width:auto;padding:9px 16px;font-size:13px}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+.row>.btn{flex:1}
+h1,h2,h3,p{margin:0}
+.back{width:36px;height:36px;display:grid;place-items:center;margin-left:-8px;flex:none}
+.jp{font-family:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif}
+.jps{font-family:"Hiragino Sans","Noto Sans JP",var(--sans)}
+.note{font-size:12px;line-height:1.6;color:var(--mut)}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;line-height:1.5;padding:10px 16px;border-radius:12px;max-width:min(420px,88vw);z-index:30;text-align:center}
+
+/* 홈 */
+.hello{font-family:var(--serif);font-size:26px;font-weight:400;word-break:keep-all}
+.mission{padding:0 6px}
+.mission h2{font-family:var(--serif);font-size:38px;font-weight:600;line-height:1.2;margin:10px 0 14px;word-break:keep-all}
+.mods{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mod{min-width:0;background:var(--tile);border:1px solid rgba(34,35,31,.35);aspect-ratio:1/1.02;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px 8px;text-align:center}
+.mod b{font-family:var(--serif);font-weight:400;font-size:24px}
+.mod .caps{font-size:9.5px;letter-spacing:.1em;color:var(--ink)}
+.mod .ic{color:var(--teal);height:44px;display:grid;place-items:center}
+.ring{position:relative;width:46px;height:46px}
+.ring span{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;color:var(--teal)}
+
+/* 회화 */
+.avatar{width:54px;height:54px;border-radius:50%;background:var(--olive);color:#F7F5EF;display:grid;place-items:center;font-family:var(--serif);font-size:22px;flex:none}
+.avatar.s{width:34px;height:34px;font-size:14px}
+.coll{border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);padding:10px 0;margin:16px 0 8px;text-align:center;font-family:var(--serif);font-size:16px;letter-spacing:.06em}
+.seg{display:flex;border:1px solid var(--teal);border-radius:999px;overflow:hidden;margin:12px auto 0;width:max-content}
+.seg button{padding:7px 16px;font-size:12px;letter-spacing:.04em;color:var(--teal)}
+.seg button[aria-pressed=true]{background:var(--teal);color:#fff}
+.msgs{display:flex;flex-direction:column;gap:12px;margin:18px 0 16px}
+.tb{background:var(--card);border-radius:20px;padding:14px 16px;box-shadow:0 6px 18px rgba(90,125,124,.14);max-width:92%;align-self:flex-start}
+.tb .ja{font-size:19px;font-weight:700;line-height:1.5;margin-top:8px}
+.rd{font-size:13px;color:var(--mut);line-height:1.6;margin-top:2px}
+.hg{font-size:12.5px;color:var(--teal);line-height:1.6}
+.ko{font-size:14px;line-height:1.5;margin-top:8px;padding:9px 12px;background:#EEF1F0;border-radius:12px}
+.fb{font-size:13px;line-height:1.55;margin-top:8px;padding:9px 12px;border-left:2px solid var(--dot);background:#FBF3EC}
+.ub{background:var(--olive);color:#F7F5EF;border-radius:20px;padding:13px 16px;max-width:88%;align-self:flex-end;box-shadow:0 6px 14px rgba(86,99,72,.25)}
+.ub .ja{font-size:18px;font-weight:600;line-height:1.5}
+.ub .rd,.ub .hg{color:rgba(247,245,239,.85)}
+.score{align-self:flex-end;border:1px solid var(--line);background:#F1EEE4;border-radius:999px;padding:6px 14px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.model{align-self:flex-end;max-width:88%;border:1px dashed var(--teal);border-radius:16px;padding:10px 14px}
+.model .ja{font-size:16px;font-weight:600;line-height:1.5}
+.sys{align-self:center;text-align:center;font-size:13px;color:var(--mut);line-height:1.6}
+.spk{width:34px;height:34px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;flex:none}
+.spk.lg{width:46px;height:46px}
+.hintbtn{align-self:flex-end;border:1px solid var(--teal);color:var(--teal);border-radius:12px;padding:8px 16px;font-size:14px;font-weight:600;display:flex;gap:6px;align-items:center}
+.talk{background:#EDF1F1;border-radius:20px;padding:14px 14px 16px;text-align:center}
+.talk .st{font-size:14px;min-height:21px}
+.wave{display:flex;gap:3px;justify-content:center;align-items:center;height:30px;margin:6px 0 10px;color:var(--teal)}
+.wave i{width:3px;height:6px;border-radius:2px;background:currentColor;opacity:.5}
+.on .wave i{animation:wv .9s ease-in-out infinite;opacity:1}
+.wave i:nth-child(3n){animation-delay:.15s}.wave i:nth-child(3n+1){animation-delay:.3s}.wave i:nth-child(4n){animation-delay:.45s}
+@keyframes wv{0%,100%{height:6px}50%{height:26px}}
+.mic{background:var(--olive);color:#fff;border-radius:999px;padding:10px 38px;display:inline-flex;flex-direction:column;align-items:center;gap:2px;font-size:14px;font-weight:600}
+.on .mic{background:var(--dot)}
+.inp{display:flex;gap:6px;align-items:center;border:1px solid var(--teal);border-radius:16px;background:#E9EEEC;padding:6px 8px 6px 14px;margin-top:12px}
+.inp input{flex:1;min-width:0;border:0;outline:0;background:none;font-size:16px;padding:8px 0}
+.inp button{color:var(--teal);width:38px;height:38px;display:grid;place-items:center}
+
+/* 코스 */
+.chead{background:var(--teal);color:#F7F5EF;padding:calc(20px + env(safe-area-inset-top)) 22px 34px}
+.chead h1{font-family:var(--serif);font-weight:400;font-size:19px;line-height:1.05;letter-spacing:.03em}
+.search{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:999px;padding:10px 16px;margin-top:16px;color:var(--ink)}
+.search input{flex:1;border:0;outline:0;background:none;font-size:15px;min-width:0}
+.cbody{background:var(--bg);border-radius:22px 22px 0 0;margin-top:-18px;padding:18px 22px 0}
+.lv{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lv button{border:1.5px solid var(--teal);border-radius:16px;padding:11px 0;font-size:18px;font-weight:700;color:var(--teal)}
+.lv button[aria-pressed=true]{background:var(--olive);border-color:var(--olive-d);color:#fff}
+.ccard{position:relative;display:flex;gap:14px;align-items:center;background:#FBFAF6;border-radius:16px;padding:14px;box-shadow:0 4px 14px rgba(34,35,31,.09);margin-bottom:14px}
+.ccard>.dot{position:absolute;top:12px;right:12px}
+.thumb{width:68px;height:68px;border-radius:12px;background:var(--tile);color:var(--olive-d);display:grid;place-items:center;font-size:34px;flex:none}
+.ccard h3{font-family:var(--serif);font-weight:400;font-size:20px;word-break:keep-all}
+.badge{background:var(--olive);color:#fff;font-size:10px;font-weight:700;letter-spacing:.06em;border-radius:5px;padding:3px 6px}
+.bar{height:7px;border-radius:99px;background:#E1DFD5;overflow:hidden;flex:1}
+.bar i{display:block;height:100%;background:var(--olive);border-radius:99px}
+.go{width:46px;height:46px;border-radius:50%;background:var(--olive);color:#fff;display:grid;place-items:center;flex:none}
+.link{font-size:12px;color:var(--teal);text-decoration:underline;text-underline-offset:3px}
+
+/* 발음 */
+.sent{font-size:26px;line-height:1.45;margin:8px 0 4px;word-break:break-all}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{border:1px solid var(--teal);border-radius:10px;height:84px;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden;font-size:14px;line-height:1.5;text-align:center}
+.box svg,.box canvas{width:100%;height:100%}
+.miss{color:var(--dot);font-weight:700;text-decoration:underline}
+.chip{display:flex;align-items:center;gap:10px;border:1px solid var(--teal);border-radius:999px;padding:9px 14px;font-size:13px;margin-bottom:10px}
+.chip .ci{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--teal);display:grid;place-items:center;color:var(--teal);flex:none}
+.chip.warn .ci{border-color:var(--dot);color:var(--dot)}
+.circle{width:112px;height:112px;border-radius:50%;border:3px solid var(--teal);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
+.circle b{font-family:var(--serif);font-weight:400;font-size:34px;line-height:1}
+
+/* 단어장 */
+.vt{width:calc(100% + 12px);margin:0 -6px;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+.vt th:first-child{width:30px}.vt th:nth-child(2){width:23%}.vt th:nth-child(3){width:25%}.vt th:nth-child(4){width:25%}
+.vt th{font-size:13px;font-weight:600;color:var(--teal);padding:8px 2px;text-align:left}
+.vt td{overflow-wrap:anywhere;letter-spacing:-.02em;padding:10px 2px;border-bottom:1px solid var(--line);vertical-align:middle;word-break:keep-all}
+.vt td:nth-child(2){font-weight:700}
+.vt td:nth-child(4){font-size:11.5px}
+.vt td:last-child{overflow-wrap:normal}
+.vt td:nth-child(4){color:var(--mut)}
+.num{width:26px;height:26px;border-radius:50%;font-size:11px;color:var(--olive-d);border:1px solid var(--line);display:grid;place-items:center}
+.num.ok{background:var(--olive);border-color:var(--olive);color:#fff}
+.sheet{position:fixed;inset:0;background:rgba(34,35,31,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet>div{background:var(--bg);width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:22px 22px calc(26px + env(safe-area-inset-bottom));text-align:center}
+.flash{font-size:46px;margin:22px 0 10px}
+
+/* 마이 */
+.stat{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line)}
+.stat div{padding:14px 4px;text-align:center;border-right:1px solid var(--line)}
+.stat div:last-child{border:0}
+.stat b{display:block;font-family:var(--serif);font-weight:400;font-size:26px}
+.week{display:flex;align-items:flex-end;gap:10px;height:130px;padding-top:10px}
+.week div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%;font-size:11px;color:var(--mut)}
+.week i{width:100%;max-width:26px;background:var(--tile);border-radius:3px 3px 0 0;min-height:2px}
+.week .t i{background:var(--olive)}
+.field{display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid var(--line);font-size:14px}
+.field input[type=text],.field input[type=password],.field select{flex:1;min-width:0;border:0;outline:0;background:none;text-align:right;font-size:14px}
+.sw{position:relative;width:46px;height:27px;border-radius:99px;background:#C9C7BC;flex:none;transition:.15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.15s}
+.sw[aria-checked=true]{background:var(--teal)}
+.sw[aria-checked=true]::after{left:22px}
+</style>
+</head>
+<body>
+<div id="app">
+  <main id="view"></main>
+  <nav id="tabs" aria-label="메뉴"></nav>
+</div>
+<script>
+'use strict';
+/* ───────── 학습 내용 ───────── */
+// t = 튜터 대사, a = 내가 할 모범 답안. rd = 읽는 법(가나), ko = 뜻
+const L = (ja, rd, ko) => ({ ja, rd, ko });
+const COURSES = [
+  { id: 'cafe', lv: 'N5', title: '카페에서 주문하기', en: 'CAFÉ · ORDERING', place: 'TOKYO CAFÉ', glyph: '珈', role: '도쿄 카페의 점원',
+    turns: [
+      [L('いらっしゃいませ！何になさいますか？', 'いらっしゃいませ！ なにに なさいますか？', '어서 오세요! 무엇을 주문하시겠어요?'), L('カプチーノを一つ、お願いします。', 'カプチーノを ひとつ、おねがいします。', '카푸치노 하나 부탁합니다.')],
+      [L('サイズはいかがなさいますか？', 'サイズは いかが なさいますか？', '사이즈는 어떻게 하시겠어요?'), L('Mサイズでお願いします。', 'エムサイズで おねがいします。', 'M 사이즈로 부탁합니다.')],
+      [L('店内でお召し上がりですか？', 'てんないで おめしあがりですか？', '매장에서 드시나요?'), L('はい、店内で。', 'はい、てんないで。', '네, 매장에서요.')],
+      [L('お会計は五百円です。', 'おかいけいは ごひゃくえんです。', '계산은 500엔입니다.'), L('カードで払えますか？', 'カードで はらえますか？', '카드로 결제할 수 있나요?')],
+      [L('はい、大丈夫です。少々お待ちください。', 'はい、だいじょうぶです。しょうしょう おまちください。', '네, 괜찮습니다. 잠시만 기다려 주세요.'), L('ありがとうございます。', 'ありがとうございます。', '감사합니다.')],
+    ],
+    shadow: [
+      L('すみません、注文お願いします。', 'すみません、ちゅうもん おねがいします。', '저기요, 주문 부탁합니다.'),
+      L('ホットコーヒーを二つください。', 'ホットコーヒーを ふたつ ください。', '따뜻한 커피 두 잔 주세요.'),
+      L('砂糖とミルクはありますか？', 'さとうと ミルクは ありますか？', '설탕과 우유 있나요?'),
+      L('持ち帰りでお願いします。', 'もちかえりで おねがいします。', '포장으로 부탁합니다.'),
+      L('Wi-Fiは使えますか？', 'ワイファイは つかえますか？', '와이파이 쓸 수 있나요?'),
+      L('ごちそうさまでした。', 'ごちそうさまでした。', '잘 먹었습니다.'),
+    ] },
+  { id: 'store', lv: 'N5', title: '편의점', en: 'CONVENIENCE STORE', place: 'KONBINI', glyph: '店', role: '일본 편의점의 점원',
+    turns: [
+      [L('いらっしゃいませ。お弁当は温めますか？', 'いらっしゃいませ。おべんとうは あたためますか？', '어서 오세요. 도시락 데워 드릴까요?'), L('はい、お願いします。', 'はい、おねがいします。', '네, 부탁합니다.')],
+      [L('袋はご利用ですか？', 'ふくろは ごりようですか？', '봉투 필요하세요?'), L('いいえ、大丈夫です。', 'いいえ、だいじょうぶです。', '아니요, 괜찮습니다.')],
+      [L('お箸はお付けしますか？', 'おはしは おつけしますか？', '젓가락 넣어 드릴까요?'), L('一つお願いします。', 'ひとつ おねがいします。', '하나 부탁합니다.')],
+      [L('八百五十円になります。', 'はっぴゃくごじゅうえんに なります。', '850엔입니다.'), L('千円でお願いします。', 'せんえんで おねがいします。', '천 엔으로 부탁합니다.')],
+      [L('百五十円のお返しです。ありがとうございました。', 'ひゃくごじゅうえんの おかえしです。ありがとうございました。', '거스름돈 150엔입니다. 감사합니다.'), L('どうも。', 'どうも。', '감사합니다.')],
+    ],
+    shadow: [
+      L('これをください。', 'これを ください。', '이거 주세요.'),
+      L('トイレを借りてもいいですか？', 'トイレを かりても いいですか？', '화장실을 써도 될까요?'),
+      L('ATMはどこですか？', 'エーティーエムは どこですか？', 'ATM은 어디인가요?'),
+      L('レシートをください。', 'レシートを ください。', '영수증 주세요.'),
+      L('おにぎりはどこにありますか？', 'おにぎりは どこに ありますか？', '주먹밥은 어디에 있나요?'),
+      L('現金で払います。', 'げんきんで はらいます。', '현금으로 낼게요.'),
+    ] },
+  { id: 'road', lv: 'N5', title: '길 묻기', en: 'STREET · DIRECTIONS', place: 'SHIBUYA STREET', glyph: '道', role: '길에서 만난 친절한 일본인 행인',
+    turns: [
+      [L('こんにちは。何かお困りですか？', 'こんにちは。なにか おこまりですか？', '안녕하세요. 뭔가 곤란하신가요?'), L('すみません、駅はどこですか？', 'すみません、えきは どこですか？', '실례합니다, 역은 어디인가요?')],
+      [L('この道をまっすぐ行って、二つ目の信号を右です。', 'この みちを まっすぐ いって、ふたつめの しんごうを みぎです。', '이 길을 곧장 가서 두 번째 신호에서 오른쪽이에요.'), L('すみません、もう一度お願いします。', 'すみません、もういちど おねがいします。', '실례합니다, 다시 한 번 부탁드립니다.')],
+      [L('まっすぐ行って、二つ目の信号を右に曲がってください。', 'まっすぐ いって、ふたつめの しんごうを みぎに まがって ください。', '곧장 가서 두 번째 신호에서 오른쪽으로 꺾으세요.'), L('歩いて何分ぐらいですか？', 'あるいて なんぷんぐらいですか？', '걸어서 몇 분 정도예요?')],
+      [L('五分ぐらいですよ。', 'ごふんぐらいですよ。', '5분 정도예요.'), L('わかりました。ありがとうございます。', 'わかりました。ありがとうございます。', '알겠습니다. 감사합니다.')],
+      [L('いいえ、お気をつけて。', 'いいえ、おきを つけて。', '아니에요, 조심히 가세요.'), L('助かりました。', 'たすかりました。', '도움이 됐어요.')],
+    ],
+    shadow: [
+      L('すみません、もう一度お願いします。', 'すみません、もういちど おねがいします。', '실례합니다, 다시 한 번 부탁드립니다.'),
+      L('この近くにコンビニはありますか？', 'この ちかくに コンビニは ありますか？', '이 근처에 편의점이 있나요?'),
+      L('地図を見せてもらえますか？', 'ちずを みせて もらえますか？', '지도를 보여 주실 수 있나요?'),
+      L('ここから遠いですか？', 'ここから とおいですか？', '여기서 먼가요?'),
+      L('バス停はどこですか？', 'バスていは どこですか？', '버스 정류장은 어디인가요?'),
+      L('道に迷いました。', 'みちに まよいました。', '길을 잃었어요.'),
+    ] },
+  { id: 'hotel', lv: 'N4', title: '여행 · 호텔 체크인', en: 'HOTEL · CHECK-IN', place: 'HOTEL FRONT', glyph: '宿', role: '일본 호텔 프런트 직원',
+    turns: [
+      [L('いらっしゃいませ。ご予約のお名前をお願いします。', 'いらっしゃいませ。ごよやくの おなまえを おねがいします。', '어서 오세요. 예약하신 성함을 부탁드립니다.'), L('リノで予約しています。', 'リノで よやくして います。', '리노로 예약했습니다.')],
+      [L('パスポートを拝見してもよろしいですか？', 'パスポートを はいけんしても よろしいですか？', '여권을 봐도 될까요?'), L('はい、どうぞ。', 'はい、どうぞ。', '네, 여기요.')],
+      [L('二泊のご予定ですね。', 'にはくの ごよていですね。', '2박 예정이시죠.'), L('はい。朝食は付いていますか？', 'はい。ちょうしょくは ついて いますか？', '네. 조식은 포함되어 있나요?')],
+      [L('はい、朝食は七時から十時までです。', 'はい、ちょうしょくは しちじから じゅうじまでです。', '네, 조식은 7시부터 10시까지입니다.'), L('チェックアウトは何時ですか？', 'チェックアウトは なんじですか？', '체크아웃은 몇 시인가요?')],
+      [L('十一時です。お部屋は五階です。', 'じゅういちじです。おへやは ごかいです。', '11시입니다. 방은 5층입니다.'), L('荷物を預かってもらえますか？', 'にもつを あずかって もらえますか？', '짐을 맡아 주실 수 있나요?')],
+    ],
+    shadow: [
+      L('チェックインをお願いします。', 'チェックインを おねがいします。', '체크인 부탁합니다.'),
+      L('部屋を変えてもらえますか？', 'へやを かえて もらえますか？', '방을 바꿔 주실 수 있나요?'),
+      L('タオルをもう一枚ください。', 'タオルを もういちまい ください。', '수건을 한 장 더 주세요.'),
+      L('近くにおすすめのレストランはありますか？', 'ちかくに おすすめの レストランは ありますか？', '근처에 추천할 만한 식당이 있나요?'),
+      L('タクシーを呼んでもらえますか？', 'タクシーを よんで もらえますか？', '택시를 불러 주실 수 있나요?'),
+      L('エアコンが動きません。', 'エアコンが うごきません。', '에어컨이 작동하지 않아요.'),
+    ] },
+  { id: 'friend', lv: 'N4', title: '친구와 약속 잡기', en: 'FRIENDS · MEETING', place: 'CHAT WITH A FRIEND', glyph: '友', role: '사용자의 일본인 친구(반말 사용)',
+    turns: [
+      [L('ねえ、今週の土曜日、暇？', 'ねえ、こんしゅうの どようび、ひま？', '있잖아, 이번 주 토요일 한가해?'), L('うん、暇だよ。どうしたの？', 'うん、ひまだよ。どうしたの？', '응, 한가해. 무슨 일이야?')],
+      [L('一緒に映画を見に行かない？', 'いっしょに えいがを みに いかない？', '같이 영화 보러 안 갈래?'), L('いいね！何時に会う？', 'いいね！ なんじに あう？', '좋아! 몇 시에 만날까?')],
+      [L('二時に渋谷駅はどう？', 'にじに しぶやえきは どう？', '2시에 시부야역 어때?'), L('ごめん、三時でもいい？', 'ごめん、さんじでも いい？', '미안, 3시여도 괜찮아?')],
+      [L('もちろん。映画の後でご飯も食べよう。', 'もちろん。えいがの あとで ごはんも たべよう。', '물론이지. 영화 끝나고 밥도 먹자.'), L('いいね、楽しみにしてる。', 'いいね、たのしみに してる。', '좋아, 기대할게.')],
+      [L('じゃあ、土曜日にね！', 'じゃあ、どようびにね！', '그럼 토요일에 봐!'), L('うん、またね！', 'うん、またね！', '응, 또 봐!')],
+    ],
+    shadow: [
+      L('今度一緒にご飯を食べませんか？', 'こんど いっしょに ごはんを たべませんか？', '다음에 같이 밥 먹지 않을래요?'),
+      L('何時がいいですか？', 'なんじが いいですか？', '몇 시가 좋으세요?'),
+      L('少し遅れそうです。', 'すこし おくれそうです。', '조금 늦을 것 같아요.'),
+      L('待ち合わせはどこにしますか？', 'まちあわせは どこに しますか？', '어디서 만날까요?'),
+      L('来週なら大丈夫です。', 'らいしゅうなら だいじょうぶです。', '다음 주라면 괜찮아요.'),
+      L('楽しみにしています。', 'たのしみに して います。', '기대하고 있을게요.'),
+    ] },
+  { id: 'biz', lv: 'N3', title: '비즈니스 자기소개', en: 'BUSINESS · SELF-INTRODUCTION', place: 'MEETING ROOM', glyph: '名', role: '거래처 영업부의 다나카(田中) 씨, 정중한 경어 사용',
+    turns: [
+      [L('はじめまして。営業部の田中と申します。', 'はじめまして。えいぎょうぶの たなかと もうします。', '처음 뵙겠습니다. 영업부의 다나카라고 합니다.'), L('はじめまして。リノと申します。よろしくお願いいたします。', 'はじめまして。リノと もうします。よろしく おねがい いたします。', '처음 뵙겠습니다. 리노라고 합니다. 잘 부탁드립니다.')],
+      [L('どちらからいらっしゃいましたか？', 'どちらから いらっしゃいましたか？', '어디에서 오셨습니까?'), L('韓国のソウルから参りました。', 'かんこくの ソウルから まいりました。', '한국 서울에서 왔습니다.')],
+      [L('お仕事は何をなさっていますか？', 'おしごとは なにを なさって いますか？', '어떤 일을 하고 계십니까?'), L('マーケティングを担当しております。', 'マーケティングを たんとうして おります。', '마케팅을 담당하고 있습니다.')],
+      [L('日本語がお上手ですね。', 'にほんごが おじょうずですね。', '일본어를 잘하시네요.'), L('いいえ、まだまだです。勉強中です。', 'いいえ、まだまだです。べんきょうちゅうです。', '아니요, 아직 멀었습니다. 공부하는 중입니다.')],
+      [L('こちら、私の名刺です。', 'こちら、わたしの めいしです。', '이쪽은 제 명함입니다.'), L('ありがとうございます。今後ともよろしくお願いいたします。', 'ありがとうございます。こんごとも よろしく おねがい いたします。', '감사합니다. 앞으로도 잘 부탁드립니다.')],
+    ],
+    shadow: [
+      L('お世話になっております。', 'おせわに なって おります。', '신세 지고 있습니다. (비즈니스 인사)'),
+      L('お忙しいところ、ありがとうございます。', 'おいそがしい ところ、ありがとうございます。', '바쁘신 와중에 감사합니다.'),
+      L('本日はよろしくお願いいたします。', 'ほんじつは よろしく おねがい いたします。', '오늘 잘 부탁드립니다.'),
+      L('少々お時間をいただけますか？', 'しょうしょう おじかんを いただけますか？', '잠시 시간을 내주실 수 있을까요?'),
+      L('後ほどメールでお送りします。', 'のちほど メールで おおくりします。', '나중에 메일로 보내 드리겠습니다.'),
+      L('今後ともよろしくお願いいたします。', 'こんごとも よろしく おねがい いたします。', '앞으로도 잘 부탁드립니다.'),
+    ] },
+];
+const VOCAB = [
+  ['ありがとう', 'ありがとう', '아리가토오', '고마워요'], ['おはよう', 'おはよう', '오하요오', '안녕하세요 (아침)'],
+  ['すみません', 'すみません', '스미마센', '죄송합니다, 실례합니다'], ['お願いします', 'おねがいします', '오네가이시마스', '부탁합니다'],
+  ['コーヒー', 'コーヒー', '코오히이', '커피'], ['水', 'みず', '미즈', '물'], ['ご飯', 'ごはん', '고항', '밥, 식사'],
+  ['電車', 'でんしゃ', '덴샤', '전차, 기차'], ['駅', 'えき', '에키', '역'], ['お金', 'おかね', '오카네', '돈'],
+  ['時間', 'じかん', '지캉', '시간'], ['今日', 'きょう', '쿄오', '오늘'], ['明日', 'あした', '아시타', '내일'],
+  ['友達', 'ともだち', '토모다치', '친구'], ['家族', 'かぞく', '카조쿠', '가족'], ['仕事', 'しごと', '시고토', '일, 직장'],
+  ['学校', 'がっこう', '갓코오', '학교'], ['先生', 'せんせい', '센세이', '선생님'], ['大丈夫', 'だいじょうぶ', '다이죠오부', '괜찮아요'],
+  ['美味しい', 'おいしい', '오이시이', '맛있어요'],
+];
+const SHADOW_PASS = 70, DAILY_GOAL_MIN = 20;
+
+/* ───────── 저장 ───────── */
+const KEY = 'jp.v1';
+const S = Object.assign({ name: '리노', days: {}, prog: {}, vocab: [], cur: 'cafe', showKo: true, showHg: true, rate: 0.9, rec: !/Android|iPhone|iPad/i.test(navigator.userAgent), key: '', model: 'claude-opus-5-5' }, load());
+function load() { try { const v = JSON.parse(localStorage.getItem(KEY)); return v && typeof v === 'object' ? v : {}; } catch { return {}; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} }
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const course = (id) => COURSES.find((c) => c.id === id) || COURSES[0];
+function prog(id) { const c = course(id); const p = S.prog[c.id] || (S.prog[c.id] = { turns: [], shadow: [] }); return p; }
+const turnsDone = (c) => c.turns.filter((_, i) => prog(c.id).turns[i]).length;
+const shadowDone = (c) => c.shadow.filter((_, i) => (prog(c.id).shadow[i] || 0) >= SHADOW_PASS).length;
+const pct = (c) => Math.round((turnsDone(c) + shadowDone(c)) / (c.turns.length + c.shadow.length) * 100);
+const mission = () => COURSES.find((c) => pct(c) < 100) || COURSES[0];
+function level() { for (const lv of ['N5', 'N4']) if (COURSES.some((c) => c.lv === lv && pct(c) < 100)) return lv; return 'N3'; }
+function touch() { const k = dayKey(); S.days[k] = Math.max(S.days[k] || 0, 1); save(); }   // 오늘 학습한 날로 기록
+function streak() {
+  let n = 0; const d = new Date();
+  if (!S.days[dayKey(d)]) d.setDate(d.getDate() - 1);          // 오늘 아직 안 했어도 어제까지의 연속은 유지
+  while (S.days[dayKey(d)]) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+setInterval(() => {            // 앱을 켜 둔 시간(초)을 날짜별로 쌓아요. 학습한 날만 기록
+  const k = dayKey();
+  if (document.visibilityState === 'visible' && S.days[k]) { S.days[k] += 5; if (S.days[k] % 30 < 5) save(); }
+}, 5000);
+addEventListener('pagehide', save);
+
+/* ───────── 글자 처리 ───────── */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const toHira = (s) => s.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
+const NUM = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '七', 8: '八', 9: '九' };
+const norm = (s) => toHira(String(s).normalize('NFKC').toLowerCase()).replace(/10/g, '十').replace(/[1-9]/g, (d) => NUM[d]).replace(/[^\p{L}\p{N}ー]/gu, '');
+
+// 가나 → 한글 근사 표기 (단어장 표기 규칙과 같게: 장음은 모음을 한 번 더, ん·っ는 받침)
+const KH = {}; (() => {
+  const rows = 'あいうえお아이우에오 かきくけこ카키쿠케코 さしすせそ사시스세소 たちつてと타치츠테토 なにぬねの나니누네노 はひふへほ하히후헤호 まみむめも마미무메모 らりるれろ라리루레로 がぎぐげご가기구게고 ざじずぜぞ자지즈제조 だぢづでど다지즈데도 ばびぶべぼ바비부베보 ぱぴぷぺぽ파피푸페포 やゆよ야유요 わを와오 ゔ부';
+  for (const r of rows.split(' ')) { const h = r.length / 2; for (let i = 0; i < h; i++) KH[r[i]] = r[h + i]; }
+})();
+const isSyl = (c) => c && c >= '가' && c <= '힣';
+const parts = (c) => { const n = c.charCodeAt(0) - 0xac00; return [Math.floor(n / 588), Math.floor(n % 588 / 28), n % 28]; };
+const syl = (cho, jung, jong = 0) => String.fromCharCode(0xac00 + (cho * 21 + jung) * 28 + jong);
+const SMALL_Y = { ゃ: 2, ゅ: 17, ょ: 12 }, SMALL_V = { ぁ: 0, ぃ: 20, ぅ: 13, ぇ: 5, ぉ: 8 };
+const LONG = { 0: '아', 2: '아', 20: '이', 13: '우', 17: '우', 18: '우', 5: '에', 8: '오', 12: '오' };
+const PUNCT = { '、': ', ', '。': '.', '？': '?', '！': '!' };
+function hangulWord(word) {
+  const s = toHira(word), out = [];
+  const body = s.replace(/[、。？！]+$/, '');
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i], last = out[out.length - 1], ok = isSyl(last);
+    if (c === 'は' && i === body.length - 1 && (body.length > 1 || s.length === 1)) { out.push('와'); continue; }   // 조사 は는 "와"
+    if (c === 'へ' && body === 'へ') { out.push('에'); continue; }
+    if (SMALL_Y[c] !== undefined && ok) { out[out.length - 1] = syl(parts(last)[0], SMALL_Y[c]); continue; }
+    if (SMALL_V[c] !== undefined && ok) { out[out.length - 1] = syl(s[i - 1] === 'ふ' ? 17 : parts(last)[0], SMALL_V[c]); continue; }
+    if (c === 'っ') { if (ok && !parts(last)[2]) out[out.length - 1] = syl(parts(last)[0], parts(last)[1], 19); continue; }
+    if (c === 'ん') {
+      const n = s[i + 1] || '';
+      const jong = 'かきくけこがぎぐげご'.includes(n) && n ? 21 : 'ばびぶべぼぱぴぷぺぽ'.includes(n) && n ? 16 : KH[n] ? 4 : ok && [5, 20].includes(parts(last)[1]) ? 4 : 21;
+      if (ok && !parts(last)[2]) out[out.length - 1] = syl(parts(last)[0], parts(last)[1], jong); else out.push('ㄴ');
+      continue;
+    }
+    if (c === 'ー') { if (ok) out.push(LONG[parts(last)[1]] || ''); continue; }
+    if (c === 'う' && ok && !parts(last)[2] && [8, 12].includes(parts(last)[1])) { out.push('오'); continue; }
+    out.push(KH[c] ?? PUNCT[c] ?? c);
+  }
+  return out.join('');
+}
+const hangul = (rd) => rd.split(/\s+|(?<=[、。？！])/).filter(Boolean).map(hangulWord).join(' ').replace(/\s+/g, ' ').trim();
+
+// 들린 문장이 목표 문장과 얼마나 같은지(0~100)와, 목표 문장에서 빠진 글자 위치
+function compare(target, heard) {
+  const a = [...norm(target)], b = [...norm(heard)];
+  const dp = Array.from({ length: a.length + 1 }, () => new Uint16Array(b.length + 1));
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const hit = new Array(a.length).fill(false);
+  for (let i = a.length, j = b.length; i > 0 && j > 0;) {
+    if (a[i - 1] === b[j - 1]) { hit[i - 1] = true; i--; j--; } else if (dp[i - 1][j] >= dp[i][j - 1]) i--; else j--;
+  }
+  const score = a.length && b.length ? Math.round(dp[a.length][b.length] / Math.max(a.length, b.length) * 100) : 0;
+  return { score, chars: a, hit };
+}
+// 한자 표기·가나 표기·인식 후보 여러 개 중 가장 잘 맞는 것으로 채점
+function grade(line, alts) {
+  let best = null;
+  for (const heard of alts) for (const form of [line.ja, line.rd]) {
+    const r = compare(form, heard);
+    if (!best || r.score > best.score) best = { ...r, heard };
+  }
+  return best || { score: 0, chars: [], hit: [], heard: '' };
+}
+const missed = (g) => { const out = []; let cur = ''; g.chars.forEach((ch, i) => { if (!g.hit[i]) cur += ch; else if (cur) { out.push(cur); cur = ''; } }); if (cur) out.push(cur); return out; };
+const praise = (n) => n >= 90 ? '아주 좋아요!' : n >= 75 ? '좋아요!' : n >= 55 ? '조금만 더!' : '다시 해 볼까요?';
+
+/* ───────── 소리 ───────── */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let jaVoice = null;
+function pickVoice() { const v = speechSynthesis.getVoices().filter((x) => /^ja/i.test(x.lang)); jaVoice = v.find((x) => /Kyoko|Google|Nanami|O-?ren/i.test(x.name)) || v[0] || null; }
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.addEventListener?.('voiceschanged', pickVoice); }
+// 일본어로 읽어 주고, 읽는 데 걸린 시간(초)을 돌려줘요.
+function speak(text) {
+  return new Promise((resolve) => {
+    if (!('speechSynthesis' in window)) { toast('이 브라우저는 음성 읽기를 지원하지 않아요.'); return resolve(0); }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = Number(S.rate) || 0.9; if (jaVoice) u.voice = jaVoice;
+    let t0 = 0;
+    u.onstart = () => { t0 = performance.now(); };
+    u.onend = () => resolve(t0 ? (performance.now() - t0) / 1000 : 0);
+    u.onerror = () => resolve(0);
+    speechSynthesis.speak(u);
+  });
+}
+let rec = null, recorder = null;
+// 마이크로 일본어를 듣고 { alts: 인식 후보들, dur: 말한 시간(초), url, peaks } 를 돌려줘요. 못 들으면 null.
+function listen() {
+  return new Promise((resolve) => {
+    speechSynthesis?.cancel();
+    const r = rec = new SR();
+    r.lang = 'ja-JP'; r.interimResults = false; r.maxAlternatives = 5;
+    let alts = null, t0 = 0, t1 = 0, err = '';
+    const audio = S.rec ? startRecorder() : null;
+    r.onspeechstart = () => { t0 = performance.now(); };
+    r.onspeechend = () => { t1 = performance.now(); };
+    r.onresult = (e) => { alts = Array.from(e.results[0]).map((x) => x.transcript); };
+    r.onerror = (e) => { err = e.error; };
+    r.onend = async () => {
+      rec = null;
+      const clip = audio ? await audio.then((a) => a?.stop()).catch(() => null) : null;
+      if (!alts) {
+        toast(err === 'not-allowed' || err === 'service-not-allowed' ? '마이크 권한이 꺼져 있어요. 브라우저 설정에서 마이크를 허용해 주세요.' : err === 'network' ? '음성 인식 서버에 연결하지 못했어요. 인터넷을 확인해 주세요.' : '잘 못 들었어요. 한 번 더 말해 주세요.');
+        return resolve(null);
+      }
+      resolve({ alts, dur: t0 && t1 > t0 ? (t1 - t0) / 1000 : 0, ...(clip || {}) });
+    };
+    try { r.start(); } catch { rec = null; resolve(null); }
+  });
+}
+async function startRecorder() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = recorder = new MediaRecorder(stream), chunks = [];
+    mr.ondataavailable = (e) => chunks.push(e.data);
+    mr.start();
+    return { stop: () => new Promise((res) => {
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop()); recorder = null;
+        const blob = new Blob(chunks, { type: mr.mimeType });
+        let peaks = null;
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const data = (await ctx.decodeAudioData(await blob.arrayBuffer())).getChannelData(0);
+          const n = 64, step = Math.floor(data.length / n) || 1; peaks = [];
+          for (let i = 0; i < n; i++) { let m = 0; for (let j = i * step; j < (i + 1) * step && j < data.length; j += 8) m = Math.max(m, Math.abs(data[j])); peaks.push(m); }
+          ctx.close();
+        } catch {}
+        res({ url: URL.createObjectURL(blob), peaks });
+      };
+      mr.state === 'inactive' ? mr.onstop() : mr.stop();
+    }) };
+  } catch { return null; }
+}
+
+/* ───────── 화면 공통 ───────── */
+const $view = document.getElementById('view'), $tabs = document.getElementById('tabs');
+const ICON = {
+  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/>',
+  book: '<path d="M12 6c-2-1.5-5-2-8-1.5v14c3-.5 6 0 8 1.5 2-1.500 5-2 8-1.5v-14c-3-.5-6 0-8 1.5z"/><path d="M12 6v14"/>',
+  note: '<rect x="6" y="3.500" width="13" height="17" rx="1.500"/><path d="M4 8h3M4 12h3M4 16h3M10 8h6M10 12h4"/>',
+  user: '<circle cx="12" cy="8.500" r="3.500"/><path d="M5 20c1-4 4-5.500 7-5.500s6 1.500 7 5.500"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.500 11.500a6.500 6.500 0 0 0 13 0M12 18v3M9 21h6"/>',
+  spk: '<path d="M4 9.500v5h3.500L12 18.500v-13L7.500 9.500z"/><path d="M15.500 9a4 4 0 0 1 0 6M18 6.500a7.500 7.500 0 0 1 0 11"/>',
+  bulb: '<path d="M9 17h6M10 20h4M8.500 14a5.500 5.500 0 1 1 7 0c-.6.6-1 1.500-1 3h-5c0-1.500-.4-2.400-1-3z"/>',
+  send: '<path d="M4 5l16 7-16 7 3-7z"/><path d="M7 12h6"/>',
+  play: '<path d="M8 5.500v13l11-6.500z" fill="currentColor"/>',
+  check: '<path d="M5 12.500l4.500 4.500L19 7.500"/>',
+  back: '<path d="M20 12H5M11 6l-6 6 6 6"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="M16 16l4.500 4.500"/>',
+  loop: '<path d="M5 9a7 7 0 0 1 12-2.500L19 8.500M19 4.500v4h-4M19 15a7 7 0 0 1-12 2.500L5 15.500M5 19.500v-4h4"/>',
+  bars: '<path d="M5 20v-6h3v6zM10.500 20V9h3v11zM16 20V5h3v15z"/>',
+  warn: '<path d="M12 4 3 19.500h18z"/><path d="M12 10v4.500M12 17h.01"/>',
+};
+const I = (n, size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n].replace(/\.500/g, '.5')}</svg>`;
+const TABS = [['home', 'home', '홈'], ['chat', 'chat', '회화'], ['courses', 'book', '코스'], ['vocab', 'note', '단어장'], ['me', 'user', '마이페이지']];
+let page = 'home', toastTimer = 0;
+function toast(msg) {
+  document.querySelector('.toast')?.remove(); clearTimeout(toastTimer);
+  const t = Object.assign(document.createElement('div'), { className: 'toast', textContent: msg }); t.setAttribute('role', 'status');
+  document.body.append(t); toastTimer = setTimeout(() => t.remove(), 3200);
+}
+function go(p) {
+  rec?.abort?.(); speechSynthesis?.cancel();
+  page = p;
+  $view.className = p === 'courses' ? 'flush' : '';
+  render(); scrollTo(0, 0);
+}
+function render() {
+  const tab = page === 'shadow' ? 'courses' : page;
+  $tabs.innerHTML = TABS.map(([k, ic, n]) => `<button data-go="${k}" ${k === tab ? 'aria-current="page"' : ''}>${I(ic, 24)}<span>${n}</span></button>`).join('');
+  $view.innerHTML = VIEWS[page]();
+  if (page === 'chat') requestAnimationFrame(() => document.querySelector('.msgs')?.lastElementChild?.scrollIntoView({ block: 'nearest' }));
+  if (page === 'shadow') drawWave();
+}
+// 일본어 한 줄: 원문 + 읽는 법 + (설정에 따라) 한글 발음
+const jaLine = (l, cls = '') => `<div class="ja jps ${cls}">${esc(l.ja)}</div>${l.rd && norm(l.rd) !== norm(l.ja) ? `<div class="rd jps">${esc(l.rd)}</div>` : ''}${S.showHg && l.rd ? `<div class="hg">[${esc(hangul(l.rd))}]</div>` : ''}`;
+const VIEWS = {};
+
+/* ───────── 홈 ───────── */
+VIEWS.home = () => {
+  const m = mission(), p = pct(m), all = COURSES.reduce((n, c) => n + turnsDone(c), 0), total = COURSES.reduce((n, c) => n + c.turns.length, 0);
+  const ai = Math.round(all / total * 100), left = VOCAB.length - S.vocab.length, min = Math.floor((S.days[dayKey()] || 0) / 60);
+  return `
+  <div class="row" style="flex-wrap:wrap;row-gap:10px"><h1 class="hello grow" style="flex-basis:230px">안녕하세요, ${esc(S.name)}님</h1><span class="pill">${streak()}일 · STREAK</span><span class="pill">LEVEL ${level()}</span></div>
+  <hr class="rule">
+  <section class="mission">
+    <p class="caps">Today’s conversation – ${String(COURSES.indexOf(m) + 1).padStart(2, '0')}</p>
+    <h2>${esc(m.title)}</h2>
+    <hr class="rule" style="border-color:var(--ink);margin:0 0 14px">
+    <p class="caps" style="color:var(--ink)">${esc(m.en)} · PRACTICE</p>
+    <p class="caps teal" style="text-align:center;margin:10px 0 14px">Completion ${p}%</p>
+    <button class="btn" data-chat="${m.id}">지금 말하기 · START SESSION</button>
+  </section>
+  <hr class="rule" style="margin:26px 0 18px">
+  <div class="row" style="margin-bottom:14px"><p class="caps grow serif" style="color:var(--ink);font-size:14px">Practice modules</p><button class="caps teal" data-go="courses">View all →</button></div>
+  <div class="mods">
+    <button class="mod" data-chat="${m.id}"><span class="caps">Module 01</span><span class="ic"><span class="ring"><svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="20" fill="none" stroke="rgba(90,125,124,.3)" stroke-width="3"/><circle cx="23" cy="23" r="20" fill="none" stroke="#5A7D7C" stroke-width="3" stroke-linecap="round" stroke-dasharray="${ai * 1.257} 200" transform="rotate(-90 23 23)"/></svg><span>${ai}%</span></span></span><b>AI 회화</b><span class="caps">Free dialogue · Situational</span></button>
+    <button class="mod" data-shadow="${m.id}"><span class="caps">Module 02</span><span class="ic">${I('mic', 40)}</span><b>발음 연습</b><span class="caps">Pronunciation · Training</span></button>
+    <button class="mod" data-go="vocab"><span class="caps">Module 03</span><span class="ic">${I('note', 40)}</span><b>단어 복습</b><span class="caps">Vocab review · ${left} items</span></button>
+    <button class="mod" data-go="me"><span class="caps">Module 04</span><span class="ic">${I('bars', 40)}</span><b>주간 학습</b><span class="caps">Today ${min} / ${DAILY_GOAL_MIN} min</span></button>
+  </div>`;
+};
+
+/* ───────── AI 회화 ───────── */
+let chat = null;       // { cid, turn, msgs, mode, busy, listening, hint }
+function openChat(cid, restart) {
+  const c = course(cid); S.cur = c.id; save();
+  if (!chat || chat.cid !== c.id || restart) {
+    let turn = c.turns.findIndex((_, i) => !prog(c.id).turns[i]);
+    if (turn < 0 || restart) turn = 0;
+    chat = { cid: c.id, turn, msgs: [{ who: 't', ...c.turns[turn][0] }], mode: 'script', busy: false, listening: false, hint: false };
+  }
+  go('chat');
+  const last = chat.msgs[chat.msgs.length - 1];
+  if (last.who === 't') speak(last.ja);
+}
+VIEWS.chat = () => {
+  if (!chat) { const c = course(S.cur); chat = { cid: c.id, turn: Math.max(0, c.turns.findIndex((_, i) => !prog(c.id).turns[i])), msgs: [], mode: 'script', busy: false, listening: false, hint: false }; chat.msgs.push({ who: 't', ...c.turns[chat.turn][0] }); }
+  const c = course(chat.cid), n = COURSES.indexOf(c) + 1, done = chat.mode === 'script' && chat.turn >= c.turns.length;
+  const ans = !done && chat.mode === 'script' ? c.turns[chat.turn][1] : null;
+  const msgs = chat.msgs.map((m, i) => {
+    if (m.who === 't') return `<div class="tb"><div class="row"><span class="avatar s">AI</span><b class="grow" style="letter-spacing:.04em">AI TUTOR</b><button class="spk" data-say="${i}" aria-label="다시 듣기">${I('spk', 18)}</button></div>${jaLine(m)}${S.showKo && m.ko ? `<div class="ko">${esc(m.ko)}</div>` : ''}${m.fb ? `<div class="fb">${esc(m.fb)}</div>` : ''}</div>`;
+    if (m.who === 'u') return `<div class="ub"><div class="ja jps">${esc(m.text)}</div></div>${m.score != null ? `<div class="score"><span class="dot"></span>${m.spoken ? '발음' : '문장'} 점수 ${m.score}점 · ${praise(m.score)}</div>` : ''}`;
+    if (m.who === 'model') return `<div class="model"><p class="caps teal" style="letter-spacing:.1em;margin-bottom:4px">모범 답안</p><div class="row"><div class="grow">${jaLine(m)}<div class="rd">${esc(m.ko)}</div></div><button class="spk" data-say="${i}" aria-label="듣기">${I('spk', 18)}</button></div></div>`;
+    return `<div class="sys">${m.html}</div>`;
+  }).join('');
+  return `
+  <div class="row"><button class="back" data-go="courses" aria-label="코스 목록">${I('back', 26)}</button><span class="avatar">AI</span><div class="grow"><h1 class="serif" style="font-size:24px;font-weight:400">AI 일본어 튜터</h1><p class="caps teal" style="margin-top:3px">Online • ${esc(c.place)}</p></div></div>
+  <div class="coll">COLLECTION ${String(n).padStart(2, '0')} — ${esc(c.title)}</div>
+  <p class="caps teal" style="text-align:center;font-size:10px">${c.lv} • ${chat.mode === 'ai' ? 'Free talk with AI' : `Turn ${Math.min(chat.turn + 1, c.turns.length)} / ${c.turns.length}`} • Conversation practice</p>
+  <div class="seg" role="group" aria-label="회화 방식"><button data-mode="script" aria-pressed="${chat.mode === 'script'}">정해진 대화</button><button data-mode="ai" aria-pressed="${chat.mode === 'ai'}">AI 자유 회화</button></div>
+  <div class="msgs">${msgs}
+    ${chat.busy ? '<div class="sys">튜터가 대답을 생각하고 있어요…</div>' : ''}
+    ${ans && !chat.hint ? `<button class="hintbtn" data-act="hint">${I('bulb', 20)} 힌트 보기</button>` : ''}
+    ${ans && chat.hint ? `<div class="model"><p class="caps teal" style="letter-spacing:.1em;margin-bottom:4px">힌트 · 이렇게 말해 보세요</p><div class="row"><div class="grow">${jaLine(ans)}<div class="rd">${esc(ans.ko)}</div></div><button class="spk" data-act="sayhint" aria-label="듣기">${I('spk', 18)}</button></div></div>` : ''}
+    ${done ? `<div class="sys"><b class="serif" style="font-size:20px;color:var(--ink)">대화 완료!</b><br>이 코스의 회화 ${c.turns.length}턴을 모두 마쳤어요.</div><div class="row"><button class="btn ghost" data-act="restart">${I('loop', 18)} 다시 하기</button><button class="btn ghost" data-shadow="${c.id}">${I('mic', 18)} 쉐도잉 하러 가기</button></div>` : ''}
+  </div>
+  ${done ? '' : `<div class="talk ${chat.listening ? 'on' : ''}">
+    <p class="st">${chat.listening ? '듣고 있어요… 말해보세요' : SR ? '버튼을 누르고 일본어로 대답해 보세요' : '이 브라우저는 음성 인식이 안 돼요. 아래에 입력해 주세요'}</p>
+    <div class="wave">${'<i></i>'.repeat(28)}</div>
+    ${SR ? `<button class="mic" data-act="talk" ${chat.busy ? 'disabled' : ''}>${I('mic', 26)}<span>${chat.listening ? '멈추기' : '말하기'}</span></button>` : ''}
+    <form class="inp" data-form="chat"><input name="q" placeholder="일본어로 직접 입력해도 돼요" autocomplete="off" autocapitalize="off" lang="ja" aria-label="일본어 입력"><button aria-label="보내기" ${chat.busy ? 'disabled' : ''}>${I('send', 24)}</button></form>
+  </div>`}`;
+};
+async function chatTalk() {
+  if (chat.listening) { rec?.stop(); return; }
+  chat.listening = true; render();
+  const r = await listen();
+  chat.listening = false;
+  if (r) await chatSubmit(r.alts, true); else render();
+}
+async function chatSubmit(alts, spoken) {
+  const c = course(chat.cid);
+  chat.hint = false; touch();
+  if (chat.mode === 'ai') return aiTurn(alts[0], spoken);
+  const [, ans] = c.turns[chat.turn], g = grade(ans, alts);
+  chat.msgs.push({ who: 'u', text: g.heard, score: g.score, spoken });
+  if (g.score < 80) chat.msgs.push({ who: 'model', ...ans });
+  prog(c.id).turns[chat.turn] = true; save();
+  chat.turn++;
+  render();
+  if (chat.turn < c.turns.length) {
+    const next = c.turns[chat.turn][0];
+    setTimeout(() => { if (page !== 'chat' || chat.cid !== c.id) return; chat.msgs.push({ who: 't', ...next }); render(); speak(next.ja); }, 700);
+  }
+}
+// AI 자유 회화: 내 API 키로 Claude에게 직접 요청해요(키는 이 기기에만 저장).
+async function aiTurn(text, spoken) {
+  const c = course(chat.cid);
+  chat.msgs.push({ who: 'u', text, spoken }); chat.busy = true; render();
+  const history = chat.msgs.filter((m) => m.who === 't' || m.who === 'u').map((m) => m.who === 'u'
+    ? { role: 'user', content: m.text }
+    : { role: 'assistant', content: JSON.stringify({ ja: m.ja, reading: m.rd, ko: m.ko, feedback: m.fb || '' }) });
+  if (history[0].role !== 'user') history.unshift({ role: 'user', content: '(대화 시작)' });
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': S.key, 'anthropic-version': '2026-10-21', 'anthropic-beta': 'server-side-fallback-2026-07-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: S.model || 'claude-opus-5-5', max_tokens: 4000, output_config: { effort: 'low' }, fallbacks: 'default',
+        system: `너는 한국인 학습자(JLPT ${c.lv} 수준)의 일본어 회화 상대다. 상황: "${c.title}". 너의 역할: ${c.role}. 학습자의 말은 음성 인식 결과라 표기가 조금 틀릴 수 있다.\n역할에 맞게 ${c.lv} 수준의 쉬운 일본어로 한두 문장만 말하고, 대화가 이어지도록 질문이나 다음 단계로 끝낸다.\n반드시 아래 JSON 객체 하나만 출력한다(코드 블록·설명 금지).\n{"ja":"네 대사(일본어)","reading":"대사 전체를 가나로, 어절마다 띄어쓰기","ko":"대사의 한국어 번역","feedback":"학습자의 직전 문장에 문법·표현 오류나 더 자연스러운 표현이 있으면 한국어로 한 문장(고친 일본어 문장 포함), 없으면 빈 문자열"}`,
+        messages: history,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(res.status === 401 ? 'API 키가 올바르지 않아요. 마이페이지에서 다시 확인해 주세요.' : res.status === 429 ? '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.' : data?.error?.message || `요청에 실패했어요 (${res.status})`);
+    if (data.stop_reason === 'refusal') throw new Error('튜터가 이 내용에는 대답하지 않았어요. 다른 말로 이어가 보세요.');
+    const raw = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+    const out = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+    if (typeof out.ja !== 'string' || !out.ja) throw new Error('튜터의 대답을 읽지 못했어요. 다시 시도해 주세요.');
+    chat.msgs.push({ who: 't', ja: out.ja, rd: String(out.reading || ''), ko: String(out.ko || ''), fb: String(out.feedback || '') });
+    chat.busy = false; render(); speak(out.ja);
+  } catch (e) {
+    chat.busy = false;
+    chat.msgs.push({ who: 'sys', html: esc(e instanceof SyntaxError ? '튜터의 대답을 읽지 못했어요. 다시 시도해 주세요.' : e.message === 'Failed to fetch' ? '인터넷 연결을 확인해 주세요.' : e.message) });
+    render();
+  }
+}
+
+/* ───────── 코스 ───────── */
+let lvFilter = level(), query = '';
+VIEWS.courses = () => {
+  const list = COURSES.filter((c) => (query ? (c.title + c.en).toLowerCase().includes(query.toLowerCase()) : !lvFilter || c.lv === lvFilter));
+  return `
+  <header class="chead"><div class="row">${I('chat', 30)}<h1 class="grow">SITUATION-BASED<br>COURSE COLLECTION</h1></div>
+    <label class="search">${I('search', 20)}<input id="q" type="search" placeholder="코스 검색" value="${esc(query)}" aria-label="코스 검색"></label></header>
+  <div class="cbody">
+    <div class="lv" role="group" aria-label="레벨">${['N5', 'N4', 'N3'].map((l) => `<button data-lv="${l}" aria-pressed="${!query && lvFilter === l}">${l}</button>`).join('')}</div>
+    <div class="row" style="margin:18px 0 12px;border-bottom:1px solid var(--ink);padding-bottom:8px"><b class="grow" style="font-size:18px">${query ? '검색 결과' : lvFilter ? '추천 코스' : '전체 코스'} ${list.length}개</b><button class="teal" style="color:var(--teal);font-weight:600" data-lv="">전체 보기 ›</button></div>
+    ${list.map((c) => { const p = pct(c); return `<article class="ccard"><span class="dot"></span><div class="thumb jp" aria-hidden="true">${c.glyph}</div>
+      <div class="grow"><h3>${esc(c.title)}</h3><div class="row" style="gap:6px;margin:6px 0 8px"><span class="badge">${c.lv}</span><span class="caps" style="font-size:9.5px;letter-spacing:.06em;color:var(--ink)">${esc(c.en)}</span></div>
+      <div class="row"><span class="bar"><i style="width:${p}%"></i></span><b style="font-size:12px;width:34px;text-align:right">${p}%</b></div>
+      <div class="row" style="margin-top:8px;gap:14px"><button class="link" data-chat="${c.id}">회화 ${turnsDone(c)}/${c.turns.length}</button><button class="link" data-shadow="${c.id}">쉐도잉 ${shadowDone(c)}/${c.shadow.length}</button></div></div>
+      <button class="go" data-chat="${c.id}" aria-label="${esc(c.title)} 회화 시작">${p >= 100 ? I('check', 24) : I('play', 24)}</button></article>`; }).join('') || '<p class="note" style="text-align:center;padding:30px 0">맞는 코스가 없어요.</p>'}
+  </div>`;
+};
+
+/* ───────── 발음 / 쉐도잉 ───────── */
+let sh = null;         // { cid, i, res, listening, modelDur }
+function openShadow(cid) {
+  const c = course(cid); S.cur = c.id; save();
+  let i = c.shadow.findIndex((_, k) => (prog(c.id).shadow[k] || 0) < SHADOW_PASS);
+  sh = { cid: c.id, i: Math.max(0, i), res: null, listening: false, modelDur: {} };
+  go('shadow');
+}
+// 박(모라) 리듬: 보통 박 1, 긴소리 ー 는 이어지는 박, っ 는 쉬는 박
+function rhythm(rd) {
+  const out = [];
+  for (const ch of toHira(rd).replace(/[^ぁ-ゖー]/g, '')) {
+    if ('ゃゅょぁぃぅぇぉ'.includes(ch)) continue;
+    out.push(ch === 'っ' ? 0.18 : ch === 'ー' ? 0.75 : ch === 'ん' ? 0.6 : 1);
+  }
+  return out;
+}
+function drawWave() {
+  const cv = document.getElementById('wave'); if (!cv || !sh?.res?.peaks) return;
+  const w = cv.width = cv.clientWidth * 2, h = cv.height = cv.clientHeight * 2, g = cv.getContext('2d'), p = sh.res.peaks, max = Math.max(...p, 0.01);
+  g.fillStyle = '#5A7D7C';
+  p.forEach((v, i) => { const bh = Math.max(3, v / max * h * 0.9), bw = w / p.length; g.fillRect(i * bw + bw * 0.2, (h - bh) / 2, bw * 0.6, bh); });
+}
+VIEWS.shadow = () => {
+  const c = course(sh.cid), l = c.shadow[sh.i], n = c.shadow.length, done = shadowDone(c), r = sh.res, best = prog(c.id).shadow[sh.i] || 0;
+  const beats = rhythm(l.rd), bw = 100 / beats.length;
+  const model = sh.modelDur[sh.i], bad = r ? missed(r) : [];
+  let pace = null;
+  if (r?.dur && model) { const d = r.dur - model; pace = Math.abs(d) <= Math.max(0.35, model * 0.2) ? ['속도 — 좋아요', false, ''] : d < 0 ? ['속도 — 조금 빨라요', true, `모델보다 ${(-d).toFixed(1)}초 짧게 말했어요. 한 박씩 또박또박, 조금 더 천천히 말해 보세요.`] : ['속도 — 조금 느려요', true, `모델보다 ${d.toFixed(1)}초 길었어요. 끊지 말고 한 호흡에 이어서 말해 보세요.`]; }
+  return `
+  <div class="row"><button class="back" data-go="courses" aria-label="코스 목록">${I('back', 26)}</button><h1 class="serif grow" style="font-size:26px;font-weight:400;text-align:center;margin-right:28px">발음 연습 ${sh.i + 1}/${n}</h1></div>
+  <div class="row" style="margin-top:14px"><span class="bar" style="height:5px"><i style="width:${Math.round(done / n * 100)}%"></i></span><span style="font-size:12px;white-space:nowrap">${Math.round(done / n * 100)}% <span class="dot" style="width:4px;height:4px"></span> ${esc(c.title)}</span></div>
+  <hr class="rule">
+  <p style="font-size:12px;letter-spacing:.04em">모델 문장 · MODEL SENTENCE</p>
+  <p class="sent jp">${esc(l.ja)}</p>
+  <p class="rd jps">${esc(l.rd)}</p>${S.showHg ? `<p class="hg">[${esc(hangul(l.rd))}]</p>` : ''}
+  <hr class="rule" style="margin:12px 0">
+  <div class="row"><p class="serif grow" style="font-size:16px;line-height:1.5">${esc(l.ko)}</p><button data-act="model" style="display:grid;justify-items:center;gap:3px;font-size:12px"><span class="spk lg">${I('spk', 24)}</span>듣기</button></div>
+  <p class="serif" style="font-size:19px;margin:22px 0 0">음성 비교 · PRONUNCIATION FEEDBACK</p>
+  <hr class="rule" style="border-color:var(--ink);margin:8px 0 14px">
+  <div class="cmp">
+    <div><p style="font-size:14px;margin-bottom:8px">● 모델 리듬 <span class="note">${beats.length}박</span></p><div class="box"><svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">${beats.map((b, k) => `<rect x="${(k * bw + bw * 0.15).toFixed(2)}" y="${(38 - b * 30).toFixed(1)}" width="${(bw * (b === 0.75 ? 1 : 0.7)).toFixed(2)}" height="${(b * 30).toFixed(1)}" rx=".6" fill="#5A7D7C"/>`).join('')}</svg></div></div>
+    <div><p style="font-size:14px;margin-bottom:8px">● 내 녹음</p><div class="box jps">${sh.listening ? '듣고 있어요…' : r ? (r.peaks ? '<canvas id="wave"></canvas>' : r.chars.map((ch, k) => r.hit[k] ? esc(ch) : `<span class="miss">${esc(ch)}</span>`).join('')) : '<span class="note">녹음하면 여기에 보여요</span>'}</div></div>
+  </div>
+  ${r ? `<p class="note" style="margin-top:8px">들린 문장: <span class="jps" style="color:var(--ink)">${esc(r.heard)}</span></p>
+  <div class="row" style="margin-top:16px;align-items:center"><div class="grow">
+    <div class="chip ${bad.length ? 'warn' : ''}"><span class="ci">${I(bad.length ? 'warn' : 'check', 14)}</span>${bad.length ? `발음 — <b class="jps">${esc(bad.slice(0, 2).join(' · '))}</b> 확인` : '발음 — 정확해요'}</div>
+    ${pace ? `<div class="chip ${pace[1] ? 'warn' : ''}" style="margin:0"><span class="ci">${I(pace[1] ? 'warn' : 'check', 14)}</span>${pace[0]}</div>` : ''}
+  </div><div class="circle"><b>${r.score}점</b><span class="caps" style="font-size:9px;letter-spacing:.08em;margin-top:6px">${r.score >= 90 ? 'Excellent' : r.score >= SHADOW_PASS ? 'Good' : 'Try again'}</span></div></div>
+  <p class="serif" style="font-size:15px;line-height:1.6;margin-top:14px">${bad.length ? `빨간 부분(${esc(bad.slice(0, 3).join(', '))})이 다르게 들렸어요. 모델 음성을 한 번 더 듣고 그 부분만 천천히 따라 해 보세요.` : '문장 전체가 정확하게 들렸어요.'} ${pace ? pace[2] : ''}</p>` : `<p class="note" style="margin-top:14px">${best ? `이 문장 최고 점수 ${best}점. ` : ''}먼저 <b>듣기</b>로 모델 음성을 듣고, <b>녹음하기</b>를 눌러 똑같이 따라 말해 보세요. ${SHADOW_PASS}점 이상이면 완료로 기록돼요.</p>`}
+  <button class="btn round" style="margin-top:18px;${sh.listening ? 'background:var(--dot)' : ''}" data-act="record" ${SR ? '' : 'disabled'}>${sh.listening ? '멈추기 · STOP' : 'RECORD · 녹음하기'}</button>
+  ${SR ? '' : '<p class="note" style="margin-top:8px;text-align:center">이 브라우저는 음성 인식을 지원하지 않아요. Chrome 또는 Safari에서 열어 주세요.</p>'}
+  <div class="row" style="margin-top:12px"><button class="btn ghost" data-act="model">${I('loop', 16)} 모델 다시 듣기</button><button class="btn ghost" data-act="mine" ${r?.url ? '' : 'disabled'}>${I('loop', 16)} 내 녹음 재생</button></div>
+  <div class="row" style="margin-top:12px"><button class="btn ghost" data-act="prev" ${sh.i ? '' : 'disabled'}>← 이전 문장</button><button class="btn ghost" data-act="next" ${sh.i < n - 1 ? '' : 'disabled'}>다음 문장 →</button></div>`;
+};
+async function shadowModel() { const i = sh.i, d = await speak(course(sh.cid).shadow[i].ja); if (d && sh) sh.modelDur[i] = d; }
+async function shadowRecord() {
+  if (sh.listening) { rec?.stop(); return; }
+  sh.listening = true; render();
+  const r = await listen();
+  sh.listening = false;
+  if (r) {
+    const c = course(sh.cid), g = grade(c.shadow[sh.i], r.alts);
+    sh.res = { ...g, dur: r.dur, url: r.url, peaks: r.peaks };
+    const p = prog(c.id); p.shadow[sh.i] = Math.max(p.shadow[sh.i] || 0, g.score);
+    touch();
+  }
+  render();
+}
+
+/* ───────── 단어장 ───────── */
+let quiz = null;       // { list, k, open }
+VIEWS.vocab = () => {
+  const d = new Date(), n = S.vocab.length;
+  return `
+  <h1 class="serif" style="font-size:min(34px,8.4vw);font-weight:400;text-align:center;margin-top:18px;white-space:nowrap">단어장 · VOCABULARY</h1>
+  <p style="text-align:center;color:var(--teal);font-size:18px;font-weight:500;margin:6px 0 20px">${d.getMonth() + 1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일</p>
+  <p style="color:var(--olive-d);font-size:15px;margin-bottom:8px">오늘의 단어 ${VOCAB.length}개 · ${n}/${VOCAB.length}</p>
+  <div class="row" style="background:#E8E4D3;border-radius:99px;padding:5px 12px 5px 6px"><span class="bar" style="height:11px;background:none"><i style="width:${n / VOCAB.length * 100}%"></i></span><span style="font-size:13px;color:var(--olive-d)">${n}/${VOCAB.length}</span></div>
+  <hr class="rule" style="margin-bottom:6px">
+  <table class="vt"><thead><tr><th></th><th>원어</th><th>발음</th><th>한글 발음</th><th>해석</th></tr></thead><tbody>
+  ${VOCAB.map((v, i) => `<tr data-word="${i}"><td><button class="num ${S.vocab.includes(i) ? 'ok' : ''}" data-learn="${i}" aria-label="${esc(v[3])} 외움 표시" aria-pressed="${S.vocab.includes(i)}">${String(i + 1).padStart(2, '0')}</button></td><td class="jps">${v[0]}</td><td class="jps">${v[1]}</td><td>[${v[2]}]</td><td>${v[3]}</td></tr>`).join('')}
+  </tbody></table>
+  <p class="note" style="margin:12px 0 16px">단어를 누르면 발음을 들려줘요. 번호를 누르면 ‘외웠어요’로 표시돼요. 한글 발음은 읽기를 돕는 근사 표기라서, 정확한 발음은 소리로 확인해 주세요.</p>
+  <button class="btn round" data-act="quiz">오늘 복습하기 · REVIEW NOW</button>
+  ${quiz ? (() => { const v = VOCAB[quiz.list[quiz.k]]; return `<div class="sheet" data-act="quizclose"><div data-stop><p class="caps teal">Review ${quiz.k + 1} / ${quiz.list.length}</p><p class="flash jp">${v[0]}</p>
+    ${quiz.open ? `<p class="jps" style="font-size:18px">${v[1]} <span class="hg">[${v[2]}]</span></p><p class="serif" style="font-size:22px;margin:10px 0 22px">${v[3]}</p><div class="row"><button class="btn ghost" data-act="quizno">아직이에요</button><button class="btn" style="font-size:14px;padding:13px" data-act="quizyes">외웠어요</button></div>`
+      : `<p class="note" style="margin-bottom:22px">뜻과 발음을 떠올려 보세요</p><div class="row"><button class="btn ghost" data-act="quizsay">${I('spk', 16)} 듣기</button><button class="btn" style="font-size:14px;padding:13px" data-act="quizopen">정답 보기</button></div>`}</div></div>`; })() : ''}`;
+};
+function startQuiz() {
+  let list = VOCAB.map((_, i) => i).filter((i) => !S.vocab.includes(i));
+  if (!list.length) list = VOCAB.map((_, i) => i);
+  quiz = { list, k: 0, open: false }; render(); speak(VOCAB[list[0]][0]);
+}
+function quizNext(ok) {
+  const i = quiz.list[quiz.k];
+  if (ok && !S.vocab.includes(i)) S.vocab.push(i);
+  if (!ok) S.vocab = S.vocab.filter((x) => x !== i);
+  touch();
+  if (++quiz.k >= quiz.list.length) { quiz = null; render(); toast(`복습 끝! 외운 단어 ${S.vocab.length}/${VOCAB.length}`); return; }
+  quiz.open = false; render(); speak(VOCAB[quiz.list[quiz.k]][0]);
+}
+
+/* ───────── 마이페이지 / 학습 리포트 ───────── */
+VIEWS.me = () => {
+  const week = [...Array(7)].map((_, k) => { const d = new Date(); d.setDate(d.getDate() - (6 - k)); return { d, min: Math.floor((S.days[dayKey(d)] || 0) / 60), on: !!S.days[dayKey(d)] }; });
+  const max = Math.max(DAILY_GOAL_MIN, ...week.map((w) => w.min)), total = week.reduce((n, w) => n + w.min, 0);
+  const sw = (k, label, note) => `<div class="field"><span class="grow">${label}${note ? `<br><span class="note">${note}</span>` : ''}</span><button class="sw" role="switch" aria-checked="${!!S[k]}" data-sw="${k}" aria-label="${label}"></button></div>`;
+  return `
+  <p class="caps teal" style="margin-top:14px">My page · Weekly report</p>
+  <h1 class="serif" style="font-size:32px;font-weight:400;margin:8px 0 18px">${esc(S.name)}님의 학습 리포트</h1>
+  <div class="stat"><div><b>${streak()}</b><span class="caps" style="font-size:9.5px">연속 학습일</span></div><div><b>${level()}</b><span class="caps" style="font-size:9.5px">현재 레벨</span></div><div><b>${S.vocab.length}</b><span class="caps" style="font-size:9.5px">외운 단어</span></div></div>
+  <p class="serif" style="font-size:18px;margin:26px 0 0">주간 학습 · WEEKLY ACTIVITY</p>
+  <hr class="rule" style="border-color:var(--ink);margin:8px 0 0">
+  <div class="week">${week.map((w, k) => `<div class="${k === 6 ? 't' : ''}"><span>${w.min || (w.on ? '<1' : '')}</span><i style="height:${Math.round(w.min / max * 80)}%"></i><span>${'일월화수목금토'[w.d.getDay()]}</span></div>`).join('')}</div>
+  <p class="note" style="margin-top:8px">최근 7일 합계 ${total}분 · 하루 목표 ${DAILY_GOAL_MIN}분 (앱에서 학습한 날의 사용 시간 기준)</p>
+  <p class="serif" style="font-size:18px;margin:26px 0 0">코스 진행률 · COURSES</p>
+  <hr class="rule" style="border-color:var(--ink);margin:8px 0 4px">
+  ${COURSES.map((c) => `<div class="field"><span style="width:118px;flex:none">${esc(c.title)}</span><span class="bar"><i style="width:${pct(c)}%"></i></span><b style="width:38px;text-align:right;font-size:13px">${pct(c)}%</b></div>`).join('')}
+  <p class="serif" style="font-size:18px;margin:26px 0 0">설정 · SETTINGS</p>
+  <hr class="rule" style="border-color:var(--ink);margin:8px 0 4px">
+  <label class="field"><span>이름</span><input type="text" data-set="name" value="${esc(S.name)}" maxlength="12"></label>
+  <label class="field"><span class="grow">읽어 주는 속도</span><select data-set="rate">${[[0.7, '느리게'], [0.9, '조금 느리게'], [1, '보통']].map(([v, n]) => `<option value="${v}" ${Number(S.rate) === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+  ${sw('showKo', '한국어 번역 보기')}${sw('showHg', '한글 발음 보기', '가나 아래에 [한글] 표기를 함께 보여줘요')}${sw('rec', '내 녹음 재생·파형', '휴대폰에서 음성 인식이 잘 안 되면 꺼 주세요')}
+  <label class="field"><span>AI 키</span><input type="password" data-set="key" value="${esc(S.key)}" placeholder="sk-ant-… (AI 자유 회화용)" autocomplete="off"></label>
+  <label class="field"><span>AI 모델</span><input type="text" data-set="model" value="${esc(S.model)}" autocapitalize="off" autocomplete="off"></label>
+  <p class="note" style="margin-top:10px">‘정해진 대화’·발음·단어장은 키 없이 쓸 수 있어요. ‘AI 자유 회화’만 Anthropic API 키가 필요하고, 쓴 만큼 요금이 나와요. 키와 학습 기록은 이 기기의 브라우저에만 저장되고, AI 회화 내용은 Anthropic으로 전송돼요.<br>음성 인식은 브라우저 기능이라 내 목소리가 Google·Apple의 인식 서버로 전송될 수 있어요.<br>아이폰: Safari 공유 버튼 → <b>홈 화면에 추가</b>를 누르면 앱처럼 쓸 수 있어요.</p>
+  <button class="btn ghost" style="margin-top:18px" data-act="reset">학습 기록 초기화</button>`;
+};
+
+/* ───────── 이벤트 ───────── */
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-go],[data-chat],[data-shadow],[data-act],[data-say],[data-lv],[data-mode],[data-learn],[data-word],[data-sw],[data-stop]');
+  if (!t) return;
+  const d = t.dataset;
+  if ('stop' in d) { const inner = e.target.closest('[data-act]'); if (!inner || inner === t.parentElement) return; return act(inner.dataset.act); }
+  if (d.go) return d.go === 'chat' ? openChat(chat?.cid || mission().id) : go(d.go);
+  if (d.chat) return openChat(d.chat);
+  if (d.shadow) return openShadow(d.shadow);
+  if (d.say) return speak(chat.msgs[d.say].ja);
+  if ('lv' in d) { lvFilter = d.lv; query = ''; return render(); }
+  if (d.mode) {
+    if (d.mode === 'ai' && !S.key) return toast('AI 자유 회화는 마이페이지 → 설정에 API 키를 넣으면 쓸 수 있어요.');
+    chat.mode = d.mode; chat.hint = false; return render();
+  }
+  if (d.learn) { const i = Number(d.learn); S.vocab = S.vocab.includes(i) ? S.vocab.filter((x) => x !== i) : [...S.vocab, i]; touch(); return render(); }
+  if (d.word) return speak(VOCAB[d.word][0]);
+  if (d.sw) { S[d.sw] = !S[d.sw]; save(); return render(); }
+  if (d.act) return act(d.act);
+});
+function act(a) {
+  const c = chat && course(chat.cid);
+  if (a === 'talk') return chatTalk();
+  if (a === 'hint') { chat.hint = true; return render(); }
+  if (a === 'sayhint') return speak(c.turns[chat.turn][1].ja);
+  if (a === 'restart') return openChat(chat.cid, true);
+  if (a === 'model') return shadowModel();
+  if (a === 'record') return shadowRecord();
+  if (a === 'mine') return sh.res?.url && new Audio(sh.res.url).play();
+  if (a === 'prev' || a === 'next') { sh.i += a === 'next' ? 1 : -1; sh.res = null; render(); return shadowModel(); }
+  if (a === 'quiz') return startQuiz();
+  if (a === 'quizclose') { quiz = null; return render(); }
+  if (a === 'quizsay') return speak(VOCAB[quiz.list[quiz.k]][0]);
+  if (a === 'quizopen') { quiz.open = true; return render(); }
+  if (a === 'quizyes' || a === 'quizno') return quizNext(a === 'quizyes');
+  if (a === 'reset' && confirm('코스 진행률, 단어, 학습 시간 기록을 모두 지울까요? 이름과 설정은 그대로 남아요.')) { S.days = {}; S.prog = {}; S.vocab = []; chat = null; save(); render(); toast('학습 기록을 지웠어요.'); }
+}
+document.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = e.target.q?.value.trim();
+  if (e.target.dataset.form === 'chat' && q && !chat.busy) chatSubmit([q], false);
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'q') {
+    query = e.target.value.trim(); render();
+    const q = document.getElementById('q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length);
+  }
+});
+document.addEventListener('change', (e) => {
+  const k = e.target.dataset.set; if (!k) return;
+  S[k] = k === 'rate' ? Number(e.target.value) : e.target.value.trim() || (k === 'name' ? '리노' : k === 'model' ? 'claude-opus-5-5' : '');
+  save(); if (k === 'name') render();
+});
+render();
+</script>
+</body>
+</html>

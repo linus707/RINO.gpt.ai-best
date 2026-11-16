@@ -722,7 +722,7 @@ function nav(){
     const items=ks.map(k=>PAGES.find(p=>p[0]===k)).filter(p=>p&&!p[4]&&(!p[3]||m.role==="admin"));
     if(!items.length)return "";
     const gap=first?"":'<div style="height:12px" aria-hidden="true"></div>';first=false;
-    return gap+items.map(([k,i,n])=>{const b=navBadge(k);return `<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${ic(k,21)}<span class="grow">${n}</span>${b?`<span class="nbadge">${b>99?"99+":b}</span>`:""}</button>`}).join("")+(g==="일하기"?`<a class="navbtn" href="translate.html" style="text-decoration:none">${ic("translate",21)}<span class="grow">키보드 번역</span></a>`:"");
+    return gap+items.map(([k,i,n])=>{const b=navBadge(k);return `<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${ic(k,21)}<span class="grow">${n}</span>${b?`<span class="nbadge">${b>99?"99+":b}</span>`:""}</button>`}).join("")+(g==="일하기"?`<a class="navbtn" href="translate.html" style="text-decoration:none">${ic("translate",21)}<span class="grow">키보드 번역</span></a><a class="navbtn" href="japanese.html" style="text-decoration:none">${ic("translate",21)}<span class="grow">일본어 회화</span></a>`:"");
   }).join(""):"";
 }
 $("#menu").onclick=()=>{if(!me())return;nav();$("#drawer").classList.add("open")};
