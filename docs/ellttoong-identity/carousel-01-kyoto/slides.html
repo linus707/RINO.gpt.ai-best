@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>얼뚱트립 캐러셀 #1 — 교토 단풍 아침 6시</title>
+<!--
+  사진 교체 방법: 같은 폴더의 photos/ 안에 아래 이름으로 사진을 넣고 render.js 를 다시 실행하세요.
+  cover.jpg / day.jpg / dawn.jpg / before.jpg / after.jpg / mood.jpg
+  사진이 없으면 자리표시(회색 그라데이션 + 안내 문구)가 보여요.
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700&display=swap">
+<style>
+:root{--paper:#F6F1E6;--ink:#171513;--sub:#5B554D;--amber:#FFB23F;--amber-d:#D9800F;--night:#121418;--line:#D9D1C2;--maple:#C2452D}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Pretendard,"Noto Sans JP",sans-serif;background:#333;display:flex;flex-direction:column;gap:40px;padding:40px;align-items:center}
+.s{width:1080px;height:1350px;position:relative;overflow:hidden;flex:none;word-break:keep-all}
+.jp{font-family:"Noto Sans JP",sans-serif;font-weight:500;font-size:28px;opacity:.72;margin-top:22px;letter-spacing:.02em}
+.cnt{position:absolute;top:44px;right:44px;font-size:26px;font-weight:700;padding:8px 22px;border-radius:40px;background:#0007;color:#fff;z-index:5}
+.light .cnt{background:#17151318;color:var(--ink)}
+.chip{display:inline-block;font-size:28px;font-weight:800;padding:10px 20px;border-radius:6px;background:var(--amber);color:var(--ink)}
+.chip.o{background:transparent;border:3px solid var(--amber-d);color:var(--amber-d)}
+.hl{background:var(--amber);color:var(--ink);padding:0 14px;border-radius:4px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.next{position:absolute;bottom:46px;left:64px;font-size:28px;font-weight:700;display:flex;gap:14px;align-items:center;z-index:5}
+.next b{background:var(--ink);color:var(--paper);padding:5px 16px;border-radius:30px;font-size:24px}
+.dark .next b,.photo-s .next b{background:var(--amber);color:var(--ink)}
+.photo-s .next{color:#fff}
+.sig{position:absolute;bottom:50px;right:56px;font-size:24px;font-weight:700;opacity:.75;letter-spacing:.1em;z-index:5}
+.photo-s .sig{color:#fff}
+.star{position:absolute;color:var(--amber);font-size:44px;z-index:4}
+.body{position:absolute;left:64px;right:64px}
+h1{font-size:96px;line-height:1.18;font-weight:900;letter-spacing:-.035em}
+h2{font-size:74px;line-height:1.24;font-weight:900;letter-spacing:-.035em}
+.src{position:absolute;bottom:112px;left:64px;right:64px;font-size:20px;color:var(--sub);opacity:.8}
+/* 사진 칸 */
+.ph{position:absolute;background:linear-gradient(150deg,#7a3b25,#c2452d 35%,#e8a24a 60%,#3a2a20);background-size:cover;background-position:center;overflow:hidden}
+.ph.has{background-image:var(--img)!important}
+.ph .lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;font-size:26px;font-weight:700;padding:30px;background:repeating-linear-gradient(45deg,#0000 0 20px,#ffffff10 20px 40px);line-height:1.5}
+.ph.has .lbl{display:none}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,#0000 35%,#000000d0 78%);z-index:1}
+.polar{border:16px solid #fff;box-shadow:0 18px 40px #0005}
+.tape{position:absolute;width:170px;height:46px;background:#FFB23Fcc;z-index:3}
+/* 정보 카드 */
+.light{background:var(--paper);color:var(--ink)}
+.dark{background:var(--night);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:56px}
+.card{border:3px solid var(--ink);border-radius:20px;padding:30px 24px;background:#fff;min-height:290px}
+.card.d{background:var(--ink);color:var(--paper)}
+.card small{font-size:22px;font-weight:800;letter-spacing:.12em;color:var(--amber-d)}
+.card.d small{color:var(--amber)}
+.card p{font-size:40px;font-weight:900;margin-top:12px;letter-spacing:-.02em}
+.card span{font-size:25px;color:var(--sub);display:block;margin-top:12px;line-height:1.45}
+.card.d span{color:#c9c2b6}
+.steps{display:flex;flex-direction:column;gap:34px;margin-top:50px}
+.step{display:flex;gap:26px;align-items:flex-start}
+.step i{font-style:normal;flex:none;width:62px;height:62px;border-radius:50%;background:var(--amber);display:grid;place-items:center;font-size:32px;font-weight:900}
+.step b{font-size:40px;font-weight:900;letter-spacing:-.02em;display:block}
+.step small{display:block;font-size:27px;color:var(--sub);font-weight:500;margin-top:8px;line-height:1.45}
+.checks{display:flex;flex-direction:column;gap:28px;margin-top:50px}
+.chk{display:flex;gap:22px;align-items:flex-start;background:#fff;border-radius:18px;padding:26px 28px;border:2px solid var(--line)}
+.chk i{font-style:normal;flex:none;width:44px;height:44px;border-radius:8px;background:var(--amber);display:grid;place-items:center;font-size:28px;font-weight:900}
+.chk b{font-size:33px;font-weight:800;display:block;letter-spacing:-.02em}
+.chk small{font-size:24px;color:var(--sub);display:block;margin-top:6px;line-height:1.4}
+/* 루트 */
+.route{position:relative;margin-top:60px;padding-left:40px}
+.route:before{content:"";position:absolute;left:69px;top:40px;bottom:60px;border-left:5px dashed var(--amber-d)}
+.stop{position:relative;display:flex;gap:30px;align-items:center;margin-bottom:46px}
+.pin{flex:none;width:64px;height:64px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--ink);display:grid;place-items:center;z-index:2}
+.pin span{transform:rotate(45deg);color:var(--amber);font-weight:900;font-size:28px}
+.stop .t{font-size:30px;font-weight:900;color:var(--amber-d);letter-spacing:.04em}
+.stop .n{font-size:44px;font-weight:900;letter-spacing:-.02em}
+.stop .d{font-size:26px;color:var(--sub);margin-top:4px}
+.stop .jpn{font-family:"Noto Sans JP";font-size:22px;color:var(--sub);opacity:.8;margin-left:10px;font-weight:500}
+/* CTA */
+.box{position:absolute;left:72px;right:72px;top:380px;border:4px solid var(--amber);border-radius:28px;padding:60px 40px;text-align:center}
+.box h3{font-size:66px;font-weight:900;letter-spacing:-.03em}
+.box ul{list-style:none;margin-top:34px;font-size:32px;line-height:1.75;color:#e6e1d8}
+.box .jp2{font-family:"Noto Sans JP";font-size:24px;color:#999;margin-top:22px}
+.prof{position:absolute;top:190px;left:50%;transform:translateX(-50%);background:#fff;color:var(--ink);border-radius:80px;padding:16px 26px 16px 18px;display:flex;gap:18px;align-items:center;font-size:30px;font-weight:800;white-space:nowrap}
+.prof .av{width:66px;height:66px;border-radius:50%;background:linear-gradient(135deg,var(--amber),#b05a1a)}
+.prof .fb{background:#3a7bfd;color:#fff;padding:8px 22px;border-radius:12px;font-size:26px}
+.btns{position:absolute;top:960px;left:0;right:0;display:flex;gap:24px;justify-content:center}
+.btns span{background:#fff;color:var(--ink);font-size:30px;font-weight:800;padding:20px 34px;border-radius:50px}
+.btns span.a{background:var(--amber)}
+.end{position:absolute;top:1110px;left:0;right:0;text-align:center;color:var(--amber);font-weight:800;font-size:36px}
+.end small{display:block;color:#8d8a85;font-size:24px;margin-top:12px;font-weight:500}
+.ba{position:absolute;top:470px;left:64px;right:64px;display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.ba .ph{position:relative;height:620px;border-radius:18px}
+.ba em{position:absolute;top:20px;left:20px;z-index:3;font-style:normal;font-size:26px;font-weight:900;padding:6px 16px;border-radius:6px;background:#fff;color:var(--ink)}
+.ba .a em{background:var(--amber)}
+.ba p{position:absolute;bottom:20px;left:20px;right:20px;z-index:3;color:#fff;font-size:24px;font-weight:700;text-shadow:0 2px 8px #000a}
+</style></head><body>
+
+<!-- 1. 표지 -->
+<section class="s photo-s" id="s1">
+  <div class="ph" data-img="cover" style="inset:0"><div class="lbl">[ 사진 교체: cover.jpg ]<br>아침 빛 받은 단풍 + 빈 돌계단/골목<br>(세로, 사람 없는 컷)</div></div>
+  <div class="shade"></div>
+  <span class="cnt">1/9</span>
+  <div class="body" style="bottom:170px;z-index:3;color:#fff">
+    <span class="chip">📷 리노's 촬영 공식</span>
+    <h1 style="margin-top:30px">사람 없는<br>교토 단풍은<br><span class="hl">아침 6시</span>에 찍어요</h1>
+    <div class="jp">人のいない京都の紅葉は、朝6時に。</div>
+  </div>
+  <div class="next"><b>NEXT</b> 왜 하필 6시일까? →</div>
+  <div class="sig">ELLTTOONG TRIP</div>
+</section>
+
+<!-- 2. 공감 -->
+<section class="s light" id="s2">
+  <span class="cnt">2/9</span>
+  <div class="body" style="top:110px">
+    <span class="chip o">KYOTO · AUTUMN</span>
+    <h2 style="margin-top:30px">낮에 가면<br>단풍보다 <span class="hl">사람</span>이<br>더 많이 찍혀요</h2>
+    <div class="jp">昼は、紅葉より人が多い。</div>
+  </div>
+  <div class="ph polar" data-img="day" style="left:70px;top:720px;width:470px;height:430px;transform:rotate(-4deg)"><div class="lbl">[ day.jpg ]<br>낮 2시, 인파 가득</div></div>
+  <div class="ph polar" data-img="dawn" style="left:540px;top:700px;width:470px;height:430px;transform:rotate(3deg)"><div class="lbl">[ dawn.jpg ]<br>아침 6시, 텅 빈 길</div></div>
+  <div class="tape" style="left:200px;top:700px;transform:rotate(-10deg)"></div>
+  <div class="tape" style="left:700px;top:680px;transform:rotate(8deg)"></div>
+  <div style="position:absolute;left:150px;top:1170px;font-size:28px;font-weight:800">PM 2:00</div>
+  <div style="position:absolute;left:640px;top:1160px;font-size:28px;font-weight:800;color:var(--amber-d)">AM 6:00 ✦</div>
+  <div class="next"><b>NEXT</b> 올해 단풍, 언제까지 갈까? →</div>
+  <div class="sig">📷 리노's Pick</div>
+</section>
+
+<!-- 3. 핵심 사실 -->
+<section class="s light" id="s3">
+  <span class="cnt">3/9</span>
+  <span class="star" style="top:150px;right:150px">✦</span>
+  <div class="body" style="top:110px">
+    <span class="chip o">2026 단풍 예보</span>
+    <h2 style="margin-top:30px">올해 교토 단풍은<br><span class="hl">12월 초</span>까지 가요</h2>
+    <div class="jp">今年の京都の紅葉は、12月上旬まで。</div>
+    <div class="cards">
+      <div class="card"><small>GINKGO</small><p>노란 은행</p><span>절정 예상<br><b style="color:var(--ink);font-size:34px">11월 27일경</b></span></div>
+      <div class="card d"><small>MAPLE</small><p>붉은 단풍</p><span>절정 예상<br><b style="color:#fff;font-size:34px">12월 11일경</b></span></div>
+      <div class="card"><small>TIP</small><p>2~3주</p><span>절정 전후로<br>색이 유지돼요</span></div>
+    </div>
+    <p style="font-size:30px;font-weight:700;margin-top:50px;line-height:1.55">→ 11월 말~12월 초 여행이면 <span class="hl">딱 맞아요</span><br><span style="color:var(--sub);font-weight:500;font-size:26px">사원·고도마다 차이가 있어서 일주일 전 현지 예보를 꼭 확인하세요</span></p>
+  </div>
+  <div class="src">출처: 일본기상주식회사(JMC) 2026 단풍 예보 (nippon.com 등 보도)</div>
+  <div class="next"><b>NEXT</b> 아침 루트 3곳 →</div>
+  <div class="sig">📷 리노's Pick</div>
+</section>
+
+<!-- 4. 루트 -->
+<section class="s light" id="s4">
+  <span class="cnt">4/9</span>
+  <div class="body" style="top:110px">
+    <span class="chip o">MORNING ROUTE</span>
+    <h2 style="margin-top:30px">사람 없는 <span class="hl">아침 루트</span><br>딱 3곳만 가세요</h2>
+    <div class="jp">朝ルートは、この3か所だけ。</div>
+    <div class="route">
+      <div class="stop"><div class="pin"><span>1</span></div><div><div class="t">06:00</div><div class="n">기요미즈데라<span class="jpn">清水寺</span></div><div class="d">6시 개문 — 무대 위 단풍을 거의 혼자 봐요</div></div></div>
+      <div class="stop"><div class="pin"><span>2</span></div><div><div class="t">07:00</div><div class="n">산넨자카·니넨자카<span class="jpn">三年坂</span></div><div class="d">가게 문 열기 전, 빈 돌계단 골목</div></div></div>
+      <div class="stop"><div class="pin"><span>3</span></div><div><div class="t">08:15</div><div class="n">도후쿠지<span class="jpn">東福寺</span></div><div class="d">가을엔 8:30 개문 — 15분 먼저 줄 서기</div></div></div>
+    </div>
+  </div>
+  <div class="next"><b>NEXT</b> 같은 자리, 세팅 하나 차이 →</div>
+  <div class="sig">📷 리노's Pick</div>
+</section>
+
+<!-- 5. 비포/애프터 -->
+<section class="s dark" id="s5">
+  <span class="cnt">5/9</span>
+  <div class="body" style="top:120px">
+    <span class="chip">BEFORE / AFTER</span>
+    <h2 style="margin-top:30px">같은 자리,<br><span style="color:var(--amber)">세팅 하나</span> 차이예요</h2>
+    <div class="jp">同じ場所、設定ひとつの差。</div>
+  </div>
+  <div class="ba">
+    <div class="ph b" data-img="before"><em>기본 카메라</em><div class="lbl">[ before.jpg ]<br>자동으로 찍은 컷</div><p>색이 하얗게 날아감</p></div>
+    <div class="ph a" data-img="after"><em>리노 세팅</em><div class="lbl">[ after.jpg ]<br>같은 자리 보정 컷</div><p>붉은색이 진하게 살아남</p></div>
+  </div>
+  <div class="next"><b>NEXT</b> 영화 앵글 공식 3단계 →</div>
+  <div class="sig">ELLTTOONG TRIP</div>
+</section>
+
+<!-- 6. 방법 -->
+<section class="s light" id="s6">
+  <span class="cnt">6/9</span>
+  <span class="star" style="top:170px;right:120px">✦</span>
+  <div class="body" style="top:110px">
+    <span class="chip">📷 리노's 촬영 공식</span>
+    <h2 style="margin-top:30px">폰으로 찍는<br><span class="hl">영화 앵글</span> 3단계</h2>
+    <div class="jp">スマホで撮る、映画みたいな紅葉。</div>
+    <div class="steps">
+      <div class="step"><i>1</i><div><b>노출(☀)을 −0.7로 내리기</b><small>화면을 꾹 누르고 해 아이콘을 아래로.<br>붉은색이 하얗게 날아가지 않아요</small></div></div>
+      <div class="step"><i>2</i><div><b>해를 단풍 뒤에 두기 (역광)</b><small>아침 해가 낮을 때 잎이 빛나요.<br>빛이 잎을 '통과'하는 각도를 찾으세요</small></div></div>
+      <div class="step"><i>3</i><div><b>0.5x 말고 2x로 당기기</b><small>배경이 압축되고, 사람은 덜 걸려요.<br>렌즈 앞에 잎을 살짝 걸치면 영화 첫 장면</small></div></div>
+    </div>
+    <div style="margin-top:56px;background:var(--ink);color:var(--paper);border-radius:20px;padding:30px 34px;font-size:27px;line-height:1.6">
+      <b style="color:var(--amber)">💡 기종별 노출 내리는 법</b><br>
+      아이폰 — 화면 꾹 눌러 초점 고정 → 해 아이콘 아래로<br>
+      갤럭시 — 프로 모드 → EV −0.7
+    </div>
+  </div>
+  <div class="next"><b>NEXT</b> 가기 전에 꼭 알아두기 →</div>
+  <div class="sig">📷 리노's Pick</div>
+</section>
+
+<!-- 7. 체크리스트 -->
+<section class="s light" id="s7">
+  <span class="cnt">7/9</span>
+  <div class="body" style="top:110px">
+    <span class="chip o">CHECK LIST</span>
+    <h2 style="margin-top:30px">가기 전에<br><span class="hl">꼭</span> 알아두기</h2>
+    <div class="jp">行く前にチェック！</div>
+    <div class="checks">
+      <div class="chk"><i>✓</i><div><b>도후쿠지 쓰텐쿄는 가을 특별요금</b><small>단풍 시즌 성인 1,000엔 (평소보다 비싸요)</small></div></div>
+      <div class="chk"><i>✓</i><div><b>절정 땐 쓰텐쿄 '위'에서 촬영 제한</b><small>맞은편 가운쿄(臥雲橋)에서 쓰텐쿄를 담는 게 더 예뻐요</small></div></div>
+      <div class="chk"><i>✓</i><div><b>기요미즈데라 야간 특별관람</b><small>11/21~11/30 · 21:30까지 (입장 21:00 마감)</small></div></div>
+      <div class="chk"><i>✓</i><div><b>삼각대는 사원마다 금지가 많아요</b><small>폰은 손으로 — 입구 안내판 먼저 확인하기</small></div></div>
+    </div>
+  </div>
+  <div class="src" style="bottom:118px">요금·시간은 매년 바뀔 수 있어요 — 방문 전 각 사원 공식 사이트 확인</div>
+  <div class="next"><b>NEXT</b> 새벽 교토의 온도 →</div>
+  <div class="sig">📷 리노's Pick</div>
+</section>
+
+<!-- 8. 감성 -->
+<section class="s photo-s" id="s8">
+  <div class="ph" data-img="mood" style="inset:0"><div class="lbl">[ 사진 교체: mood.jpg ]<br>리노의 베스트 컷 1장<br>(아침 빛 · 단풍 · 고요함)</div></div>
+  <div class="shade"></div>
+  <span class="cnt">8/9</span>
+  <div class="body" style="bottom:190px;z-index:3;color:#fff">
+    <h2 style="font-size:70px">새벽 교토는<br>소리보다 <span style="color:var(--amber)">색</span>이<br>먼저 와요</h2>
+    <div class="jp">夜明けの京都は、音より先に色が届く。</div>
+  </div>
+  <div class="next"><b>NEXT</b> 루트 지도 받는 법 →</div>
+  <div class="sig">도시의 온도를 기록합니다</div>
+</section>
+
+<!-- 9. CTA -->
+<section class="s dark" id="s9">
+  <span class="cnt">9/9</span>
+  <div class="prof"><span class="av"></span>ellttoong.trips<span class="fb">팔로우</span></div>
+  <span class="star" style="top:330px;left:110px">✦</span><span class="star" style="top:900px;right:120px;font-size:30px">✦</span>
+  <div class="box">
+    <h3>댓글로 <span class="hl">[단풍]</span> 남기면</h3>
+    <ul><li>📍 아침 루트 구글맵 지도</li><li>📷 스팟별 촬영 포인트 + 세팅값</li><li>DM으로 바로 보내드려요 📩</li></ul>
+    <div class="jp2">コメントで「紅葉」と書いてね</div>
+  </div>
+  <div class="btns"><span>📌 저장</span><span>↗ 공유</span><span class="a">＋ 팔로우</span></div>
+  <div class="end">교토 가는 날, 이 순서로 찍어보세요<small>도시의 온도를 기록합니다 — 얼뚱트립</small></div>
+</section>
+
+<script>
+// photos/ 폴더에 사진이 있으면 자리표시 대신 사진을 깔아요
+document.querySelectorAll('.ph[data-img]').forEach(el=>{
+  const name=el.dataset.img;
+  for(const ext of ['jpg','jpeg','png','webp']){
+    const img=new Image();
+    img.onload=()=>{el.style.setProperty('--img',`url(photos/${name}.${ext})`);el.classList.add('has')};
+    img.src=`photos/${name}.${ext}`;
+  }
+});
+</script>
+</body></html>
