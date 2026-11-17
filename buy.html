@@ -275,13 +275,15 @@ var GROUPS=[
   /* main: 완성품 분류(앞쪽에 보이고 첫 화면도 여기서 골라요). 나머지는 부품이라 뒤로 보내요 */
   /* first: 메뉴를 눌렀을 때 처음 보여 줄 모델(없거나 못 찾으면 규격이 가장 많은 완성품) */
   {id:'frame',name:'프레임',main:3,first:'DADO-N(HT-R)',cats:['침대세트(BS)','프레임세트(BF)','수입침대(FSET)','중간대(36)(MM)','머리판(31)(HB)','뒷판(33)(BB)','협(32)(SB)','깔판(34)(CB)','수입침대 부분품(FBHB)']},
-  {id:'side',name:'사이드옵션',cats:['협탁(BT)','침대협탁(FBT)','배드벤치(XQ)','벤치(XE)','소품(XV)','화장대(XL)','화장대(FCXC)','서랍장(XU)','서랍장류(FCXL)','거울(FACC)','콘솔(FCXM)','옷장(FCXB)']},
+  /* onlySelf: 위 탭 줄에 같은 계열 모델을 늘어놓지 않고 고른 모델 이름만 보여요(이름이 길고 많아서) */
+  {id:'side',name:'사이드옵션',onlySelf:true,cats:['협탁(BT)','침대협탁(FBT)','배드벤치(XQ)','벤치(XE)','소품(XV)','화장대(XL)','화장대(FCXC)','서랍장(XU)','서랍장류(FCXL)','거울(FACC)','콘솔(FCXM)','옷장(FCXB)']},
   {id:'care',name:'슬립케어',cats:['바디필로우(QDPZ)','쿨링패드(QBPD)','온열매트(QDOC)','마이크로 케어(QMIC)','스마트 슬리브(QSMS)','Beurer 패드(BUP)']}
 ];
 var ORDER=['S','SS','DS','DD','Q','LQ','K','K3','LK'];
 var SIZE_KO={S:'싱글',SS:'슈퍼싱글',DD:'더블',Q:'퀸',LQ:'라지퀸',K:'킹',LK:'라지킹'};
 /* 이름 안의 규격 낱말: "HT-R(M) LQ", "BMA1139-E(HT-B) SS 월넛", "마이크로케어 LK(L) 화이트" */
 var SIZE_RE=/^(.*?\S)\s+(LK|LQ|K3|SS|DS|DD|S|Q|K)(\([A-Z0-9]+\))?(?:\s+(\S.*))?$/;
+var HIDE_RE=/진열용/; // 「진열장」(상품 이름)은 빼지 않아요
 var MONTHS=[0,12,24,36],TAB_MAX=24;
 var $=function(id){return document.getElementById(id)};
 var won=function(n){return Math.round(n).toLocaleString('ko-KR')};
@@ -299,7 +301,9 @@ function build(data){
   data.items.forEach(function(it){
     var cg=catGroup[it[1]];
     if(!cg||typeof it[3]!=='number'||!(it[3]>0))return;
-    var name=String(it[2]).trim(),m=name.match(SIZE_RE),key,v;
+    var name=String(it[2]).trim();
+    if(HIDE_RE.test(name))return; // 진열용 모델은 손님 화면에 보이지 않게 빼요
+    var m=name.match(SIZE_RE),key,v;
     if(m){key=m[1];v={size:m[2]+(m[3]||''),color:m[4]||'',price:it[3],code:it[0]}}
     else{key=name;v={size:'',color:'',price:it[3],code:it[0]}}
     var e=maps[cg.gid][key]=maps[cg.gid][key]||{vs:[],main:false};
@@ -349,7 +353,7 @@ function pick(m,keep){
 
 function renderModel(){
   var tabs=$('tabs');tabs.textContent='';
-  var fam=group.models.filter(function(m){return m.series===cur.series});
+  var fam=group.def.onlySelf?[cur]:group.models.filter(function(m){return m.series===cur.series});
   if(fam.length>TAB_MAX){var at=fam.indexOf(cur),st=Math.max(0,Math.min(at-TAB_MAX/2,fam.length-TAB_MAX));fam=fam.slice(st,st+TAB_MAX)}
   fam.forEach(function(m){
     var b=el('button',{type:'button'},m.name);
@@ -423,6 +427,7 @@ function render(){
   $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
   var sidx=cur.sizes.indexOf(v.size);
   $('prev').disabled=sidx<=0;$('next').disabled=sidx>=cur.sizes.length-1;
+  $('prev').hidden=$('next').hidden=cur.sizes.length<2; // 고를 규격이 하나뿐이면 화살표를 숨겨요
   Array.prototype.forEach.call($('sizes').children,function(b){
     var sz=b.getAttribute('data-s'),list=ofSize(sz),hit=list.filter(function(x){return x.color===v.color})[0];
     var min=list.reduce(function(a,x){return Math.min(a,x.price)},Infinity);
