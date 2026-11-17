@@ -40,8 +40,10 @@ svg{display:block;flex:none}
 /* 헤더 */
 .gnb{display:flex;align-items:center;gap:var(--space-lg);height:64px;padding:0 var(--space-lg)}
 .gnb .logo{font-weight:800;font-size:20px;letter-spacing:.02em;white-space:nowrap}
-.gnb nav{display:flex;gap:4px;font-weight:700;white-space:nowrap;overflow:hidden}
-.gnb nav a{padding:14px 10px}
+.gnb nav{display:flex;align-self:stretch;gap:4px;font-weight:700;white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.gnb nav::-webkit-scrollbar{display:none}
+.gnb nav button{position:relative;padding:0 10px;font-weight:700}
+.gnb nav button[aria-current="page"]::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:2px;background:#000}
 .gnb .find{margin-left:auto;position:relative;flex:0 1 280px;min-width:0}
 .gnb .find svg{position:absolute;left:12px;top:9px;pointer-events:none}
 .gnb .find input{width:100%;height:36px;padding:0 14px 0 38px;border:1.5px solid transparent;border-radius:var(--r-full);background:var(--sub);font-size:14px}
@@ -50,7 +52,7 @@ svg{display:block;flex:none}
 /* 모델 탭 */
 .tabs{display:flex;align-items:stretch;gap:var(--space-lg);height:52px;padding:0 var(--space-lg);overflow-x:auto;scrollbar-width:none;box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line);font-weight:700;font-size:16px;white-space:nowrap}
 .tabs::-webkit-scrollbar{display:none}
-.tabs button{position:relative;font-weight:700}
+.tabs button{position:relative;font-weight:700;flex:none}
 .tabs button[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:#000}
 .tabs .cnt{margin-left:auto;display:flex;align-items:center;font-size:13px;font-weight:400;color:var(--tx3);padding-left:var(--space-lg)}
 
@@ -100,7 +102,7 @@ svg{display:block;flex:none}
 .opt{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:var(--space-md) var(--space-lg);border-radius:var(--r-sm);background:#fff;box-shadow:var(--ring);text-align:left;transition:box-shadow var(--fast) linear}
 .opt+.opt{margin-top:12px}
 .opt[aria-checked="true"]{box-shadow:var(--ring-on)}
-.opt strong{font-weight:700;font-size:18px;line-height:24px;letter-spacing:-.36px}
+.opt strong{font-weight:700;font-size:18px;line-height:24px;letter-spacing:-.36px;min-width:0;overflow-wrap:anywhere}
 .opt i{width:1px;height:18px;background:currentColor;flex:none}
 .opt small{font-size:18px;line-height:24px;font-weight:700;color:var(--tx3)}
 .opt em{margin-left:auto;font-style:normal;font-weight:700;font-size:16px;white-space:nowrap}
@@ -127,8 +129,10 @@ svg{display:block;flex:none}
 .state{padding:80px 20px;text-align:center;color:var(--tx3);line-height:1.7}
 
 @media (max-width:720px){
-  .gnb nav{display:none}
+  .gnb{flex-wrap:wrap;height:auto;gap:0 var(--space-md);padding:0 var(--space-md)}
+  .gnb .logo{line-height:56px}
   .gnb .find{flex:1}
+  .gnb nav{order:3;flex:0 0 100%;height:44px;margin:0 -10px}
   .tabs .cnt{display:none}
   .bar{position:static}
   .bar h1{font-size:19px;line-height:26px}
@@ -147,10 +151,10 @@ svg{display:block;flex:none}
 <body>
 <header class="gnb">
   <a class="logo" href="./">ACE BED</a>
-  <nav aria-label="바로가기"><a href="./pos.html">매장 POS</a><a href="./price.html">가격표</a></nav>
+  <nav id="menu" aria-label="상품 메뉴"></nav>
   <label class="find" aria-label="모델 검색">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
-    <input id="q" type="search" list="models" placeholder="모델 검색 (예: HT-R, RA360)" autocomplete="off">
+    <input id="q" type="search" list="models" placeholder="모델 검색 (예: HT-R, 협탁)" autocomplete="off">
     <datalist id="models"></datalist>
   </label>
 </header>
@@ -174,7 +178,7 @@ svg{display:block;flex:none}
       <div class="stage">
         <div class="ghost" id="ghost" aria-hidden="true"></div>
         <div class="gt"><b id="stTitle"></b><span id="stSize"></span></div>
-        <svg class="art" viewBox="0 0 620 300" role="img" aria-label="매트리스 그림 — 고른 규격에 따라 폭이 달라져요" xmlns="http://www.w3.org/2000/svg">
+        <svg class="art" viewBox="0 0 620 300" role="img" aria-label="제품 예시 그림" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="buy-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fdfdfb"/><stop offset="1" stop-color="#e4e3dd"/></linearGradient>
             <linearGradient id="buy-side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeede8"/><stop offset="1" stop-color="#c9c7bf"/></linearGradient>
@@ -182,13 +186,36 @@ svg{display:block;flex:none}
             <radialGradient id="buy-sh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#141a22" stop-opacity=".5"/><stop offset="1" stop-color="#141a22" stop-opacity="0"/></radialGradient>
           </defs>
           <ellipse cx="310" cy="272" rx="290" ry="16" fill="url(#buy-sh)"/>
-          <g class="bed" id="bed">
+          <g class="bed" data-art="matt">
             <path d="M70 150 L400 96 Q410 94 418 99 L560 170 Q566 174 558 177 L232 238 Q222 240 214 235 L70 160 Q62 154 70 150Z" fill="url(#buy-top)"/>
             <path d="M66 156 L216 236 Q224 240 232 238 L232 270 Q224 272 216 268 L66 188Z" fill="url(#buy-end)"/>
             <path d="M232 238 L560 176 L560 208 L232 270Z" fill="url(#buy-side)"/>
             <path d="M232 249 L560 187M232 260 L560 198M66 167 L224 250M66 178 L224 260" stroke="#fff" stroke-opacity=".55" stroke-width="1.2" fill="none"/>
             <g fill="none" stroke="#c9c7bf" stroke-width="1" stroke-opacity=".8"><path d="M150 138 L300 216M232 124 L382 202M314 111 L464 188M150 191 L478 130M106 168 L434 108"/></g>
             <rect x="372" y="214" width="34" height="13" rx="2" transform="skewY(-10.7)" transform-origin="372 214" fill="#1f2937"/>
+          </g>
+          <g class="bed" data-art="frame" hidden>
+            <path d="M92 150 L92 62 Q92 52 102 50 L392 6 Q402 5 404 14 L404 100Z" fill="#6b5a4b"/>
+            <path d="M92 150 L404 100 L404 112 L92 162Z" fill="#54463a"/>
+            <path d="M70 160 L400 106 Q410 104 418 109 L560 180 Q566 184 558 187 L232 248 Q222 250 214 245 L70 170 Q62 164 70 160Z" fill="url(#buy-top)"/>
+            <path d="M66 166 L216 246 Q224 250 232 248 L232 266 Q224 268 216 264 L66 184Z" fill="url(#buy-end)"/>
+            <path d="M232 248 L560 186 L560 204 L232 266Z" fill="url(#buy-side)"/>
+            <path d="M66 184 L216 264 Q224 268 232 266 L560 204 L560 222 L232 284 Q224 286 216 282 L66 202Z" fill="#6b5a4b"/>
+            <path d="M232 266 L560 204 L560 222 L232 284Z" fill="#54463a"/>
+            <path d="M112 132 L252 110 Q262 109 266 116 L272 128 L128 152Z M262 108 L392 88 Q402 87 404 94 L408 106 L280 126Z" fill="#fff" fill-opacity=".9"/>
+          </g>
+          <g class="bed" data-art="side" hidden>
+            <path d="M210 92 L352 70 L440 104 L298 128Z" fill="#8a7461"/>
+            <path d="M210 92 L298 128 L298 250 L210 212Z" fill="#5d4d40"/>
+            <path d="M298 128 L440 104 L440 226 L298 250Z" fill="#74614f"/>
+            <path d="M310 142 L428 122 L428 166 L310 186Z M310 196 L428 176 L428 218 L310 238Z" fill="none" stroke="#f1e9df" stroke-opacity=".7" stroke-width="2"/>
+            <path d="M356 150 L382 146 M356 204 L382 200" stroke="#f1e9df" stroke-width="4" stroke-linecap="round"/>
+            <path d="M222 216 L222 262 M298 250 L298 284 M430 228 L430 262" stroke="#3f342b" stroke-width="8" stroke-linecap="round"/>
+          </g>
+          <g class="bed" data-art="care" hidden>
+            <path d="M150 190 Q140 150 190 138 L400 104 Q452 98 462 136 Q470 172 430 186 L214 232 Q162 240 150 190Z" fill="url(#buy-top)"/>
+            <path d="M150 190 Q162 240 214 232 L430 186 Q470 172 462 136 Q474 180 434 204 L218 250 Q160 256 150 190Z" fill="url(#buy-side)"/>
+            <path d="M196 160 Q300 150 420 124 M190 196 Q300 190 440 160" fill="none" stroke="#c9c7bf" stroke-width="1.5" stroke-opacity=".8"/>
           </g>
         </svg>
         <button class="arw l" type="button" id="prev" aria-label="이전 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
@@ -199,14 +226,19 @@ svg{display:block;flex:none}
 
     <section class="opts" aria-label="구매 옵션">
       <div class="feat">
-        <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22V10M27 22V10M5 16h22M9 13l-4 3 4 3M23 13l4 3-4 3"/></svg><b id="fSizes"></b>규격</div>
+        <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22V10M27 22V10M5 16h22M9 13l-4 3 4 3M23 13l4 3-4 3"/></svg><b id="fSizes"></b>옵션</div>
         <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="8" width="22" height="16" rx="2"/><path d="M5 14h22M10 19h5"/></svg><b id="fFrom"></b>부터</div>
         <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="7" width="20" height="19" rx="2"/><path d="M6 13h20M11 4v5M21 4v5"/></svg><b id="fDate"></b>가격 기준일</div>
       </div>
 
-      <div class="grp">
+      <div class="grp" id="sizeGrp">
         <h2>규격</h2><p>침대 크기에 맞는 규격을 골라 주세요.</p>
         <div id="sizes" role="radiogroup" aria-label="규격"></div>
+      </div>
+
+      <div class="grp" id="colorGrp">
+        <h2>색상·옵션</h2><p>원하는 옵션을 골라 주세요.</p>
+        <div id="colors" role="radiogroup" aria-label="색상·옵션"></div>
       </div>
 
       <div class="grp">
@@ -237,61 +269,108 @@ svg{display:block;flex:none}
 <script>
 (function(){
 'use strict';
-var MAT_CAT='매트(35)(MA)';
-var ORDER=['S','SS','DS','DD','Q','LQ','K','K3','LK','LK(1800)','LK(2000)'];
-var SIZE_KO={S:'싱글',SS:'슈퍼싱글',DD:'더블',Q:'퀸',LQ:'라지퀸',K:'킹',LK:'라지킹','LK(1800)':'라지킹 1800','LK(2000)':'라지킹 2000'};
-var MONTHS=[0,12,24,36];
+/* 상단 메뉴 — 매장 POS(pos.html)의 메뉴와 같은 분류 묶음이에요 */
+var GROUPS=[
+  {id:'matt',name:'매트리스',cats:['매트(35)(MA)','비규격매트(MC)','주문매트(MR)']},
+  /* main: 완성품 분류(앞쪽에 보이고 첫 화면도 여기서 골라요). 나머지는 부품이라 뒤로 보내요 */
+  /* first: 메뉴를 눌렀을 때 처음 보여 줄 모델(없거나 못 찾으면 규격이 가장 많은 완성품) */
+  {id:'frame',name:'프레임',main:3,first:'DADO-N(HT-R)',cats:['침대세트(BS)','프레임세트(BF)','수입침대(FSET)','중간대(36)(MM)','머리판(31)(HB)','뒷판(33)(BB)','협(32)(SB)','깔판(34)(CB)','수입침대 부분품(FBHB)']},
+  {id:'side',name:'사이드옵션',cats:['협탁(BT)','침대협탁(FBT)','배드벤치(XQ)','벤치(XE)','소품(XV)','화장대(XL)','화장대(FCXC)','서랍장(XU)','서랍장류(FCXL)','거울(FACC)','콘솔(FCXM)','옷장(FCXB)']},
+  {id:'care',name:'슬립케어',cats:['바디필로우(QDPZ)','쿨링패드(QBPD)','온열매트(QDOC)','마이크로 케어(QMIC)','스마트 슬리브(QSMS)','Beurer 패드(BUP)']}
+];
+var ORDER=['S','SS','DS','DD','Q','LQ','K','K3','LK'];
+var SIZE_KO={S:'싱글',SS:'슈퍼싱글',DD:'더블',Q:'퀸',LQ:'라지퀸',K:'킹',LK:'라지킹'};
+/* 이름 안의 규격 낱말: "HT-R(M) LQ", "BMA1139-E(HT-B) SS 월넛", "마이크로케어 LK(L) 화이트" */
+var SIZE_RE=/^(.*?\S)\s+(LK|LQ|K3|SS|DS|DD|S|Q|K)(\([A-Z0-9]+\))?(?:\s+(\S.*))?$/;
+var MONTHS=[0,12,24,36],TAB_MAX=24;
 var $=function(id){return document.getElementById(id)};
 var won=function(n){return Math.round(n).toLocaleString('ko-KR')};
-var models=[],byName={},cur=null,si=0,qty=1,months=0,meta={};
+var G={},group=null,cur=null,vi=0,qty=1,months=0,meta={};
 
-function seriesOf(name){var m=name.match(/^[A-Za-z]+/);return m?m[0].toUpperCase():name}
+function seriesOf(name){var m=name.match(/^[A-Za-z]+/);return m?m[0].toUpperCase():name.split(/[\s(]/)[0]}
 function clean(name){return name.replace(/\(M\)$/,'').trim()}
+function sizeRank(sz){var b=sz.replace(/\(.*$/,'');var r=ORDER.indexOf(b);return r<0?99:r}
+function sizeLabel(sz){var b=sz.replace(/\(.*$/,''),ex=(sz.match(/\((\d+)\)/)||[])[1];return SIZE_KO[b]?SIZE_KO[b]+(ex?' '+ex:''):''}
 
 function build(data){
-  var ci=data.cats.indexOf(MAT_CAT),map={};
+  var catGroup={};
+  GROUPS.forEach(function(g){G[g.id]={def:g,models:[],byName:{}};g.cats.forEach(function(c,pos){var i=data.cats.indexOf(c);if(i>=0)catGroup[i]={gid:g.id,main:g.main==null||pos<g.main}})});
+  var maps={};GROUPS.forEach(function(g){maps[g.id]={}});
   data.items.forEach(function(it){
-    if(it[1]!==ci||typeof it[3]!=='number'||!(it[3]>0))return;
-    var m=String(it[2]).match(/^(.*\S)\s+([A-Z0-9]+(?:\(\d+\))?)$/);
-    if(!m||ORDER.indexOf(m[2])<0)return;
-    (map[m[1]]=map[m[1]]||[]).push({size:m[2],price:it[3],code:it[0]});
+    var cg=catGroup[it[1]];
+    if(!cg||typeof it[3]!=='number'||!(it[3]>0))return;
+    var name=String(it[2]).trim(),m=name.match(SIZE_RE),key,v;
+    if(m){key=m[1];v={size:m[2]+(m[3]||''),color:m[4]||'',price:it[3],code:it[0]}}
+    else{key=name;v={size:'',color:'',price:it[3],code:it[0]}}
+    var e=maps[cg.gid][key]=maps[cg.gid][key]||{vs:[],main:false};
+    e.vs.push(v);if(cg.main)e.main=true;
   });
-  models=Object.keys(map).sort(function(a,b){return a.localeCompare(b,'ko')}).map(function(k){
-    var v=map[k].sort(function(a,b){return ORDER.indexOf(a.size)-ORDER.indexOf(b.size)||a.price-b.price});
-    return {key:k,name:clean(k),series:seriesOf(k),sizes:v};
+  GROUPS.forEach(function(g){
+    var map=maps[g.id],box=G[g.id];
+    box.models=Object.keys(map).map(function(k){
+      var vs=map[k].vs.sort(function(a,b){return sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size)||a.price-b.price||a.color.localeCompare(b.color,'ko')});
+      var sizes=[];vs.forEach(function(v){if(sizes.indexOf(v.size)<0)sizes.push(v.size)});
+      return {key:k,name:clean(k),series:seriesOf(k),variants:vs,sizes:sizes,main:map[k].main};
+    }).sort(function(a,b){return (b.main-a.main)||a.name.localeCompare(b.name,'ko')});
+    box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m});
+    /* 첫 화면: 완성품 중 규격이 가장 많은 모델(같으면 옵션이 많은 모델) */
+    box.first=(g.first&&box.byName[g.first])||box.models.filter(function(m){return m.main}).reduce(function(best,m){
+      return !best||m.sizes.length>best.sizes.length||(m.sizes.length===best.sizes.length&&m.variants.length>best.variants.length)?m:best;
+    },null)||box.models[0];
   });
-  models.forEach(function(m){byName[m.name]=m});
 }
 
 function el(tag,attrs,text){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e}
+function ofSize(sz){return cur.variants.filter(function(v){return v.size===sz})}
+function setUrl(){try{history.replaceState(null,'','?g='+group.def.id+'&m='+encodeURIComponent(cur.name))}catch(e){}}
 
-function pick(m,keepSize){
-  var prev=cur&&cur.sizes[si]?cur.sizes[si].size:null;
-  cur=m;si=0;
-  if(keepSize&&prev){for(var i=0;i<m.sizes.length;i++)if(m.sizes[i].size===prev){si=i;break}}
-  try{history.replaceState(null,'','?m='+encodeURIComponent(m.name))}catch(e){}
-  renderModel();render();
+function setGroup(id,modelName){
+  group=G[id]||G.matt;
+  var menu=$('menu');
+  Array.prototype.forEach.call(menu.children,function(b){if(b.getAttribute('data-g')===group.def.id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  var dl=$('models');dl.textContent='';
+  var frag=document.createDocumentFragment();
+  group.models.forEach(function(m){frag.appendChild(el('option',{value:m.name}))});
+  dl.appendChild(frag);
+  /* 그림(SVG)은 hidden 속성을 직접 붙였다 떼요 — SVG 요소에는 .hidden 속성이 없어요 */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-art]'),function(g){if(g.getAttribute('data-art')===group.def.id)g.removeAttribute('hidden');else g.setAttribute('hidden','')});
+  var empty=!group.models.length;
+  $('page').hidden=empty;$('state').hidden=!empty;
+  if(empty){$('state').textContent=group.def.name+' 상품이 가격표에 없어요.';return}
+  pick(group.byName[modelName]||group.first,false);
+}
+
+function pick(m,keep){
+  var prev=cur&&cur.variants[vi]?cur.variants[vi]:null;
+  cur=m;vi=0;
+  if(keep&&prev){for(var i=0;i<m.variants.length;i++)if(m.variants[i].size===prev.size){vi=i;break}}
+  setUrl();renderModel();render();
 }
 
 function renderModel(){
   var tabs=$('tabs');tabs.textContent='';
-  var fam=models.filter(function(m){return m.series===cur.series});
+  var fam=group.models.filter(function(m){return m.series===cur.series});
+  if(fam.length>TAB_MAX){var at=fam.indexOf(cur),st=Math.max(0,Math.min(at-TAB_MAX/2,fam.length-TAB_MAX));fam=fam.slice(st,st+TAB_MAX)}
   fam.forEach(function(m){
     var b=el('button',{type:'button'},m.name);
     if(m===cur)b.setAttribute('aria-current','page');
     b.addEventListener('click',function(){pick(m,true)});
     tabs.appendChild(b);
   });
-  tabs.appendChild(el('span',{class:'cnt'},'매트리스 '+models.length+'개 모델'));
-  var on=tabs.querySelector('[aria-current]');if(on&&on.scrollIntoView)on.scrollIntoView({block:'nearest',inline:'center'});
+  tabs.appendChild(el('span',{class:'cnt'},group.def.name+' '+won(group.models.length)+'개 모델'));
+  var on=tabs.querySelector('[aria-current]');if(on)tabs.scrollLeft=Math.max(0,on.offsetLeft-tabs.clientWidth/2+on.offsetWidth/2);
 
   var box=$('sizes');box.textContent='';
-  cur.sizes.forEach(function(s,i){
-    var b=el('button',{type:'button',class:'opt',role:'radio','data-i':i});
-    b.appendChild(el('strong',{},s.size));
-    if(SIZE_KO[s.size]){b.appendChild(el('i'));b.appendChild(el('small',{},SIZE_KO[s.size]))}
-    b.appendChild(el('em',{class:'num'},won(s.price)+'원'));
-    b.addEventListener('click',function(){si=i;render()});
+  $('sizeGrp').hidden=!(cur.sizes.length>1||cur.sizes[0]);
+  cur.sizes.forEach(function(sz){
+    var b=el('button',{type:'button',class:'opt',role:'radio','data-s':sz});
+    b.appendChild(el('strong',{},sz||'기본'));
+    if(sizeLabel(sz)){b.appendChild(el('i'));b.appendChild(el('small',{},sizeLabel(sz)))}
+    b.appendChild(el('em',{class:'num'}));
+    b.addEventListener('click',function(){
+      var color=cur.variants[vi].color,list=ofSize(sz),hit=list.filter(function(v){return v.color===color})[0]||list[0];
+      vi=cur.variants.indexOf(hit);renderColors();render();
+    });
     box.appendChild(b);
   });
   var ib=$('inst');ib.textContent='';
@@ -302,23 +381,39 @@ function renderModel(){
     b.addEventListener('click',function(){months=mo;render()});
     ib.appendChild(b);
   });
+  renderColors();
+}
+
+function renderColors(){
+  var list=ofSize(cur.variants[vi].size),box=$('colors');box.textContent='';
+  var show=list.length>1||!!list[0].color;
+  $('colorGrp').hidden=!show;
+  if(!show)return;
+  list.forEach(function(v){
+    var b=el('button',{type:'button',class:'opt',role:'radio','data-code':v.code});
+    b.appendChild(el('strong',{},v.color||'기본'));
+    b.appendChild(el('em',{class:'num'},won(v.price)+'원'));
+    b.addEventListener('click',function(){vi=cur.variants.indexOf(v);render()});
+    box.appendChild(b);
+  });
 }
 
 function render(){
-  var s=cur.sizes[si],total=s.price*qty,title=cur.name+' 매트리스';
+  var v=cur.variants[vi],total=v.price*qty,title=cur.name+(group.def.id==='matt'?' 매트리스':'');
+  var optText=[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ');
   document.title=title+' · ACE BED';
-  $('series').textContent=cur.series+' 시리즈';
+  $('series').textContent=group.def.name;
   $('title').textContent=title;$('sTitle').textContent=title;$('stTitle').textContent=title;
-  $('code').textContent=s.code;$('sCode').textContent=s.code;
-  $('ghost').textContent=cur.series;
-  $('stSize').textContent=s.size+(SIZE_KO[s.size]?' · '+SIZE_KO[s.size]:'');
+  $('code').textContent=v.code;$('sCode').textContent=v.code;
+  $('ghost').textContent=cur.series.slice(0,6);
+  $('stSize').textContent=optText||group.def.name;
   $('barPrice').textContent=won(total);
   $('barInstLabel').textContent=months?months+'개월로 나누면':'결제 방식';
   $('barInst').textContent=months?'월 '+won(total/months)+'원':'일시불';
-  $('fSizes').textContent=cur.sizes.length+'가지';
-  $('fFrom').textContent=won(cur.sizes.reduce(function(a,b){return Math.min(a,b.price)},Infinity))+'원';
+  $('fSizes').textContent=cur.variants.length+'가지';
+  $('fFrom').textContent=won(cur.variants.reduce(function(a,b){return Math.min(a,b.price)},Infinity))+'원';
   $('fDate').textContent=meta.updated||'-';
-  $('sUnit').textContent=won(s.price)+' 원';
+  $('sUnit').textContent=won(v.price)+' 원';
   $('sQty').textContent=qty+' 개';
   $('sTotal').textContent=won(total)+' 원';
   $('sInstRow').hidden=!months;
@@ -326,21 +421,28 @@ function render(){
   $('sInst').textContent='월 '+won(total/months)+'원';
   $('sSrc').textContent=meta.source||'-';
   $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
-  $('prev').disabled=si<=0;$('next').disabled=si>=cur.sizes.length-1;
-  Array.prototype.forEach.call($('sizes').children,function(b,i){b.setAttribute('aria-checked',String(i===si))});
+  var sidx=cur.sizes.indexOf(v.size);
+  $('prev').disabled=sidx<=0;$('next').disabled=sidx>=cur.sizes.length-1;
+  Array.prototype.forEach.call($('sizes').children,function(b){
+    var sz=b.getAttribute('data-s'),list=ofSize(sz),hit=list.filter(function(x){return x.color===v.color})[0];
+    var min=list.reduce(function(a,x){return Math.min(a,x.price)},Infinity);
+    b.setAttribute('aria-checked',String(sz===v.size));
+    b.querySelector('em').textContent=won(hit?hit.price:min)+'원'+(!hit&&list.length>1?'~':'');
+  });
+  Array.prototype.forEach.call($('colors').children,function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-code')===v.code))});
   Array.prototype.forEach.call($('inst').children,function(b){
     var mo=+b.getAttribute('data-m');
     b.setAttribute('aria-checked',String(mo===months));
     b.querySelector('em').textContent=mo?'월 '+won(total/mo)+'원':won(total)+'원';
   });
-  // 규격이 클수록 그림 폭이 넓어져요(어림 표현)
-  var r=ORDER.indexOf(s.size)/(ORDER.length-1);
-  $('bed').style.transform='scale('+(0.78+0.22*r).toFixed(3)+','+(0.9+0.1*r).toFixed(3)+')';
+  // 규격이 클수록 그림 폭이 넓어져요(어림 표현). 규격이 없는 상품은 그대로예요
+  var rk=sizeRank(v.size),r=rk>90?1:rk/(ORDER.length-1);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-art]'),function(g){g.style.transform='scale('+(0.78+0.22*r).toFixed(3)+','+(0.9+0.1*r).toFixed(3)+')'});
 }
 
 function quoteText(){
-  var s=cur.sizes[si],total=s.price*qty;
-  var lines=['[ACE BED 견적]',cur.name+' 매트리스 '+s.size+(SIZE_KO[s.size]?'('+SIZE_KO[s.size]+')':''),'코드 '+s.code,'판매가 '+won(s.price)+'원 × '+qty+'개','합계 '+won(total)+'원'];
+  var v=cur.variants[vi],total=v.price*qty,opt=[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ');
+  var lines=['[ACE BED 견적]',cur.name+(group.def.id==='matt'?' 매트리스':'')+(opt?' ('+opt+')':''),'코드 '+v.code,'판매가 '+won(v.price)+'원 × '+qty+'개','합계 '+won(total)+'원'];
   if(months)lines.push(months+'개월로 나누면 월 '+won(total/months)+'원 (단순 계산)');
   lines.push('가격 기준일 '+(meta.updated||'-')+' · 할인·배송비 미포함');
   return lines.join('\n');
@@ -357,29 +459,42 @@ function copy(){
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){toast('견적을 복사했어요')},fallback);
   else fallback();
 }
+function stepSize(d){
+  var i=cur.sizes.indexOf(cur.variants[vi].size)+d;
+  if(i<0||i>=cur.sizes.length)return;
+  var b=$('sizes').children[i];if(b)b.click();
+}
+function find(list,v){var q=v.toLowerCase();return list.filter(function(x){return x.name.toLowerCase().indexOf(q)>=0})[0]}
+function search(){
+  var v=$('q').value.trim();if(!v)return;
+  var m=group.byName[v]||find(group.models,v),gid=group.def.id;
+  if(!m)GROUPS.some(function(g){if(g.id===group.def.id)return false;m=G[g.id].byName[v]||find(G[g.id].models,v);if(m)gid=g.id;return !!m});
+  if(!m){toast('"'+v+'" 모델을 찾지 못했어요');return}
+  $('q').value='';$('q').blur();
+  if(gid!==group.def.id)setGroup(gid,m.name);else pick(m,true);
+}
 
+GROUPS.forEach(function(g){
+  var b=el('button',{type:'button','data-g':g.id},g.name);
+  b.addEventListener('click',function(){if(G[g.id]&&group&&group.def.id!==g.id)setGroup(g.id)});
+  $('menu').appendChild(b);
+});
 Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'),function(b){b.addEventListener('click',copy)});
 $('qm').addEventListener('click',function(){if(qty>1){qty--;render()}});
 $('qp').addEventListener('click',function(){if(qty<99){qty++;render()}});
-$('prev').addEventListener('click',function(){if(si>0){si--;render()}});
-$('next').addEventListener('click',function(){if(si<cur.sizes.length-1){si++;render()}});
-function search(){
-  var v=$('q').value.trim();if(!v)return;
-  var m=byName[v]||models.filter(function(x){return x.name.toLowerCase().indexOf(v.toLowerCase())>=0})[0];
-  if(m){pick(m,true);$('q').value='';$('q').blur()}else toast('"'+v+'" 모델을 찾지 못했어요');
-}
+$('prev').addEventListener('click',function(){stepSize(-1)});
+$('next').addEventListener('click',function(){stepSize(1)});
 $('q').addEventListener('change',search);
 $('q').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();search()}});
 
 fetch('prices.json').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(data){
   meta={updated:data.updated,source:data.source};
   build(data);
-  if(!models.length)throw new Error('empty');
-  var dl=$('models');models.forEach(function(m){dl.appendChild(el('option',{value:m.name}))});
-  var want=new URLSearchParams(location.search).get('m');
-  $('state').hidden=true;$('page').hidden=false;
-  pick(byName[want]||models[0],false);
+  var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
+  if(!G[gid]){gid='matt';if(want)GROUPS.some(function(g){if(G[g.id].byName[want]){gid=g.id;return true}return false})}
+  setGroup(gid,want);
 }).catch(function(){
+  $('page').hidden=true;$('state').hidden=false;
   $('state').textContent='가격표(prices.json)를 불러오지 못했어요. 잠시 뒤 새로 고쳐 주세요.';
 });
 })();
