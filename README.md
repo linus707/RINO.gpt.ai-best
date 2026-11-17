@@ -80,3 +80,8 @@ Copyright (c) 2026
 - **새 외부 서비스를 붙일 때**: 그 페이지의 `connect-src`(연결), 글꼴·스타일이면 `font-src`·`style-src`에 주소를 추가해야 해요. 빠뜨리면 그 기능만 동작하지 않고, 메인 앱은 "보안 방화벽이 … 연결을 막았어요" 안내를 띄워요.
 - 로그인 서버(워커)는 `*.workers.dev` 주소면 그대로 되고, 자체 도메인이면 배포할 때 `scripts/inject-auth.mjs`가 허용 목록에 자동으로 넣어요. Notion 연동 워커를 자체 도메인에 따로 둔다면 `index.html`의 `connect-src`에 직접 추가해 주세요.
 - 한계: 앱이 한 파일 안의 인라인 스크립트로 되어 있어 `script-src`에 `'unsafe-inline'`이 들어가 있어요. 페이지 안에 직접 끼워진 스크립트의 실행 자체는 막지 못하므로, 화면에 넣는 값은 지금처럼 꼭 `esc()`를 거쳐야 해요.
+
+## 매장 POS 새 테마 (삼성닷컴식)
+- `/pos-samsung.html`: 기존 매장 POS(`/pos.html`)와 기능은 똑같고 겉모습만 바꾼 화면이에요. 흰 바탕·검정 글자, 검정 알약 버튼, 고른 칸만 파란 링으로 표시해요. 기존 `pos.html`은 그대로예요.
+- 모양은 `pos-samsung.css` 한 파일에서만 고쳐요. 배포할 때 `scripts/build-pos-theme.mjs`가 `pos.html`에 이 파일을 입혀 `pos-samsung.html`을 자동으로 만들어요(그래서 POS 기능을 고치면 두 화면에 함께 반영돼요).
+- 내 컴퓨터에서 미리 보려면 `node scripts/build-pos-theme.mjs`를 실행한 뒤 생긴 `pos-samsung.html`을 열어요. 이 파일은 자동 생성물이라 저장소에는 올리지 않아요(`.gitignore`).
