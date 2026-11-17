@@ -48,6 +48,14 @@ svg{display:block;flex:none}
 .gnb .find svg{position:absolute;left:12px;top:9px;pointer-events:none}
 .gnb .find input{width:100%;height:36px;padding:0 14px 0 38px;border:1.5px solid transparent;border-radius:var(--r-full);background:var(--sub);font-size:14px}
 .gnb .find input:focus{outline:0;border-color:#000;background:#fff}
+.sres{position:absolute;right:0;width:min(560px,calc(100vw - 32px));top:42px;z-index:12;max-height:min(60vh,420px);overflow:auto;margin:0;padding:6px 0;list-style:none;background:#fff;border-radius:var(--r-lg);box-shadow:0 12px 40px rgba(0,0,0,.18),var(--ring)}
+.sres li button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;text-align:left;font-size:14px}
+.sres li button:hover,.sres li button:focus-visible{background:var(--sub);outline:0}
+.sres li b{flex:1;min-width:0;overflow-wrap:anywhere}
+.sres li small{color:var(--tx3);font-size:12px;white-space:nowrap}
+.sres li em{font-style:normal;font-weight:700;white-space:nowrap}
+.sres .more,.sres .fix{padding:6px 16px;font-size:12px;color:var(--tx3)}
+.sres .fix{color:var(--blue)}
 
 /* 모델 탭 */
 .tabs{display:flex;align-items:stretch;gap:var(--space-lg);height:52px;padding:0 var(--space-lg);overflow-x:auto;scrollbar-width:none;box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line);font-weight:700;font-size:16px;white-space:nowrap}
@@ -386,11 +394,12 @@ svg{display:block;flex:none}
 <header class="gnb">
   <a class="logo" href="./">ACE BED</a>
   <nav id="menu" aria-label="상품 메뉴"></nav>
-  <label class="find" aria-label="모델 검색">
+  <div class="find" role="search">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
-    <input id="q" type="search" list="models" placeholder="모델 검색 (예: HT-R, 협탁)" autocomplete="off">
+    <input id="q" type="search" placeholder="모델 검색 (예: 라노떼, HT-R 라지퀸, 협탁)" autocomplete="off" aria-label="모델 검색" aria-controls="sres">
     <datalist id="models"></datalist>
-  </label>
+    <ul class="sres" id="sres" hidden role="listbox" aria-label="검색 결과"></ul>
+  </div>
   <button class="gear" type="button" id="openCart" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 4h2.6l2.4 11.2h10.8L20.6 7.5H6.2"/><circle cx="9.2" cy="19.4" r="1.3"/><circle cx="17" cy="19.4" r="1.3"/></svg>장바구니<b class="badge num" id="cartN">0</b></button>
   <button class="gear" type="button" id="openRec" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>기록</button>
   <button class="gear" type="button" id="openSet" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
@@ -520,6 +529,7 @@ svg{display:block;flex:none}
       <button type="button" role="tab" data-stab="item" aria-selected="true">이 상품</button>
       <button type="button" role="tab" data-stab="disc" aria-selected="false">할인·결제</button>
       <button type="button" role="tab" data-stab="mgr" aria-selected="false">상품 관리</button>
+      <button type="button" role="tab" data-stab="price" aria-selected="false">가격표·검색</button>
     </div>
 
     <div data-spane="item">
@@ -576,6 +586,7 @@ svg{display:block;flex:none}
 
     <div data-spane="disc" hidden id="discPane"></div>
     <div data-spane="mgr" hidden id="mgrPane"></div>
+    <div data-spane="price" hidden id="pricePane"></div>
 
     <p class="fine">설정·사진·가격·장바구니는 <b>이 기기의 브라우저에만</b> 저장돼요. 다른 기기·손님 휴대폰에는 보이지 않아요. <span id="setInfo"></span> <button class="lnk" type="button" id="allReset">모든 수정 되돌리기</button></p>
     <div class="sh-lock">
@@ -625,6 +636,9 @@ svg{display:block;flex:none}
 <div class="modal" id="payModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="payTitle" id="paySheet"></div></div>
 <!-- 기록: 상담 기록 · 결제 기록 (직원용, 비밀번호) -->
 <div class="modal" id="recModal" hidden><div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="recTitle" id="recSheet"></div></div>
+
+<!-- 엑셀 가격표 확인 -->
+<div class="modal" id="impModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="impTitle" id="impSheet"></div></div>
 
 <!-- 견적 비교: A·B·C안을 나란히 -->
 <div class="modal" id="cmpModal" hidden>
@@ -715,7 +729,7 @@ function shrink(file){
 var SET_KEY='buy.settings',CART_KEY='buy.cart';
 var DEFAULT_SET={
   storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
-  branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],
+  branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -732,6 +746,7 @@ function saveSet(){try{localStorage.setItem(SET_KEY,JSON.stringify(SET))}catch(e
 var SET=loadSet();
 function prodRateOf(code,gid){
   if(SET.itemRates[code]!=null)return clampRate(SET.itemRates[code]);
+  var cx=CODE[code];if(cx&&cx.v.rate!=null)return clampRate(cx.v.rate); // 엑셀 가격표의 할인율 칸
   var g=SET.groupRates[gid];
   if(g!=null&&g!=='')return clampRate(g);
   return clampRate(SET.prodDefault);
@@ -816,20 +831,34 @@ function build(data){
     var e=maps[cg.gid][key]=maps[cg.gid][key]||{vs:[],main:false};
     e.vs.push(v);if(cg.main)e.main=true;
   });
-  GROUPS.forEach(function(g){
-    var map=maps[g.id],box=G[g.id];
-    box.models=Object.keys(map).map(function(k){
-      var vs=map[k].vs.sort(function(a,b){return sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size)||a.price-b.price||a.color.localeCompare(b.color,'ko')});
-      var sizes=[];vs.forEach(function(v){if(sizes.indexOf(v.size)<0)sizes.push(v.size)});
-      return {key:k,gid:g.id,name:clean(k),series:seriesOf(k),variants:vs,sizes:sizes,main:map[k].main};
-    }).sort(function(a,b){return (b.main-a.main)||a.name.localeCompare(b.name,'ko')});
-    box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m;m.variants.forEach(function(v){CODE[v.code]={m:m,v:v,gid:g.id}})});
-    box.own=box.models.slice();
-    /* 첫 화면: 완성품 중 규격이 가장 많은 모델(같으면 옵션이 많은 모델) */
-    box.first=(g.first&&box.byName[g.first])||box.models.filter(function(m){return m.main}).reduce(function(best,m){
-      return !best||m.sizes.length>best.sizes.length||(m.sizes.length===best.sizes.length&&m.variants.length>best.variants.length)?m:best;
-    },null)||box.models[0];
+  GROUPS.forEach(function(g){finishGroup(g,maps[g.id],false)});
+}
+function finishGroup(g,map,custom){
+  var box=G[g.id];
+  box.models=Object.keys(map).map(function(k){
+    var vs=map[k].vs.sort(function(a,b){return sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size)||a.price-b.price||a.color.localeCompare(b.color,'ko')});
+    var sizes=[];vs.forEach(function(v){if(sizes.indexOf(v.size)<0)sizes.push(v.size)});
+    return {key:k,gid:g.id,name:custom?k:clean(k),series:seriesOf(k),variants:vs,sizes:sizes,main:map[k].main,ord:map[k].ord};
+  }).sort(custom?function(a,b){return a.ord-b.ord||a.name.localeCompare(b.name,'ko')}:function(a,b){return (b.main-a.main)||a.name.localeCompare(b.name,'ko')});
+  box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m;m.variants.forEach(function(v){CODE[v.code]={m:m,v:v,gid:g.id}})});
+  box.own=box.models.slice();
+  /* 첫 화면: 엑셀 가격표면 맨 앞 모델, 아니면 완성품 중 규격이 가장 많은 모델(같으면 옵션이 많은 모델) */
+  box.first=custom?box.models[0]:(g.first&&box.byName[g.first])||box.models.filter(function(m){return m.main}).reduce(function(best,m){
+    return !best||m.sizes.length>best.sizes.length||(m.sizes.length===best.sizes.length&&m.variants.length>best.variants.length)?m:best;
+  },null)||box.models[0];
+}
+/* 엑셀 가격표(설정 › 가격표·검색에서 불러온 것) — 이 기기에 'buy.pricelist'로 저장, 적용 중이면 이것만 써요 */
+function buildCustom(pl){
+  var maps={};
+  GROUPS.forEach(function(g){G[g.id]={def:g,models:[],byName:{}};maps[g.id]={}});
+  pl.items.forEach(function(it){
+    if(!maps[it.group])return;
+    var ov=PRICES[it.code],price=ov>0?ov:it.price;
+    var v={size:it.size||'',color:it.color||'',price:price,base:it.price,code:it.code,rate:it.rate==null?null:it.rate,kw:it.kw||''};
+    var e=maps[it.group][it.model]=maps[it.group][it.model]||{vs:[],main:true,ord:it.ord};
+    e.vs.push(v);e.ord=Math.min(e.ord,it.ord);
   });
+  GROUPS.forEach(function(g){finishGroup(g,maps[g.id],true)});
 }
 
 function giftRefresh(){
@@ -1002,15 +1031,267 @@ function stepSize(d){
   if(i<0||i>=cur.sizes.length)return;
   var b=$('sizes').children[i];if(b)b.click();
 }
-function find(list,v){var q=v.toLowerCase();return list.filter(function(x){return x.name.toLowerCase().indexOf(q)>=0&&!isHidden(x.gid,x)})[0]}
-function search(){
-  var v=$('q').value.trim();if(!v)return;
-  var m=group.byName[v]||find(group.models,v),gid=group.def.id;
-  if(!m)GROUPS.some(function(g){if(g.id===group.def.id)return false;m=G[g.id].byName[v]||find(G[g.id].models,v);if(m)gid=g.id;return !!m});
-  if(!m){toast('"'+v+'" 모델을 찾지 못했어요');return}
-  $('q').value='';$('q').blur();
-  if(gid!==group.def.id)setGroup(gid,m.name);else pick(m,true);
+/* ───── 검색 (영문 모델명 · 한글 별칭 · 코드 · 규격 · 오타 1~2자) — 매장 POS의 검색과 같은 방식 ─────
+   한글 별칭은 아래 기본 목록 + 설정 › 가격표·검색에서 매장이 더한 것. 별칭 앞부분만 쳐도 찾아요(라노 → 라노떼). */
+var BASE_ALIASES={
+  라노떼:'lanotte',라노테:'lanotte',노벨라:'novella',바치오:'bacio',자나:'zana',알베로:'albero',메트로:'metro',이리나:'irina',
+  오팔로:'opalo',다도:'dado',아만데:'amande',아망드:'amande',파볼라:'favola',그라피카:'grafica',페르테:'perte',아넬로:'anello',
+  슈슈:'chouchou',플로라:'flora',리에토:'lieto',메트리카:'metrica',에리카:'erica',모르페오:'morfeo',올리보:'olivo',베나토:'venato',
+  모노스:'monos',발리치:'valich',루체:'luce',루나토:'lunato',에스더:'esther',에스터:'esther',아르코:'arco',아르노:'arno',
+  오피모:'opimo',탱고:'tango',땅고:'tango',레네:'lene',바론트:'baront',아비오:'avvio',오마지오:'omaggio',에르바:'erba',
+  폴리아:'foglia',프레토:'pretto',리네아:'linea',틴스터:'teenster',오노레:'onore',파스토:'fasto',벨라:'bella',플렉스:'flex',
+  헤리츠:'heritz',셈퍼:'semper',모데나:'modena',벨루스:'bellus',리알토:'rialto',클라첸:'klatschen',라켈:'raquel',쿤:'koon',
+  체르키오:'cerchio',라메르:'lamer',피에노:'pieno',레지나:'regina',벨루토:'velluto',다이아몬드:'diamond',
+  로얄에이스:'ra',로열에이스:'ra',클럽에이스:'ca',하이브리드:'ht',하이브리드테크:'ht',스트레스리스:'stressless',
+  슈퍼싱글:'ss',싱글:'s',퀸:'q',라지퀸:'lq',킹:'k',라지킹:'lk',패밀리:'k3'
+};
+var ROMAN={'Ⅰ':'1','Ⅱ':'2','Ⅲ':'3','Ⅳ':'4','Ⅴ':'5','Ⅵ':'6','Ⅶ':'7','Ⅷ':'8','Ⅸ':'9','Ⅹ':'10'};
+var romanToNum=function(t){return /[Ⅰ-Ⅹ]/.test(t)?t.replace(/[Ⅰ-Ⅹ]/g,function(c){return ROMAN[c]}):''};
+var norm=function(t){return String(t).toLowerCase().replace(/[^0-9a-z가-힣ⅰ-ⅹ]+/g,'')};
+var reEsc=function(t){return t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')};
+var SIZE_WORDS=['s','ss','ds','dd','q','lq','k','k3','lk'];
+function aliasMap(){return Object.assign({},BASE_ALIASES,SET.aliases||{})}
+function editDist(a,b,max){
+  if(Math.abs(a.length-b.length)>max)return max+1;
+  var prev=[],i,j;for(j=0;j<=b.length;j++)prev[j]=j;
+  for(i=1;i<=a.length;i++){var c=[i],best=i;for(j=1;j<=b.length;j++){c[j]=Math.min(prev[j]+1,c[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));best=Math.min(best,c[j])}if(best>max)return max+1;prev=c}
+  return prev[b.length];
 }
+var SIDX=null; // 검색용 목록(모델마다 찾을 글자 모음) — 처음 검색할 때 만들어요
+function searchIndex(){
+  if(SIDX)return SIDX;
+  var list=[],vocab={};
+  GROUPS.forEach(function(g){(G[g.id].own||[]).forEach(function(m){
+    var hay=[m.name,m.key,romanToNum(m.name),g.name].concat(m.variants.map(function(v){return v.code+' '+v.size+' '+v.color+' '+(v.kw||'')})).join(' ').toLowerCase();
+    list.push({m:m,g:g,hay:hay,hc:hay.replace(/[-_.·]/g,''),nh:norm(hay),from:m.variants.reduce(function(a,v){return Math.min(a,v.price)},Infinity)});
+    (hay.match(/[a-z]{4,}/g)||[]).forEach(function(w){vocab[w]=1});
+  })});
+  SIDX={list:list,vocab:Object.keys(vocab)};return SIDX;
+}
+function expand(term,fixed){
+  var out=[term],A=aliasMap(),ix=searchIndex();
+  if(/[가-힣]/.test(term)){var k=norm(term);Object.keys(A).forEach(function(ko){if(norm(ko).indexOf(k)===0&&out.indexOf(String(A[ko]).toLowerCase())<0)out.push(String(A[ko]).toLowerCase())})}
+  // 그대로는 안 나오는 영문 단어 → 비슷한 모델명(LANOTEE → lanotte)
+  if(/^[a-z]{4,}$/.test(term)&&!ix.list.some(function(x){return x.hay.indexOf(term)>=0})){
+    var max=term.length>=7?2:1;ix.vocab.forEach(function(w){if(editDist(term,w,max)<=max&&out.indexOf(w)<0){out.push(w);fixed.push(w)}});
+  }
+  return out;
+}
+function runSearch(q){
+  var fixed=[],size=null,ix=searchIndex();
+  var terms=q.toLowerCase().split(/\s+/).filter(Boolean).map(function(t){
+    var alts=expand(t,fixed);
+    alts.forEach(function(a){if(SIZE_WORDS.indexOf(a)>=0&&a!==t||SIZE_WORDS.indexOf(t)>=0)size=size||(SIZE_WORDS.indexOf(a)>=0?a:t)});
+    return alts.map(function(a){
+      var short=/^[a-z][a-z0-9]{0,2}$/.test(a); // 짧은 영문(AB·RA·SS·K3)은 단어 첫머리에서만 — 숫자만 있으면(360) 어디든
+      return {short:short,re:short?new RegExp('(^|[^a-z0-9])'+reEsc(a)+'(?![a-z])'):null,word:new RegExp('(^|[^a-z0-9])'+reEsc(a)),a:a,n:norm(a)};
+    });
+  });
+  if(!terms.length)return {list:[],fixed:fixed,size:null};
+  var res=[];
+  ix.list.forEach(function(x){
+    if(isHidden(x.m.gid,x.m))return;
+    var score=0,ok=terms.every(function(alts){
+      var best=0;alts.forEach(function(t){
+        if(t.short){if(t.re.test(x.hay)||t.re.test(x.hc))best=Math.max(best,3)}
+        else if(x.hay.indexOf(t.a)>=0||(t.n&&x.nh.indexOf(t.n)>=0))best=Math.max(best,t.word.test(x.hay)?3:1);
+      });score+=best;return best>0;
+    });
+    if(ok)res.push({x:x,score:score+(x.g.id===group.def.id?1:0)+(x.m.name.toLowerCase().indexOf(terms[0][0].a)===0?2:0)});
+  });
+  res.sort(function(a,b){return b.score-a.score||a.x.m.name.length-b.x.m.name.length||a.x.m.name.localeCompare(b.x.m.name,'ko')});
+  return {list:res.map(function(r){return r.x}),fixed:fixed,size:size};
+}
+function goModel(x,size){
+  $('sres').hidden=true;$('q').value='';$('q').blur();
+  if(x.g.id!==group.def.id)setGroup(x.g.id,x.m.name);else pick(x.m,true);
+  if(size){var hit=cur.sizes.filter(function(s){return s.replace(/\(.*$/,'').toLowerCase()===size})[0];if(hit!=null){var b=$('sizes').querySelector('[data-s="'+hit+'"]');if(b)b.click()}}
+}
+var SRES=null;
+function search(){
+  var v=$('q').value.trim();if(!v){$('sres').hidden=true;return}
+  var r=runSearch(v);SRES=r;
+  if(!r.list.length){$('sres').hidden=true;toast('"'+v+'" 모델을 찾지 못했어요');return}
+  if(r.list.length===1){goModel(r.list[0],r.size);return}
+  var ul=$('sres');
+  ul.innerHTML=(r.fixed.length?'<li class="fix">「'+esc(v)+'」 → 비슷한 이름 '+esc(r.fixed.slice(0,3).join(', ').toUpperCase())+'(으)로 찾았어요</li>':'')
+    +r.list.slice(0,30).map(function(x,i){return '<li><button type="button" data-si="'+i+'"><b>'+esc(x.m.name)+'</b><small>'+esc(x.g.name)+' · 옵션 '+x.m.variants.length+'</small><em class="num">'+won(x.from)+'원~</em></button></li>'}).join('')
+    +(r.list.length>30?'<li class="more">외 '+(r.list.length-30)+'개 · 더 자세히 적어 주세요</li>':'');
+  ul.hidden=false;
+}
+
+
+/* ───── 가격표·검색 탭 ─────
+   엑셀 가격표: 1행 제목 — 메뉴 · 모델명 · 정상가(원)은 꼭, 순서 · 규격 · 색상 · 할인율(%) · 검색어 · 상품코드는 있으면 써요.
+   .xlsx(「가격표」 시트, 없으면 첫 시트) 또는 .csv. 적용하면 이 기기에서 이 가격표만 써요(기본 가격표 prices.json은 숨김). */
+var PL_KEY='buy.pricelist';
+function loadPL(){try{var o=JSON.parse(localStorage.getItem(PL_KEY)||'null');return o&&Array.isArray(o.items)&&o.items.length?o:null}catch(e){return null}}
+var PRICELIST=loadPL();
+function renderPricePane(){
+  var A=SET.aliases||{},mine=Object.keys(A);
+  $('pricePane').innerHTML=
+    '<section class="sh-sec"><h4>가격표</h4>'
+    +'<div class="srow"><span class="lb">지금 쓰는 가격표<small>'+esc(meta.source||'-')+' · '+(PRICELIST?'불러온 날':'기준일')+' '+esc(meta.updated||'-')+(PRICELIST?' · '+won(PRICELIST.items.length)+'줄':'')+'</small></span></div>'
+    +'<p class="hint">엑셀 1행에 <b>메뉴 · 모델명 · 정상가(원)</b> 제목은 꼭 있어야 하고, <b>순서 · 규격 · 색상 · 할인율(%) · 검색어 · 상품코드</b>는 있으면 써요. 메뉴는 매트리스·프레임·사이드옵션·슬립케어·사은품 중 하나예요. 「가격표」 시트가 있으면 그 시트를, 없으면 첫 시트를 읽어요.</p>'
+    +'<div class="sh-foot" style="justify-content:flex-start"><label class="btn"><input type="file" id="plFile" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>엑셀 가격표 불러오기</label>'
+    +'<button class="btn outl" type="button" data-pl="tpl">양식 내려받기(CSV)</button>'
+    +(PRICELIST?'<button class="btn outl" type="button" data-pl="reset" style="color:var(--err);border-color:var(--err)">기본 가격표로 되돌리기</button>':'')+'</div></section>'
+    +'<section class="sh-sec"><h4>검색 별칭 (한글 이름 → 영문 모델명)</h4>'
+    +'<p class="hint">기본으로 라노떼→LANOTTE, 노벨라→NOVELLA, 로얄에이스→RA, 라지퀸→LQ 등 '+Object.keys(BASE_ALIASES).length+'개가 들어 있어요. 손님·직원이 부르는 이름이 검색되지 않으면 여기에 더해요. 영문은 1~2자 오타도 찾아요.</p>'
+    +'<ul class="mlist">'+(mine.map(function(k){return '<li><span>'+esc(k)+' → <b>'+esc(String(A[k]).toUpperCase())+'</b></span><button class="btn outl sm" type="button" data-unalias="'+esc(k)+'">빼기</button></li>'}).join('')||'<li class="none">매장에서 더한 별칭이 없어요.</li>')+'</ul>'
+    +'<div class="srow"><input class="pin" id="alKo" style="width:150px;text-align:left" placeholder="한글 (예: 루나또)" aria-label="한글 별칭"><span class="u">→</span><input class="pin" id="alEn" style="width:150px;text-align:left" placeholder="영문 (예: LUNATO)" aria-label="영문 모델명"><button class="btn outl sm" type="button" data-pl="addAlias">더하기</button></div>'
+    +'</section>';
+}
+// xlsx(zip) 읽기 — 외부 라이브러리 없이 브라우저 기능(DecompressionStream)만 써요
+function unzipXlsx(buf){
+  var v=new DataView(buf),u8=new Uint8Array(buf),dec=new TextDecoder();
+  var e=buf.byteLength-22;while(e>=0&&v.getUint32(e,true)!==0x06054b50)e--;
+  if(e<0)throw new Error('엑셀(xlsx) 파일이 아니에요');
+  var n=v.getUint16(e+10,true),p=v.getUint32(e+16,true),files={};
+  for(var k=0;k<n;k++){
+    if(v.getUint32(p,true)!==0x02014b50)break;
+    var method=v.getUint16(p+10,true),csize=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),off=v.getUint32(p+42,true);
+    files[dec.decode(u8.subarray(p+46,p+46+nl))]={method:method,csize:csize,off:off};p+=46+nl+xl+cl;
+  }
+  return function(name){
+    var f=files[name];if(!f)return Promise.resolve(null);
+    var start=f.off+30+v.getUint16(f.off+26,true)+v.getUint16(f.off+28,true),data=u8.subarray(start,start+f.csize);
+    if(f.method===0)return Promise.resolve(dec.decode(data));
+    if(f.method!==8||typeof DecompressionStream==='undefined')return Promise.reject(new Error('이 브라우저는 엑셀을 못 읽어요. 엑셀에서 「CSV UTF-8」로 저장해 불러와 주세요'));
+    return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  };
+}
+var xmlDoc=function(t){return new DOMParser().parseFromString(t||'<x/>','application/xml')};
+var colIdx=function(ref){var n=0;ref.replace(/\d+/g,'').split('').forEach(function(ch){n=n*26+ch.charCodeAt(0)-64});return n-1};
+function readXlsx(buf){
+  var get;
+  try{get=unzipXlsx(buf)}catch(e){return Promise.reject(e)}
+  var wb,rels,sh,shared;
+  return Promise.all([get('xl/workbook.xml'),get('xl/_rels/workbook.xml.rels'),get('xl/sharedStrings.xml')]).then(function(r){
+    wb=xmlDoc(r[0]);rels=xmlDoc(r[1]);
+    var sheets=Array.prototype.slice.call(wb.getElementsByTagName('sheet'));
+    sh=sheets.filter(function(x){return (x.getAttribute('name')||'').trim()==='가격표'})[0]||sheets[0];
+    if(!sh)throw new Error('시트를 찾지 못했어요');
+    var rid=sh.getAttribute('r:id'),rel=Array.prototype.slice.call(rels.getElementsByTagName('Relationship')).filter(function(x){return x.getAttribute('Id')===rid})[0];
+    if(!rel)throw new Error('시트를 찾지 못했어요');
+    var target=rel.getAttribute('Target');target=target.charAt(0)==='/'?target.slice(1):'xl/'+target.replace(/^\.\//,'');
+    shared=r[2]?Array.prototype.map.call(xmlDoc(r[2]).getElementsByTagName('si'),function(si){return Array.prototype.map.call(si.getElementsByTagName('t'),function(t){return t.textContent}).join('')}):[];
+    return get(target);
+  }).then(function(t){
+    if(!t)throw new Error('시트 내용을 찾지 못했어요');
+    var rows=[];
+    Array.prototype.forEach.call(xmlDoc(t).getElementsByTagName('row'),function(r){
+      var ri=+r.getAttribute('r')-1,row=[];
+      Array.prototype.forEach.call(r.getElementsByTagName('c'),function(c){
+        var ty=c.getAttribute('t'),vv=(c.getElementsByTagName('v')[0]||{}).textContent;
+        var val=ty==='s'?shared[+vv]:ty==='inlineStr'?Array.prototype.map.call(c.getElementsByTagName('t'),function(x){return x.textContent}).join(''):vv;
+        if(val!=null)row[colIdx(c.getAttribute('r'))]=val;
+      });
+      rows[ri]=row;
+    });
+    for(var i=0;i<rows.length;i++)if(!rows[i])rows[i]=[];
+    return {rows:rows,sheet:sh.getAttribute('name')};
+  });
+}
+function readCsv(buf){
+  var t=new TextDecoder('utf-8').decode(buf);
+  if(t.indexOf('�')>=0){try{t=new TextDecoder('euc-kr').decode(buf)}catch(e){}} // 엑셀 기본 CSV(한글 윈도우)
+  t=t.replace(/^﻿/,'');
+  var rows=[],row=[],cell='',q=false;
+  for(var k=0;k<t.length;k++){
+    var ch=t[k];
+    if(q){if(ch==='"'){if(t[k+1]==='"'){cell+='"';k++}else q=false}else cell+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===','){row.push(cell);cell=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[k+1]==='\n')k++;row.push(cell);rows.push(row);row=[];cell=''}
+    else cell+=ch;
+  }
+  if(cell||row.length){row.push(cell);rows.push(row)}
+  return {rows:rows,sheet:'CSV'};
+}
+var MENU_NAMES={'매트리스':'matt','메트리스':'matt','매트':'matt','프레임':'frame','침대':'frame','침대프레임':'frame','사이드옵션':'side','사이드':'side','슬립케어':'care','케어':'care','사은품':'gift'};
+function parsePriceRows(rows){
+  var h=(rows[0]||[]).map(function(x){return String(x==null?'':x).replace(/\s+/g,'')});
+  var col=function(){var names=arguments;return h.findIndex(function(x){return Array.prototype.some.call(names,function(n){return x.indexOf(n)===0})})};
+  var C={menu:col('메뉴'),ord:col('순서'),model:col('모델명','제품명','품명'),size:col('규격','사이즈'),color:col('색상','옵션'),price:col('정상가','가격','판매가'),rate:col('할인율'),kw:col('검색어','별칭'),code:col('상품코드','코드')};
+  var miss=[['메뉴',C.menu],['모델명',C.model],['정상가(원)',C.price]].filter(function(x){return x[1]<0}).map(function(x){return x[0]});
+  if(miss.length)throw new Error('1행에서 「'+miss.join('」「')+'」 제목을 찾지 못했어요. 양식의 1행 제목을 그대로 두고 다시 저장해 주세요');
+  var cell=function(r,k){return k<0?'':String(r[k]==null?'':r[k]).trim()};
+  var items=[],errors=[],seen={};
+  rows.slice(1).forEach(function(r,k){
+    var line=k+2;
+    if(!r||!r.some(function(x){return String(x==null?'':x).trim()}))return;
+    var menu=cell(r,C.menu),model=cell(r,C.model),priceT=cell(r,C.price).replace(/[,원\s₩]/g,''),rateT=cell(r,C.rate).replace(/[%\s]/g,'');
+    var g=MENU_NAMES[menu.replace(/\s+/g,'')];
+    if(!menu)return errors.push([line,'메뉴가 비어 있어요']);
+    if(!g)return errors.push([line,'메뉴 「'+menu+'」를 모르겠어요 (매트리스·프레임·사이드옵션·슬립케어·사은품)']);
+    if(!model)return errors.push([line,'모델명이 비어 있어요']);
+    if(!/^\d+(\.\d+)?$/.test(priceT)||!(+priceT>0))return errors.push([line,'정상가 「'+cell(r,C.price)+'」가 0보다 큰 숫자가 아니에요']);
+    var rate=null;
+    if(rateT){if(!/^\d+(\.\d+)?$/.test(rateT)||+rateT>100)return errors.push([line,'할인율 「'+cell(r,C.rate)+'」는 0~100 숫자로 적어 주세요']);rate=+rateT}
+    var size=cell(r,C.size).toUpperCase(),color=cell(r,C.color);
+    var code=cell(r,C.code)||('M:'+[model,size,color].join('|'));
+    if(seen[code]){errors.push([line,'상품코드·이름이 위 줄과 같아요 ('+(code.indexOf('M:')===0?'모델명·규격·색상':code)+') — 따로 저장했어요']);code+='#'+line}
+    seen[code]=1;
+    var ordT=cell(r,C.ord);
+    items.push({code:code,group:g,model:model,size:size,color:color,price:Math.round(+priceT),rate:rate,kw:cell(r,C.kw),ord:/^\d+$/.test(ordT)?+ordT:1e6+line});
+  });
+  return {items:items,errors:errors};
+}
+function impError(msg){
+  $('impSheet').innerHTML='<div class="sh-head"><h3 id="impTitle">가격표를 읽지 못했어요</h3><button class="x" type="button" data-im="close" aria-label="닫기">×</button></div><p class="sh-sub">'+esc(msg)+'</p><div class="sh-foot"><button class="btn" type="button" data-im="close">닫기</button></div>';
+  $('impModal').hidden=false;
+}
+var IMP=null;
+function importFile(f){
+  f.arrayBuffer().then(function(buf){return /\.csv$/i.test(f.name)?readCsv(buf):readXlsx(buf)}).then(function(t){
+    var res=parsePriceRows(t.rows);IMP={name:f.name,items:res.items};
+    var cnt=function(id){return res.items.filter(function(i){return i.group===id}).length};
+    $('impSheet').innerHTML='<div class="sh-head"><h3 id="impTitle">가격표 확인</h3><button class="x" type="button" data-im="close" aria-label="닫기">×</button></div>'
+      +'<p class="sh-sub">'+esc(f.name)+' · 「'+esc(t.sheet)+'」 시트</p>'
+      +'<ul class="mlist">'+GROUPS.map(function(g){return '<li><span>'+g.name+'</span><b class="num">'+won(cnt(g.id))+'줄</b></li>'}).join('')+'<li><span><b>합계</b></span><b class="num">'+won(res.items.length)+'줄</b></li></ul>'
+      +(res.errors.length?'<h4 class="rec-h" style="color:var(--err)">확인할 줄 '+won(res.errors.length)+'개</h4><ul class="mlist" style="max-height:200px;overflow:auto">'+res.errors.slice(0,50).map(function(x){return '<li><span><b>'+x[0]+'행</b> '+esc(x[1])+'</span></li>'}).join('')+(res.errors.length>50?'<li class="none">… 외 '+(res.errors.length-50)+'줄</li>':'')+'</ul><p class="hint">오류 줄은 빼고 적용돼요. 엑셀에서 고친 뒤 다시 불러와도 돼요.</p>':'<p class="hint">오류 없이 모두 읽었어요.</p>')
+      +'<p class="hint">적용하면 이 기기에서는 <b>이 가격표만</b> 써요(기본 가격표 '+'prices.json은 숨김). 설정 › 가격표·검색에서 언제든 되돌릴 수 있어요. 장바구니·견적에 담긴 상품은 같은 상품코드가 있으면 새 가격으로 바뀌어요.</p>'
+      +'<div class="sh-foot"><button class="btn outl" type="button" data-im="close">취소</button><button class="btn" type="button" data-im="apply"'+(res.items.length?'':' disabled')+'>적용</button></div>';
+    $('impModal').hidden=false;
+  }).catch(function(e){impError(e&&e.message||String(e))});
+}
+$('pricePane').addEventListener('change',function(e){
+  if(e.target.id!=='plFile')return;
+  var f=e.target.files&&e.target.files[0];e.target.value='';if(f){touch();importFile(f)}
+});
+$('pricePane').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;touch();
+  var a=b.getAttribute('data-pl');
+  if(a==='tpl'){
+    var rows=[['메뉴','순서','모델명','규격','색상','정상가(원)','할인율(%)','검색어','상품코드'],
+      ['매트리스','1','HT-R 26NEW','SS','','2159000','','하이브리드',''],
+      ['매트리스','1','HT-R 26NEW','LQ','','2838000','','하이브리드',''],
+      ['프레임','1','DADO-N(HT-R)','SS','그레이','3135000','5','다도',''],
+      ['사이드옵션','1','협탁#51','','내츄럴오크','157000','','',''],
+      ['사은품','1','마이크로케어 방수커버','SS','화이트','185000','','','']];
+    downloadText('price-template.csv',rows.map(function(r){return r.map(csvCell).join(',')}).join('\r\n'));
+  }else if(a==='reset'){
+    if(!confirm('불러온 엑셀 가격표를 지우고 기본 가격표(prices.json)로 돌아갈까요?\n(엑셀 파일 자체는 그대로 있어요)'))return;
+    try{localStorage.removeItem(PL_KEY)}catch(x){}
+    location.reload();
+  }else if(a==='addAlias'){
+    var ko=$('alKo').value.trim(),en=$('alEn').value.trim();
+    if(!/[가-힣]/.test(ko)){toast('왼쪽 칸에 한글 이름을 적어 주세요');return}
+    if(!/^[0-9A-Za-z][0-9A-Za-z \-]*$/.test(en)){toast('오른쪽 칸에 영문 모델명을 적어 주세요');return}
+    SET.aliases=SET.aliases||{};SET.aliases[ko.replace(/\s+/g,'')]=en.toLowerCase();setChanged('「'+ko+'」 → '+en.toUpperCase()+' 별칭을 더했어요');renderPricePane();
+  }else if(b.hasAttribute('data-unalias')){delete SET.aliases[b.getAttribute('data-unalias')];setChanged('별칭을 뺐어요');renderPricePane()}
+});
+$('pricePane').addEventListener('keydown',function(e){if(e.key==='Enter'&&(e.target.id==='alKo'||e.target.id==='alEn')){e.preventDefault();var b=$('pricePane').querySelector('[data-pl="addAlias"]');if(b)b.click()}});
+$('impModal').addEventListener('click',function(e){
+  if(e.target===this){$('impModal').hidden=true;return}
+  var b=e.target.closest('[data-im]');if(!b)return;
+  if(b.getAttribute('data-im')==='close'){$('impModal').hidden=true;return}
+  if(!IMP||!IMP.items.length)return;
+  var at=localDate();
+  try{localStorage.setItem(PL_KEY,JSON.stringify({name:IMP.name,at:at,items:IMP.items}))}catch(x){toast('저장하지 못했어요(브라우저 저장 공간을 확인해 주세요)');return}
+  location.href=location.pathname+'?g='+IMP.items[0].group;
+});
 
 /* ───── 장바구니 ───── */
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
@@ -1511,7 +1792,7 @@ $('recModal').addEventListener('click',function(e){
 // Esc: 맨 위 창부터 닫아요
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
-  var top=['recModal','payModal','conModal'].filter(function(id){return !$(id).hidden})[0];
+  var top=['impModal','recModal','payModal','conModal'].filter(function(id){return !$(id).hidden})[0];
   if(top){e.stopImmediatePropagation();$(top).hidden=true;renderCstrip()}
 },true);
 
@@ -1525,8 +1806,20 @@ $('qm').addEventListener('click',function(){if(qty>1){qty--;render()}});
 $('qp').addEventListener('click',function(){if(qty<99){qty++;render()}});
 $('prev').addEventListener('click',function(){stepSize(-1)});
 $('next').addEventListener('click',function(){stepSize(1)});
-$('q').addEventListener('change',search);
-$('q').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();search()}});
+$('q').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){e.preventDefault();search()}
+  else if(e.key==='Escape'){$('sres').hidden=true}
+  else if(e.key==='ArrowDown'&&!$('sres').hidden){e.preventDefault();var f=$('sres').querySelector('button');if(f)f.focus()}
+});
+$('q').addEventListener('input',function(){if(!$('q').value.trim())$('sres').hidden=true});
+$('sres').addEventListener('click',function(e){var b=e.target.closest('[data-si]');if(b&&SRES)goModel(SRES.list[+b.getAttribute('data-si')],SRES.size)});
+$('sres').addEventListener('keydown',function(e){
+  var bs=Array.prototype.slice.call($('sres').querySelectorAll('button')),i=bs.indexOf(document.activeElement);
+  if(e.key==='ArrowDown'&&i<bs.length-1){e.preventDefault();bs[i+1].focus()}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(i>0)bs[i-1].focus();else $('q').focus()}
+  else if(e.key==='Escape'){$('sres').hidden=true;$('q').focus()}
+});
+document.addEventListener('click',function(e){if(!e.target.closest('.find'))$('sres').hidden=true});
 
 /* ───── 설정창 ───── */
 var phScope='model',lastFocus=null;
@@ -1578,6 +1871,7 @@ function showTab(t){
   if(t==='item')renderItemExtras();
   if(t==='disc')renderDiscPane();
   if(t==='mgr')renderMgrPane();
+  if(t==='price')renderPricePane();
 }
 Array.prototype.forEach.call(document.querySelectorAll('[data-stab]'),function(b){b.addEventListener('click',function(){touch();showTab(b.getAttribute('data-stab'))})});
 function setChanged(msg){touch();saveSet();renderCart();if(cur)render();if(msg)toast(msg)}
@@ -1858,12 +2152,18 @@ $('allReset').addEventListener('click',function(){
 });
 
 Promise.all([
-  fetch('prices.json').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}),
+  PRICELIST?Promise.resolve(null):fetch('prices.json').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}),
   loadPhotos()
 ]).then(function(res){
-  var data=res[0];
-  meta={updated:data.updated,source:data.source};
-  build(data);giftRefresh();
+  if(PRICELIST){
+    meta={updated:PRICELIST.at,source:'매장 가격표 (불러온 엑셀 「'+PRICELIST.name+'」)'};
+    buildCustom(PRICELIST);
+  }else{
+    var data=res[0];
+    meta={updated:data.updated,source:data.source};
+    build(data);
+  }
+  giftRefresh();
   $('openSet').hidden=false;$('openCart').hidden=false;$('openRec').hidden=false;
   applyStoreName();syncCartPrices();renderCart();
   var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
