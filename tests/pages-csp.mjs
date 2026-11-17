@@ -9,7 +9,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PAGES = ['index.html', 'pos.html', 'price.html', 'translate.html', 'japanese.html', 'offline.html'];
+const PAGES = ['index.html', 'pos.html', 'price.html', 'buy.html', 'translate.html', 'japanese.html', 'offline.html'];
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
 
 function siteServer() {

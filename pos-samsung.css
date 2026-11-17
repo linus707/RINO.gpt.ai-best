@@ -1,0 +1,136 @@
+/* ───── 매장 POS · 삼성닷컴식 테마 ─────
+   pos.html 의 기본 스타일 뒤에 덧붙여 색·모서리·버튼 모양만 바꿔요(기능·구조는 그대로).
+   규칙: 흰 바탕 + 검정 글자 · 결정 버튼은 검정 알약 · 고른 칸만 파란 안쪽 링(#2189FF) · 그림자 대신 1px 안쪽 테두리.
+   scripts/build-pos-theme.mjs 가 이 파일을 pos.html 에 넣어 pos-samsung.html 을 만들어요. */
+:root{
+  --navy:#000; --navy-2:#212425; --ink:#000; --mut:#707070; --line:#ddd;
+  --bg:#fff; --card:#fff; --soft:#f7f7f7; --disc:#2189ff; --ok:#2189ff; --black:#000;
+  --blue:#2189ff; --blue-50:#f5faff; --sub:#f7f7f7; --hair:#ebebeb; --err:#fa2337;
+  --ring:inset 0 0 0 1px #ddd; --ring-on:inset 0 0 0 2px #2189ff; --ring-chip:inset 0 0 0 1px #7f7f7f;
+  /* 디자인 문서의 토큰(간격 4px 단위 · 모서리 · 그림자 · 움직임) */
+  --space-xs:4px; --space-sm:8px; --space-md:16px; --space-lg:24px; --space-xl:40px;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:12px; --radius-xl:20px; --radius-full:9999px;
+  --shadow-sm:0 4px 8px rgba(0,0,0,.2); --shadow-md:0 -3px 6px rgba(0,0,0,.16); --shadow-xl:0 12px 40px rgba(0,0,0,.18);
+  --duration-fast:200ms; --duration-base:400ms;
+}
+body{letter-spacing:-.02em}
+button{transition:background-color var(--duration-fast) linear,border-color var(--duration-fast) linear,color var(--duration-fast) linear,box-shadow var(--duration-fast) linear}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #000;outline-offset:2px}
+
+/* 상단: 흰 헤더 + 검정 글자 */
+.top{background:#fff;color:#000;box-shadow:inset 0 -1px 0 var(--line)}
+.logo{border:1px solid #000;border-radius:20px}
+.brand b{letter-spacing:0}
+.open{color:#000}
+.open i,.conn i{background:#2fbf71}
+.open.closed i{background:#8f8f8f}
+.conn.off i{background:var(--err)}
+.hbtn{color:#000;border:1px solid #000;border-radius:20px;padding:6px 14px}
+.hbtn:hover{background:#000;color:#fff}
+
+/* 상담 단계 바 */
+.flow .cno b{color:#000}
+.flow button i{background:var(--hair);color:var(--mut)}
+.flow button.cur{background:none;color:#000}
+.flow button[data-step]:not(.newc).cur{border-radius:0;box-shadow:inset 0 -2px 0 #000}
+.flow button.cur i{background:#000}
+.flow .arr{color:#b2b2b2}
+.flow .newc{border:1px solid #000;border-radius:20px;background:#fff;font-weight:700}
+
+/* 왼쪽 메뉴 · 검색 · 필터 */
+.side button{color:#555}
+.side button.on{color:#000;background:none}
+.searchbar input{border:1.5px solid transparent;border-radius:999px;background:var(--sub)}
+.searchbar input:focus{border-color:#000;outline:0;background:#fff}
+.ghost{border:1px solid #000;border-radius:20px;font-weight:700}
+.toolbar .fix{color:var(--blue);font-weight:700}
+.chips button{border-color:transparent;box-shadow:var(--ring)}
+.chips button.on{background:#000;color:#fff;box-shadow:none}
+
+/* 상품 타일: 회색 면 위에 제품, 테두리·둥근 모서리 없음 */
+.tile{background:var(--sub);border-color:transparent;border-radius:0}
+.tile .img{border-radius:0}
+.tile .img.ph{background:#ebebeb}
+.tile .badge{background:var(--blue-50);color:var(--blue);border-radius:var(--radius-sm);padding:2px 8px}
+.tile.addtile{background:#fff;border:0;box-shadow:var(--ring);border-radius:6px}
+.pg{border:0;border-radius:50%;background:var(--sub);color:#000;width:46px}
+.dots button{background:#ddd}
+.dots button.on{background:#000}
+
+/* 장바구니 */
+.custbtn,.btn{border-radius:var(--radius-xl);min-height:40px;font-size:14px;padding:0 var(--space-lg);border:1px solid #000}
+.custbtn:hover,.btn:not(.line-btn):not(.danger):hover,.paybar .amount:hover{background:#212425}
+.custbtn:active,.btn:not(.line-btn):not(.danger):active,.paybar .amount:active{background:#555}
+.custbtn:disabled,.btn:disabled{opacity:1;background:#8f8f8f;border-color:#8f8f8f;color:#fff;cursor:default}
+.lctl button[data-lq]{border-radius:var(--radius-full)}
+.cart-actions button,.lctl button{border-color:transparent;box-shadow:var(--ring);border-radius:6px;background:#fff}
+.lctl button.on{border-color:transparent;box-shadow:var(--ring-on);color:var(--blue)}
+.lctl button[data-la="del"]{color:var(--err)}
+.line{border-bottom-color:var(--hair)}
+.line.sel{background:var(--blue-50);box-shadow:inset 3px 0 0 var(--blue)}
+.line.hasph .lt{border-radius:6px}
+.quotes button{border-color:transparent;box-shadow:var(--ring);border-radius:6px}
+.quotes button.on{background:#fff;box-shadow:var(--ring-on)}
+.quotes button.on b{color:#000}
+.quotes button.add,.cart-head .quotes button.add{color:#000;border-style:solid}
+.cart-head .quotes button.on{border-color:transparent;background:#000;box-shadow:none}
+.cnd{border-bottom-color:var(--hair)}
+.cnd[data-inst] em{color:#000}
+.cnd.is-open,.order-opts{background:var(--sub)}
+.dc,.order-opts .inst{border-color:transparent;box-shadow:var(--ring);border-radius:6px;background:#fff}
+.dc.on,.order-opts .inst.on{border-color:transparent;box-shadow:var(--ring-on);background:#fff;color:#000}
+.dc.on .dl,.dc.on .dr button.dv{color:#000}
+.dr button{background:var(--sub);border-radius:6px;color:#000}
+.sum .minus,.qcard .minus{color:var(--blue)}
+.paybar{gap:10px;padding:12px 14px;height:76px;box-shadow:inset 0 1px 0 var(--line)}
+.paybar .pay,.paybar .amount{border-radius:999px}
+.paybar .pay{background:var(--sub);color:#8f8f8f}
+.paybar .pay.ready{background:#fff;color:#000;box-shadow:inset 0 0 0 1px #000}
+
+/* 주문 내역 · 설정 화면 */
+.card,.stat div,.pfphoto{border-color:transparent;box-shadow:var(--ring);border-radius:6px}
+.row,.otable th,.otable td,.cmp th,.cmp td,.menu button,.picklist button,.qcard li{border-bottom-color:var(--hair)}
+.otable tr.click:active{background:var(--sub)}
+.num{border:0;border-bottom:1px solid #b2b2b2;border-radius:0;background:transparent;font-weight:700}
+.num:focus{outline:0;border-bottom-color:#000;box-shadow:inset 0 -1px 0 #000}
+.num:disabled{color:#b2b2b2;border-bottom-color:#a6a6a6}
+.pf textarea{border:1px solid var(--line);border-radius:var(--radius-sm)}
+.pf textarea:focus{border-color:#000;outline:0}
+.seg{border:0;box-shadow:var(--ring);border-radius:20px}
+.btn.line-btn{border:1px solid #000;color:#000}
+.btn.line-btn:hover{background:#000;color:#fff}
+.btn.line-btn:disabled{background:transparent;border-color:var(--line);color:#b2b2b2}
+.btn.danger{border:1px solid var(--err);color:var(--err)}
+.btn.danger:hover{background:#fff0f1}
+.toggle{background:#b2b2b2}
+.b{border:1px solid var(--line);border-radius:20px}
+.b.del{color:var(--err);border-color:var(--err)}
+.bulk.on,.cmp th.act{background:var(--blue-50)}
+.tg.mine{background:var(--blue-50);color:var(--blue)}
+.res{background:var(--hair)}
+.swatch button{border:0;box-shadow:var(--ring-chip)}
+.swatch button.on{box-shadow:var(--ring-on)}
+.pthumb{border-color:transparent;box-shadow:var(--ring);border-radius:6px}
+.pthumb.none{background:var(--sub)}
+
+/* 모달 */
+.modal,.askbox{background:rgba(0,0,0,.5)}
+.sheet,.askcard{border-radius:var(--radius-lg);box-shadow:var(--shadow-xl)}
+.keyval{background:var(--sub);border-radius:6px}
+.presets button,.instgrid button{border-color:transparent;box-shadow:var(--ring);border-radius:6px}
+.instgrid button.on{background:#fff;box-shadow:var(--ring-on)}
+.keypad button{background:var(--sub);border-radius:6px}
+.picklist{border-radius:6px}
+.cmp tr.net td,.qcard dt.net,.qcard dd.net{color:var(--blue)}
+
+/* 손님 화면 */
+.cv-top{background:#fff;color:#000;box-shadow:inset 0 -1px 0 var(--line)}
+.cv-top small{opacity:1;color:var(--mut)}
+.cv-top button{color:#000;border:1px solid #000;border-radius:20px}
+.qcard{border-color:transparent;box-shadow:var(--ring);border-radius:12px}
+.qcard.best{border-color:transparent;box-shadow:var(--ring-on)}
+.qcard .bb,.cmp .bb{border-radius:999px}
+.toast{background:rgba(0,0,0,.88);box-shadow:var(--shadow-sm)}
+
+@media (prefers-reduced-motion:reduce){button,.tile,.toggle::after,.dots button{transition:none}}
+@media print{.paybar{box-shadow:none}}
