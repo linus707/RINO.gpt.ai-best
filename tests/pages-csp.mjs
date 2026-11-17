@@ -42,7 +42,7 @@ async function main() {
 
   const site = siteServer(); const sitePort = await listen(site);
   const evil = evilServer(sitePort); const evilPort = await listen(evil);
-  const b = await chromium.launch();
+  const b = await chromium.launch({ args: ['--no-sandbox'] }); // CI 컨테이너에서 root로 띄울 때 필요
   const rows = [];
 
   for (const p of PAGES) {
