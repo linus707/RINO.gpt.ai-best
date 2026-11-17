@@ -174,6 +174,13 @@ svg{display:block;flex:none}
 .ptab tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
 .sh-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}
 .lnk{color:var(--tx);text-decoration:underline;text-underline-offset:3px;font-size:12px}
+.sh-lock{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;box-shadow:inset 0 1px 0 var(--hair);font-size:12px;color:var(--tx3)}
+.sh-lock span{margin-right:auto}
+.sheet.pw{width:min(420px,100%)}
+.pw-row{display:flex;align-items:center;gap:12px;margin-top:14px}
+.pw-row span{flex:none;width:92px;font-weight:700}
+.pw-row .pin{flex:1;width:auto;text-align:left;font-size:16px;letter-spacing:.08em}
+.pw-err{min-height:18px;margin-top:10px;color:var(--err);font-size:13px}
 
 @media (max-width:720px){
   .gear{padding:0 10px}
@@ -359,7 +366,29 @@ svg{display:block;flex:none}
       <button class="btn" type="button" id="ptSave">가격 저장</button>
     </div>
     <p class="fine">사진과 가격은 <b>이 기기의 브라우저에만</b> 저장돼요. 다른 기기·손님 휴대폰에는 보이지 않아요. <span id="setInfo"></span> <button class="lnk" type="button" id="allReset">모든 수정 되돌리기</button></p>
+    <div class="sh-lock">
+      <span>🔒 설정을 닫아도 10분 동안은 비밀번호 없이 다시 열려요.</span>
+      <button class="lnk" type="button" id="pwChange">비밀번호 바꾸기</button>
+      <button class="lnk" type="button" id="lockNow">지금 잠그기</button>
+    </div>
   </div>
+</div>
+
+<!-- 비밀번호 창: 만들기 · 입력 · 바꾸기 -->
+<div class="modal" id="pwModal" hidden>
+  <form class="sheet pw" id="pwForm" role="dialog" aria-modal="true" aria-labelledby="pwTitle" novalidate>
+    <div class="sh-head"><h3 id="pwTitle">비밀번호</h3><button class="x" type="button" data-pwclose aria-label="닫기">×</button></div>
+    <p class="sh-sub" id="pwSub"></p>
+    <label class="pw-row" id="rowCur"><span>비밀번호</span><input class="pin" id="pwCur" type="password" autocomplete="current-password"></label>
+    <label class="pw-row" id="rowNew"><span>새 비밀번호</span><input class="pin" id="pwNew" type="password" autocomplete="new-password" minlength="4"></label>
+    <label class="pw-row" id="rowNew2"><span>한 번 더</span><input class="pin" id="pwNew2" type="password" autocomplete="new-password"></label>
+    <p class="pw-err" id="pwErr" role="alert"></p>
+    <div class="sh-foot">
+      <button class="btn outl" type="button" data-pwclose>취소</button>
+      <button class="btn" type="submit" id="pwOk">확인</button>
+    </div>
+    <p class="fine"><button class="lnk" type="button" id="pwForgot">비밀번호를 잊었어요</button></p>
+  </form>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
@@ -669,10 +698,98 @@ function openSettings(){
   $('setModal').hidden=false;
   $('setModal').querySelector('[data-close]').focus();
 }
-function closeSettings(){$('setModal').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+function closeSettings(){if(unlocked())touch();$('setModal').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus()}
 function refresh(){renderModel();render()}
 
-$('openSet').addEventListener('click',openSettings);
+/* ───── 설정 비밀번호 ─────
+   이 기기에서 처음 설정을 열 때 만들어요. 비밀번호 자체는 저장하지 않고,
+   PBKDF2(SHA-256, 15만 번)로 만든 값과 소금(salt)만 localStorage 'buy.pw'에 저장해요.
+   한 번 열면 10분 동안(설정을 쓸 때마다 다시 10분) 비밀번호 없이 열리고, 새로 고침하면 다시 잠겨요.
+   ※ 이 화면의 설정(이 기기에만 저장되는 사진·가격)을 손님이 못 열게 하는 잠금이에요. 서버 보안은 아니에요 */
+var PW_KEY='buy.pw',LOCK_MS=10*60*1000,PW_IT=150000,unlockUntil=0,pwFails=0,pwWait=0,pwMode='',pwThen=null;
+function pwSaved(){try{var o=JSON.parse(localStorage.getItem(PW_KEY)||'null');return o&&o.salt&&o.hash?o:null}catch(e){return null}}
+function toHex(buf){return Array.prototype.map.call(new Uint8Array(buf),function(b){return ('0'+b.toString(16)).slice(-2)}).join('')}
+function fromHex(h){var a=new Uint8Array(h.length/2);for(var i=0;i<a.length;i++)a[i]=parseInt(h.substr(i*2,2),16);return a}
+function derive(pw,saltHex,it){
+  var enc=new TextEncoder();
+  return crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits'])
+    .then(function(k){return crypto.subtle.deriveBits({name:'PBKDF2',salt:fromHex(saltHex),iterations:it,hash:'SHA-256'},k,256)})
+    .then(toHex);
+}
+function pwMake(pw){
+  var salt=toHex(crypto.getRandomValues(new Uint8Array(16)));
+  return derive(pw,salt,PW_IT).then(function(h){localStorage.setItem(PW_KEY,JSON.stringify({salt:salt,hash:h,it:PW_IT}))});
+}
+function pwCheck(pw){var o=pwSaved();return o?derive(pw,o.salt,o.it||PW_IT).then(function(h){return h===o.hash}):Promise.resolve(false)}
+function unlocked(){return Date.now()<unlockUntil}
+function touch(){unlockUntil=Date.now()+LOCK_MS}
+function requireUnlock(then){
+  if(unlocked()){touch();then();return}
+  if(!(window.crypto&&crypto.subtle)){toast('이 브라우저에서는 비밀번호를 쓸 수 없어요(https 주소로 열어 주세요)');return}
+  openPw(pwSaved()?'enter':'set',then);
+}
+var PW_TEXT={
+  set:{t:'비밀번호 만들기',s:'이 기기에서 설정을 열 때 쓸 비밀번호를 만들어요. 4자 이상으로 적어 주세요.',rows:['rowNew','rowNew2'],ok:'만들고 열기'},
+  enter:{t:'비밀번호 입력',s:'설정을 열려면 비밀번호가 필요해요.',rows:['rowCur'],ok:'열기'},
+  change:{t:'비밀번호 바꾸기',s:'지금 비밀번호를 확인한 뒤 새 비밀번호로 바꿔요.',rows:['rowCur','rowNew','rowNew2'],ok:'바꾸기'}
+};
+function openPw(mode,then){
+  pwMode=mode;pwThen=then||null;var c=PW_TEXT[mode];
+  $('pwTitle').textContent=c.t;$('pwSub').textContent=c.s;$('pwOk').textContent=c.ok;$('pwErr').textContent='';
+  ['rowCur','rowNew','rowNew2'].forEach(function(id){$(id).hidden=c.rows.indexOf(id)<0;$(id).querySelector('input').value=''});
+  $('pwForgot').parentNode.hidden=mode==='set';
+  $('pwModal').hidden=false;
+  $(c.rows[0]).querySelector('input').focus();
+}
+function closePw(){$('pwModal').hidden=true;pwThen=null}
+function pwFail(msg){$('pwErr').textContent=msg;$('pwOk').disabled=false}
+$('pwForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  var cur=$('pwCur').value,nw=$('pwNew').value,nw2=$('pwNew2').value,then=pwThen;
+  if(pwMode!=='enter'){
+    if(nw.length<4)return pwFail('새 비밀번호는 4자 이상이어야 해요');
+    if(nw!==nw2)return pwFail('새 비밀번호 두 칸이 서로 달라요');
+  }
+  if(pwMode!=='set'){
+    if(Date.now()<pwWait)return pwFail('여러 번 틀려서 '+Math.ceil((pwWait-Date.now())/1000)+'초 뒤에 다시 해 주세요');
+    if(!cur)return pwFail('비밀번호를 적어 주세요');
+  }
+  $('pwOk').disabled=true;
+  var step=pwMode==='set'?Promise.resolve(true):pwCheck(cur);
+  step.then(function(ok){
+    if(!ok){
+      pwFails++;if(pwFails>=5){pwFails=0;pwWait=Date.now()+30000}
+      $('pwCur').value='';$('pwCur').focus();
+      return pwFail(Date.now()<pwWait?'5번 틀려서 30초 동안 잠겼어요':'비밀번호가 맞지 않아요');
+    }
+    pwFails=0;
+    return (pwMode==='enter'?Promise.resolve():pwMake(nw)).then(function(){
+      $('pwOk').disabled=false;
+      var mode=pwMode;closePw();touch();
+      if(mode==='set')toast('비밀번호를 만들었어요');
+      if(mode==='change')toast('비밀번호를 바꿨어요');
+      if(then)then();
+    });
+  }).catch(function(){pwFail('비밀번호를 처리하지 못했어요. 다시 해 주세요')});
+});
+$('pwModal').addEventListener('click',function(e){if(e.target===this||e.target.closest('[data-pwclose]'))closePw()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('pwModal').hidden){e.stopImmediatePropagation();closePw()}},true);
+$('pwForgot').addEventListener('click',function(){
+  if(!confirm('비밀번호를 지우고 새로 만들까요?\n이 기기에서 바꾼 가격 '+editCount()+'개와 사진 '+PHOTO.size+'장도 함께 지워져요.'))return;
+  localStorage.removeItem(PW_KEY);
+  PRICES={};savePrices();
+  Object.keys(G).forEach(function(k){G[k].models.forEach(function(m){m.variants.forEach(function(v){v.price=v.base})})});
+  var then=pwThen;
+  phTx('readwrite',function(st){return st.clear()}).catch(function(){}).then(loadPhotos).then(function(){
+    if(cur)refresh();
+    toast('지웠어요. 새 비밀번호를 만들어 주세요');
+    openPw('set',then);
+  });
+});
+$('pwChange').addEventListener('click',function(){openPw('change',null)});
+$('lockNow').addEventListener('click',function(){unlockUntil=0;closeSettings();toast('설정을 잠갔어요')});
+
+$('openSet').addEventListener('click',function(){requireUnlock(openSettings)});
 $('setModal').addEventListener('click',function(e){if(e.target===this||e.target.closest('[data-close]'))closeSettings()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('setModal').hidden)closeSettings()});
 Array.prototype.forEach.call(document.querySelectorAll('[data-scope]'),function(b){b.addEventListener('click',function(){phScope=b.getAttribute('data-scope');renderPhotoPart()})});
