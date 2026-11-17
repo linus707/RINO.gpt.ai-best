@@ -7,7 +7,25 @@
 2. 워커가 비공개 Gist에서 그 메시지와 기기 구독 목록을 읽어요. 아직 안 올라왔으면 최대 4번(1.5초 간격) 다시 읽어요.
 3. 보낸 사람·멘션 없는 음소거 방·만료된 기기를 빼고 웹 푸시(RFC 8291 + VAPID)를 보내요.
 
-가짜 요청으로는 알림 내용을 만들 수 없어요. 워커는 Gist에 실제로 있는 메시지에 대해서만 보내고, 허용된 Origin(`https://linuscompany.co.kr`)에서 온 요청만 받으며, IP당 분당 60회로 제한해요.
+가짜 요청으로는 알림 내용을 만들 수 없어요. 워커는 Gist에 실제로 있는 메시지에 대해서만 보내고, 허용된 Origin(`https://linuscompany.co.kr`)에서 온 요청만 받으며, 아래 방화벽을 통과해야 해요.
+
+## 방화벽
+모든 요청은 워커의 `firewall()`을 먼저 지나가요. 통과하지 못하면 Gist·Notion·비밀값에 닿기 전에 돌려보내요.
+
+| 규칙 | 걸리면 |
+|---|---|
+| 정해진 주소·방식만 받음(`/health` GET, `/notify`·`/login`·`/signup`·`/cal` POST) | 404 / 405 |
+| 해킹 도구가 찔러 보는 주소(`.env`, `wp-admin`, `.php` 등)나 스캐너 이름표 | 즉시 15분 차단 |
+| POST는 허용된 사이트(Origin)에서, JSON으로만 | 403 / 415 |
+| 본문 크기 제한(알림 1KB, 로그인·가입 8KB, 일정 512KB) | 413 |
+| IP당 분당 60회 | 429 |
+| 위 규칙이나 일정 접속 키를 10분에 10번 어김 | 그 IP를 15분 차단(403 `blocked`) |
+
+모든 응답에는 보안 헤더(`nosniff`, `X-Frame-Options: DENY`, `no-store`, HSTS 등)가 붙어요. 비밀번호를 틀리는 것은 차단 횟수에 넣지 않고, 아래 로그인 제한만 적용돼요(직원이 실수로 막히지 않게).
+
+알아둘 점: 차단 기록은 워커 인스턴스 메모리에만 있어서 인스턴스가 바뀌면 다시 세요. 대량 공격(DDoS)은 Cloudflare가 워커 앞단에서 따로 막아 줘요. 더 강하게 하려면 Cloudflare 대시보드 → 워커 → Settings 에서 Rate limiting 규칙을 추가할 수 있어요.
+
+**코드를 고친 뒤에는 워커를 다시 배포해야 적용돼요.** `GET /health` 에 `"firewall":true`, `"version":6` 이 보이면 방화벽이 켜진 거예요.
 
 ## 배포 (둘 중 하나)
 **A. 대시보드(쉬움)** Cloudflare → Workers & Pages → Create Worker → 코드에 `worker.js` 전체를 붙여 넣고 Deploy.
@@ -67,7 +85,7 @@
 
 ### 켜는 방법
 1. Cloudflare 대시보드 → 이 워커 → 코드 편집 → `worker.js` 전체를 다시 붙여 넣고 Deploy.
-2. `GET /health`에 `"auth":true`, `"version":4`가 보이면 준비 완료.
+2. `GET /health`에 `"auth":true`가 보이면 준비 완료.
 3. 앱 `index.html`의 `AUTH_WORKER` 상수에 워커 주소를 넣어 배포해요(처음 여는 기기는 이 주소로 로그인해요).
 
 ### 알아둘 점

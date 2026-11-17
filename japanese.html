@@ -2,6 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<!-- 방화벽(콘텐츠 보안 정책): 아래에 적힌 주소로만 연결·불러오기를 허용해요. 새 외부 서비스를 붙이면 여기에 주소를 추가해야 해요 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com; frame-src 'none'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<script>/* 방화벽: 다른 사이트가 이 화면을 몰래 끼워 넣어 클릭을 가로채지 못하게 해요(클릭재킹 방지). 같은 사이트 안에서 끼우는 것은 괜찮아요 */
+(function(){try{if(top!==self&&top.location.origin!==location.origin)throw 0}catch(e){document.documentElement.style.display="none";try{top.location=self.location.href}catch(_){}}})();</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="apple-mobile-web-app-capable" content="yes">

@@ -130,13 +130,94 @@ export async function notify(id, env, deps = {}) {
   return { status: 200, body: { sent, failed } };
 }
 
-const hits = new Map(); // 아주 단순한 속도 제한(분당 60회)
-function throttled(ip) {
+const hits = new Map(); // 아주 단순한 속도 제한(기본 분당 60회)
+function throttled(ip, limit = 60) {
   const k = `${ip}:${Math.floor(Date.now() / 60000)}`;
   const n = (hits.get(k) || 0) + 1;
   hits.set(k, n);
   if (hits.size > 500) for (const key of hits.keys()) { hits.delete(key); if (hits.size < 250) break; }
-  return n > 60;
+  return n > limit;
+}
+
+/* ---------- 방화벽 ----------
+   모든 요청은 여기를 먼저 지나가요. 통과 못 하면 Gist·Notion·비밀값에 닿기 전에 바로 돌려보내요.
+   1) 정해진 주소·방식만 받아요(ROUTES). 그 밖의 주소는 404, 다른 방식은 405.
+   2) 해킹 도구가 흔히 찔러 보는 주소(.env, wp-admin, .php …)나 스캐너 이름표를 단 요청은 즉시 차단해요.
+   3) 쓰기 요청(POST)은 허용된 사이트(Origin)에서, JSON으로, 정해진 크기 이하로만 받아요.
+   4) 규칙을 10분에 10번 어기면 그 IP를 15분 동안 통째로 막아요.
+   5) IP당 분당 60회까지만 받아요.
+   차단 기록은 워커 인스턴스 메모리에만 있어서 인스턴스가 바뀌면 처음부터 다시 세요. 대량 공격(DDoS)은 Cloudflare가 워커 앞에서 따로 막아 줘요. */
+export const ROUTES = { // 주소: { 방식: 본문 최대 크기(바이트) }
+  '/health': { GET: 0 },
+  '/notify': { POST: 1024 },
+  '/login': { POST: 8192 },
+  '/signup': { POST: 8192 },
+  '/cal': { POST: 524288 },
+};
+const PROBE = /\.(php\d?|aspx?|jsp|cgi|env|git|svn|sql|bak|ini|ya?ml|log|sh)(\/|\?|$)|\/(wp-|wordpress|phpmyadmin|adminer|cgi-bin|vendor\/|actuator)|\.\.|%2e%2e|etc\/passwd|(<|%3c)script|union(\s|\+|%20)+select|\$\{jndi/i;
+const BAD_UA = /sqlmap|nikto|nmap|masscan|zgrab|nuclei|dirbuster|gobuster|wpscan|acunetix|nessus|openvas|hydra|havij|fimap/i;
+const STRIKE_LIMIT = 10, STRIKE_WINDOW = 600000, BAN_MS = 900000;
+const strikes = new Map(), bans = new Map();
+const ban = (ip, now = Date.now()) => { if (ip === 'x') return; bans.set(ip, now + BAN_MS); if (bans.size > 2000) for (const k of bans.keys()) { bans.delete(k); if (bans.size < 1000) break; } };
+export function strike(ip, now = Date.now()) { // 규칙 위반 한 번 기록. 한도를 넘으면 차단 목록에 올려요
+  if (ip === 'x') return;
+  const a = (strikes.get(ip) || []).filter((t) => now - t < STRIKE_WINDOW);
+  a.push(now);
+  strikes.set(ip, a);
+  if (strikes.size > 2000) for (const k of strikes.keys()) { strikes.delete(k); if (strikes.size < 1000) break; }
+  if (a.length >= STRIKE_LIMIT) { strikes.delete(ip); ban(ip, now); }
+}
+export function firewallReset() { strikes.clear(); bans.clear(); hits.clear(); }
+// 통과면 null, 막으면 { status, error } 를 돌려줘요
+export function firewall(req, url, ip, okOrigin, now = Date.now()) {
+  const until = bans.get(ip);
+  if (until) { if (until > now) return { status: 403, error: 'blocked' }; bans.delete(ip); }
+  const deny = (status, error) => { strike(ip, now); return { status, error }; };
+  if (BAD_UA.test(req.headers.get('User-Agent') || '') || PROBE.test(url.pathname + url.search)) { ban(ip, now); return { status: 403, error: 'blocked' }; }
+  if (req.url.length > 2048) return deny(414, 'too long');
+  const route = ROUTES[url.pathname];
+  if (!route) return deny(404, 'not found');
+  if (req.method === 'OPTIONS') return throttled(`${ip}:o`, 120) ? { status: 429, error: 'slow down' } : null;
+  if (!(req.method in route)) return deny(405, 'method not allowed');
+  if (req.method === 'POST') {
+    if (!okOrigin) return deny(403, 'forbidden');
+    if (!/^application\/json\b/i.test(req.headers.get('Content-Type') || '')) return deny(415, 'json only');
+    if (Number(req.headers.get('Content-Length') || 0) > route.POST) return deny(413, 'too large');
+  }
+  if (throttled(ip)) return { status: 429, error: 'slow down' };
+  return null;
+}
+// 본문을 정해진 크기까지만 읽어요. 길이를 속여 보낸 큰 본문도 한도를 넘는 순간 읽기를 멈춰요
+export async function readJson(req, max) {
+  const parts = [];
+  let n = 0;
+  const rd = req.body && req.body.getReader();
+  if (rd) for (;;) {
+    const { done, value } = await rd.read();
+    if (done) break;
+    n += value.length;
+    if (n > max) { try { await rd.cancel(); } catch {} return { status: 413, error: 'too large' }; }
+    parts.push(value);
+  }
+  try {
+    const j = JSON.parse(new TextDecoder().decode(concat(...parts)));
+    if (j && typeof j === 'object' && !Array.isArray(j)) return { body: j };
+  } catch {}
+  return { status: 400, error: 'bad request' };
+}
+// 모든 응답에 붙이는 보안 헤더: 응답을 다른 사이트에 끼워 넣거나, 저장해 두거나, 다른 형식으로 해석하지 못하게 해요
+const SEC_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Cache-Control': 'no-store',
+};
+function secure(res) {
+  const h = new Headers(res.headers);
+  for (const [k, v] of Object.entries(SEC_HEADERS)) h.set(k, v);
+  return new Response(res.body, { status: res.status, headers: h });
 }
 
 
@@ -284,11 +365,12 @@ async function calList(env, s, from, to) {
   return out;
 }
 const sameKey = (a, b) => { a = String(a); b = String(b); if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
-async function calHandle(req, env, json) {
+async function calHandle(req, env, json, ip) {
   if (!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY)) return json({ error: 'not configured' }, 503);
-  if (!sameKey(req.headers.get('x-cal-key') || '', env.CAL_KEY)) return json({ error: 'forbidden' }, 403);
-  let b;
-  try { b = await req.json(); } catch { return json({ error: 'bad request' }, 400); }
+  if (!sameKey(req.headers.get('x-cal-key') || '', env.CAL_KEY)) { strike(ip); return json({ error: 'forbidden' }, 403); } // 접속 키를 여러 번 틀리면 방화벽이 막아요
+  const rb = await readJson(req, ROUTES['/cal'].POST);
+  if (rb.status) return json({ error: rb.error }, rb.status);
+  const b = rb.body;
   try {
     const s = await calSchema(env);
     if (!s.title || !s.date) return json({ error: 'DB에 제목·날짜 속성이 없어요' }, 422);
@@ -316,6 +398,11 @@ async function calHandle(req, env, json) {
 
 export default {
   async fetch(req, env) {
+    try { return secure(await handle(req, env)); } catch { return secure(new Response('{"error":"failed"}', { status: 500, headers: { 'content-type': 'application/json' } })); } // 오류 내용은 밖으로 내보내지 않아요
+  },
+};
+async function handle(req, env) {
+  {
     // 비밀값에 앞뒤 공백·줄바꿈이 섞여도 동작하게 다듬고, GIST_ID는 주소 전체를 넣어도 끝의 ID만 써요
     const gid = String(env.GIST_ID || '').trim();
     env = { ...env, GIST_TOKEN: String(env.GIST_TOKEN || '').trim(), GIST_ID: (gid.match(/([0-9a-f]{20,40})\/?$/i) || [, gid])[1] };
@@ -323,11 +410,14 @@ export default {
     const origin = req.headers.get('Origin') || '';
     const allowed = (env.ALLOWED_ORIGIN || 'https://linuscompany.co.kr').split(',').map((s) => s.trim());
     const okOrigin = allowed.includes(origin) || (env.ALLOW_LOCALHOST === '1' && /^http:\/\/localhost(:\d+)?$/.test(origin));
-    const cors = { 'Access-Control-Allow-Origin': okOrigin ? origin : allowed[0], 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'content-type, x-cal-key', Vary: 'Origin' };
+    const cors = { 'Access-Control-Allow-Origin': okOrigin ? origin : allowed[0], 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'content-type, x-cal-key', 'Access-Control-Max-Age': '600', Vary: 'Origin' };
     const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json', ...cors } });
+    const ip = req.headers.get('CF-Connecting-IP') || 'x';
+    const fw = firewall(req, url, ip, okOrigin); // 방화벽: 통과한 요청만 아래로 내려가요
+    if (fw) return json({ error: fw.error }, fw.status);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (url.pathname === '/health' && url.searchParams.get('check') === '1') {
-      const out = { ok: true, version: 5, gist_token: !!env.GIST_TOKEN, gist_id: !!env.GIST_ID };
+      const out = { ok: true, version: 6, firewall: true, gist_token: !!env.GIST_TOKEN, gist_id: !!env.GIST_ID };
       if (env.GIST_TOKEN && env.GIST_ID) {
         try {
           const r = await fetch(`${API}/gists/${env.GIST_ID}`, { method: 'HEAD', headers: { Authorization: `Bearer ${env.GIST_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'linus-push-worker' } });
@@ -340,14 +430,14 @@ export default {
       return new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
     if (url.pathname === '/health') {
-      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), auth: !!(env.GIST_TOKEN && env.GIST_ID), version: 5 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
+      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), auth: !!(env.GIST_TOKEN && env.GIST_ID), firewall: true, version: 6 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
     }
     if (url.pathname === '/notify' && req.method === 'POST') {
       if (!okOrigin) return json({ error: 'forbidden' }, 403);
-      if (throttled(req.headers.get('CF-Connecting-IP') || 'x')) return json({ error: 'slow down' }, 429);
       if (!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY)) return json({ error: 'not configured' }, 503);
-      let id = '';
-      try { id = String((await req.json()).id || ''); } catch { return json({ error: 'bad request' }, 400); }
+      const rb = await readJson(req, ROUTES['/notify'].POST);
+      if (rb.status) return json({ error: rb.error }, rb.status);
+      const id = String(rb.body.id || '');
       if (!/^[A-Za-z0-9_-]{3,40}$/.test(id)) return json({ error: 'bad id' }, 400);
       try {
         const r = await notify(id, env);
@@ -358,11 +448,10 @@ export default {
     }
     if ((url.pathname === '/signup' || url.pathname === '/login') && req.method === 'POST') {
       if (!okOrigin) return json({ error: 'forbidden' }, 403);
-      const ip = req.headers.get('CF-Connecting-IP') || 'x';
-      if (throttled(ip)) return json({ error: 'slow down' }, 429);
       if (!(env.GIST_TOKEN && env.GIST_ID)) return json({ error: 'not configured' }, 503);
-      let body = {};
-      try { body = (await req.json()) || {}; } catch { return json({ error: 'bad request' }, 400); }
+      const rb = await readJson(req, ROUTES[url.pathname].POST);
+      if (rb.status) return json({ error: rb.error }, rb.status);
+      const body = rb.body;
       try {
         const r = await (url.pathname === '/signup' ? signup : login)(body, ip, env);
         return json(r.body, r.status);
@@ -373,9 +462,8 @@ export default {
     }
     if (url.pathname === '/cal' && req.method === 'POST') {
       if (!okOrigin) return json({ error: 'forbidden' }, 403);
-      if (throttled(req.headers.get('CF-Connecting-IP') || 'x')) return json({ error: 'slow down' }, 429);
-      return calHandle(req, env, json);
+      return calHandle(req, env, json, ip);
     }
     return json({ error: 'not found' }, 404);
-  },
-};
+  }
+}
