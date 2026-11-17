@@ -1,4 +1,4 @@
-import w, { firewallReset, ROUTES } from '../worker/worker.js';
+import w, { firewallReset, ROUTES, edgeRateLimited } from '../worker/worker.js';
 import assert from 'node:assert/strict';
 const ORI = 'https://linuscompany.co.kr';
 const env = { GIST_TOKEN: 't', GIST_ID: 'abcdefabcdefabcdefabcdef', VAPID_PRIVATE_KEY: 'k', CAL_KEY: 'secretkeysecretkey12', NOTION_TOKEN: 'n', NOTION_DB_ID: 'd' };
@@ -82,4 +82,31 @@ await t('failed logins do not ban the user (own limiter only)', async () => {
 await t('localhost origin only with ALLOW_LOCALHOST', async () => {
   assert.equal((await rq('/login', { method: 'POST', origin: 'http://localhost:8000', body: '{}' })).status, 403);
 });
+// --- Cloudflare 분산 속도 제한 바인딩 ---
+const mkRL = (ok) => { const calls = []; return { calls, limit: async (a) => { calls.push(a); return { success: ok }; } }; };
+await t('edge limit: 바인딩 없으면 통과(인메모리가 받쳐 줌)', async () => {
+  assert.equal(await edgeRateLimited({}, '1.2.3.4', '/login', 'POST'), false);
+});
+await t('edge limit: RL이 막으면 true', async () => {
+  assert.equal(await edgeRateLimited({ RL: mkRL(false) }, '1.2.3.4', '/notify', 'POST'), true);
+});
+await t('edge limit: RL이 허용하면 false', async () => {
+  assert.equal(await edgeRateLimited({ RL: mkRL(true) }, '1.2.3.4', '/notify', 'POST'), false);
+});
+await t('edge limit: 로그인·가입은 RL_AUTH를 먼저 본다', async () => {
+  const auth = mkRL(false), gen = mkRL(true);
+  assert.equal(await edgeRateLimited({ RL_AUTH: auth, RL: gen }, '9.9.9.9', '/login', 'POST'), true);
+  assert.equal(auth.calls.length, 1);
+});
+await t('edge limit: /health 와 OPTIONS 와 ip=x 는 제외', async () => {
+  const rl = mkRL(false);
+  assert.equal(await edgeRateLimited({ RL: rl }, '1.2.3.4', '/health', 'GET'), false);
+  assert.equal(await edgeRateLimited({ RL: rl }, '1.2.3.4', '/login', 'OPTIONS'), false);
+  assert.equal(await edgeRateLimited({ RL: rl }, 'x', '/login', 'POST'), false);
+  assert.equal(rl.calls.length, 0);
+});
+await t('edge limit: 바인딩이 터져도(throw) 통과', async () => {
+  assert.equal(await edgeRateLimited({ RL: { limit: async () => { throw new Error('boom'); } } }, '1.2.3.4', '/notify', 'POST'), false);
+});
+
 console.log(n, 'tests passed; route limits', JSON.stringify(ROUTES));

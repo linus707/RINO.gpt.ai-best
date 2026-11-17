@@ -187,6 +187,25 @@ export function firewall(req, url, ip, okOrigin, now = Date.now()) {
   if (throttled(ip)) return { status: 429, error: 'slow down' };
   return null;
 }
+
+/* Cloudflare 분산 속도 제한(선택).
+   워커의 인메모리 제한은 인스턴스가 바뀌면 리셋되는데, 이 바인딩은 Cloudflare가 지역별로 카운트를 관리해 인스턴스가 바뀌어도 이어져요.
+   바인딩(RL·RL_AUTH)을 안 붙여도 워커는 그대로 돌아가요(인메모리 제한이 받쳐 줌). 붙이는 법은 worker/README.md 참고.
+   통과면 false, 넘으면 true. 키는 IP(익명 공격자는 IP로 세는 게 맞아요). */
+export async function edgeRateLimited(env, ip, pathname, method) {
+  if (ip === 'x' || method === 'OPTIONS' || pathname === '/health') return false;
+  try {
+    if (env.RL_AUTH && (pathname === '/login' || pathname === '/signup')) { // 로그인·가입은 더 빡빡하게
+      const r = await env.RL_AUTH.limit({ key: ip });
+      if (r && r.success === false) return true;
+    }
+    if (env.RL) {
+      const r = await env.RL.limit({ key: ip });
+      if (r && r.success === false) return true;
+    }
+  } catch { /* 바인딩 미설정·오류 시 통과: 인메모리 제한이 받쳐 줘요 */ }
+  return false;
+}
 // 본문을 정해진 크기까지만 읽어요. 길이를 속여 보낸 큰 본문도 한도를 넘는 순간 읽기를 멈춰요
 export async function readJson(req, max) {
   const parts = [];
@@ -415,9 +434,10 @@ async function handle(req, env) {
     const ip = req.headers.get('CF-Connecting-IP') || 'x';
     const fw = firewall(req, url, ip, okOrigin); // 방화벽: 통과한 요청만 아래로 내려가요
     if (fw) return json({ error: fw.error }, fw.status);
+    if (await edgeRateLimited(env, ip, url.pathname, req.method)) return json({ error: 'slow down' }, 429); // Cloudflare 분산 속도 제한(바인딩 있을 때)
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (url.pathname === '/health' && url.searchParams.get('check') === '1') {
-      const out = { ok: true, version: 6, firewall: true, gist_token: !!env.GIST_TOKEN, gist_id: !!env.GIST_ID };
+      const out = { ok: true, version: 6, firewall: true, edge_ratelimit: !!(env.RL || env.RL_AUTH), gist_token: !!env.GIST_TOKEN, gist_id: !!env.GIST_ID };
       if (env.GIST_TOKEN && env.GIST_ID) {
         try {
           const r = await fetch(`${API}/gists/${env.GIST_ID}`, { method: 'HEAD', headers: { Authorization: `Bearer ${env.GIST_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'linus-push-worker' } });
@@ -430,7 +450,7 @@ async function handle(req, env) {
       return new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
     if (url.pathname === '/health') {
-      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), auth: !!(env.GIST_TOKEN && env.GIST_ID), firewall: true, version: 6 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
+      return new Response(JSON.stringify({ ok: true, configured: !!(env.GIST_TOKEN && env.GIST_ID && env.VAPID_PRIVATE_KEY), cal: !!(env.NOTION_TOKEN && env.NOTION_DB_ID && env.CAL_KEY), auth: !!(env.GIST_TOKEN && env.GIST_ID), firewall: true, edge_ratelimit: !!(env.RL || env.RL_AUTH), version: 6 }), { headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); // 연결 확인용: 어느 주소에서 열어도 응답
     }
     if (url.pathname === '/notify' && req.method === 'POST') {
       if (!okOrigin) return json({ error: 'forbidden' }, 403);

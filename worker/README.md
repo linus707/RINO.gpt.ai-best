@@ -27,6 +27,14 @@
 
 **코드를 고친 뒤에는 워커를 다시 배포해야 적용돼요.** `GET /health` 에 `"firewall":true`, `"version":6` 이 보이면 방화벽이 켜진 거예요.
 
+### Cloudflare 분산 속도 제한 (선택, 더 강하게)
+워커 안의 속도 제한은 인스턴스가 바뀌면 카운트가 리셋돼요. Cloudflare의 속도 제한 바인딩을 붙이면 지역별로 카운트가 이어져서, 인스턴스가 바뀌어도 한 IP의 폭주를 edge에서 막아요. **안 붙여도 워커는 그대로 돌아가요**(인메모리 제한이 받쳐 줌).
+
+- 바인딩은 `wrangler.toml`에 이미 적어 뒀어요: `RL`(모든 요청, IP당 분당 120회)와 `RL_AUTH`(로그인·가입만, IP당 분당 20회). 한도를 바꾸려면 그 파일의 `limit` 값을 고치세요(`period`는 10 또는 60만 돼요).
+- **명령줄로 배포**하면(`cd worker && npx wrangler deploy`, Wrangler 4.36.0 이상) 바인딩이 자동으로 붙어요.
+- **대시보드로 배포**한다면: Workers & Pages → 이 워커 → Settings → Bindings → Add → *Rate limiting* 으로 같은 이름(`RL`, `RL_AUTH`)과 한도를 직접 추가하세요.
+- `GET /health?check=1` 또는 `/health` 응답에 `"edge_ratelimit":true` 가 보이면 켜진 거예요.
+
 ## 배포 (둘 중 하나)
 **A. 대시보드(쉬움)** Cloudflare → Workers & Pages → Create Worker → 코드에 `worker.js` 전체를 붙여 넣고 Deploy.
 **B. 명령줄** `cd worker && npx wrangler deploy`
