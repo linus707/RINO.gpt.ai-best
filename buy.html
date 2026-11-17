@@ -201,6 +201,32 @@ svg{display:block;flex:none}
 .ln .n{font-weight:700;font-size:15px;line-height:20px;overflow-wrap:anywhere}
 .ln .p{text-align:right;font-weight:700;font-size:15px;white-space:nowrap}
 .ln .p del{display:block;font-weight:400;font-size:12px;color:var(--tx3)}
+.qbar{display:flex;gap:6px;align-items:center;padding:10px 20px;box-shadow:inset 0 -1px 0 var(--hair);overflow-x:auto;scrollbar-width:none}
+.qbar::-webkit-scrollbar{display:none}
+.qbar button{flex:none;min-height:40px;padding:4px 12px;border-radius:var(--r-sm);box-shadow:var(--ring);font-weight:700;font-size:13px;line-height:16px;text-align:left}
+.qbar button small{display:block;font-weight:400;font-size:11px;color:var(--tx3)}
+.qbar button[aria-current="true"]{box-shadow:var(--ring-on)}
+.qbar button[aria-current="true"] small{color:var(--blue)}
+.qbar .add{box-shadow:inset 0 0 0 1px #000}
+.qbar .cmpb{margin-left:auto;background:#000;color:#fff;box-shadow:none;border-radius:var(--r-full);padding:0 18px}
+.qbar .hint{margin:0;flex:1;min-width:140px}
+.qbar button:disabled{opacity:.4;cursor:default}
+.sheet.wide{width:min(880px,100%)}
+.cmp-wrap{overflow-x:auto;margin-top:12px}
+.cmp{width:100%;border-collapse:collapse;font-size:14px}
+.cmp th,.cmp td{padding:10px 8px;box-shadow:inset 0 -1px 0 var(--hair);text-align:right;vertical-align:top}
+.cmp th:first-child,.cmp td:first-child{text-align:left;color:var(--tx3);white-space:nowrap;width:84px;font-weight:400}
+.cmp thead th{font-size:18px}
+.cmp th.act{box-shadow:inset 0 -2px 0 #000}
+.cmp th.act small{display:block;font-size:11px;font-weight:400;color:var(--tx3)}
+.cmp td.items{font-size:12px;line-height:17px;color:var(--tx);text-align:left}
+.cmp td .minus{color:var(--blue)}
+.cmp tr.net td{font-size:17px;font-weight:700}
+.cmp .best{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:var(--r-full);background:var(--blue-50);color:var(--blue);font-size:12px}
+.cmp .up{display:block;font-size:12px;color:var(--tx3);font-weight:400}
+.cmp td .btn{margin:4px 0 0 4px}
+.cmp-guide{margin-top:10px;line-height:1.7;color:var(--tx2)}
+.gtag{font-style:normal;font-size:11px;padding:1px 6px;margin-right:4px;border-radius:var(--r-full);background:var(--blue-50);color:var(--blue)}
 .ln .s{grid-column:2/-1;font-size:12px;line-height:16px;color:var(--tx3)}
 .ln .s em{font-style:normal;color:var(--blue);font-weight:700}
 .ln .c{grid-column:2/-1;display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
@@ -359,6 +385,13 @@ svg{display:block;flex:none}
             <path d="M356 150 L382 146 M356 204 L382 200" stroke="#f1e9df" stroke-width="4" stroke-linecap="round"/>
             <path d="M222 216 L222 262 M298 250 L298 284 M430 228 L430 262" stroke="#3f342b" stroke-width="8" stroke-linecap="round"/>
           </g>
+          <g class="bed" data-art="gift" hidden>
+            <path d="M200 140 L330 110 L430 150 L300 182Z" fill="#f4f1ea"/>
+            <path d="M200 140 L300 182 L300 270 L200 228Z" fill="#d9d4c8"/>
+            <path d="M300 182 L430 150 L430 238 L300 270Z" fill="#e8e3d8"/>
+            <path d="M250 161 L380 130 M350 166 L350 254" stroke="#2189ff" stroke-width="14"/>
+            <path d="M262 124 Q240 92 280 98 Q300 104 312 128 Q330 96 356 100 Q380 108 344 132" fill="none" stroke="#2189ff" stroke-width="9" stroke-linecap="round"/>
+          </g>
           <g class="bed" data-art="care" hidden>
             <path d="M150 190 Q140 150 190 138 L400 104 Q452 98 462 136 Q470 172 430 186 L214 232 Q162 240 150 190Z" fill="url(#buy-top)"/>
             <path d="M150 190 Q162 240 214 232 L430 186 Q470 172 462 136 Q474 180 434 204 L218 250 Q160 256 150 190Z" fill="url(#buy-side)"/>
@@ -470,6 +503,7 @@ svg{display:block;flex:none}
 
     <section class="sh-sec">
       <h4>보이기</h4>
+      <div class="srow" id="giftRow"><label for="giftTg">사은품 메뉴에 넣기<small>「사은품」 메뉴에 모이고, 그 메뉴에서 담으면 0원으로 들어가요. 원래 메뉴에서는 그대로 팔 수 있어요.</small></label><button class="tg" type="button" id="giftTg" aria-pressed="false" aria-label="사은품 메뉴에 넣기"></button></div>
       <div class="srow"><label for="hideTg">이 모델 숨기기<small>메뉴 탭·검색 목록에서 빠져요(품절 등). 「상품 관리」에서 다시 보이게 해요.</small></label><button class="tg" type="button" id="hideTg" aria-pressed="false" aria-label="이 모델 숨기기"></button></div>
     </section>
     </div>
@@ -490,6 +524,7 @@ svg{display:block;flex:none}
 <div class="dimmer" id="cartBg" hidden></div>
 <aside class="drawer" id="cart" hidden role="dialog" aria-modal="true" aria-labelledby="cartTitle">
   <div class="dr-head"><h3 id="cartTitle">장바구니 <span class="num" id="cartCnt"></span></h3><button class="x" type="button" data-cclose aria-label="장바구니 닫기">×</button></div>
+  <div class="qbar" id="qbar" aria-label="견적 안"></div>
   <div class="dr-body">
     <ul class="lines" id="lines"></ul>
     <div id="cartOpts">
@@ -512,6 +547,14 @@ svg{display:block;flex:none}
     <div class="dr-btns"><button class="btn outl" type="button" id="cartClear">비우기</button><button class="btn" type="button" id="cartCopy">견적 복사하기</button></div>
   </div>
 </aside>
+
+<!-- 견적 비교: A·B·C안을 나란히 -->
+<div class="modal" id="cmpModal" hidden>
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="cmpTitle">
+    <div class="sh-head"><h3 id="cmpTitle">견적 비교</h3><button class="x" type="button" data-cmpclose aria-label="견적 비교 닫기">×</button></div>
+    <div id="cmpBody"></div>
+  </div>
+</div>
 
 <!-- 비밀번호 창: 만들기 · 입력 · 바꾸기 -->
 <div class="modal" id="pwModal" hidden>
@@ -542,7 +585,9 @@ var GROUPS=[
   {id:'frame',name:'프레임',main:3,first:'DADO-N(HT-R)',cats:['침대세트(BS)','프레임세트(BF)','수입침대(FSET)','중간대(36)(MM)','머리판(31)(HB)','뒷판(33)(BB)','협(32)(SB)','깔판(34)(CB)','수입침대 부분품(FBHB)']},
   /* onlySelf: 위 탭 줄에 같은 계열 모델을 늘어놓지 않고 고른 모델 이름만 보여요(이름이 길고 많아서) */
   {id:'side',name:'사이드옵션',onlySelf:true,cats:['협탁(BT)','침대협탁(FBT)','배드벤치(XQ)','벤치(XE)','소품(XV)','화장대(XL)','화장대(FCXC)','서랍장(XU)','서랍장류(FCXL)','거울(FACC)','콘솔(FCXM)','옷장(FCXB)']},
-  {id:'care',name:'슬립케어',cats:['바디필로우(QDPZ)','쿨링패드(QBPD)','온열매트(QDOC)','마이크로 케어(QMIC)','스마트 슬리브(QSMS)','Beurer 패드(BUP)']}
+  {id:'care',name:'슬립케어',cats:['바디필로우(QDPZ)','쿨링패드(QBPD)','온열매트(QDOC)','마이크로 케어(QMIC)','스마트 슬리브(QSMS)','Beurer 패드(BUP)']},
+  /* gift: 이 메뉴에서 담으면 0원(할인 계산 제외). 가격표의 사은품 분류 + 설정에서 「사은품으로 등록」한 모델이 모여요 */
+  {id:'gift',name:'사은품',gift:true,cats:['사은품(엠엔엠)(GMM)']}
 ];
 var ORDER=['S','SS','DS','DD','Q','LQ','K','K3','LK'];
 var SIZE_KO={S:'싱글',SS:'슈퍼싱글',DD:'더블',Q:'퀸',LQ:'라지퀸',K:'킹',LK:'라지킹'};
@@ -570,7 +615,7 @@ function loadPhotos(){
     (rows||[]).forEach(function(r){if(r&&r.blob)PHOTO.set(r.id,URL.createObjectURL(r.blob))});
   }).catch(function(){});
 }
-function modelPhotoId(){return 'model:'+group.def.id+':'+cur.key}
+function modelPhotoId(){return 'model:'+cur.gid+':'+cur.key}
 function photoFor(v){return PHOTO.get('code:'+v.code)||PHOTO.get(modelPhotoId())||null}
 // 사진을 긴 쪽 1600px JPEG로 줄여 저장해요(휴대폰 사진은 커서 그대로 두면 저장 공간이 금방 차요)
 function shrink(file){
@@ -592,7 +637,7 @@ function shrink(file){
 var SET_KEY='buy.settings',CART_KEY='buy.cart';
 var DEFAULT_SET={
   storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
-  branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],
+  branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -613,7 +658,7 @@ function prodRateOf(code,gid){
   if(g!=null&&g!=='')return clampRate(g);
   return clampRate(SET.prodDefault);
 }
-function hidKey(gid,m){return gid+'|'+m.key}
+function hidKey(gid,m){return (m.gid||gid)+'|'+m.key}
 function isHidden(gid,m){return SET.hidden.indexOf(hidKey(gid,m))>=0}
 function visibleModels(box){return box.models.filter(function(m){return !isHidden(box.def.id,m)})}
 function firstOf(box){var f=box.first;return f&&!isHidden(box.def.id,f)?f:(visibleModels(box)[0]||box.models[0])}
@@ -621,16 +666,30 @@ function firstOf(box){var f=box.first;return f&&!isHidden(box.def.id,f)?f:(visib
 /* 장바구니(주문) — 담을 때의 판매가를 그대로 기억해요. prod=null이면 설정값(모델별·메뉴별·기본)을 따라요 */
 function newCart(){return {lines:[],prod:null,br:SET.branchDefaultOn?clampRate(SET.branchRate):0,mr:0,override:null,months:0,pay:{}}}
 function loadCart(){try{var o=JSON.parse(localStorage.getItem(CART_KEY)||'null');if(o&&Array.isArray(o.lines))return Object.assign(newCart(),o)}catch(e){}return newCart()}
-function saveCart(){try{localStorage.setItem(CART_KEY,JSON.stringify(CART))}catch(e){}}
+function saveCart(){
+  try{localStorage.setItem(CART_KEY,JSON.stringify(CART))}catch(e){}
+  var q=typeof QS!=='undefined'&&QS.active&&qFind(QS.active);
+  if(q){q.o=clone(CART);saveQ()}
+}
 var CART=loadCart(),openEd=-1;
+
+/* 견적 안(A·B·C) — 매장 POS의 「견적 비교」와 같은 방식
+   「＋ 견적 저장」: 지금 장바구니를 A안으로 / 「＋ 안 추가」: 지금 구성을 복사해 B·C안을 만들고 그 안을 고쳐요.
+   보고 있는 안이 있으면 장바구니를 바꿀 때 그 안에도 같이 저장돼요. localStorage 'buy.quotes' */
+var Q_KEY='buy.quotes',QIDS=['A','B','C'];
+function loadQ(){try{var o=JSON.parse(localStorage.getItem(Q_KEY)||'null');if(o&&Array.isArray(o.list))return o}catch(e){}return {active:null,list:[]}}
+function saveQ(){try{localStorage.setItem(Q_KEY,JSON.stringify(QS))}catch(e){}}
+var QS=loadQ();
+function qFind(id){return QS.list.filter(function(q){return q.id===id})[0]||null}
+function qOrder(q){return Object.assign(newCart(),clone(q.o))}
 var INST=[0,2,3,6,10,12,24,36];
 
 /* 계산 순서: ① 품목마다 제품·지점·매니저 할인 → ② 합계 → ③ 끝자리 절사(또는 직접 입력한 금액) → ④ 페이백 → ⑤ 할부 */
 function calc(o){
   var br=clampRate(o.br),mr=clampRate(o.mr);
   var rows=o.lines.map(function(l){
-    var base=l.price*l.qty;
-    var pr=l.rate!=null?clampRate(l.rate):o.prod!=null?clampRate(o.prod):prodRateOf(l.code,l.gid),d;
+    var base=l.gift?0:l.price*l.qty;
+    var pr=l.gift?0:l.rate!=null?clampRate(l.rate):o.prod!=null?clampRate(o.prod):prodRateOf(l.code,l.gid),d;
     if(SET.mode==='seq'){
       var a=Math.round(base*pr/100),b=Math.round((base-a)*br/100),c=Math.round((base-a-b)*mr/100);d=[a,b,c];
     }else{
@@ -687,6 +746,7 @@ function build(data){
       return {key:k,gid:g.id,name:clean(k),series:seriesOf(k),variants:vs,sizes:sizes,main:map[k].main};
     }).sort(function(a,b){return (b.main-a.main)||a.name.localeCompare(b.name,'ko')});
     box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m;m.variants.forEach(function(v){CODE[v.code]={m:m,v:v,gid:g.id}})});
+    box.own=box.models.slice();
     /* 첫 화면: 완성품 중 규격이 가장 많은 모델(같으면 옵션이 많은 모델) */
     box.first=(g.first&&box.byName[g.first])||box.models.filter(function(m){return m.main}).reduce(function(best,m){
       return !best||m.sizes.length>best.sizes.length||(m.sizes.length===best.sizes.length&&m.variants.length>best.variants.length)?m:best;
@@ -694,6 +754,14 @@ function build(data){
   });
 }
 
+function giftRefresh(){
+  var box=G.gift;if(!box)return;
+  var reg=SET.gifts.map(function(k){var gid=k.split('|')[0],key=k.slice(gid.length+1);return G[gid]&&gid!=='gift'?G[gid].models.filter(function(m){return m.key===key})[0]:null}).filter(Boolean);
+  box.models=box.own.concat(reg);box.byName={};
+  box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m});
+  box.first=box.models[0]||null;
+}
+function isGiftMenu(){return !!(group&&group.def.gift)}
 function el(tag,attrs,text){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e}
 function ofSize(sz){return cur.variants.filter(function(v){return v.size===sz})}
 function setUrl(){try{history.replaceState(null,'','?g='+group.def.id+'&m='+encodeURIComponent(cur.name))}catch(e){}}
@@ -707,7 +775,7 @@ function setGroup(id,modelName){
   Array.prototype.forEach.call(document.querySelectorAll('[data-art]'),function(g){if(g.getAttribute('data-art')===group.def.id)g.removeAttribute('hidden');else g.setAttribute('hidden','')});
   var empty=!group.models.length;
   $('page').hidden=empty;$('state').hidden=!empty;
-  if(empty){$('state').textContent=group.def.name+' 상품이 가격표에 없어요.';return}
+  if(empty){$('state').textContent=group.def.gift?'사은품이 아직 없어요. 다른 메뉴에서 상품을 연 뒤 설정 › 이 상품 › 「사은품 메뉴에 넣기」를 켜 주세요.':group.def.name+' 상품이 가격표에 없어요.';return}
   pick(group.byName[modelName]||firstOf(group),false);
 }
 function fillModels(){
@@ -727,7 +795,8 @@ function pick(m,keep){
 function renderModel(){
   var tabs=$('tabs');tabs.textContent='';
   var gid=group.def.id;
-  var fam=group.def.onlySelf?[cur]:group.models.filter(function(m){return m.series===cur.series&&(m===cur||!isHidden(gid,m))});
+  var fam=group.def.onlySelf?[cur]:group.def.gift?visibleModels(group):group.models.filter(function(m){return m.series===cur.series&&(m===cur||!isHidden(gid,m))});
+  if(fam.indexOf(cur)<0)fam.unshift(cur);
   if(fam.length>TAB_MAX){var at=fam.indexOf(cur),st=Math.max(0,Math.min(at-TAB_MAX/2,fam.length-TAB_MAX));fam=fam.slice(st,st+TAB_MAX)}
   fam.forEach(function(m){
     var b=el('button',{type:'button'},m.name);
@@ -777,10 +846,12 @@ function renderColors(){
 }
 
 function render(){
-  var v=cur.variants[vi],total=v.price*qty,title=cur.name+(group.def.id==='matt'?' 매트리스':'');
+  var v=cur.variants[vi],total=v.price*qty,title=cur.name+(cur.gid==='matt'?' 매트리스':'');
   var optText=[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ');
   document.title=title+' · '+(SET.storeName||'ACE BED');
-  $('series').textContent=group.def.name;
+  var gm=isGiftMenu();
+  $('series').textContent=gm?'사은품 · 담으면 0원':group.def.name;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-add]'),function(b){b.textContent=gm?'사은품으로 담기':'장바구니 담기'});
   $('title').textContent=title;$('sTitle').textContent=title;$('stTitle').textContent=title;
   $('code').textContent=v.code;$('sCode').textContent=v.code;
   $('ghost').textContent=cur.series.slice(0,6);
@@ -805,7 +876,7 @@ function render(){
   // 할인 적용가: 지금 장바구니의 할인(제품·지점·매니저)을 이 상품에 적용하면 얼마인지
   var pv=calc({lines:[{code:v.code,gid:group.def.id,price:v.price,qty:qty,rate:null}],prod:CART.prod,br:CART.br,mr:CART.mr,override:null,months:0,pay:{}});
   var dRate=pv.base?(1-pv.pay/pv.base)*100:0;
-  $('sDiscBox').hidden=!(pv.pay<pv.base);
+  $('sDiscBox').hidden=gm||!(pv.pay<pv.base);
   $('sDisc').textContent=won(pv.pay)+' 원';
   $('sDiscNote').textContent='지금 할인 기준 '+pct(dRate)+' (장바구니에서 바꿔요)';
   $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
@@ -831,7 +902,7 @@ function render(){
 
 function quoteText(){
   var v=cur.variants[vi],total=v.price*qty,opt=[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ');
-  var lines=['[ACE BED 견적]',cur.name+(group.def.id==='matt'?' 매트리스':'')+(opt?' ('+opt+')':''),'코드 '+v.code,'판매가 '+won(v.price)+'원 × '+qty+'개','합계 '+won(total)+'원'];
+  var lines=['[ACE BED 견적]',cur.name+(cur.gid==='matt'?' 매트리스':'')+(opt?' ('+opt+')':''),'코드 '+v.code,'판매가 '+won(v.price)+'원 × '+qty+'개','합계 '+won(total)+'원'];
   if(months)lines.push(months+'개월로 나누면 월 '+won(total/months)+'원 (단순 계산)');
   lines.push('가격 기준일 '+(meta.updated||'-')+' · 할인·배송비 미포함');
   return lines.join('\n');
@@ -869,12 +940,12 @@ function lineThumb(l){return PHOTO.get('code:'+l.code)||PHOTO.get('model:'+l.gid
 function syncCartPrices(){CART.lines.forEach(function(l){var x=CODE[l.code];if(x)l.price=x.v.price});saveCart()}
 function changed(){CART.override=null;saveCart();renderCart();if(cur)render()}
 function addToCart(){
-  var v=cur.variants[vi],gid=group.def.id,ix=-1;
-  CART.lines.forEach(function(l,i){if(ix<0&&l.code===v.code&&l.rate==null)ix=i});
+  var v=cur.variants[vi],gid=cur.gid,gift=isGiftMenu(),ix=-1;
+  CART.lines.forEach(function(l,i){if(ix<0&&l.code===v.code&&l.rate==null&&!!l.gift===gift)ix=i});
   if(ix>=0)CART.lines[ix].qty=Math.min(99,CART.lines[ix].qty+qty);
-  else CART.lines.push({code:v.code,gid:gid,key:cur.key,name:cur.name+(gid==='matt'?' 매트리스':''),opt:[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · '),price:v.price,qty:qty,rate:null});
+  else CART.lines.push({code:v.code,gid:gid,key:cur.key,name:cur.name+(gid==='matt'?' 매트리스':''),opt:[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · '),price:v.price,qty:qty,rate:null,gift:gift});
   changed();
-  toast('장바구니에 담았어요 · 모두 '+calc(CART).qty+'개');
+  toast((gift?'사은품(0원)으로 담았어요':'장바구니에 담았어요')+' · 모두 '+calc(CART).qty+'개');
 }
 function cellHTML(k,label,c){
   var auto=k==='prod'&&CART.prod==null,val=k==='prod'?CART.prod:k==='br'?CART.br:CART.mr;
@@ -889,6 +960,7 @@ function cellHTML(k,label,c){
 }
 function renderCart(){
   var c=calc(CART),empty=!c.rows.length;
+  renderQbar();
   $('cartN').textContent=c.qty;$('cartN').classList.toggle('zero',!c.qty);
   $('cartCnt').textContent=c.qty?c.qty+'개':'';
   var ul=$('lines');
@@ -901,10 +973,10 @@ function renderCart(){
     return '<li class="ln" data-i="'+i+'">'
       +(th?'<img class="th" src="'+esc(th)+'" alt="">':'<span class="th"></span>')
       +'<span class="n">'+esc(l.name)+'</span>'
-      +'<span class="p num">'+(r.sale<r.base?'<del>'+won(r.base)+'</del>':'')+won(r.sale)+'원</span>'
+      +'<span class="p num">'+(l.gift?'<del>'+won(l.price*l.qty)+'</del><em class="gtag">사은품</em> 0원':(r.sale<r.base?'<del>'+won(r.base)+'</del>':'')+won(r.sale)+'원')+'</span>'
       +'<span class="s">'+esc([l.opt,l.code].filter(Boolean).join(' · '))+' · 개당 '+won(l.price)+'원'+(parts.length?' · <em>할인 '+pct(r.eff)+' ('+parts.join(' + ')+')</em>':'')+'</span>'
       +'<div class="c"><button class="q" type="button" data-act="minus" aria-label="수량 줄이기">−</button><b class="num">'+l.qty+'</b><button class="q" type="button" data-act="plus" aria-label="수량 늘리기">+</button><span class="sp"></span>'
-      +'<button class="chip'+(l.rate!=null?' on':'')+'" type="button" data-act="disc">'+(l.rate!=null?'이 품목 '+pct(l.rate):'품목 할인')+'</button>'
+      +(l.gift?'':'<button class="chip'+(l.rate!=null?' on':'')+'" type="button" data-act="disc">'+(l.rate!=null?'이 품목 '+pct(l.rate):'품목 할인')+'</button>')
       +'<button class="chip del" type="button" data-act="del">삭제</button></div>'
       +(openEd===i?'<div class="ed"><span>이 품목 제품 할인율</span><input class="pin num" data-ed inputmode="decimal" value="'+(l.rate!=null?l.rate:'')+'" placeholder="'+r.pr+'"><span>%</span><button class="btn outl sm" type="button" data-act="edok">적용</button><button class="lnk" type="button" data-act="edauto">장바구니 할인 따르기</button></div>':'')
       +'</li>';
@@ -939,7 +1011,8 @@ function renderCart(){
 function cartText(){
   var c=calc(CART),L=['['+(SET.storeName||'ACE BED')+' 견적]'];
   c.rows.forEach(function(r){
-    L.push('· '+r.l.name+(r.l.opt?' ('+r.l.opt+')':'')+' × '+r.l.qty+'개');
+    L.push('· '+(r.l.gift?'[사은품] ':'')+r.l.name+(r.l.opt?' ('+r.l.opt+')':'')+' × '+r.l.qty+'개');
+    if(r.l.gift){L.push('   0원 (정상가 '+won(r.l.price*r.l.qty)+'원)  ['+r.l.code+']');return}
     L.push('   '+(r.sale<r.base?'정상가 '+won(r.base)+'원 → 할인 '+pct(r.eff)+' → ':'')+won(r.sale)+'원  ['+r.l.code+']');
   });
   L.push('──────────');
@@ -952,6 +1025,71 @@ function cartText(){
   c.pbs.forEach(function(p){L.push(p.name+' 페이백 -'+won(p.amt)+'원')});
   if(c.pb)L.push('실부담금 '+won(c.net)+'원');
   L.push('가격 기준일 '+(meta.updated||'-')+' · 배송비 미포함');
+  return L.join('\n');
+}
+function renderQbar(){
+  var h=QS.list.map(function(q){
+    return '<button type="button" data-q="'+q.id+'" aria-current="'+(q.id===QS.active)+'"><b>'+q.id+'안</b><small class="num">'+won(calc(qOrder(q)).pay)+'원</small></button>';
+  }).join('');
+  if(QS.list.length<3)h+='<button class="add" type="button" data-qa="add"'+(CART.lines.length?'':' disabled')+'>＋ '+(QS.list.length?'안 추가':'견적 저장')+'</button>';
+  if(!QS.list.length)h+='<p class="hint">구성을 A·B·C안으로 저장해 비교할 수 있어요</p>';
+  h+='<button class="cmpb" type="button" data-qa="cmp"'+(QS.list.length?'':' disabled')+'>비교</button>';
+  $('qbar').innerHTML=h;
+}
+function addQuote(){
+  if(!CART.lines.length){toast('먼저 상품을 담아 주세요');return}
+  var id=QIDS.filter(function(x){return !qFind(x)})[0];
+  if(!id){toast('견적 안은 A·B·C 3개까지예요. 비교 화면에서 하나를 지워 주세요');return}
+  var first=!QS.list.length;
+  QS.list.push({id:id,o:clone(CART)});QS.list.sort(function(a,b){return a.id.localeCompare(b.id)});QS.active=id;saveQ();renderCart();
+  toast(first?'지금 구성을 '+id+'안으로 저장했어요 · 다른 구성은 「＋ 안 추가」':id+'안을 만들었어요(복사본) · 지금부터 바꾸는 건 '+id+'안에만 반영돼요');
+}
+function switchQuote(id){
+  var q=qFind(id);if(!q)return;
+  QS.active=id;CART=qOrder(q);openEd=-1;saveQ();saveCart();renderCart();if(cur)render();
+}
+function delQuote(id){
+  QS.list=QS.list.filter(function(q){return q.id!==id});
+  if(QS.active===id){QS.active=null;if(QS.list[0]){switchQuote(QS.list[0].id);return}}
+  saveQ();renderCart();
+}
+function itemsShort(o){
+  return o.lines.slice(0,4).map(function(l){return esc(l.name)+(l.opt?' <span style="color:var(--tx3)">'+esc(l.opt)+'</span>':'')+(l.qty>1?' ×'+l.qty:'')+(l.gift?' (사은품)':'')}).join('<br>')+(o.lines.length>4?'<br>외 '+(o.lines.length-4)+'개':'');
+}
+function openCompare(){
+  var body=$('cmpBody');
+  if(QS.list.length<2){
+    body.innerHTML='<p class="cmp-guide">견적 안을 2개 이상 만들면 나란히 비교해요.<br>① 지금 구성으로 「＋ 견적 저장」 → <b>A안</b><br>② 「＋ 안 추가」 → <b>B안</b>(복사본)이 생기면 상품·할인·할부를 바꿔 보세요.<br>예: A안 매트리스만 / B안 프레임 포함 · A안 일시불 / B안 12개월</p>'
+      +'<div class="sh-foot"><button class="btn outl" type="button" data-cmpclose>닫기</button><button class="btn" type="button" data-cx="add"'+(CART.lines.length?'':' disabled')+'>'+(QS.list.length?'＋ B안 만들기':'지금 구성을 A안으로')+'</button></div>';
+  }else{
+    var qs=QS.list.map(function(q){var o=qOrder(q);return {q:q,o:o,c:calc(o)}});
+    var best=Math.min.apply(null,qs.map(function(x){return x.c.net}));
+    var row=function(t,f,cls){return '<tr class="'+(cls||'')+'"><td>'+t+'</td>'+qs.map(f).join('')+'</tr>'};
+    body.innerHTML='<p class="sh-sub">직원용 화면이에요. 지점·매니저 할인 구성까지 보여요.</p><div class="cmp-wrap"><table class="cmp"><thead><tr><th></th>'
+      +qs.map(function(x){return '<th class="'+(x.q.id===QS.active?'act':'')+'">'+x.q.id+'안'+(x.q.id===QS.active?'<small>보는 중</small>':'')+'</th>'}).join('')+'</tr></thead><tbody>'
+      +row('구성',function(x){return '<td class="items">'+itemsShort(x.o)+'</td>'})
+      +row('정상가',function(x){return '<td class="num">'+won(x.c.base)+'원</td>'})
+      +row('할인',function(x){var d=x.c.base-x.c.pay;return '<td class="num"><span class="minus">-'+won(d)+'원</span><span class="up">'+(x.c.base?pct(Math.round(d/x.c.base*1000)/10):'0%')+' · 제품 '+(x.o.prod==null?'자동':pct(x.o.prod))+' · 지점 '+pct(x.c.br)+' · 매니저 '+pct(x.c.mr)+'</span></td>'})
+      +row('결제 금액',function(x){return '<td class="num"><b>'+won(x.c.pay)+'원</b></td>'})
+      +row('할부',function(x){return '<td class="num">'+(x.c.months?x.c.months+'개월<br>월 '+won(x.c.monthly)+'원':'일시불')+'</td>'})
+      +row('페이백',function(x){return '<td class="num">'+(x.c.pb?'-'+won(x.c.pb)+'원':'-')+'</td>'})
+      +row('실부담금',function(x){return '<td class="num">'+won(x.c.net)+'원'+(x.c.net===best?'<br><span class="best">가장 낮음</span>':'<span class="up">+'+won(x.c.net-best)+'원</span>')+'</td>'},'net')
+      +row('',function(x){return '<td>'+(x.q.id===QS.active?'':'<button class="btn outl sm" type="button" data-cuse="'+x.q.id+'">이 안으로</button>')+'<button class="btn outl sm" type="button" data-cdel="'+x.q.id+'" style="color:var(--err);border-color:var(--err)">삭제</button></td>'})
+      +'</tbody></table></div>'
+      +'<div class="sh-foot"><button class="btn outl" type="button" data-cmpclose>닫기</button><button class="btn" type="button" data-cx="copy">비교 견적 복사</button></div>';
+  }
+  $('cmpModal').hidden=false;
+  var f=$('cmpModal').querySelector('[data-cmpclose]');if(f)f.focus();
+}
+function compareText(){
+  var L=['['+(SET.storeName||'ACE BED')+' 견적 비교]'];
+  QS.list.forEach(function(q){
+    var o=qOrder(q),c=calc(o);
+    L.push('');L.push('■ '+q.id+'안');
+    o.lines.forEach(function(l){L.push('· '+(l.gift?'[사은품] ':'')+l.name+(l.opt?' ('+l.opt+')':'')+' × '+l.qty+'개')});
+    L.push('정상가 '+won(c.base)+'원 → 결제 '+won(c.pay)+'원'+(c.months?' · '+c.months+'개월 월 '+won(c.monthly)+'원':'')+(c.pb?' · 실부담 '+won(c.net)+'원':''));
+  });
+  L.push('');L.push('가격 기준일 '+(meta.updated||'-')+' · 배송비 미포함');
   return L.join('\n');
 }
 function openCart(){$('cartBg').hidden=false;$('cart').hidden=false;renderCart();$('cart').querySelector('[data-cclose]').focus()}
@@ -999,7 +1137,22 @@ $('ovApply').addEventListener('click',function(){
 });
 $('ovIn').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();$('ovApply').click()}});
 $('ovClear').addEventListener('click',function(){CART.override=null;$('ovIn').value='';saveCart();renderCart()});
-$('cartClear').addEventListener('click',function(){if(!confirm('장바구니를 비울까요?'))return;CART=newCart();openEd=-1;saveCart();renderCart();if(cur)render()});
+$('qbar').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.hasAttribute('data-q')){if(b.getAttribute('data-q')!==QS.active)switchQuote(b.getAttribute('data-q'))}
+  else if(b.getAttribute('data-qa')==='add')addQuote();
+  else if(b.getAttribute('data-qa')==='cmp')openCompare();
+});
+$('cmpModal').addEventListener('click',function(e){
+  if(e.target===this||e.target.closest('[data-cmpclose]')){$('cmpModal').hidden=true;return}
+  var b=e.target.closest('button');if(!b)return;
+  if(b.hasAttribute('data-cuse')){switchQuote(b.getAttribute('data-cuse'));openCompare()}
+  else if(b.hasAttribute('data-cdel')){var id=b.getAttribute('data-cdel');if(!confirm(id+'안을 지울까요?'))return;delQuote(id);if(QS.list.length)openCompare();else $('cmpModal').hidden=true}
+  else if(b.getAttribute('data-cx')==='add'){$('cmpModal').hidden=true;addQuote()}
+  else if(b.getAttribute('data-cx')==='copy')copyText(compareText());
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('cmpModal').hidden){e.stopImmediatePropagation();$('cmpModal').hidden=true}},true);
+$('cartClear').addEventListener('click',function(){if(!confirm('장바구니를 비울까요?'+(QS.active?' (지금 보는 '+QS.active+'안의 상품도 비워져요)':'')))return;CART=newCart();openEd=-1;saveCart();renderCart();if(cur)render()});
 $('cartCopy').addEventListener('click',function(){copyText(cartText())});
 $('cartSet').addEventListener('click',function(){requireUnlock(function(){openSettings();showTab('disc')})});
 
@@ -1072,15 +1225,17 @@ function setChanged(msg){touch();saveSet();renderCart();if(cur)render();if(msg)t
 
 // 이 상품 탭: 모델 할인율(프로모션)·숨기기
 function renderItemExtras(){
-  var gid=group.def.id,codes=cur.variants.map(function(v){return v.code});
+  var gid=cur.gid,codes=cur.variants.map(function(v){return v.code});
   var rs=codes.map(function(c){return SET.itemRates[c]}).filter(function(r){return r!=null});
   var same=rs.length===codes.length&&rs.every(function(r){return r===rs[0]});
   $('promoIn').value=same?rs[0]:'';
-  var g=SET.groupRates[gid],fall=g!=null&&g!==''?group.def.name+' 할인율 '+pct(g):'기본 제품 할인율 '+pct(SET.prodDefault);
+  var gname=(G[gid]&&G[gid].def.name)||'',g=SET.groupRates[gid],fall=g!=null&&g!==''?gname+' 할인율 '+pct(g):'기본 제품 할인율 '+pct(SET.prodDefault);
   $('promoHint').textContent=rs.length?(same?'이 모델 모든 옵션에 '+pct(rs[0])+'가 적용 중이에요.':'옵션마다 다른 할인율이 들어 있어요. 적용하면 모두 같은 율로 바뀌어요.')+' 빼면 '+fall+'을 따라요.'
     :'비어 있으면 '+fall+'을 따라요. 장바구니에서 「제품」 할인을 직접 바꾸면 그 값이 먼저예요.';
   $('promoClear').hidden=!rs.length;
   $('hideTg').setAttribute('aria-pressed',String(isHidden(gid,cur)));
+  $('giftRow').hidden=gid==='gift';
+  $('giftTg').setAttribute('aria-pressed',String(SET.gifts.indexOf(gid+'|'+cur.key)>=0));
 }
 $('promoApply').addEventListener('click',function(){
   var raw=$('promoIn').value.trim(),n=parseFloat(raw);
@@ -1090,6 +1245,12 @@ $('promoApply').addEventListener('click',function(){
   setChanged('「'+cur.name+'」에 '+pct(n)+' 할인을 넣었어요');renderItemExtras();
 });
 $('promoClear').addEventListener('click',function(){cur.variants.forEach(function(v){delete SET.itemRates[v.code]});setChanged('모델 할인율을 뺐어요');renderItemExtras()});
+$('giftTg').addEventListener('click',function(){
+  var k=cur.gid+'|'+cur.key,i=SET.gifts.indexOf(k);
+  if(i>=0)SET.gifts.splice(i,1);else SET.gifts.push(k);
+  giftRefresh();setChanged(i>=0?'사은품 메뉴에서 뺐어요':'사은품 메뉴에 넣었어요');renderItemExtras();
+  if(isGiftMenu()){fillModels();if(!group.models.length)setGroup('gift');else renderModel()}
+});
 $('hideTg').addEventListener('click',function(){
   var k=hidKey(group.def.id,cur),i=SET.hidden.indexOf(k);
   if(i>=0)SET.hidden.splice(i,1);else SET.hidden.push(k);
@@ -1171,8 +1332,12 @@ function renderMgrPane(){
   $('mgrPane').innerHTML=
     '<section class="sh-sec"><h4>매장 이름</h4><div class="srow"><label for="storeIn">왼쪽 위에 보이는 이름<small>견적 복사 첫 줄에도 들어가요</small></label><input class="pin" id="storeIn" style="width:180px;text-align:left" maxlength="30" value="'+esc(SET.storeName)+'"></div></section>'
     +'<section class="sh-sec"><h4>숨긴 상품 ('+SET.hidden.length+')</h4><ul class="mlist">'+(hid||'<li class="none">없어요</li>')+'</ul></section>'
+    +'<section class="sh-sec"><h4>사은품으로 등록한 상품 ('+SET.gifts.length+')</h4><ul class="mlist">'+(SET.gifts.map(function(k,i){
+      var gid=k.split('|')[0],key=k.slice(gid.length+1),m=G[gid]&&G[gid].models.filter(function(x){return x.key===key})[0];
+      return '<li><span>'+esc(m?m.name:key)+'<small>'+esc(gname[gid]||'')+'</small></span><button class="btn outl sm" type="button" data-ungift="'+i+'">빼기</button></li>';
+    }).join('')||'<li class="none">없어요. 상품을 연 뒤 「이 상품」 탭에서 「사은품 메뉴에 넣기」를 켜요.</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>모델별 할인율 ('+Object.keys(byModel).length+')</h4><ul class="mlist">'+(promo||'<li class="none">없어요. 「이 상품」 탭에서 넣어요.</li>')+'</ul></section>'
-    +'<section class="sh-sec"><h4>되돌리기</h4><div class="srow"><span class="lb">할인·결제 설정 초기화<small>할인율·페이백·숨긴 상품·모델별 할인율·매장 이름을 처음 상태로 (사진·가격은 아래 「모든 수정 되돌리기」)</small></span><button class="btn outl sm" type="button" data-resetset>초기화</button></div></section>';
+    +'<section class="sh-sec"><h4>되돌리기</h4><div class="srow"><span class="lb">할인·결제 설정 초기화<small>할인율·페이백·숨긴 상품·사은품 목록·모델별 할인율·매장 이름을 처음 상태로 (사진·가격은 아래 「모든 수정 되돌리기」)</small></span><button class="btn outl sm" type="button" data-resetset>초기화</button></div></section>';
 }
 $('mgrPane').addEventListener('change',function(e){
   if(e.target.id!=='storeIn')return;
@@ -1181,10 +1346,11 @@ $('mgrPane').addEventListener('change',function(e){
 $('mgrPane').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;
   if(b.hasAttribute('data-unhide')){SET.hidden.splice(+b.getAttribute('data-unhide'),1);setChanged('다시 보이게 했어요');fillModels();renderModel()}
+  else if(b.hasAttribute('data-ungift')){SET.gifts.splice(+b.getAttribute('data-ungift'),1);giftRefresh();setChanged('사은품 목록에서 뺐어요');if(isGiftMenu()){if(!group.models.length)setGroup('gift');else{fillModels();renderModel()}}}
   else if(b.hasAttribute('data-unpromo')){b.getAttribute('data-unpromo').split(',').forEach(function(c){delete SET.itemRates[c]});setChanged('모델 할인율을 뺐어요')}
   else if(b.hasAttribute('data-resetset')){
     if(!confirm('할인·결제 설정, 숨긴 상품, 모델별 할인율, 매장 이름을 처음 상태로 되돌릴까요?'))return;
-    SET=clone(DEFAULT_SET);applyStoreName();setChanged('설정을 초기화했어요');fillModels();renderModel();
+    SET=clone(DEFAULT_SET);giftRefresh();applyStoreName();setChanged('설정을 초기화했어요');fillModels();renderModel();
   }else return;
   renderMgrPane();
 });
@@ -1338,7 +1504,7 @@ Promise.all([
 ]).then(function(res){
   var data=res[0];
   meta={updated:data.updated,source:data.source};
-  build(data);
+  build(data);giftRefresh();
   $('openSet').hidden=false;$('openCart').hidden=false;
   applyStoreName();syncCartPrices();renderCart();
   var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
