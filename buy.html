@@ -258,6 +258,38 @@ svg{display:block;flex:none}
   body.cvp .cv-top button{display:none}
   body.cvp .qcard{break-inside:avoid}
 }
+/* 상담 줄 · 기록 */
+.cstrip{display:flex;align-items:center;gap:8px;width:100%;padding:10px 20px;background:var(--sub);text-align:left;font-size:13px;color:var(--tx2)}
+.cstrip b{color:var(--tx);font-size:14px}
+.cstrip span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cstrip i{font-style:normal;font-weight:700;color:var(--tx)}
+.pf{margin-top:16px}
+.pf .pt{font-weight:700;font-size:14px;margin-bottom:8px}
+.pf .pt small{font-weight:400;color:var(--tx3)}
+.pf textarea{width:100%;min-height:64px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:14px;resize:vertical}
+.pf textarea:focus{outline:0;border-color:#000}
+.pf input[type=date]{height:40px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r-sm);font:inherit}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:14px}
+.stat div{padding:14px 16px;border-radius:var(--r-sm);background:var(--sub)}
+.stat small{display:block;color:var(--tx3);font-size:12px}
+.stat b{font-size:22px;line-height:30px}
+.rec-h{margin:22px 0 8px;font-size:16px}
+.otable{width:100%;border-collapse:collapse;font-size:14px}
+.otable th,.otable td{padding:10px 8px;box-shadow:inset 0 -1px 0 var(--hair);text-align:left;vertical-align:top}
+.otable th{font-size:12px;color:var(--tx3);font-weight:700}
+.otable .r{text-align:right;white-space:nowrap}
+.otable tr.click{cursor:pointer}
+.otable tr.click:hover td{background:var(--sub)}
+.otable small{color:var(--tx3)}
+.res{display:inline-block;padding:1px 8px;border-radius:var(--r-full);font-size:12px;font-weight:700;background:var(--hair);color:var(--tx2);white-space:nowrap}
+.res.계약,.res.오늘{background:var(--blue-50);color:var(--blue)}
+.res.이탈,.res.지남{background:#fff0f1;color:var(--err)}
+.empty-box{margin-top:12px;padding:28px 16px;border-radius:var(--r-sm);background:var(--sub);text-align:center;color:var(--tx3);line-height:1.7}
+.paysum{display:grid;grid-template-columns:1fr auto;gap:6px 0;margin:14px 0 0;font-size:15px;color:var(--tx2)}
+.paysum dd{margin:0;padding-left:12px;text-align:right;font-weight:700;color:var(--tx);white-space:nowrap}
+.paysum .minus{color:var(--blue)}
+.paysum dt.big,.paysum dd.big{padding-top:10px;box-shadow:inset 0 1px 0 var(--line);color:var(--tx);font-size:16px}
+.paysum dd.big{font-size:26px;line-height:32px;color:var(--blue)}
 .gtag{font-style:normal;font-size:11px;padding:1px 6px;margin-right:4px;border-radius:var(--r-full);background:var(--blue-50);color:var(--blue)}
 .ln .s{grid-column:2/-1;font-size:12px;line-height:16px;color:var(--tx3)}
 .ln .s em{font-style:normal;color:var(--blue);font-weight:700}
@@ -294,7 +326,8 @@ svg{display:block;flex:none}
 .tot .minus{color:var(--blue)}
 .tot dt.big,.tot dd.big{padding-top:8px;box-shadow:inset 0 1px 0 var(--line);font-size:16px;color:var(--tx)}
 .tot dd.big{font-size:24px;line-height:30px;color:var(--blue);letter-spacing:-.48px}
-.dr-btns{display:grid;grid-template-columns:1fr 1.2fr 1.4fr;gap:8px;margin-top:14px}
+.dr-btns{display:grid;grid-template-columns:1fr 1.2fr 1.2fr;gap:8px;margin-top:14px}
+.btn.wide{width:100%;margin-top:8px}
 .box small{display:block;font-size:12px;color:var(--tx3);font-weight:400}
 
 /* 설정 탭·줄·토글 */
@@ -359,6 +392,7 @@ svg{display:block;flex:none}
     <datalist id="models"></datalist>
   </label>
   <button class="gear" type="button" id="openCart" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 4h2.6l2.4 11.2h10.8L20.6 7.5H6.2"/><circle cx="9.2" cy="19.4" r="1.3"/><circle cx="17" cy="19.4" r="1.3"/></svg>장바구니<b class="badge num" id="cartN">0</b></button>
+  <button class="gear" type="button" id="openRec" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>기록</button>
   <button class="gear" type="button" id="openSet" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
 </header>
 
@@ -556,6 +590,7 @@ svg{display:block;flex:none}
 <div class="dimmer" id="cartBg" hidden></div>
 <aside class="drawer" id="cart" hidden role="dialog" aria-modal="true" aria-labelledby="cartTitle">
   <div class="dr-head"><h3 id="cartTitle">장바구니 <span class="num" id="cartCnt"></span></h3><button class="x" type="button" data-cclose aria-label="장바구니 닫기">×</button></div>
+  <button class="cstrip" type="button" id="cstrip"></button>
   <div class="qbar" id="qbar" aria-label="견적 안"></div>
   <div class="dr-body">
     <ul class="lines" id="lines"></ul>
@@ -576,12 +611,20 @@ svg{display:block;flex:none}
   </div>
   <div class="dr-foot">
     <dl class="tot" id="tot"></dl>
-    <div class="dr-btns"><button class="btn outl" type="button" id="cartClear">비우기</button><button class="btn outl" type="button" id="cartCust">손님 화면</button><button class="btn" type="button" id="cartCopy">견적 복사</button></div>
+    <div class="dr-btns"><button class="btn outl" type="button" id="cartClear">비우기</button><button class="btn outl" type="button" id="cartCust">손님 화면</button><button class="btn outl" type="button" id="cartCopy">견적 복사</button></div>
+    <button class="btn wide" type="button" id="cartPay">결제·판매 기록</button>
   </div>
 </aside>
 
 <!-- 손님 화면: 태블릿을 손님 쪽으로 돌려 보여 줘요. 지점·매니저 할인 구성은 숨기고 「할인 합계」 한 줄로 -->
 <section class="cview" id="cview" hidden aria-label="손님 화면"></section>
+
+<!-- 상담: 방문 목적·유입 경로·메모 / 끝내기(보류·이탈) -->
+<div class="modal" id="conModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="conTitle" id="conSheet"></div></div>
+<!-- 결제 금액 확인 · 판매 기록 저장 -->
+<div class="modal" id="payModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="payTitle" id="paySheet"></div></div>
+<!-- 기록: 상담 기록 · 결제 기록 (직원용, 비밀번호) -->
+<div class="modal" id="recModal" hidden><div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="recTitle" id="recSheet"></div></div>
 
 <!-- 견적 비교: A·B·C안을 나란히 -->
 <div class="modal" id="cmpModal" hidden>
@@ -738,7 +781,7 @@ function calc(o){
   if(o.override!=null&&rows.length){pay=Math.max(0,Math.round(o.override));adjust=pay-sub}
   else{var u=+SET.rounding||1;pay=Math.floor(sub/u)*u;round=pay-sub}
   var pbs=SET.paybacks.filter(function(p){return p.on&&+p.rate>0&&o.pay&&o.pay[p.id]}).map(function(p){
-    var amt=Math.floor(pay*clampRate(p.rate)/100);if(+p.cap>0)amt=Math.min(amt,+p.cap);return {name:p.name,amt:amt};
+    var amt=Math.floor(pay*clampRate(p.rate)/100);if(+p.cap>0)amt=Math.min(amt,+p.cap);return {id:p.id,name:p.name,rate:+p.rate,amt:amt};
   });
   var pb=pbs.reduce(function(a,p){return a+p.amt},0);
   var mo=+o.months>1?+o.months:0,monthly=0,interest=0;
@@ -995,7 +1038,7 @@ function cellHTML(k,label,c){
 }
 function renderCart(){
   var c=calc(CART),empty=!c.rows.length;
-  renderQbar();
+  renderQbar();renderCstrip();$('cartPay').disabled=empty;
   $('cartN').textContent=c.qty;$('cartN').classList.toggle('zero',!c.qty);
   $('cartCnt').textContent=c.qty?c.qty+'개':'';
   var ul=$('lines');
@@ -1229,6 +1272,248 @@ $('cview').addEventListener('click',function(e){
 addEventListener('afterprint',function(){document.body.classList.remove('cvp')});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('cview').hidden){e.stopImmediatePropagation();closeCust()}},true);
 $('cartSet').addEventListener('click',function(){requireUnlock(function(){openSettings();showTab('disc')})});
+
+
+/* ───── 상담 · 결제 기록 (매장 POS의 「상담 기록」·「주문 내역」을 가져왔어요) ─────
+   한 상담 = 상담 번호 + 방문 목적·유입 경로·메모 + 견적 안 + 결과(계약·보류·이탈). 손님 이름·연락처·주소는 받지 않아요.
+   계약은 「결제·판매 기록」에서 판매 기록을 저장하면 자동으로 남고, 보류·이탈은 「상담 끝내기」로 남겨요.
+   저장: localStorage buy.consult(진행 중) · buy.consults(상담 기록, 최근 500) · buy.orders(결제 기록, 최근 500) */
+var PROFILE_FIELDS=[
+  {f:'purpose',t:'방문 목적',opts:['신혼·입주','매트리스 교체','이사','아이방','부모님 선물','둘러보기']},
+  {f:'source',t:'어떻게 알고 오셨나요 (유입 경로)',opts:['네이버 블로그','네이버 플레이스','인스타그램','당근','지인 소개','지나가다','재방문']}
+];
+var LOSS_REASONS=['가격','가족과 상의','다른 매장 비교','사이즈·재고','배송 일정','둘러보기만','기타'];
+var PAY_METHODS=['카드','현금','계좌이체','간편결제','나눠 결제'];
+var p2=function(n){return String(n).padStart(2,'0')};
+var localDate=function(d){d=d||new Date();return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
+function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('이 기기에 저장하지 못했어요(저장 공간 확인)');return false}}
+function newConsult(){
+  var d=new Date(),key=localDate(d),sq=lsGet('buy.cseq',{d:'',n:0});
+  if(sq.d!==key)sq={d:key,n:0};sq.n++;lsSet('buy.cseq',sq);
+  return {no:'C'+p2(d.getMonth()+1)+p2(d.getDate())+'-'+p2(sq.n),at:d.toISOString(),purpose:'',source:'',memo:''};
+}
+var CON=lsGet('buy.consult',null)||newConsult(),CONSULTS=lsGet('buy.consults',[]),ORDERS=lsGet('buy.orders',[]);
+function saveCon(){lsSet('buy.consult',CON)}
+saveCon();
+function consultUsed(){return !!(CON.purpose||CON.source||CON.memo||QS.list.length||CART.lines.length)}
+function renderCstrip(){
+  var info=[CON.purpose,CON.source].filter(Boolean).join(' · ');
+  $('cstrip').innerHTML='상담 <b>'+esc(CON.no)+'</b><span>'+(info?esc(info):'방문 목적·유입 경로 넣기')+(CON.memo?' · 메모 있음':'')+'</span><i>›</i>';
+}
+function openModalEl(id){$(id).hidden=false;var f=$(id).querySelector('[data-first],button');if(f)f.focus()}
+
+// 상담 창
+function openConsult(){
+  var sh=$('conSheet'),st=sh.scrollTop;
+  sh.innerHTML='<div class="sh-head"><h3 id="conTitle">상담 '+esc(CON.no)+'</h3><button class="x" type="button" data-cc="close" aria-label="닫기">×</button></div>'
+    +'<p class="sh-sub">눌러서 고르고, 다시 누르면 해제돼요. 손님 이름·연락처·주소는 받지 않고 상담 번호로만 기록해요.</p>'
+    +PROFILE_FIELDS.map(function(F){return '<div class="pf"><div class="pt">'+esc(F.t)+'</div><div class="chips">'+F.opts.map(function(v){
+      return '<button type="button" data-f="'+F.f+'" data-v="'+esc(v)+'" aria-pressed="'+(CON[F.f]===v)+'">'+esc(v)+'</button>'}).join('')+'</div></div>'}).join('')
+    +'<div class="pf"><div class="pt">상담 메모 <small>(이름·연락처·주소는 쓰지 않아요)</small></div><textarea id="cmemo" rows="2" placeholder="예: 낮은 프레임 선호 · 12월 셋째 주 입주 · 가족과 상의 후 재방문">'+esc(CON.memo)+'</textarea></div>'
+    +'<div class="sh-foot"><button class="btn outl" type="button" data-cc="end" style="color:var(--err);border-color:var(--err)">상담 끝내기 (보류·이탈)</button><button class="btn" type="button" data-cc="ok">확인</button></div>'
+    +'<p class="fine">계약은 장바구니의 「결제·판매 기록」에서 판매 기록을 저장하면 자동으로 남아요.</p>';
+  sh.scrollTop=st;$('conModal').hidden=false;
+}
+var END={res:'보류',reason:'',revisit:''};
+function openEnd(){
+  var sh=$('conSheet');
+  sh.innerHTML='<div class="sh-head"><h3 id="conTitle">상담 끝내기 · '+esc(CON.no)+'</h3><button class="x" type="button" data-ce="cancel" aria-label="닫기">×</button></div>'
+    +'<p class="sh-sub">결과를 남기면 「기록 › 상담 기록」에 쌓이고, 장바구니·견적 안을 비우고 새 상담이 시작돼요.</p>'
+    +'<div class="pf"><div class="pt">결과</div><div class="seg" role="radiogroup" aria-label="결과">'+[['보류','보류 (다시 올 수 있음)'],['이탈','이탈 (구매 안 함)']].map(function(x){return '<button type="button" role="radio" data-r="'+x[0]+'" aria-checked="'+(END.res===x[0])+'">'+x[1]+'</button>'}).join('')+'</div></div>'
+    +'<div class="pf"><div class="pt">이유</div><div class="chips">'+LOSS_REASONS.map(function(v){return '<button type="button" data-why="'+v+'" aria-pressed="'+(END.reason===v)+'">'+v+'</button>'}).join('')+'</div></div>'
+    +(END.res==='보류'?'<div class="pf"><div class="pt">재방문 예정일 <small>(모르면 비워 두기)</small></div><input type="date" id="rv" value="'+esc(END.revisit)+'"></div>':'')
+    +'<div class="sh-foot"><button class="btn outl" type="button" data-ce="cancel">취소</button><button class="btn" type="button" data-ce="ok">기록하고 새 상담</button></div>';
+}
+$('cstrip').addEventListener('click',openConsult);
+$('conModal').addEventListener('click',function(e){
+  if(e.target===this){$('conModal').hidden=true;return}
+  var b=e.target.closest('button');if(!b)return;
+  var memo=$('cmemo');if(memo){CON.memo=memo.value.trim();saveCon()}
+  var rv=$('rv');if(rv)END.revisit=rv.value;
+  if(b.hasAttribute('data-f')){var f=b.getAttribute('data-f'),v=b.getAttribute('data-v');CON[f]=CON[f]===v?'':v;saveCon();openConsult();renderCstrip()}
+  else if(b.getAttribute('data-cc')==='ok'||b.getAttribute('data-cc')==='close'){$('conModal').hidden=true;renderCstrip()}
+  else if(b.getAttribute('data-cc')==='end'){END={res:'보류',reason:'',revisit:''};openEnd()}
+  else if(b.hasAttribute('data-r')){END.res=b.getAttribute('data-r');openEnd()}
+  else if(b.hasAttribute('data-why')){var w=b.getAttribute('data-why');END.reason=END.reason===w?'':w;openEnd()}
+  else if(b.getAttribute('data-ce')==='cancel')openConsult();
+  else if(b.getAttribute('data-ce')==='ok'){
+    var r=END.res;logConsult({result:r,reason:END.reason,revisit:r==='보류'?END.revisit:''});
+    $('conModal').hidden=true;toast(r+'(으)로 기록했어요. 새 상담 '+CON.no+'을(를) 시작해요');
+  }
+});
+$('conModal').addEventListener('input',function(e){if(e.target.id==='cmemo'){CON.memo=e.target.value.trim();saveCon();renderCstrip()}});
+
+// 상담을 기록으로 남기고 새 상담 시작 (견적 안이 없어도 장바구니가 있으면 그 구성을 A안으로 함께 남겨요)
+function snapOrder(o){return clone({lines:o.lines,prod:o.prod==null?null:o.prod,br:o.br,mr:o.mr,override:o.override,pay:o.pay||{},months:o.months||0})}
+function logConsult(extra){
+  var quotes=QS.list.length?QS.list.map(function(q){return {id:q.id,o:snapOrder(qOrder(q))}}):(CART.lines.length?[{id:'A',o:snapOrder(CART)}]:[]);
+  var sum=quotes.map(function(q){var c=calc(Object.assign(newCart(),q.o));return {id:q.id,pay:c.pay,net:c.net,qty:c.qty,months:c.months,monthly:c.monthly,n:q.o.lines.length}});
+  CONSULTS.unshift(Object.assign(clone(CON),{quotes:quotes,sum:sum,endedAt:new Date().toISOString()},extra));
+  CONSULTS=CONSULTS.slice(0,500);lsSet('buy.consults',CONSULTS);
+  CON=newConsult();saveCon();
+  QS={active:null,list:[]};saveQ();CART=newCart();openEd=-1;saveCart();renderCart();if(cur)render();
+}
+
+// 결제 금액 확인 · 판매 기록 저장
+var PAY={method:'카드'};
+function openPay(){
+  if(!CART.lines.length){toast('장바구니가 비어 있어요');return}
+  var c=calc(CART),sh=$('paySheet');
+  sh.innerHTML='<div class="sh-head"><h3 id="payTitle">결제 금액 확인</h3><button class="x" type="button" data-pa="close" aria-label="닫기">×</button></div>'
+    +'<p class="sh-sub">실제 결제는 매장 카드 단말기·간편결제에서 해요. 이 화면은 금액 확인과 판매 기록용이에요.'+(QS.active?' 지금 보는 '+QS.active+'안으로 기록해요.':'')+'</p>'
+    +'<dl class="paysum"><dt>정상가 합계 · '+c.qty+'개</dt><dd class="num">'+won(c.base)+'원</dd>'
+    +(c.dP?'<dt>제품 할인</dt><dd class="num minus">-'+won(c.dP)+'원</dd>':'')
+    +(c.dB?'<dt>지점 할인 '+pct(c.br)+'</dt><dd class="num minus">-'+won(c.dB)+'원</dd>':'')
+    +(c.dM?'<dt>매니저 할인 '+pct(c.mr)+'</dt><dd class="num minus">-'+won(c.dM)+'원</dd>':'')
+    +(c.round?'<dt>끝자리 절사</dt><dd class="num minus">'+won(c.round)+'원</dd>':'')
+    +(c.adjust?'<dt>금액 조정(직접 입력)</dt><dd class="num minus">'+(c.adjust>0?'+':'')+won(c.adjust)+'원</dd>':'')
+    +'<dt class="big">결제 금액</dt><dd class="big num">'+won(c.pay)+'원</dd>'
+    +(c.months?'<dt>할부 '+c.months+'개월'+(c.interest?' (이자 '+won(c.interest)+'원)':' 무이자')+'</dt><dd class="num">월 '+won(c.monthly)+'원</dd>':'')
+    +c.pbs.map(function(p){return '<dt>'+esc(p.name)+' 페이백 '+pct(p.rate)+' (예상)</dt><dd class="num minus">-'+won(p.amt)+'원</dd>'}).join('')
+    +(c.pb?'<dt>실부담금</dt><dd class="num">'+won(c.net)+'원</dd>':'')+'</dl>'
+    +'<div class="pf"><div class="pt">결제 수단 <small>(기록용)</small></div><div class="chips">'+PAY_METHODS.map(function(m){return '<button type="button" data-pm="'+m+'" aria-pressed="'+(PAY.method===m)+'">'+m+'</button>'}).join('')+'</div></div>'
+    +'<p class="hint">페이백은 결제 후 각 사의 조건(한도·대상·지급 시기)에 따라 따로 지급돼요. 페이백·할부는 장바구니에서 고쳐요.</p>'
+    +'<div class="sh-foot"><button class="btn outl" type="button" data-pa="close">닫기</button><button class="btn" type="button" data-pa="save">판매 기록 저장 (상담 '+esc(CON.no)+' 계약)</button></div>';
+  $('payModal').hidden=false;sh.querySelector('[data-pa="save"]').focus();
+}
+function saveOrder(){
+  var c=calc(CART),at=new Date();
+  ORDERS.unshift({
+    id:at.getTime(),at:at.toISOString(),mode:SET.mode,method:PAY.method,
+    lines:c.rows.map(function(r){var l=r.l;return {code:l.code,name:l.name,opt:l.opt,gid:l.gid,key:l.key,price:l.price,qty:l.qty,rate:l.rate,pr:r.pr,sale:r.sale,gift:!!l.gift}}),
+    prod:CART.prod,br:c.br,mr:c.mr,override:CART.override,
+    base:c.base,dP:c.dP,dB:c.dB,dM:c.dM,round:c.round,adjust:c.adjust,pay:c.pay,
+    pbs:c.pbs,pb:c.pb,net:c.net,months:c.months,monthly:c.monthly,interest:c.interest,consultNo:CON.no,quote:QS.active
+  });
+  ORDERS=ORDERS.slice(0,500);
+  if(!lsSet('buy.orders',ORDERS))return;
+  var no=CON.no;
+  logConsult({result:'계약',orderId:ORDERS[0].id,chosen:QS.active||'A',method:PAY.method});
+  $('payModal').hidden=true;toast('판매 기록을 저장했어요 · 상담 '+no+' 계약');
+}
+$('cartPay').addEventListener('click',openPay);
+$('payModal').addEventListener('click',function(e){
+  if(e.target===this){$('payModal').hidden=true;return}
+  var b=e.target.closest('button');if(!b)return;
+  if(b.hasAttribute('data-pm')){PAY.method=b.getAttribute('data-pm');openPay()}
+  else if(b.getAttribute('data-pa')==='close')$('payModal').hidden=true;
+  else if(b.getAttribute('data-pa')==='save')saveOrder();
+});
+
+// 기록 창 (직원용)
+var REC={tab:'con',detail:null};
+function fmtAt(iso){return new Date(iso).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+function recHead(title){
+  return '<div class="sh-head"><h3 id="recTitle">'+title+'</h3><button class="x" type="button" data-rc="close" aria-label="기록 닫기">×</button></div>'
+    +'<div class="stabs" role="tablist" aria-label="기록 종류"><button type="button" role="tab" data-rt="con" aria-selected="'+(REC.tab==='con')+'">상담 기록 ('+CONSULTS.length+')</button><button type="button" role="tab" data-rt="ord" aria-selected="'+(REC.tab==='ord')+'">결제 기록 ('+ORDERS.length+')</button></div>';
+}
+function lastPay(x){var q=(x.sum||[]).filter(function(s){return s.id===x.chosen})[0]||(x.sum||[])[0];return q?won(q.pay)+'원':'-'}
+function renderRecords(){
+  var sh=$('recSheet'),h;
+  if(REC.detail!=null)return REC.tab==='con'?conDetail(REC.detail):ordDetail(REC.detail);
+  if(REC.tab==='con'){
+    var ym=localDate().slice(0,7),today=localDate();
+    var month=CONSULTS.filter(function(x){return localDate(new Date(x.at)).indexOf(ym)===0});
+    var deals=month.filter(function(x){return x.result==='계약'});
+    var tally=function(arr,f){var m={};arr.forEach(function(x){var v=x[f]||'(미입력)';(m[v]=m[v]||{n:0,w:0}).n++;if(x.result==='계약')m[v].w++});return Object.keys(m).map(function(k){return [k,m[k]]}).sort(function(a,b){return b[1].n-a[1].n})};
+    var src=tally(month,'source'),why=tally(month.filter(function(x){return x.result!=='계약'}),'reason');
+    var due=CONSULTS.map(function(x,i){return [x,i]}).filter(function(a){return a[0].result==='보류'&&a[0].revisit}).sort(function(a,b){return a[0].revisit.localeCompare(b[0].revisit)});
+    var rate=month.length?Math.round(deals.length/month.length*100):0;
+    h=recHead('기록')
+      +'<p class="sh-sub" style="margin-top:12px">이 기기에만 저장돼요(최근 500건). 손님 이름·연락처는 저장하지 않고 상담 번호로만 남겨요.</p>'
+      +'<div class="stat"><div><small>이번 달 상담</small><b>'+month.length+'건</b></div><div><small>계약</small><b>'+deals.length+'건</b></div><div><small>계약률</small><b>'+rate+'%</b></div><div><small>재방문 예정</small><b>'+due.filter(function(a){return a[0].revisit>=today}).length+'건</b></div></div>'
+      +(due.length?'<h4 class="rec-h">재방문 예정 (보류)</h4><table class="otable"><tbody>'+due.slice(0,20).map(function(a){var x=a[0];return '<tr class="click" data-ci="'+a[1]+'"><td>'+esc(x.revisit)+(x.revisit<today?' <span class="res 지남">지남</span>':x.revisit===today?' <span class="res 오늘">오늘</span>':'')+'</td><td>'+esc(x.no)+'</td><td>'+esc(x.purpose||'-')+'</td><td>'+esc(x.reason||'')+'</td><td class="r num">'+lastPay(x)+'</td></tr>'}).join('')+'</tbody></table>':'')
+      +(month.length?'<h4 class="rec-h">이번 달 유입 경로별 계약</h4><table class="otable"><thead><tr><th>유입 경로</th><th class="r">상담</th><th class="r">계약</th><th class="r">계약률</th></tr></thead><tbody>'+src.map(function(a){return '<tr><td>'+esc(a[0])+'</td><td class="r">'+a[1].n+'</td><td class="r">'+a[1].w+'</td><td class="r">'+Math.round(a[1].w/a[1].n*100)+'%</td></tr>'}).join('')+'</tbody></table>':'')
+      +(why.length?'<h4 class="rec-h">이번 달 보류·이탈 이유</h4><table class="otable"><tbody>'+why.map(function(a){return '<tr><td>'+esc(a[0])+'</td><td class="r">'+a[1].n+'건</td></tr>'}).join('')+'</tbody></table>':'')
+      +'<h4 class="rec-h">전체 상담 기록</h4>'
+      +(CONSULTS.length?'<table class="otable"><thead><tr><th>일시</th><th>상담</th><th>방문 목적</th><th>유입</th><th class="r">견적</th><th>결과</th></tr></thead><tbody>'
+        +CONSULTS.slice(0,200).map(function(x,i){return '<tr class="click" data-ci="'+i+'"><td>'+fmtAt(x.at)+'</td><td>'+esc(x.no)+'</td><td>'+esc(x.purpose||'-')+'</td><td>'+esc(x.source||'-')+'</td><td class="r num">'+((x.sum||[]).length>1?x.sum.length+'개 안 · ':'')+lastPay(x)+'</td><td><span class="res '+esc(x.result)+'">'+esc(x.result)+'</span>'+(x.reason?' <small>'+esc(x.reason)+'</small>':'')+'</td></tr>'}).join('')+'</tbody></table>'
+        +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-rc="ccsv">상담 기록 CSV로 내려받기</button></div>'
+      :'<div class="empty-box">아직 상담 기록이 없어요.<br>장바구니 위 「상담」 줄에서 방문 목적·유입 경로를 넣고, 「결제·판매 기록」(계약) 또는 「상담 끝내기」(보류·이탈)로 끝내면 여기에 쌓여요.</div>');
+  }else{
+    var total=ORDERS.reduce(function(a,o){return a+o.pay},0),ym2=localDate().slice(0,7);
+    var mon=ORDERS.filter(function(o){return localDate(new Date(o.at)).indexOf(ym2)===0});
+    h=recHead('기록')
+      +'<div class="stat"><div><small>전체 판매</small><b>'+ORDERS.length+'건</b></div><div><small>전체 결제 금액</small><b class="num">'+won(total)+'원</b></div><div><small>이번 달 판매</small><b>'+mon.length+'건</b></div><div><small>이번 달 결제 금액</small><b class="num">'+won(mon.reduce(function(a,o){return a+o.pay},0))+'원</b></div></div>'
+      +'<h4 class="rec-h">결제 기록</h4>'
+      +(ORDERS.length?'<table class="otable"><thead><tr><th>일시</th><th>품목</th><th>수단</th><th class="r">결제 금액</th><th class="r">페이백</th><th class="r">실부담금</th></tr></thead><tbody>'
+        +ORDERS.map(function(o,i){return '<tr class="click" data-oi="'+i+'"><td>'+fmtAt(o.at)+'</td><td>'+esc((o.lines[0]||{}).name||'')+(o.lines.length>1?' 외 '+(o.lines.length-1):'')+'</td><td>'+esc(o.method||'-')+'</td><td class="r num">'+won(o.pay)+'원</td><td class="r num">'+(o.pb?'-'+won(o.pb)+'원':'-')+'</td><td class="r num"><b>'+won(o.net)+'원</b></td></tr>'}).join('')+'</tbody></table>'
+        +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-rc="ocsv">결제 기록 CSV로 내려받기</button></div>'
+      :'<div class="empty-box">아직 저장한 판매 기록이 없어요.<br>장바구니의 「결제·판매 기록」에서 「판매 기록 저장」을 누르면 여기에 쌓여요.</div>');
+  }
+  sh.innerHTML=h;
+}
+function conDetail(i){
+  var x=CONSULTS[i];if(!x){REC.detail=null;return renderRecords()}
+  $('recSheet').innerHTML='<div class="sh-head"><h3 id="recTitle">상담 '+esc(x.no)+' <span class="res '+esc(x.result)+'">'+esc(x.result)+'</span></h3><button class="x" type="button" data-rc="close" aria-label="기록 닫기">×</button></div>'
+    +'<p class="sh-sub">'+new Date(x.at).toLocaleString('ko-KR')+(x.reason?' · 이유: '+esc(x.reason):'')+(x.revisit?' · 재방문 예정 '+esc(x.revisit):'')+(x.method?' · '+esc(x.method):'')+'</p>'
+    +'<dl class="paysum">'+PROFILE_FIELDS.map(function(F){return '<dt>'+esc(F.t.replace(/ \(.*\)$/,''))+'</dt><dd>'+esc(x[F.f]||'-')+'</dd>'}).join('')+(x.memo?'<dt>메모</dt><dd style="white-space:normal;text-align:left">'+esc(x.memo)+'</dd>':'')+'</dl>'
+    +((x.quotes||[]).length?'<h4 class="rec-h">견적</h4><table class="otable"><tbody>'+x.quotes.map(function(q,k){var su=x.sum[k]||{};return '<tr><td><b>'+q.id+'안</b>'+(x.result==='계약'&&x.chosen===q.id?' <span class="res 계약">계약</span>':'')+'<br><small>'+itemsShort(q.o)+'</small></td><td class="r num">'+won(su.pay||0)+'원'+(su.months?'<br><small>'+su.months+'개월 월 '+won(su.monthly)+'원</small>':'')+'</td></tr>'}).join('')+'</tbody></table>':'')
+    +'<div class="sh-foot"><button class="btn outl" type="button" data-rc="back">← 목록</button><button class="btn outl" type="button" data-rc="cdel" style="color:var(--err);border-color:var(--err)">기록 삭제</button>'+((x.quotes||[]).length?'<button class="btn" type="button" data-rc="reopen">이 견적으로 다시 상담 (재방문)</button>':'')+'</div>';
+}
+function ordDetail(i){
+  var o=ORDERS[i];if(!o){REC.detail=null;return renderRecords()}
+  $('recSheet').innerHTML='<div class="sh-head"><h3 id="recTitle">'+new Date(o.at).toLocaleString('ko-KR')+'</h3><button class="x" type="button" data-rc="close" aria-label="기록 닫기">×</button></div>'
+    +'<p class="sh-sub">'+(o.consultNo?'상담 '+esc(o.consultNo)+(o.quote?' · '+esc(o.quote)+'안':'')+' · ':'')+esc(o.method||'')+(o.months?' · 할부 '+o.months+'개월 월 '+won(o.monthly)+'원':'')+' · '+(o.mode==='seq'?'순차':'합산')+' 적용 · 지점 '+(o.br?pct(o.br):'안 씀')+' · 매니저 '+(o.mr?pct(o.mr):'안 씀')+'</p>'
+    +'<table class="otable"><tbody>'+o.lines.map(function(l){return '<tr><td>'+(l.gift?'<em class="gtag">사은품</em>':'')+esc(l.name)+'<br><small>'+esc([l.opt,l.code].filter(Boolean).join(' · '))+' × '+l.qty+(l.gift?'':' · 제품 '+pct(l.pr))+'</small></td><td class="r num">'+(l.gift?'0원':won(l.sale)+'원')+'</td></tr>'}).join('')+'</tbody></table>'
+    +'<dl class="paysum"><dt>정상가 합계</dt><dd class="num">'+won(o.base)+'원</dd>'+(o.base-o.pay?'<dt>할인·조정</dt><dd class="num minus">-'+won(o.base-o.pay)+'원</dd>':'')+'<dt class="big">결제 금액</dt><dd class="big num">'+won(o.pay)+'원</dd>'
+    +(o.pbs||[]).map(function(p){return '<dt>'+esc(p.name)+' 페이백 '+pct(p.rate)+'</dt><dd class="num minus">-'+won(p.amt)+'원</dd>'}).join('')+'<dt>실부담금</dt><dd class="num">'+won(o.net)+'원</dd></dl>'
+    +'<div class="sh-foot"><button class="btn outl" type="button" data-rc="back">← 목록</button><button class="btn outl" type="button" data-rc="odel" style="color:var(--err);border-color:var(--err)">기록 삭제</button><button class="btn" type="button" data-rc="load">장바구니로 불러오기</button></div>';
+}
+function csvCell(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
+function downloadText(name,text){
+  var blob=new Blob(['﻿'+text],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(blob),a=el('a',{href:u,download:name});
+  document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},2000);
+}
+function currentLine(l){var x=CODE[l.code];return {code:l.code,gid:l.gid,key:l.key,name:l.name,opt:l.opt,price:x?x.v.price:l.price,qty:l.qty,rate:l.rate==null?null:l.rate,gift:!!l.gift}}
+function openRecords(){REC.detail=null;renderRecords();$('recModal').hidden=false;var x=$('recSheet').querySelector('[data-rc="close"]');if(x)x.focus()}
+$('openRec').addEventListener('click',function(){requireUnlock(openRecords)});
+$('recModal').addEventListener('click',function(e){
+  if(e.target===this){$('recModal').hidden=true;return}
+  var b=e.target.closest('button,tr.click');if(!b)return;
+  touch();
+  if(b.hasAttribute('data-rt')){REC.tab=b.getAttribute('data-rt');REC.detail=null;return renderRecords()}
+  if(b.hasAttribute('data-ci')){REC.tab='con';REC.detail=+b.getAttribute('data-ci');return renderRecords()}
+  if(b.hasAttribute('data-oi')){REC.tab='ord';REC.detail=+b.getAttribute('data-oi');return renderRecords()}
+  var a=b.getAttribute('data-rc');
+  if(a==='close')$('recModal').hidden=true;
+  else if(a==='back'){REC.detail=null;renderRecords()}
+  else if(a==='cdel'){if(!confirm('이 상담 기록을 이 기기에서 지울까요?'))return;CONSULTS.splice(REC.detail,1);lsSet('buy.consults',CONSULTS);REC.detail=null;renderRecords()}
+  else if(a==='odel'){if(!confirm('이 판매 기록을 이 기기에서 지울까요?'))return;ORDERS.splice(REC.detail,1);lsSet('buy.orders',ORDERS);REC.detail=null;renderRecords()}
+  else if(a==='load'){
+    var o=ORDERS[REC.detail];if(!o)return;
+    if(CART.lines.length&&!confirm('지금 장바구니를 이 판매 기록 구성으로 바꿀까요?'))return;
+    CART=Object.assign(newCart(),{lines:o.lines.map(currentLine),prod:o.prod==null?null:o.prod,br:o.br,mr:o.mr,months:o.months||0});
+    openEd=-1;saveCart();$('recModal').hidden=true;renderCart();if(cur)render();openCart();toast('지금 설정·정상가로 다시 계산했어요');
+  }
+  else if(a==='reopen'){
+    var x=CONSULTS[REC.detail];if(!x)return;
+    if(consultUsed()&&!confirm('지금 진행 중인 상담 '+CON.no+'의 내용이 지워져요. 계속할까요?\n(남기려면 먼저 「상담 끝내기」로 끝내 주세요)'))return;
+    var n=consultUsed()?newConsult():CON;
+    n.purpose=x.purpose||'';n.source='재방문';n.memo='재방문 (지난 상담 '+x.no+')'+(x.memo?' · '+x.memo:'');
+    CON=n;saveCon();
+    QS={active:null,list:x.quotes.map(function(q){return {id:q.id,o:Object.assign(clone(q.o),{lines:q.o.lines.map(currentLine)})}})};saveQ();
+    $('recModal').hidden=true;switchQuote(QS.list[0].id);openCart();
+    toast('새 상담 '+CON.no+'로 지난 견적을 불러왔어요 (오늘 정상가·설정으로 다시 계산)');
+  }
+  else if(a==='ccsv'){
+    var rows=[['일시','상담번호','방문목적','유입경로','결과','이유','재방문예정','견적(안별 결제금액)','계약안','결제수단','메모'].join(',')];
+    CONSULTS.forEach(function(x){rows.push([new Date(x.at).toLocaleString('ko-KR'),x.no,x.purpose,x.source,x.result,x.reason,x.revisit,(x.sum||[]).map(function(su){return su.id+':'+su.pay}).join(' '),x.result==='계약'?x.chosen:'',x.method,x.memo].map(csvCell).join(','))});
+    downloadText('consult-records_'+localDate()+'.csv',rows.join('\r\n'));
+  }
+  else if(a==='ocsv'){
+    var L=[['일시','상담번호','결제수단','코드','품명','옵션','수량','정상가','줄 금액','사은품','주문 결제금액','페이백','실부담금','할부개월'].join(',')];
+    ORDERS.forEach(function(o){o.lines.forEach(function(l,k){L.push([new Date(o.at).toLocaleString('ko-KR'),o.consultNo,o.method,l.code,l.name,l.opt,l.qty,l.price,l.gift?0:l.sale,l.gift?'Y':'',k?'':o.pay,k?'':o.pb,k?'':o.net,k?'':(o.months||'')].map(csvCell).join(','))})});
+    downloadText('sales-records_'+localDate()+'.csv',L.join('\r\n'));
+  }
+});
+// Esc: 맨 위 창부터 닫아요
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  var top=['recModal','payModal','conModal'].filter(function(id){return !$(id).hidden})[0];
+  if(top){e.stopImmediatePropagation();$(top).hidden=true;renderCstrip()}
+},true);
 
 GROUPS.forEach(function(g){
   var b=el('button',{type:'button','data-g':g.id},g.name);
@@ -1579,7 +1864,7 @@ Promise.all([
   var data=res[0];
   meta={updated:data.updated,source:data.source};
   build(data);giftRefresh();
-  $('openSet').hidden=false;$('openCart').hidden=false;
+  $('openSet').hidden=false;$('openCart').hidden=false;$('openRec').hidden=false;
   applyStoreName();syncCartPrices();renderCart();
   var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
   if(!G[gid]){gid='matt';if(want)GROUPS.some(function(g){if(G[g.id].byName[want]){gid=g.id;return true}return false})}
