@@ -226,6 +226,38 @@ svg{display:block;flex:none}
 .cmp .up{display:block;font-size:12px;color:var(--tx3);font-weight:400}
 .cmp td .btn{margin:4px 0 0 4px}
 .cmp-guide{margin-top:10px;line-height:1.7;color:var(--tx2)}
+/* 손님 화면 */
+.cview{position:fixed;inset:0;z-index:30;background:#fff;overflow:auto}
+.cv-top{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px var(--space-lg);background:#fff;box-shadow:inset 0 -1px 0 var(--line)}
+.cv-top h2{margin:0;flex:1;min-width:200px;font-size:24px;line-height:32px;letter-spacing:-.48px}
+.cv-top h2 small{display:block;font-size:13px;line-height:18px;font-weight:400;color:var(--tx3);letter-spacing:0}
+.cv-body{max-width:1280px;margin:0 auto;padding:28px var(--space-lg) 48px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+.qcard{display:flex;flex-direction:column;padding:22px 22px 20px;border-radius:var(--r-lg);box-shadow:var(--ring);background:#fff}
+.qcard.best{box-shadow:var(--ring-on)}
+.qcard .qh{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.qcard .qh b{font-size:24px;line-height:32px}
+.qcard .bb{padding:3px 10px;border-radius:var(--r-full);background:var(--blue);color:#fff;font-size:12px;font-weight:700}
+.qcard ul{list-style:none;margin:0 0 14px;padding:0}
+.qcard li{display:grid;grid-template-columns:52px 1fr auto;gap:2px 12px;align-items:center;padding:12px 0;box-shadow:inset 0 -1px 0 var(--hair);font-size:15px;line-height:20px}
+.qcard li .th{width:52px;height:52px;border-radius:var(--r-sm);background:var(--sub);object-fit:cover;display:block}
+.qcard li b{font-weight:700;overflow-wrap:anywhere}
+.qcard li small{display:block;color:var(--tx3);font-size:12px;line-height:16px}
+.qcard li .pp{text-align:right;font-weight:700;white-space:nowrap}
+.qcard li del{display:block;font-weight:400;font-size:12px;color:var(--tx3)}
+.qcard dl{display:grid;grid-template-columns:1fr auto;gap:8px 0;margin:0;font-size:15px;color:var(--tx2)}
+.qcard dd{margin:0;padding-left:12px;text-align:right;font-weight:700;color:var(--tx);white-space:nowrap}
+.qcard .minus{color:var(--blue)}
+.qcard dt.pay,.qcard dd.pay{padding-top:12px;box-shadow:inset 0 1px 0 var(--line);color:var(--tx);font-size:16px}
+.qcard dd.pay{font-size:30px;line-height:36px;color:var(--blue);letter-spacing:-.6px}
+.qcard dt.net,.qcard dd.net{font-size:17px;color:var(--tx)}
+.cv-note{grid-column:1/-1;margin:0;text-align:center;color:var(--tx3);font-size:13px;line-height:1.7}
+@media print{
+  body.cvp>*:not(#cview){display:none!important}
+  body.cvp #cview{position:static;overflow:visible}
+  body.cvp .cv-top{position:static}
+  body.cvp .cv-top button{display:none}
+  body.cvp .qcard{break-inside:avoid}
+}
 .gtag{font-style:normal;font-size:11px;padding:1px 6px;margin-right:4px;border-radius:var(--r-full);background:var(--blue-50);color:var(--blue)}
 .ln .s{grid-column:2/-1;font-size:12px;line-height:16px;color:var(--tx3)}
 .ln .s em{font-style:normal;color:var(--blue);font-weight:700}
@@ -262,7 +294,7 @@ svg{display:block;flex:none}
 .tot .minus{color:var(--blue)}
 .tot dt.big,.tot dd.big{padding-top:8px;box-shadow:inset 0 1px 0 var(--line);font-size:16px;color:var(--tx)}
 .tot dd.big{font-size:24px;line-height:30px;color:var(--blue);letter-spacing:-.48px}
-.dr-btns{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:14px}
+.dr-btns{display:grid;grid-template-columns:1fr 1.2fr 1.4fr;gap:8px;margin-top:14px}
 .box small{display:block;font-size:12px;color:var(--tx3);font-weight:400}
 
 /* 설정 탭·줄·토글 */
@@ -544,9 +576,12 @@ svg{display:block;flex:none}
   </div>
   <div class="dr-foot">
     <dl class="tot" id="tot"></dl>
-    <div class="dr-btns"><button class="btn outl" type="button" id="cartClear">비우기</button><button class="btn" type="button" id="cartCopy">견적 복사하기</button></div>
+    <div class="dr-btns"><button class="btn outl" type="button" id="cartClear">비우기</button><button class="btn outl" type="button" id="cartCust">손님 화면</button><button class="btn" type="button" id="cartCopy">견적 복사</button></div>
   </div>
 </aside>
+
+<!-- 손님 화면: 태블릿을 손님 쪽으로 돌려 보여 줘요. 지점·매니저 할인 구성은 숨기고 「할인 합계」 한 줄로 -->
+<section class="cview" id="cview" hidden aria-label="손님 화면"></section>
 
 <!-- 견적 비교: A·B·C안을 나란히 -->
 <div class="modal" id="cmpModal" hidden>
@@ -981,7 +1016,7 @@ function renderCart(){
       +(openEd===i?'<div class="ed"><span>이 품목 제품 할인율</span><input class="pin num" data-ed inputmode="decimal" value="'+(l.rate!=null?l.rate:'')+'" placeholder="'+r.pr+'"><span>%</span><button class="btn outl sm" type="button" data-act="edok">적용</button><button class="lnk" type="button" data-act="edauto">장바구니 할인 따르기</button></div>':'')
       +'</li>';
   }).join('');
-  $('cartOpts').hidden=empty;$('cartCopy').disabled=empty;$('cartClear').disabled=empty;
+  $('cartOpts').hidden=empty;$('cartCopy').disabled=empty;$('cartClear').disabled=empty;$('cartCust').disabled=empty&&!QS.list.length;
   $('modeTag').textContent=SET.mode==='seq'?'순차 적용(앞 할인 뒤 금액에 다음 할인)':'합산 적용(율을 더해 한 번에)';
   $('dcells').innerHTML=cellHTML('prod','제품',c)+cellHTML('br','지점',c)+cellHTML('mr','매니저',c);
   $('instChips').innerHTML=INST.map(function(m){
@@ -1076,7 +1111,7 @@ function openCompare(){
       +row('실부담금',function(x){return '<td class="num">'+won(x.c.net)+'원'+(x.c.net===best?'<br><span class="best">가장 낮음</span>':'<span class="up">+'+won(x.c.net-best)+'원</span>')+'</td>'},'net')
       +row('',function(x){return '<td>'+(x.q.id===QS.active?'':'<button class="btn outl sm" type="button" data-cuse="'+x.q.id+'">이 안으로</button>')+'<button class="btn outl sm" type="button" data-cdel="'+x.q.id+'" style="color:var(--err);border-color:var(--err)">삭제</button></td>'})
       +'</tbody></table></div>'
-      +'<div class="sh-foot"><button class="btn outl" type="button" data-cmpclose>닫기</button><button class="btn" type="button" data-cx="copy">비교 견적 복사</button></div>';
+      +'<div class="sh-foot"><button class="btn outl" type="button" data-cmpclose>닫기</button><button class="btn outl" type="button" data-cx="copy">비교 견적 복사</button><button class="btn" type="button" data-cx="cust">손님 화면으로</button></div>';
   }
   $('cmpModal').hidden=false;
   var f=$('cmpModal').querySelector('[data-cmpclose]');if(f)f.focus();
@@ -1092,6 +1127,36 @@ function compareText(){
   L.push('');L.push('가격 기준일 '+(meta.updated||'-')+' · 배송비 미포함');
   return L.join('\n');
 }
+/* 손님 화면 — 견적 안이 있으면 안마다 카드, 없으면 지금 장바구니 한 장 */
+function openCust(){
+  var qs=QS.list.length?QS.list.map(function(q){return {id:q.id,c:calc(qOrder(q))}}):(CART.lines.length?[{id:'',c:calc(CART)}]:[]);
+  if(!qs.length){toast('먼저 상품을 담아 주세요');return}
+  var best=Math.min.apply(null,qs.map(function(x){return x.c.net})),multi=qs.length>1;
+  var card=function(x){
+    var c=x.c,disc=c.base-c.pay,isBest=multi&&c.net===best;
+    return '<article class="qcard'+(isBest?' best':'')+'">'
+      +(x.id?'<div class="qh"><b>'+x.id+'안</b>'+(isBest?'<span class="bb">가장 부담이 적어요</span>':'')+'</div>':'')
+      +'<ul>'+c.rows.map(function(r){
+        var l=r.l,th=lineThumb(l);
+        return '<li>'+(th?'<img class="th" src="'+esc(th)+'" alt="">':'<span class="th"></span>')
+          +'<span><b>'+esc(l.name)+'</b><small>'+esc(l.opt||'')+(l.qty>1?' · '+l.qty+'개':'')+'</small></span>'
+          +'<span class="pp num">'+(l.gift?'<del>'+won(l.price*l.qty)+'원</del><em class="gtag">사은품</em>0원':(r.sale<r.base?'<del>'+won(r.base)+'원</del>':'')+won(r.sale)+'원')+'</span></li>';
+      }).join('')+'</ul>'
+      +'<dl><dt>정상가</dt><dd class="num">'+won(c.base)+'원</dd>'
+      +(disc>0?'<dt>할인 합계</dt><dd class="num minus">-'+won(disc)+'원 ('+pct(Math.round(disc/c.base*1000)/10)+')</dd>':'')
+      +'<dt class="pay">결제 금액</dt><dd class="pay num">'+won(c.pay)+'원</dd>'
+      +(c.months?'<dt>할부 '+c.months+'개월'+(c.interest?'':' 무이자')+'</dt><dd class="num">월 '+won(c.monthly)+'원</dd>':'')
+      +(c.pb?'<dt>페이백 (예상)</dt><dd class="num minus">-'+won(c.pb)+'원</dd><dt class="net">실부담금</dt><dd class="net num">'+won(c.net)+'원</dd>':'')
+      +'</dl></article>';
+  };
+  $('cview').innerHTML='<div class="cv-top"><h2>'+esc(SET.storeName||'ACE BED')+' · 견적 안내<small>'+new Date().toLocaleDateString('ko-KR')+(multi?' · '+qs.length+'가지 안':'')+'</small></h2>'
+    +'<button class="btn outl" type="button" data-cv="print">인쇄</button><button class="btn" type="button" data-cv="close">직원 화면으로</button></div>'
+    +'<div class="cv-body">'+qs.map(card).join('')
+    +'<p class="cv-note">가격 기준일 '+esc(meta.updated||'-')+' · 상담용 참고 견적이며 최종 금액은 결제 시 확정돼요. 배송비는 포함하지 않았어요.<br>페이백은 각 결제사 조건(대상·한도·지급 시기)에 따라 따로 지급되는 예상 금액이고, 할부는 카드사 조건에 따라 달라질 수 있어요.</p></div>';
+  $('cview').hidden=false;$('cview').scrollTop=0;
+  $('cview').querySelector('[data-cv="close"]').focus();
+}
+function closeCust(){$('cview').hidden=true;var b=$('cartCust');if(b&&!$('cart').hidden)b.focus()}
 function openCart(){$('cartBg').hidden=false;$('cart').hidden=false;renderCart();$('cart').querySelector('[data-cclose]').focus()}
 function closeCart(){$('cartBg').hidden=true;$('cart').hidden=true;openEd=-1}
 
@@ -1150,10 +1215,19 @@ $('cmpModal').addEventListener('click',function(e){
   else if(b.hasAttribute('data-cdel')){var id=b.getAttribute('data-cdel');if(!confirm(id+'안을 지울까요?'))return;delQuote(id);if(QS.list.length)openCompare();else $('cmpModal').hidden=true}
   else if(b.getAttribute('data-cx')==='add'){$('cmpModal').hidden=true;addQuote()}
   else if(b.getAttribute('data-cx')==='copy')copyText(compareText());
+  else if(b.getAttribute('data-cx')==='cust'){$('cmpModal').hidden=true;openCust()}
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('cmpModal').hidden){e.stopImmediatePropagation();$('cmpModal').hidden=true}},true);
 $('cartClear').addEventListener('click',function(){if(!confirm('장바구니를 비울까요?'+(QS.active?' (지금 보는 '+QS.active+'안의 상품도 비워져요)':'')))return;CART=newCart();openEd=-1;saveCart();renderCart();if(cur)render()});
 $('cartCopy').addEventListener('click',function(){copyText(cartText())});
+$('cartCust').addEventListener('click',openCust);
+$('cview').addEventListener('click',function(e){
+  var a=e.target.closest('[data-cv]');if(!a)return;
+  if(a.getAttribute('data-cv')==='close')closeCust();
+  else{document.body.classList.add('cvp');window.print()}
+});
+addEventListener('afterprint',function(){document.body.classList.remove('cvp')});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('cview').hidden){e.stopImmediatePropagation();closeCust()}},true);
 $('cartSet').addEventListener('click',function(){requireUnlock(function(){openSettings();showTab('disc')})});
 
 GROUPS.forEach(function(g){
