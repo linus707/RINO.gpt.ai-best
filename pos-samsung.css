@@ -6,10 +6,15 @@
   --navy:#000; --navy-2:#212425; --ink:#000; --mut:#707070; --line:#ddd;
   --bg:#fff; --card:#fff; --soft:#f7f7f7; --disc:#2189ff; --ok:#2189ff; --black:#000;
   --blue:#2189ff; --blue-50:#f5faff; --sub:#f7f7f7; --hair:#ebebeb; --err:#fa2337;
-  --ring:inset 0 0 0 1px #ddd; --ring-on:inset 0 0 0 2px #2189ff;
+  --ring:inset 0 0 0 1px #ddd; --ring-on:inset 0 0 0 2px #2189ff; --ring-chip:inset 0 0 0 1px #7f7f7f;
+  /* 디자인 문서의 토큰(간격 4px 단위 · 모서리 · 그림자 · 움직임) */
+  --space-xs:4px; --space-sm:8px; --space-md:16px; --space-lg:24px; --space-xl:40px;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:12px; --radius-xl:20px; --radius-full:9999px;
+  --shadow-sm:0 4px 8px rgba(0,0,0,.2); --shadow-md:0 -3px 6px rgba(0,0,0,.16); --shadow-xl:0 12px 40px rgba(0,0,0,.18);
+  --duration-fast:200ms; --duration-base:400ms;
 }
 body{letter-spacing:-.02em}
-button{transition:background-color .2s linear,border-color .2s linear,color .2s linear,box-shadow .2s linear}
+button{transition:background-color var(--duration-fast) linear,border-color var(--duration-fast) linear,color var(--duration-fast) linear,box-shadow var(--duration-fast) linear}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #000;outline-offset:2px}
 
 /* 상단: 흰 헤더 + 검정 글자 */
@@ -46,14 +51,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .tile{background:var(--sub);border-color:transparent;border-radius:0}
 .tile .img{border-radius:0}
 .tile .img.ph{background:#ebebeb}
-.tile .badge{background:var(--blue);border-radius:999px;padding:2px 8px}
+.tile .badge{background:var(--blue-50);color:var(--blue);border-radius:var(--radius-sm);padding:2px 8px}
 .tile.addtile{background:#fff;border:0;box-shadow:var(--ring);border-radius:6px}
 .pg{border:0;border-radius:50%;background:var(--sub);color:#000;width:46px}
 .dots button{background:#ddd}
 .dots button.on{background:#000}
 
 /* 장바구니 */
-.custbtn,.btn{border-radius:20px}
+.custbtn,.btn{border-radius:var(--radius-xl);min-height:40px;font-size:14px;padding:0 var(--space-lg);border:1px solid #000}
+.custbtn:hover,.btn:not(.line-btn):not(.danger):hover,.paybar .amount:hover{background:#212425}
+.custbtn:active,.btn:not(.line-btn):not(.danger):active,.paybar .amount:active{background:#555}
+.custbtn:disabled,.btn:disabled{opacity:1;background:#8f8f8f;border-color:#8f8f8f;color:#fff;cursor:default}
+.lctl button[data-lq]{border-radius:var(--radius-full)}
 .cart-actions button,.lctl button{border-color:transparent;box-shadow:var(--ring);border-radius:6px;background:#fff}
 .lctl button.on{border-color:transparent;box-shadow:var(--ring-on);color:var(--blue)}
 .lctl button[data-la="del"]{color:var(--err)}
@@ -82,25 +91,31 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .card,.stat div,.pfphoto{border-color:transparent;box-shadow:var(--ring);border-radius:6px}
 .row,.otable th,.otable td,.cmp th,.cmp td,.menu button,.picklist button,.qcard li{border-bottom-color:var(--hair)}
 .otable tr.click:active{background:var(--sub)}
-.num,.pf textarea{border:1px solid var(--line);border-radius:6px}
-.num:focus,.pf textarea:focus{border-color:#000;outline:0}
+.num{border:0;border-bottom:1px solid #b2b2b2;border-radius:0;background:transparent;font-weight:700}
+.num:focus{outline:0;border-bottom-color:#000;box-shadow:inset 0 -1px 0 #000}
+.num:disabled{color:#b2b2b2;border-bottom-color:#a6a6a6}
+.pf textarea{border:1px solid var(--line);border-radius:var(--radius-sm)}
+.pf textarea:focus{border-color:#000;outline:0}
 .seg{border:0;box-shadow:var(--ring);border-radius:20px}
 .btn.line-btn{border:1px solid #000;color:#000}
 .btn.line-btn:hover{background:#000;color:#fff}
+.btn.line-btn:disabled{background:transparent;border-color:var(--line);color:#b2b2b2}
 .btn.danger{border:1px solid var(--err);color:var(--err)}
+.btn.danger:hover{background:#fff0f1}
 .toggle{background:#b2b2b2}
 .b{border:1px solid var(--line);border-radius:20px}
 .b.del{color:var(--err);border-color:var(--err)}
 .bulk.on,.cmp th.act{background:var(--blue-50)}
 .tg.mine{background:var(--blue-50);color:var(--blue)}
 .res{background:var(--hair)}
-.swatch button.on{box-shadow:0 0 0 2px var(--blue)}
+.swatch button{border:0;box-shadow:var(--ring-chip)}
+.swatch button.on{box-shadow:var(--ring-on)}
 .pthumb{border-color:transparent;box-shadow:var(--ring);border-radius:6px}
 .pthumb.none{background:var(--sub)}
 
 /* 모달 */
 .modal,.askbox{background:rgba(0,0,0,.5)}
-.sheet,.askcard{border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.18)}
+.sheet,.askcard{border-radius:var(--radius-lg);box-shadow:var(--shadow-xl)}
 .keyval{background:var(--sub);border-radius:6px}
 .presets button,.instgrid button{border-color:transparent;box-shadow:var(--ring);border-radius:6px}
 .instgrid button.on{background:#fff;box-shadow:var(--ring-on)}
@@ -115,7 +130,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .qcard{border-color:transparent;box-shadow:var(--ring);border-radius:12px}
 .qcard.best{border-color:transparent;box-shadow:var(--ring-on)}
 .qcard .bb,.cmp .bb{border-radius:999px}
-.toast{background:rgba(0,0,0,.88)}
+.toast{background:rgba(0,0,0,.88);box-shadow:var(--shadow-sm)}
 
 @media (prefers-reduced-motion:reduce){button,.tile,.toggle::after,.dots button{transition:none}}
 @media print{.paybar{box-shadow:none}}
