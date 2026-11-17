@@ -184,6 +184,7 @@ async function main() {
   console.log(`총 ${results.length}건 공격 · 뚫림 ${breaches.length}건 · 비밀값 유출 ${results.filter((r) => r.secret).length}건`);
   console.log(`방화벽을 통과해 내부(Gist/Notion)까지 닿은 요청: ${backend.hits.length}건 (정상 경로의 정상 요청만 닿아야 정상)`);
   console.log(breaches.length === 0 ? '\n✅ 결론: 모든 공격을 방어했습니다.' : '\n⚠️ 결론: 아래 항목이 뚫렸습니다 → ' + breaches.map((b) => b.cat + '/' + b.name).join(', '));
-  process.exit(0);
+  process.exit(breaches.length === 0 ? 0 : 1); // 뚫림이 있으면 CI가 실패하도록 0이 아닌 코드로 끝내요
+
 }
 main();
