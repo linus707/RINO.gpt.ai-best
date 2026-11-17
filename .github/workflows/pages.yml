@@ -21,9 +21,7 @@ jobs:
       - name: Collect site files
         run: |
           mkdir _site
-          cp index.html price.html buy.html pos.html translate.html japanese.html japanese.webmanifest japanese-icon.svg japanese-icon-*.png prices.json offline.html sw.js manifest.webmanifest icon.svg icon-*.png CNAME _site/
-      - name: Build the themed POS page (pos-samsung.html)
-        run: node scripts/build-pos-theme.mjs _site
+          cp index.html price.html buy.html pos.html translate.html japanese.html japanese.webmanifest japanese-icon.svg japanese-icon-*.png prices.json store-prices.json offline.html sw.js manifest.webmanifest icon.svg icon-*.png CNAME _site/
       - name: Put login server address into the site
         run: node scripts/inject-auth.mjs _site/index.html
         env:
