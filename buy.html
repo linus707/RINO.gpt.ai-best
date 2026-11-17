@@ -128,7 +128,59 @@ svg{display:block;flex:none}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:12px 20px;border-radius:var(--r-full);background:rgba(0,0,0,.88);color:#fff;box-shadow:0 4px 8px rgba(0,0,0,.2);z-index:10;max-width:90vw;text-align:center}
 .state{padding:80px 20px;text-align:center;color:var(--tx3);line-height:1.7}
 
+/* 설정 버튼 */
+.gear{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--r-full);box-shadow:var(--ring);font-weight:700;white-space:nowrap;flex:none}
+.gear:hover{background:#000;color:#fff;box-shadow:none}
+.gear:hover svg{stroke:#fff}
+
+/* 갤러리 사진 */
+.stage .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.stage .shade{display:none;position:absolute;left:0;right:0;top:0;height:110px;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
+.stage.has-photo .art,.stage.has-photo .ghost{display:none}
+.stage.has-photo .shade{display:block}
+
+/* 설정창 */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px}
+.sheet{width:min(640px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:#fff;border-radius:var(--r-lg);box-shadow:0 12px 40px rgba(0,0,0,.18);padding:22px 24px 18px}
+.sh-head{display:flex;align-items:center;justify-content:space-between}
+.sh-head h3{font-size:22px;line-height:30px;letter-spacing:-.44px}
+.sh-head .x{width:36px;height:36px;border-radius:50%;background:var(--sub);font-size:22px;line-height:1}
+.sh-sub{margin-top:2px;color:var(--tx2)}
+.sh-sec{margin-top:var(--space-lg)}
+.sh-sec h4{margin:0 0 10px;font-size:18px;line-height:24px}
+.ph-row{display:flex;gap:16px;align-items:flex-start}
+.ph-prev{flex:none;width:132px;height:132px;border-radius:var(--r-sm);background:var(--sub);display:grid;place-items:center;overflow:hidden;color:var(--tx3);font-size:13px;text-align:center}
+.ph-prev img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-ctl{flex:1;min-width:0}
+.seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+.seg button{height:36px;padding:0 14px;border-radius:var(--r-sm);box-shadow:var(--ring);font-weight:700}
+.seg button[aria-checked="true"]{box-shadow:var(--ring-on)}
+.hint{margin-top:8px;font-size:12px;line-height:17px;color:var(--tx3)}
+.ph-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ph-btns label.btn{cursor:pointer}
+.btn.sm{height:32px;padding:0 14px}
+.btn.outl:disabled{background:transparent;border-color:var(--line);color:var(--dis);cursor:default}
+.adj{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pin{width:120px;height:36px;padding:0 4px;border:0;border-bottom:1px solid #b2b2b2;border-radius:0;background:transparent;font-weight:700;font-size:15px;text-align:right}
+.pin:focus{outline:0;border-bottom-color:#000;box-shadow:inset 0 -1px 0 #000}
+.pin[aria-invalid="true"]{border-bottom-color:var(--err);box-shadow:inset 0 -1px 0 var(--err)}
+.adj .pin{width:64px}
+.ptab-wrap{margin-top:12px;max-height:300px;overflow:auto;border-radius:var(--r-sm);box-shadow:var(--ring)}
+.ptab{width:100%;border-collapse:collapse;font-size:14px}
+.ptab th,.ptab td{padding:9px 12px;border-bottom:1px solid var(--hair);text-align:left}
+.ptab th{position:sticky;top:0;background:#fff;font-size:12px;color:var(--tx3);font-weight:700}
+.ptab .r{text-align:right;white-space:nowrap}
+.ptab td small{display:block;color:var(--tx3);font-size:12px}
+.ptab tr.chg td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
+.sh-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}
+.lnk{color:var(--tx);text-decoration:underline;text-underline-offset:3px;font-size:12px}
+
 @media (max-width:720px){
+  .gear{padding:0 10px}
+  .ph-row{flex-direction:column}
+  .sheet{padding:18px 16px 14px}
+  .ptab th,.ptab td{padding:9px 8px}
+  .ptab .pin{width:96px}
   .gnb{flex-wrap:wrap;height:auto;gap:0 var(--space-md);padding:0 var(--space-md)}
   .gnb .logo{line-height:56px}
   .gnb .find{flex:1}
@@ -157,6 +209,7 @@ svg{display:block;flex:none}
     <input id="q" type="search" list="models" placeholder="모델 검색 (예: HT-R, 협탁)" autocomplete="off">
     <datalist id="models"></datalist>
   </label>
+  <button class="gear" type="button" id="openSet" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
 </header>
 
 <div id="state" class="state">가격표를 불러오는 중이에요…</div>
@@ -177,6 +230,8 @@ svg{display:block;flex:none}
     <section class="gal" aria-label="제품 그림">
       <div class="stage">
         <div class="ghost" id="ghost" aria-hidden="true"></div>
+        <img class="photo" id="photo" alt="" hidden>
+        <div class="shade" aria-hidden="true"></div>
         <div class="gt"><b id="stTitle"></b><span id="stSize"></span></div>
         <svg class="art" viewBox="0 0 620 300" role="img" aria-label="제품 예시 그림" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -221,7 +276,7 @@ svg{display:block;flex:none}
         <button class="arw l" type="button" id="prev" aria-label="이전 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
         <button class="arw r" type="button" id="next" aria-label="다음 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
       </div>
-      <p class="note">그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.</p>
+      <p class="note" id="photoNote">그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.</p>
     </section>
 
     <section class="opts" aria-label="구매 옵션">
@@ -264,6 +319,48 @@ svg{display:block;flex:none}
     </section>
   </main>
 </div>
+<!-- 설정창: 지금 보고 있는 모델의 사진·가격 (이 기기에만 저장) -->
+<div class="modal" id="setModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <div class="sh-head"><h3 id="setTitle">설정</h3><button class="x" type="button" data-close aria-label="설정 닫기">×</button></div>
+    <p class="sh-sub" id="setSub"></p>
+
+    <section class="sh-sec">
+      <h4>사진</h4>
+      <div class="ph-row">
+        <div class="ph-prev" id="phPrev"></div>
+        <div class="ph-ctl">
+          <div class="seg" role="radiogroup" aria-label="사진을 넣을 범위">
+            <button type="button" role="radio" data-scope="model" aria-checked="true">이 모델 전체</button>
+            <button type="button" role="radio" data-scope="code" aria-checked="false">고른 품목만</button>
+          </div>
+          <p class="hint" id="phHint"></p>
+          <div class="ph-btns">
+            <label class="btn"><input type="file" id="phFile" accept="image/*" hidden>사진 넣기</label>
+            <button class="btn outl" type="button" id="phDel">사진 빼기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sh-sec">
+      <h4>가격</h4>
+      <div class="adj">
+        <span>모든 옵션을</span>
+        <input class="pin num" id="adjPct" inputmode="decimal" placeholder="0" aria-label="조정할 비율(%)"><span>%</span>
+        <button class="btn outl sm" type="button" id="adjApply">원래 가격에서 조정</button>
+      </div>
+      <p class="hint">예: -10 은 원래 가격의 10% 할인. 천 원 단위로 반올림돼요. 칸에 금액을 직접 적어도 돼요.</p>
+      <div class="ptab-wrap"><table class="ptab"><thead><tr><th>옵션</th><th class="r">원래 가격</th><th class="r">판매가</th></tr></thead><tbody id="ptBody"></tbody></table></div>
+    </section>
+
+    <div class="sh-foot">
+      <button class="btn outl" type="button" id="ptReset">이 모델 원래 가격으로</button>
+      <button class="btn" type="button" id="ptSave">가격 저장</button>
+    </div>
+    <p class="fine">사진과 가격은 <b>이 기기의 브라우저에만</b> 저장돼요. 다른 기기·손님 휴대폰에는 보이지 않아요. <span id="setInfo"></span> <button class="lnk" type="button" id="allReset">모든 수정 되돌리기</button></p>
+  </div>
+</div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
@@ -289,6 +386,39 @@ var $=function(id){return document.getElementById(id)};
 var won=function(n){return Math.round(n).toLocaleString('ko-KR')};
 var G={},group=null,cur=null,vi=0,qty=1,months=0,meta={};
 
+/* ───── 설정에서 바꾼 가격·사진 (이 기기에만 저장) ─────
+   가격: localStorage 'buy.prices' = { 품목코드: 금액 }
+   사진: IndexedDB 'buy-photos' = { id:'code:품목코드' | 'model:메뉴:모델', blob }
+   한 품목에 둘 다 있으면 '품목' 사진이 먼저예요 */
+var PRICE_KEY='buy.prices';
+function loadPrices(){try{var o=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');return o&&typeof o==='object'?o:{}}catch(e){return {}}}
+function savePrices(){try{localStorage.setItem(PRICE_KEY,JSON.stringify(PRICES));return true}catch(e){return false}}
+var PRICES=loadPrices(),PHOTO=new Map(); // PHOTO: id → 화면용 주소(blob:)
+function phDB(){return new Promise(function(ok,no){var r=indexedDB.open('buy-photos',1);r.onupgradeneeded=function(){r.result.createObjectStore('p',{keyPath:'id'})};r.onsuccess=function(){ok(r.result)};r.onerror=function(){no(r.error)}})}
+function phTx(mode,fn){return phDB().then(function(db){return new Promise(function(ok,no){var t=db.transaction('p',mode),req=fn(t.objectStore('p'));t.oncomplete=function(){ok(req&&req.result)};t.onerror=function(){no(t.error)}})})}
+function loadPhotos(){
+  return phTx('readonly',function(st){return st.getAll()}).then(function(rows){
+    PHOTO.forEach(function(u){URL.revokeObjectURL(u)});PHOTO.clear();
+    (rows||[]).forEach(function(r){if(r&&r.blob)PHOTO.set(r.id,URL.createObjectURL(r.blob))});
+  }).catch(function(){});
+}
+function modelPhotoId(){return 'model:'+group.def.id+':'+cur.key}
+function photoFor(v){return PHOTO.get('code:'+v.code)||PHOTO.get(modelPhotoId())||null}
+// 사진을 긴 쪽 1600px JPEG로 줄여 저장해요(휴대폰 사진은 커서 그대로 두면 저장 공간이 금방 차요)
+function shrink(file){
+  return new Promise(function(ok,no){
+    var u=URL.createObjectURL(file),img=new Image();
+    img.onload=function(){
+      var s=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);
+      c.toBlob(function(b){b?ok(b):no(new Error('blob'))},'image/jpeg',.86);
+    };
+    img.onerror=function(){URL.revokeObjectURL(u);no(new Error('img'))};
+    img.src=u;
+  });
+}
+
 function seriesOf(name){var m=name.match(/^[A-Za-z]+/);return m?m[0].toUpperCase():name.split(/[\s(]/)[0]}
 function clean(name){return name.replace(/\(M\)$/,'').trim()}
 function sizeRank(sz){var b=sz.replace(/\(.*$/,'');var r=ORDER.indexOf(b);return r<0?99:r}
@@ -304,8 +434,10 @@ function build(data){
     var name=String(it[2]).trim();
     if(HIDE_RE.test(name))return; // 진열용 모델은 손님 화면에 보이지 않게 빼요
     var m=name.match(SIZE_RE),key,v;
-    if(m){key=m[1];v={size:m[2]+(m[3]||''),color:m[4]||'',price:it[3],code:it[0]}}
-    else{key=name;v={size:'',color:'',price:it[3],code:it[0]}}
+    // base: 가격표 금액, price: 화면에 쓰는 금액(설정에서 바꾼 값이 있으면 그 값)
+    var ov=PRICES[it[0]],price=ov>0?ov:it[3];
+    if(m){key=m[1];v={size:m[2]+(m[3]||''),color:m[4]||'',price:price,base:it[3],code:it[0]}}
+    else{key=name;v={size:'',color:'',price:price,base:it[3],code:it[0]}}
     var e=maps[cg.gid][key]=maps[cg.gid][key]||{vs:[],main:false};
     e.vs.push(v);if(cg.main)e.main=true;
   });
@@ -410,6 +542,10 @@ function render(){
   $('title').textContent=title;$('sTitle').textContent=title;$('stTitle').textContent=title;
   $('code').textContent=v.code;$('sCode').textContent=v.code;
   $('ghost').textContent=cur.series.slice(0,6);
+  var ph=photoFor(v),pimg=$('photo');
+  if(ph){if(pimg.getAttribute('src')!==ph)pimg.src=ph;pimg.alt=title+' 사진';pimg.hidden=false}else{pimg.hidden=true;pimg.removeAttribute('src')}
+  pimg.parentNode.classList.toggle('has-photo',!!ph);
+  $('photoNote').textContent=ph?'매장에서 넣은 사진이에요.':'그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.';
   $('stSize').textContent=optText||group.def.name;
   $('barPrice').textContent=won(total);
   $('barInstLabel').textContent=months?months+'개월로 나누면':'결제 방식';
@@ -492,9 +628,111 @@ $('next').addEventListener('click',function(){stepSize(1)});
 $('q').addEventListener('change',search);
 $('q').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();search()}});
 
-fetch('prices.json').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(data){
+/* ───── 설정창 ───── */
+var phScope='model',lastFocus=null;
+var numOf=function(s){var n=Number(String(s).replace(/[^\d]/g,''));return String(s).replace(/[\s,원]/g,'')===''?NaN:n};
+function editCount(){return Object.keys(PRICES).length}
+function setInfo(){$('setInfo').textContent='지금 바꾼 가격 '+editCount()+'개 · 사진 '+PHOTO.size+'장.'}
+function renderPhotoPart(){
+  var v=cur.variants[vi],id=phScope==='code'?'code:'+v.code:modelPhotoId(),u=PHOTO.get(id),box=$('phPrev');
+  box.textContent='';
+  if(u){var im=el('img',{alt:'저장된 사진'});im.src=u;box.appendChild(im)}else box.textContent='사진 없음';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-scope]'),function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-scope')===phScope))});
+  var opt=[v.size,v.color].filter(Boolean).join(' · ');
+  $('phHint').textContent=phScope==='code'
+    ?'지금 고른 품목('+(opt?opt+' · ':'')+v.code+')에만 사진이 들어가요.'
+    :'「'+cur.name+'」의 모든 규격·색상('+cur.variants.length+'개)에 같은 사진이 들어가요.';
+  $('phDel').disabled=!u;
+}
+function renderPriceTable(){
+  var body=$('ptBody');body.textContent='';
+  cur.variants.forEach(function(v){
+    var tr=el('tr',{'data-code':v.code}),td=el('td');
+    td.appendChild(document.createTextNode([v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ')||'기본'));
+    td.appendChild(el('small',{},v.code));
+    tr.appendChild(td);
+    tr.appendChild(el('td',{class:'r num'},won(v.base)+'원'));
+    var c=el('td',{class:'r'}),inp=el('input',{class:'pin num',inputmode:'numeric','aria-label':(v.size||'기본')+' '+(v.color||'')+' 판매가'});
+    inp.value=won(v.price);
+    inp.addEventListener('input',function(){markRow(tr,inp,v)});
+    inp.addEventListener('blur',function(){var n=numOf(inp.value);if(n>0)inp.value=won(n)});
+    c.appendChild(inp);tr.appendChild(c);body.appendChild(tr);
+    markRow(tr,inp,v);
+  });
+}
+function markRow(tr,inp,v){var n=numOf(inp.value);inp.setAttribute('aria-invalid',String(!(n>0)));tr.classList.toggle('chg',n>0&&n!==v.base)}
+function openSettings(){
+  lastFocus=document.activeElement;
+  $('setSub').textContent=group.def.name+' · '+cur.name;
+  $('adjPct').value='';
+  renderPhotoPart();renderPriceTable();setInfo();
+  $('setModal').hidden=false;
+  $('setModal').querySelector('[data-close]').focus();
+}
+function closeSettings(){$('setModal').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+function refresh(){renderModel();render()}
+
+$('openSet').addEventListener('click',openSettings);
+$('setModal').addEventListener('click',function(e){if(e.target===this||e.target.closest('[data-close]'))closeSettings()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('setModal').hidden)closeSettings()});
+Array.prototype.forEach.call(document.querySelectorAll('[data-scope]'),function(b){b.addEventListener('click',function(){phScope=b.getAttribute('data-scope');renderPhotoPart()})});
+$('phFile').addEventListener('change',function(){
+  var f=this.files&&this.files[0];this.value='';
+  if(!f)return;
+  if(!/^image\//.test(f.type)){toast('사진 파일을 골라 주세요');return}
+  var id=phScope==='code'?'code:'+cur.variants[vi].code:modelPhotoId();
+  shrink(f).then(function(blob){return phTx('readwrite',function(st){return st.put({id:id,blob:blob,at:Date.now()})})})
+    .then(loadPhotos).then(function(){renderPhotoPart();render();setInfo();toast('사진을 넣었어요')})
+    .catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+});
+$('phDel').addEventListener('click',function(){
+  var id=phScope==='code'?'code:'+cur.variants[vi].code:modelPhotoId();
+  if(!PHOTO.has(id)||!confirm('이 사진을 뺄까요?'))return;
+  phTx('readwrite',function(st){return st.delete(id)}).then(loadPhotos).then(function(){renderPhotoPart();render();setInfo();toast('사진을 뺐어요')}).catch(function(){toast('사진을 빼지 못했어요')});
+});
+$('adjApply').addEventListener('click',function(){
+  var p=parseFloat(String($('adjPct').value).replace(',','.'));
+  if(!isFinite(p)||p<=-100||p>500){$('adjPct').setAttribute('aria-invalid','true');toast('-99 ~ 500 사이 숫자를 적어 주세요');return}
+  $('adjPct').setAttribute('aria-invalid','false');
+  Array.prototype.forEach.call($('ptBody').children,function(tr,i){
+    var v=cur.variants[i],n=Math.max(1000,Math.round(v.base*(1+p/100)/1000)*1000),inp=tr.querySelector('input');
+    inp.value=won(n);markRow(tr,inp,v);
+  });
+  toast('표에 넣었어요. 「가격 저장」을 눌러야 적용돼요');
+});
+$('ptSave').addEventListener('click',function(){
+  var rows=Array.prototype.slice.call($('ptBody').children),bad=rows.filter(function(tr){return !(numOf(tr.querySelector('input').value)>0)});
+  if(bad.length){bad[0].querySelector('input').focus();toast('금액이 비었거나 0인 칸이 있어요');return}
+  rows.forEach(function(tr,i){
+    var v=cur.variants[i],n=numOf(tr.querySelector('input').value);
+    if(n===v.base)delete PRICES[v.code];else PRICES[v.code]=n;
+    v.price=n;
+  });
+  if(!savePrices()){toast('저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요');return}
+  refresh();renderPriceTable();setInfo();toast('가격을 저장했어요');
+});
+$('ptReset').addEventListener('click',function(){
+  if(!cur.variants.some(function(v){return PRICES[v.code]!=null})){toast('이 모델은 바꾼 가격이 없어요');return}
+  if(!confirm('「'+cur.name+'」의 가격을 가격표 금액으로 되돌릴까요?'))return;
+  cur.variants.forEach(function(v){delete PRICES[v.code];v.price=v.base});
+  savePrices();refresh();renderPriceTable();setInfo();toast('원래 가격으로 되돌렸어요');
+});
+$('allReset').addEventListener('click',function(){
+  if(!editCount()&&!PHOTO.size){toast('되돌릴 수정이 없어요');return}
+  if(!confirm('이 기기에서 바꾼 가격 '+editCount()+'개와 사진 '+PHOTO.size+'장을 모두 지울까요?'))return;
+  PRICES={};savePrices();
+  Object.keys(G).forEach(function(k){G[k].models.forEach(function(m){m.variants.forEach(function(v){v.price=v.base})})});
+  phTx('readwrite',function(st){return st.clear()}).catch(function(){}).then(loadPhotos).then(function(){refresh();renderPhotoPart();renderPriceTable();setInfo();toast('모든 수정을 되돌렸어요')});
+});
+
+Promise.all([
+  fetch('prices.json').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}),
+  loadPhotos()
+]).then(function(res){
+  var data=res[0];
   meta={updated:data.updated,source:data.source};
   build(data);
+  $('openSet').hidden=false;
   var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
   if(!G[gid]){gid='matt';if(want)GROUPS.some(function(g){if(G[g.id].byName[want]){gid=g.id;return true}return false})}
   setGroup(gid,want);
