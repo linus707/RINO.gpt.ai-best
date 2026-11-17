@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>얼뚱트립 아이덴티티 템플릿 미리보기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--paper:#F6F1E6;--ink:#171513;--sub:#5B554D;--amber:#FFB23F;--amber-d:#E8901A;--night:#121418;--line:#D9D1C2}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Pretendard,"WenQuanYi Zen Hei",sans-serif;background:#2a2a2a;padding:40px;display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
+.s{width:432px;height:540px;position:relative;overflow:hidden;border-radius:6px;box-shadow:0 10px 30px #0007}
+.cnt{position:absolute;top:16px;right:16px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#0006;color:#fff}
+.light .cnt{background:#1715131a;color:var(--ink)}
+.chip{display:inline-block;font-size:11px;font-weight:800;padding:4px 8px;border-radius:3px;background:var(--amber);color:var(--ink);letter-spacing:.02em}
+.chip.o{background:transparent;border:1.5px solid var(--amber);color:var(--amber)}
+.hl{background:var(--amber);color:var(--ink);padding:0 6px;border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.jp{font-size:11px;font-weight:600;opacity:.75;margin-top:8px;letter-spacing:.02em}
+.next{position:absolute;bottom:16px;left:22px;font-size:11px;font-weight:700;display:flex;gap:6px;align-items:center}
+.next b{background:var(--ink);color:var(--paper);padding:2px 7px;border-radius:10px;font-size:10px}
+.dark .next b,.cover .next b{background:var(--amber);color:var(--ink)}
+.sig{position:absolute;bottom:16px;right:20px;font-size:10px;font-weight:700;opacity:.7;letter-spacing:.08em}
+.star{position:absolute;color:var(--amber);font-size:18px}
+/* 1. 표지 — 다크 사진 모드 */
+.cover{background:linear-gradient(180deg,#0000 30%,#000c 72%),linear-gradient(135deg,#3b4a5e,#b07a4a 55%,#1c1f26);color:#fff}
+.cover .scene{position:absolute;inset:0;background:
+ radial-gradient(circle at 70% 30%,#ffd28a55 0 8%,transparent 9%),
+ repeating-linear-gradient(90deg,#0000 0 38px,#0003 38px 40px)}
+.cover .body{position:absolute;left:22px;right:22px;bottom:58px}
+.cover h1{font-size:34px;line-height:1.22;font-weight:900;letter-spacing:-.03em;margin-top:10px}
+.cover h1 em{font-style:normal;color:var(--amber)}
+.tape{position:absolute;width:70px;height:20px;background:#ffb23fcc;transform:rotate(-8deg);top:70px;left:24px}
+.ph{position:absolute;top:58px;left:30px;width:150px;height:110px;background:#ddd;border:5px solid #fff;transform:rotate(-4deg);
+ background:linear-gradient(160deg,#c9a77b,#6a4c35);box-shadow:0 6px 16px #0006;font-size:10px;color:#fff;display:flex;align-items:flex-end;padding:6px;font-weight:700}
+/* 2. 정보 — 라이트 페이퍼 모드 */
+.light{background:var(--paper);color:var(--ink)}
+.light .body{padding:34px 24px}
+.light h2{font-size:27px;line-height:1.28;font-weight:900;letter-spacing:-.03em}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:22px}
+.card{border:1.5px solid var(--ink);border-radius:8px;padding:10px 8px;background:#fff}
+.card.d{background:var(--ink);color:var(--paper)}
+.card small{font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--amber-d)}
+.card p{font-size:13px;font-weight:800;margin-top:4px}
+.card span{font-size:10px;color:var(--sub);display:block;margin-top:3px}
+.card.d span{color:#bbb}
+.steps{margin-top:18px;display:flex;flex-direction:column;gap:9px}
+.step{display:flex;gap:10px;align-items:flex-start;font-size:13px;font-weight:700}
+.step i{font-style:normal;flex:none;width:22px;height:22px;border-radius:50%;background:var(--amber);display:grid;place-items:center;font-size:11px;font-weight:900}
+.step small{display:block;font-size:10px;color:var(--sub);font-weight:500}
+/* 3. CTA — 다크 */
+.dark{background:var(--night);color:#fff}
+.dark .box{position:absolute;left:28px;right:28px;top:150px;border:1.5px solid var(--amber);border-radius:10px;padding:22px 16px;text-align:center}
+.dark .box h3{font-size:24px;font-weight:900;letter-spacing:-.03em}
+.dark .box p{font-size:12px;margin-top:10px;color:#ddd;line-height:1.5}
+.prof{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:var(--ink);border-radius:30px;padding:7px 12px 7px 8px;display:flex;gap:8px;align-items:center;font-size:11px;font-weight:800}
+.prof .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--amber),#b05a1a)}
+.prof .fb{background:#3a7bfd;color:#fff;padding:3px 9px;border-radius:5px;font-size:10px}
+.btns{position:absolute;top:330px;left:0;right:0;display:flex;gap:10px;justify-content:center}
+.btns span{background:#fff;color:var(--ink);font-size:11px;font-weight:800;padding:8px 13px;border-radius:20px}
+.btns span.a{background:var(--amber)}
+.end{position:absolute;top:395px;left:0;right:0;text-align:center;color:var(--amber);font-weight:800;font-size:14px}
+.end small{display:block;color:#999;font-size:10px;margin-top:4px;font-weight:500}
+.cap{width:100%;text-align:center;color:#ccc;font-size:13px;margin-top:-14px}
+</style></head><body>
+
+<div>
+<div class="s cover">
+  <div class="scene"></div>
+  <div class="ph">교토 · 21:40</div><div class="tape"></div>
+  <span class="cnt">1/9</span>
+  <div class="body">
+    <span class="chip">📷 리노's 촬영 공식</span>
+    <h1>폰 하나로<br><em>기온 밤거리</em>를<br>영화처럼 찍으려면?</h1>
+    <div class="jp">祇園の夜を、映画みたいに撮る方法</div>
+  </div>
+  <div class="next"><b>NEXT</b> 셔터 누르기 전 30초 세팅 →</div>
+  <div class="sig">ELLTTOONG TRIP</div>
+</div>
+<p class="cap" style="margin-top:12px">① 표지 = 다크 사진 모드</p>
+</div>
+
+<div>
+<div class="s light">
+  <span class="cnt">4/9</span>
+  <div class="body">
+    <span class="chip o" style="color:var(--amber-d);border-color:var(--amber-d)">KYOTO · 22:00</span>
+    <h2 style="margin-top:10px">기온 거리는<br><span class="hl">시간대</span>마다 온도가 달라요</h2>
+    <div class="jp">時間帯で、街の温度が変わる</div>
+    <div class="cards">
+      <div class="card"><small>MORNING</small><p>아침 7시</p><span>사람 없는 골목<br>인물 없이 풍경</span></div>
+      <div class="card"><small>GOLDEN</small><p>해질녘</p><span>등불 켜지는 순간<br>역광 실루엣</span></div>
+      <div class="card d"><small>NIGHT</small><p>밤 9시~</p><span>등불 보케<br>ISO 800 / 1/60</span></div>
+    </div>
+    <div class="steps">
+      <div class="step"><i>1</i><div>노출은 -0.7로 내리기<small>등불이 하얗게 날아가지 않아요</small></div></div>
+      <div class="step"><i>2</i><div>폰을 허리 높이로 낮추기<small>골목이 길어 보이는 '영화 앵글'</small></div></div>
+    </div>
+  </div>
+  <span class="star" style="top:40px;right:60px">✦</span>
+  <div class="next"><b>NEXT</b> 사람 많을 때 피하는 법 →</div>
+  <div class="sig">📷 리노's Pick</div>
+</div>
+<p class="cap" style="margin-top:12px">② 정보 = 라이트 페이퍼 모드</p>
+</div>
+
+<div>
+<div class="s dark">
+  <span class="cnt">9/9</span>
+  <div class="prof"><span class="av"></span>ellttoong.trips<span class="fb">팔로우</span></div>
+  <div class="box">
+    <h3>댓글로 <span class="hl">[기온]</span> 남기면</h3>
+    <p>촬영 포인트 지도 + 시간대별 세팅값<br>DM으로 바로 보내드려요 📩</p>
+    <p style="font-size:10px;color:#999;margin-top:6px">コメントで「祇園」と書いてね</p>
+  </div>
+  <div class="btns"><span>📌 저장</span><span>↗ 공유</span><span class="a">＋ 팔로우</span></div>
+  <div class="end">교토 가는 날, 이 순서로 찍어보세요<small>도시의 온도를 기록합니다 — 얼뚱트립</small></div>
+  <span class="star" style="top:120px;left:40px">✦</span><span class="star" style="top:300px;right:46px;font-size:12px">✦</span>
+</div>
+<p class="cap" style="margin-top:12px">③ 마지막 = CTA 다크 모드</p>
+</div>
+
+</body></html>
