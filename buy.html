@@ -44,7 +44,7 @@ svg{display:block;flex:none}
 .gnb nav::-webkit-scrollbar{display:none}
 .gnb nav button{position:relative;padding:0 10px;font-weight:700}
 .gnb nav button[aria-current="page"]::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:2px;background:#000}
-.gnb .find{margin-left:auto;position:relative;flex:0 1 280px;min-width:0}
+.gnb .find{margin-left:auto;position:relative;flex:0 1 320px;min-width:0}
 .gnb .find svg{position:absolute;left:12px;top:9px;pointer-events:none}
 .gnb .find input{width:100%;height:36px;padding:0 14px 0 38px;border:1.5px solid transparent;border-radius:var(--r-full);background:var(--sub);font-size:14px}
 .gnb .find input:focus{outline:0;border-color:#000;background:#fff}
@@ -58,7 +58,7 @@ svg{display:block;flex:none}
 .sres .fix{color:var(--blue)}
 
 /* 모델 탭 */
-.tabs{display:flex;align-items:stretch;gap:var(--space-lg);height:52px;padding:0 var(--space-lg);overflow-x:auto;scrollbar-width:none;box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line);font-weight:700;font-size:16px;white-space:nowrap}
+.tabs{display:flex;align-items:stretch;gap:var(--space-lg);height:52px;padding:0 var(--space-lg);overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 24px,#000 calc(100% - 24px),transparent);box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line);font-weight:700;font-size:16px;white-space:nowrap}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{position:relative;font-weight:700;flex:none}
 .tabs button[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:#000}
@@ -74,6 +74,8 @@ svg{display:block;flex:none}
 .pr dt{text-align:right;font-weight:700}
 .pr dd{text-align:right;font-weight:700;font-size:20px;line-height:26px}
 .pr dd.won{color:var(--blue);font-size:24px;line-height:28px;letter-spacing:-.48px}
+.pr dd del{font-size:14px;font-weight:400;color:var(--tx3)}
+.pr dt{color:var(--tx2);font-weight:400;font-size:13px}
 .pr small{margin-left:2px;font-size:14px;font-weight:700}
 
 /* 버튼 */
@@ -88,7 +90,7 @@ svg{display:block;flex:none}
 /* 본문 */
 .main{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:32px;align-items:start;padding:12px var(--space-lg) var(--space-3xl);max-width:1440px;margin:0 auto}
 .gal{position:sticky;top:78px;min-width:0}
-.stage{position:relative;height:min(62vh,560px);min-height:300px;overflow:hidden;background:radial-gradient(60% 50% at 50% 78%,rgba(230,236,244,.4),rgba(230,236,244,0) 70%),linear-gradient(180deg,var(--stage-top) 0%,var(--stage-mid) 48%,var(--stage-bottom) 100%)}
+.stage{position:relative;height:clamp(340px,calc(100vh - 240px),640px);overflow:hidden;background:radial-gradient(60% 50% at 50% 78%,rgba(230,236,244,.4),rgba(230,236,244,0) 70%),linear-gradient(180deg,var(--stage-top) 0%,var(--stage-mid) 48%,var(--stage-bottom) 100%)}
 .stage .ghost{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-weight:800;font-size:clamp(90px,17vw,230px);line-height:1;letter-spacing:-.03em;color:rgba(255,255,255,.13);white-space:nowrap;user-select:none}
 .stage .gt{position:absolute;left:0;right:0;top:18px;text-align:center;color:#fff}
 .stage .gt b{display:block;font-size:22px;line-height:28px;letter-spacing:-.44px}
@@ -110,6 +112,9 @@ svg{display:block;flex:none}
 .opt{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:var(--space-md) var(--space-lg);border-radius:var(--r-sm);background:#fff;box-shadow:var(--ring);text-align:left;transition:box-shadow var(--fast) linear}
 .opt+.opt{margin-top:12px}
 .opt[aria-checked="true"]{box-shadow:var(--ring-on)}
+@media (hover:hover){.opt:not([aria-checked="true"]):hover,.chips button:not([aria-checked="true"]):not([aria-pressed="true"]):hover,.seg button:not([aria-checked="true"]):hover,.qbar button:not([aria-current="true"]):not(:disabled):not(.cmpb):hover{box-shadow:inset 0 0 0 1px #000}}
+.arw{transition:background-color var(--fast) linear}
+.arw:not(:disabled):hover{background:#fff}
 .opt strong{font-weight:700;font-size:18px;line-height:24px;letter-spacing:-.36px;min-width:0;overflow-wrap:anywhere}
 .opt i{width:1px;height:18px;background:currentColor;flex:none}
 .opt small{font-size:18px;line-height:24px;font-weight:700;color:var(--tx3)}
@@ -132,7 +137,9 @@ svg{display:block;flex:none}
 .box b{font-size:16px;white-space:nowrap}
 .sum .btn{width:100%;margin-top:12px}
 .sum .btn:first-of-type{margin-top:18px}
+.sum .fine span{color:var(--tx3)}
 .fine{margin-top:12px;font-size:12px;line-height:17px;color:var(--tx3)}
+.drawer:not([hidden])~.toast{bottom:190px}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:12px 20px;border-radius:var(--r-full);background:rgba(0,0,0,.88);color:#fff;box-shadow:0 4px 8px rgba(0,0,0,.2);z-index:10;max-width:90vw;text-align:center}
 .state{padding:80px 20px;text-align:center;color:var(--tx3);line-height:1.7}
 
@@ -206,6 +213,7 @@ svg{display:block;flex:none}
 .lines .empty{padding:56px 0;text-align:center;color:var(--tx3);line-height:1.8}
 .ln{display:grid;grid-template-columns:56px 1fr auto;gap:2px 12px;padding:14px 0;box-shadow:inset 0 -1px 0 var(--hair)}
 .ln .th{grid-row:span 3;width:56px;height:56px;border-radius:var(--r-sm);background:var(--sub);object-fit:cover;display:block}
+.th.ic{display:grid!important;place-items:center}
 .ln .n{font-weight:700;font-size:15px;line-height:20px;overflow-wrap:anywhere}
 .ln .p{text-align:right;font-weight:700;font-size:15px;white-space:nowrap}
 .ln .p del{display:block;font-weight:400;font-size:12px;color:var(--tx3)}
@@ -218,7 +226,8 @@ svg{display:block;flex:none}
 .qbar .add{box-shadow:inset 0 0 0 1px #000}
 .qbar .cmpb{margin-left:auto;background:#000;color:#fff;box-shadow:none;border-radius:var(--r-full);padding:0 18px}
 .qbar .hint{margin:0;flex:1;min-width:140px}
-.qbar button:disabled{opacity:.4;cursor:default}
+.qbar button:disabled{opacity:1;cursor:default;color:var(--dis);box-shadow:var(--ring)}
+.qbar .cmpb:disabled{background:#fff;color:var(--dis);box-shadow:var(--ring)}
 .sheet.wide{width:min(880px,100%)}
 .cmp-wrap{overflow-x:auto;margin-top:12px}
 .cmp{width:100%;border-collapse:collapse;font-size:14px}
@@ -371,10 +380,20 @@ svg{display:block;flex:none}
   .gear .badge{font-size:12px}
   .dcell .dr{grid-template-columns:28px 1fr 28px}
   .dcell .dr button{height:28px}
-  .gnb{flex-wrap:wrap;height:auto;gap:0 var(--space-md);padding:0 var(--space-md)}
-  .gnb .logo{line-height:56px}
-  .gnb .find{flex:1}
-  .gnb nav{order:3;flex:0 0 100%;height:44px;margin:0 -10px}
+  .gnb{flex-wrap:wrap;height:auto;gap:0 8px;padding:0 var(--space-md)}
+  .gnb .logo{line-height:56px;margin-right:auto}
+  .gnb .find{order:5;flex:0 0 100%;margin:0 0 8px}
+  .gnb .find input{height:40px;font-size:16px}
+  .gnb .find svg{top:11px}
+  .sres{left:0;right:0;width:auto}
+  .gnb nav{order:6;flex:0 0 100%;height:44px;margin:0 -10px}
+  .gear{height:40px;width:44px;justify-content:center;padding:0}
+  .gear:has(.badge){width:auto;padding:0 10px}
+  .drawer:not([hidden])~.toast{bottom:220px}
+  .dr-foot{padding:12px 16px 14px}
+  .dr-body{padding:4px 16px 16px}
+  .qbar,.cstrip{padding-left:16px;padding-right:16px}
+  .tot dd.big{font-size:22px}
   .tabs .cnt{display:none}
   .bar{position:static}
   .bar h1{font-size:19px;line-height:26px}
@@ -413,8 +432,8 @@ svg{display:block;flex:none}
   <div class="bar">
     <div class="t"><span class="kicker" id="series"></span><h1 id="title"></h1><p class="code num" id="code"></p></div>
     <dl class="pr">
-      <dt>합계</dt><dd class="won num"><span id="barPrice"></span><small>원</small></dd>
-      <dt id="barInstLabel">일시불</dt><dd class="num" id="barInst"></dd>
+      <dt id="barLabel">판매가</dt><dd class="num" id="barBase"></dd>
+      <dt id="barDiscLabel">할인 적용가</dt><dd class="won num"><span id="barPrice"></span><small>원</small></dd>
     </dl>
     <button class="btn" type="button" data-add>장바구니 담기</button>
   </div>
@@ -501,21 +520,14 @@ svg{display:block;flex:none}
         <div class="qty"><span>수량</span><button type="button" id="qm" aria-label="수량 줄이기">−</button><b class="num" id="qv">1</b><button type="button" id="qp" aria-label="수량 늘리기">+</button></div>
       </div>
 
-      <div class="grp">
-        <h2>결제 방식</h2><p>월 금액은 합계를 개월 수로 나눈 단순 계산이에요.</p>
-        <div id="inst" role="radiogroup" aria-label="결제 방식"></div>
-      </div>
-
       <div class="sum">
         <h3 id="sTitle"></h3><p class="code num" id="sCode"></p>
         <dl><dt>판매가</dt><dd class="num" id="sUnit"></dd><dt>수량</dt><dd class="num" id="sQty"></dd></dl>
         <div class="max">합계<strong class="won num" id="sTotal"></strong></div>
-        <div class="max" id="sInstRow"><span id="sInstLabel"></span><strong class="num" id="sInst"></strong></div>
         <div class="box" id="sDiscBox"><span>할인 적용가<small id="sDiscNote"></small></span><b class="num" id="sDisc"></b></div>
-        <div class="box"><span>가격 출처</span><b id="sSrc"></b></div>
         <button class="btn" type="button" data-add>장바구니 담기</button>
         <button class="btn outl" type="button" data-copy>이 상품만 견적 복사</button>
-        <p class="fine">여러 제품을 담으면 장바구니에서 제품·지점·매니저 할인을 합산해 계산해요. 결제는 받지 않고, 견적을 글로 복사할 수 있어요. 배송비는 포함하지 않은 금액이에요.</p>
+        <p class="fine">할부·페이백·여러 제품 합산 할인은 장바구니에서 계산해요. 배송비는 포함하지 않은 금액이에요.<br><span id="sSrc"></span></p>
       </div>
     </section>
   </main>
@@ -927,14 +939,6 @@ function renderModel(){
     });
     box.appendChild(b);
   });
-  var ib=$('inst');ib.textContent='';
-  MONTHS.forEach(function(mo){
-    var b=el('button',{type:'button',class:'opt',role:'radio','data-m':mo});
-    b.appendChild(el('strong',{},mo?mo+'개월':'일시불'));
-    b.appendChild(el('em',{class:'num'}));
-    b.addEventListener('click',function(){months=mo;render()});
-    ib.appendChild(b);
-  });
   renderColors();
 }
 
@@ -967,23 +971,24 @@ function render(){
   pimg.parentNode.classList.toggle('has-photo',!!ph);
   $('photoNote').textContent=ph?'매장에서 넣은 사진이에요.':'그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.';
   $('stSize').textContent=optText||group.def.name;
-  $('barPrice').textContent=won(total);
-  $('barInstLabel').textContent=months?months+'개월로 나누면':'결제 방식';
-  $('barInst').textContent=months?'월 '+won(total/months)+'원':'일시불';
+
   $('fSizes').textContent=cur.variants.length+'가지';
   $('fFrom').textContent=won(cur.variants.reduce(function(a,b){return Math.min(a,b.price)},Infinity))+'원';
   $('fDate').textContent=meta.updated||'-';
   $('sUnit').textContent=won(v.price)+' 원';
   $('sQty').textContent=qty+' 개';
   $('sTotal').textContent=won(total)+' 원';
-  $('sInstRow').hidden=!months;
-  $('sInstLabel').textContent=months+'개월로 나누면';
-  $('sInst').textContent='월 '+won(total/months)+'원';
-  $('sSrc').textContent=meta.source||'-';
+  $('sSrc').textContent='가격 기준: '+(meta.source||'-')+' · '+(meta.updated||'');
   // 할인 적용가: 지금 장바구니의 할인(제품·지점·매니저)을 이 상품에 적용하면 얼마인지
   var pv=calc({lines:[{code:v.code,gid:group.def.id,price:v.price,qty:qty,rate:null}],prod:CART.prod,br:CART.br,mr:CART.mr,override:null,months:0,pay:{}});
   var dRate=pv.base?(1-pv.pay/pv.base)*100:0;
-  $('sDiscBox').hidden=gm||!(pv.pay<pv.base);
+  var hasDisc=!gm&&pv.pay<pv.base;
+  $('sDiscBox').hidden=!hasDisc;
+  // 위 띠: 할인이 있으면 「판매가(줄 긋기) → 할인 적용가」, 없으면 「합계」 하나
+  $('barLabel').hidden=$('barBase').hidden=!hasDisc;
+  $('barBase').innerHTML=hasDisc?'<del>'+won(total)+'원</del>':'';
+  $('barDiscLabel').textContent=gm?'사은품':hasDisc?'할인 적용가':'합계';
+  $('barPrice').textContent=gm?'0':won(hasDisc?pv.pay:total);
   $('sDisc').textContent=won(pv.pay)+' 원';
   $('sDiscNote').textContent='지금 할인 기준 '+pct(dRate)+' (장바구니에서 바꿔요)';
   $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
@@ -997,11 +1002,6 @@ function render(){
     b.querySelector('em').textContent=won(hit?hit.price:min)+'원'+(!hit&&list.length>1?'~':'');
   });
   Array.prototype.forEach.call($('colors').children,function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-code')===v.code))});
-  Array.prototype.forEach.call($('inst').children,function(b){
-    var mo=+b.getAttribute('data-m');
-    b.setAttribute('aria-checked',String(mo===months));
-    b.querySelector('em').textContent=mo?'월 '+won(total/mo)+'원':won(total)+'원';
-  });
   // 규격이 클수록 그림 폭이 넓어져요(어림 표현). 규격이 없는 상품은 그대로예요
   var rk=sizeRank(v.size),r=rk>90?1:rk/(ORDER.length-1);
   Array.prototype.forEach.call(document.querySelectorAll('[data-art]'),function(g){g.style.transform='scale('+(0.78+0.22*r).toFixed(3)+','+(0.9+0.1*r).toFixed(3)+')'});
@@ -1010,7 +1010,6 @@ function render(){
 function quoteText(){
   var v=cur.variants[vi],total=v.price*qty,opt=[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ');
   var lines=['[ACE BED 견적]',cur.name+(cur.gid==='matt'?' 매트리스':'')+(opt?' ('+opt+')':''),'코드 '+v.code,'판매가 '+won(v.price)+'원 × '+qty+'개','합계 '+won(total)+'원'];
-  if(months)lines.push(months+'개월로 나누면 월 '+won(total/months)+'원 (단순 계산)');
   lines.push('가격 기준일 '+(meta.updated||'-')+' · 할인·배송비 미포함');
   return lines.join('\n');
 }
@@ -1295,6 +1294,17 @@ $('impModal').addEventListener('click',function(e){
 
 /* ───── 장바구니 ───── */
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var MENU_ICON={
+  matt:'<path d="M3 13.5 12 9l9 4.5-9 4.5z"/><path d="M3 13.5v2L12 20l9-4.5v-2"/>',
+  frame:'<path d="M5 13V6.5L13 5v6"/><path d="M3 14 12 10l9 4-9 4.5z"/><path d="M3 14v2.5L12 21l9-4.5V14"/>',
+  side:'<path d="M7 6.5 12 5l5 1.5v12L12 20l-5-1.5z"/><path d="M12 5v15M8.5 11h1.5M14 11h1.5"/>',
+  care:'<path d="M4 13c0-3 3-5 8-5s8 2 8 5-3 5-8 5-8-2-8-5z"/><path d="M7 13c2-1.2 8-1.2 10 0"/>',
+  gift:'<path d="M4 10h16v3H4zM5.5 13h13v7h-13zM12 10v10"/><path d="M12 10c-1-3-4.5-4-5-2s3 2 5 2c2 0 5.5-.2 5-2s-4-1-5 2"/>'
+};
+function thumbHTML(l){
+  var th=lineThumb(l);
+  return th?'<img class="th" src="'+esc(th)+'" alt="">':'<span class="th ic" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8f8f8f" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">'+(MENU_ICON[l.gid]||MENU_ICON.matt)+'</svg></span>';
+}
 function lineThumb(l){return PHOTO.get('code:'+l.code)||PHOTO.get('model:'+l.gid+':'+l.key)||null}
 function syncCartPrices(){CART.lines.forEach(function(l){var x=CODE[l.code];if(x)l.price=x.v.price});saveCart()}
 function changed(){CART.override=null;saveCart();renderCart();if(cur)render()}
@@ -1330,7 +1340,7 @@ function renderCart(){
     if(r.d[1])parts.push('지점 '+pct(c.br));
     if(r.d[2])parts.push('매니저 '+pct(c.mr));
     return '<li class="ln" data-i="'+i+'">'
-      +(th?'<img class="th" src="'+esc(th)+'" alt="">':'<span class="th"></span>')
+      +thumbHTML(l)
       +'<span class="n">'+esc(l.name)+'</span>'
       +'<span class="p num">'+(l.gift?'<del>'+won(l.price*l.qty)+'</del><em class="gtag">사은품</em> 0원':(r.sale<r.base?'<del>'+won(r.base)+'</del>':'')+won(r.sale)+'원')+'</span>'
       +'<span class="s">'+esc([l.opt,l.code].filter(Boolean).join(' · '))+' · 개당 '+won(l.price)+'원'+(parts.length?' · <em>할인 '+pct(r.eff)+' ('+parts.join(' + ')+')</em>':'')+'</span>'
@@ -1462,7 +1472,7 @@ function openCust(){
       +(x.id?'<div class="qh"><b>'+x.id+'안</b>'+(isBest?'<span class="bb">가장 부담이 적어요</span>':'')+'</div>':'')
       +'<ul>'+c.rows.map(function(r){
         var l=r.l,th=lineThumb(l);
-        return '<li>'+(th?'<img class="th" src="'+esc(th)+'" alt="">':'<span class="th"></span>')
+        return '<li>'+thumbHTML(l)
           +'<span><b>'+esc(l.name)+'</b><small>'+esc(l.opt||'')+(l.qty>1?' · '+l.qty+'개':'')+'</small></span>'
           +'<span class="pp num">'+(l.gift?'<del>'+won(l.price*l.qty)+'원</del><em class="gtag">사은품</em>0원':(r.sale<r.base?'<del>'+won(r.base)+'원</del>':'')+won(r.sale)+'원')+'</span></li>';
       }).join('')+'</ul>'
