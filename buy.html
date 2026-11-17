@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 방화벽(콘텐츠 보안 정책): 아래에 적힌 주소로만 연결·불러오기를 허용해요. 새 외부 서비스를 붙이면 여기에 주소를 추가해야 해요 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<script>/* 방화벽: 다른 사이트가 이 화면을 몰래 끼워 넣어 클릭을 가로채지 못하게 해요(클릭재킹 방지). 같은 사이트 안에서 끼우는 것은 괜찮아요 */
+(function(){try{if(top!==self&&top.location.origin!==location.origin)throw 0}catch(e){document.documentElement.style.display="none";try{top.location=self.location.href}catch(_){}}})();</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>매트리스 구매 화면 · ACE BED</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* 매트리스 구매 화면 — 왼쪽 갤러리 + 오른쪽 옵션 + 주문 요약.
+   규칙: 흰 바탕·검정 글자 / 결정은 검정 알약 버튼 / 고른 칸만 파란 안쪽 링 / 그림자 대신 1px 안쪽 테두리 */
+:root{
+  --blue:#2189ff; --blue-50:#f5faff; --bg:#fff; --sub:#f7f7f7; --line:#ddd; --hair:#ebebeb;
+  --tx:#000; --tx2:#555; --tx3:#707070; --dis:#b2b2b2; --err:#fa2337;
+  --ring:inset 0 0 0 1px #ddd; --ring-on:inset 0 0 0 2px #2189ff;
+  --space-sm:8px; --space-md:16px; --space-lg:24px; --space-xl:40px; --space-2xl:64px; --space-3xl:96px;
+  --r-sm:6px; --r-lg:12px; --r-xl:20px; --r-full:9999px;
+  --fast:200ms;
+  --stage-top:#3d4654; --stage-mid:#55606f; --stage-bottom:#8a94a3;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:400 14px/18px "Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;letter-spacing:-.02em;word-break:keep-all;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p,dl,dd{margin:0}
+a{color:inherit;text-decoration:none}
+button,input{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+svg{display:block;flex:none}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid #000;outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* 헤더 */
+.gnb{display:flex;align-items:center;gap:var(--space-lg);height:64px;padding:0 var(--space-lg)}
+.gnb .logo{font-weight:800;font-size:20px;letter-spacing:.02em;white-space:nowrap}
+.gnb nav{display:flex;gap:4px;font-weight:700;white-space:nowrap;overflow:hidden}
+.gnb nav a{padding:14px 10px}
+.gnb .find{margin-left:auto;position:relative;flex:0 1 280px;min-width:0}
+.gnb .find svg{position:absolute;left:12px;top:9px;pointer-events:none}
+.gnb .find input{width:100%;height:36px;padding:0 14px 0 38px;border:1.5px solid transparent;border-radius:var(--r-full);background:var(--sub);font-size:14px}
+.gnb .find input:focus{outline:0;border-color:#000;background:#fff}
+
+/* 모델 탭 */
+.tabs{display:flex;align-items:stretch;gap:var(--space-lg);height:52px;padding:0 var(--space-lg);overflow-x:auto;scrollbar-width:none;box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line);font-weight:700;font-size:16px;white-space:nowrap}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{position:relative;font-weight:700}
+.tabs button[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:#000}
+.tabs .cnt{margin-left:auto;display:flex;align-items:center;font-size:13px;font-weight:400;color:var(--tx3);padding-left:var(--space-lg)}
+
+/* 상단 고정 띠 */
+.bar{position:sticky;top:0;z-index:5;background:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:12px var(--space-lg);padding:10px var(--space-lg);box-shadow:inset 0 -1px 0 var(--line)}
+.bar .t{margin-right:auto;min-width:0}
+.bar h1{font-weight:700;font-size:22px;line-height:28px;letter-spacing:-.44px}
+.code{font-size:13px;line-height:16px;letter-spacing:0;color:var(--tx)}
+.kicker{font-weight:700;font-size:14px;line-height:16px;color:var(--blue)}
+.pr{display:grid;grid-template-columns:auto auto;align-items:baseline;gap:2px 14px;white-space:nowrap}
+.pr dt{text-align:right;font-weight:700}
+.pr dd{text-align:right;font-weight:700;font-size:20px;line-height:26px}
+.pr dd.won{color:var(--blue);font-size:24px;line-height:28px;letter-spacing:-.48px}
+.pr small{margin-left:2px;font-size:14px;font-weight:700}
+
+/* 버튼 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 var(--space-lg);border:1px solid #000;border-radius:var(--r-xl);background:#000;color:#fff;font-weight:700;font-size:14px;white-space:nowrap;transition:background-color var(--fast) linear,border-color var(--fast) linear,color var(--fast) linear}
+.btn:hover{background:#212425;border-color:#212425}
+.btn:active{background:#555;border-color:#555}
+.btn:disabled{background:#8f8f8f;border-color:#8f8f8f;cursor:default}
+.btn.outl{background:transparent;color:#000}
+.btn.outl:hover{background:#000;color:#fff;border-color:#000}
+.bar>.btn{width:172px}
+
+/* 본문 */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:32px;align-items:start;padding:12px var(--space-lg) var(--space-3xl);max-width:1440px;margin:0 auto}
+.gal{position:sticky;top:78px;min-width:0}
+.stage{position:relative;height:min(62vh,560px);min-height:300px;overflow:hidden;background:radial-gradient(60% 50% at 50% 78%,rgba(230,236,244,.4),rgba(230,236,244,0) 70%),linear-gradient(180deg,var(--stage-top) 0%,var(--stage-mid) 48%,var(--stage-bottom) 100%)}
+.stage .ghost{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-weight:800;font-size:clamp(90px,17vw,230px);line-height:1;letter-spacing:-.03em;color:rgba(255,255,255,.13);white-space:nowrap;user-select:none}
+.stage .gt{position:absolute;left:0;right:0;top:18px;text-align:center;color:#fff}
+.stage .gt b{display:block;font-size:22px;line-height:28px;letter-spacing:-.44px}
+.stage .gt span{font-size:15px;line-height:22px;opacity:.9}
+.stage .art{position:absolute;left:50%;bottom:26px;width:min(620px,88%);height:auto;transform:translateX(-50%)}
+.stage .art .bed{transform-origin:50% 100%;transition:transform 500ms cubic-bezier(0,.18,.07,1)}
+.arw{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(255,255,255,.72);display:grid;place-items:center}
+.arw.l{left:12px}.arw.r{right:12px}
+.arw:disabled{opacity:.35;cursor:default}
+.note{margin-top:12px;font-size:12px;line-height:16px;color:var(--tx2);text-align:center}
+
+/* 옵션 */
+.feat{display:grid;grid-template-columns:repeat(3,1fr);padding:16px 8px;border-radius:var(--r-sm);background:var(--sub);text-align:center;line-height:19px}
+.feat svg{margin:0 auto 8px}
+.feat b{display:block;font-weight:700}
+.grp{margin-top:var(--space-xl)}
+.grp h2{font-weight:700;font-size:24px;line-height:32px;letter-spacing:-.48px}
+.grp>p{margin:2px 0 14px;font-size:13px;color:var(--tx2)}
+.opt{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:var(--space-md) var(--space-lg);border-radius:var(--r-sm);background:#fff;box-shadow:var(--ring);text-align:left;transition:box-shadow var(--fast) linear}
+.opt+.opt{margin-top:12px}
+.opt[aria-checked="true"]{box-shadow:var(--ring-on)}
+.opt strong{font-weight:700;font-size:18px;line-height:24px;letter-spacing:-.36px}
+.opt i{width:1px;height:18px;background:currentColor;flex:none}
+.opt small{font-size:18px;line-height:24px;font-weight:700;color:var(--tx3)}
+.opt em{margin-left:auto;font-style:normal;font-weight:700;font-size:16px;white-space:nowrap}
+.qty{display:flex;align-items:center;gap:14px;min-height:56px;padding:8px var(--space-lg);border-radius:var(--r-sm);box-shadow:var(--ring)}
+.qty span{margin-right:auto;font-weight:700;font-size:16px}
+.qty button{width:36px;height:36px;border-radius:50%;background:var(--sub);font-size:20px;line-height:1}
+.qty button:disabled{color:var(--dis);cursor:default}
+.qty b{min-width:26px;text-align:center;font-size:18px}
+
+/* 주문 요약 */
+.sum{margin-top:var(--space-xl);padding:22px 18px 24px;background:var(--sub)}
+.sum h3{font-weight:700;font-size:22px;line-height:30px;letter-spacing:-.44px}
+.sum dl{display:grid;grid-template-columns:1fr auto;gap:8px 12px;margin-top:16px;padding-bottom:16px;box-shadow:inset 0 -1px 0 var(--line);color:var(--tx2)}
+.sum dl dd{font-weight:700;font-size:16px;line-height:20px;text-align:right;color:var(--tx)}
+.max{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:14px;font-size:13px;font-weight:700;white-space:nowrap}
+.max strong{font-size:20px;line-height:26px;letter-spacing:-.4px}
+.max strong.won{color:var(--blue)}
+.box{display:flex;justify-content:space-between;gap:12px;margin-top:12px;padding:18px 20px;border-radius:var(--r-lg);background:#fff;line-height:20px}
+.box b{font-size:16px;white-space:nowrap}
+.sum .btn{width:100%;margin-top:12px}
+.sum .btn:first-of-type{margin-top:18px}
+.fine{margin-top:12px;font-size:12px;line-height:17px;color:var(--tx3)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:12px 20px;border-radius:var(--r-full);background:rgba(0,0,0,.88);color:#fff;box-shadow:0 4px 8px rgba(0,0,0,.2);z-index:10;max-width:90vw;text-align:center}
+.state{padding:80px 20px;text-align:center;color:var(--tx3);line-height:1.7}
+
+@media (max-width:720px){
+  .gnb nav{display:none}
+  .gnb .find{flex:1}
+  .tabs .cnt{display:none}
+  .bar{position:static}
+  .bar h1{font-size:19px;line-height:26px}
+  .pr{width:100%;grid-template-columns:1fr auto}
+  .pr dt{text-align:left}
+  .bar>.btn{width:100%}
+  .main{grid-template-columns:minmax(0,1fr);gap:24px;padding:0 0 var(--space-2xl)}
+  .gal{position:static}
+  .stage{height:300px}
+  .arw{display:none}
+  .opts{padding:0 var(--space-md)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="gnb">
+  <a class="logo" href="./">ACE BED</a>
+  <nav aria-label="바로가기"><a href="./pos.html">매장 POS</a><a href="./price.html">가격표</a></nav>
+  <label class="find" aria-label="모델 검색">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+    <input id="q" type="search" list="models" placeholder="모델 검색 (예: HT-R, RA360)" autocomplete="off">
+    <datalist id="models"></datalist>
+  </label>
+</header>
+
+<div id="state" class="state">가격표를 불러오는 중이에요…</div>
+
+<div id="page" hidden>
+  <nav class="tabs" id="tabs" aria-label="같은 시리즈 모델"></nav>
+
+  <div class="bar">
+    <div class="t"><span class="kicker" id="series"></span><h1 id="title"></h1><p class="code num" id="code"></p></div>
+    <dl class="pr">
+      <dt>합계</dt><dd class="won num"><span id="barPrice"></span><small>원</small></dd>
+      <dt id="barInstLabel">일시불</dt><dd class="num" id="barInst"></dd>
+    </dl>
+    <button class="btn" type="button" data-copy>견적 복사하기</button>
+  </div>
+
+  <main class="main">
+    <section class="gal" aria-label="제품 그림">
+      <div class="stage">
+        <div class="ghost" id="ghost" aria-hidden="true"></div>
+        <div class="gt"><b id="stTitle"></b><span id="stSize"></span></div>
+        <svg class="art" viewBox="0 0 620 300" role="img" aria-label="매트리스 그림 — 고른 규격에 따라 폭이 달라져요" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="buy-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fdfdfb"/><stop offset="1" stop-color="#e4e3dd"/></linearGradient>
+            <linearGradient id="buy-side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eeede8"/><stop offset="1" stop-color="#c9c7bf"/></linearGradient>
+            <linearGradient id="buy-end" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d9d7cf"/><stop offset="1" stop-color="#b9b6ad"/></linearGradient>
+            <radialGradient id="buy-sh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#141a22" stop-opacity=".5"/><stop offset="1" stop-color="#141a22" stop-opacity="0"/></radialGradient>
+          </defs>
+          <ellipse cx="310" cy="272" rx="290" ry="16" fill="url(#buy-sh)"/>
+          <g class="bed" id="bed">
+            <path d="M70 150 L400 96 Q410 94 418 99 L560 170 Q566 174 558 177 L232 238 Q222 240 214 235 L70 160 Q62 154 70 150Z" fill="url(#buy-top)"/>
+            <path d="M66 156 L216 236 Q224 240 232 238 L232 270 Q224 272 216 268 L66 188Z" fill="url(#buy-end)"/>
+            <path d="M232 238 L560 176 L560 208 L232 270Z" fill="url(#buy-side)"/>
+            <path d="M232 249 L560 187M232 260 L560 198M66 167 L224 250M66 178 L224 260" stroke="#fff" stroke-opacity=".55" stroke-width="1.2" fill="none"/>
+            <g fill="none" stroke="#c9c7bf" stroke-width="1" stroke-opacity=".8"><path d="M150 138 L300 216M232 124 L382 202M314 111 L464 188M150 191 L478 130M106 168 L434 108"/></g>
+            <rect x="372" y="214" width="34" height="13" rx="2" transform="skewY(-10.7)" transform-origin="372 214" fill="#1f2937"/>
+          </g>
+        </svg>
+        <button class="arw l" type="button" id="prev" aria-label="이전 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
+        <button class="arw r" type="button" id="next" aria-label="다음 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
+      </div>
+      <p class="note">그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.</p>
+    </section>
+
+    <section class="opts" aria-label="구매 옵션">
+      <div class="feat">
+        <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22V10M27 22V10M5 16h22M9 13l-4 3 4 3M23 13l4 3-4 3"/></svg><b id="fSizes"></b>규격</div>
+        <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="8" width="22" height="16" rx="2"/><path d="M5 14h22M10 19h5"/></svg><b id="fFrom"></b>부터</div>
+        <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="7" width="20" height="19" rx="2"/><path d="M6 13h20M11 4v5M21 4v5"/></svg><b id="fDate"></b>가격 기준일</div>
+      </div>
+
+      <div class="grp">
+        <h2>규격</h2><p>침대 크기에 맞는 규격을 골라 주세요.</p>
+        <div id="sizes" role="radiogroup" aria-label="규격"></div>
+      </div>
+
+      <div class="grp">
+        <h2>수량</h2><p>몇 개가 필요한가요?</p>
+        <div class="qty"><span>수량</span><button type="button" id="qm" aria-label="수량 줄이기">−</button><b class="num" id="qv">1</b><button type="button" id="qp" aria-label="수량 늘리기">+</button></div>
+      </div>
+
+      <div class="grp">
+        <h2>결제 방식</h2><p>월 금액은 합계를 개월 수로 나눈 단순 계산이에요.</p>
+        <div id="inst" role="radiogroup" aria-label="결제 방식"></div>
+      </div>
+
+      <div class="sum">
+        <h3 id="sTitle"></h3><p class="code num" id="sCode"></p>
+        <dl><dt>판매가</dt><dd class="num" id="sUnit"></dd><dt>수량</dt><dd class="num" id="sQty"></dd></dl>
+        <div class="max">합계<strong class="won num" id="sTotal"></strong></div>
+        <div class="max" id="sInstRow"><span id="sInstLabel"></span><strong class="num" id="sInst"></strong></div>
+        <div class="box"><span>가격 출처</span><b id="sSrc"></b></div>
+        <button class="btn" type="button" data-copy>견적 복사하기</button>
+        <a class="btn outl" href="./pos.html">매장 POS에서 상담하기</a>
+        <p class="fine">이 화면은 결제를 받지 않아요. 고른 내용을 글로 복사해 메신저·메모에 붙여 넣을 수 있어요. 할인·배송비·이자는 포함하지 않은 금액이에요.</p>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+'use strict';
+var MAT_CAT='매트(35)(MA)';
+var ORDER=['S','SS','DS','DD','Q','LQ','K','K3','LK','LK(1800)','LK(2000)'];
+var SIZE_KO={S:'싱글',SS:'슈퍼싱글',DD:'더블',Q:'퀸',LQ:'라지퀸',K:'킹',LK:'라지킹','LK(1800)':'라지킹 1800','LK(2000)':'라지킹 2000'};
+var MONTHS=[0,12,24,36];
+var $=function(id){return document.getElementById(id)};
+var won=function(n){return Math.round(n).toLocaleString('ko-KR')};
+var models=[],byName={},cur=null,si=0,qty=1,months=0,meta={};
+
+function seriesOf(name){var m=name.match(/^[A-Za-z]+/);return m?m[0].toUpperCase():name}
+function clean(name){return name.replace(/\(M\)$/,'').trim()}
+
+function build(data){
+  var ci=data.cats.indexOf(MAT_CAT),map={};
+  data.items.forEach(function(it){
+    if(it[1]!==ci||typeof it[3]!=='number'||!(it[3]>0))return;
+    var m=String(it[2]).match(/^(.*\S)\s+([A-Z0-9]+(?:\(\d+\))?)$/);
+    if(!m||ORDER.indexOf(m[2])<0)return;
+    (map[m[1]]=map[m[1]]||[]).push({size:m[2],price:it[3],code:it[0]});
+  });
+  models=Object.keys(map).sort(function(a,b){return a.localeCompare(b,'ko')}).map(function(k){
+    var v=map[k].sort(function(a,b){return ORDER.indexOf(a.size)-ORDER.indexOf(b.size)||a.price-b.price});
+    return {key:k,name:clean(k),series:seriesOf(k),sizes:v};
+  });
+  models.forEach(function(m){byName[m.name]=m});
+}
+
+function el(tag,attrs,text){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e}
+
+function pick(m,keepSize){
+  var prev=cur&&cur.sizes[si]?cur.sizes[si].size:null;
+  cur=m;si=0;
+  if(keepSize&&prev){for(var i=0;i<m.sizes.length;i++)if(m.sizes[i].size===prev){si=i;break}}
+  try{history.replaceState(null,'','?m='+encodeURIComponent(m.name))}catch(e){}
+  renderModel();render();
+}
+
+function renderModel(){
+  var tabs=$('tabs');tabs.textContent='';
+  var fam=models.filter(function(m){return m.series===cur.series});
+  fam.forEach(function(m){
+    var b=el('button',{type:'button'},m.name);
+    if(m===cur)b.setAttribute('aria-current','page');
+    b.addEventListener('click',function(){pick(m,true)});
+    tabs.appendChild(b);
+  });
+  tabs.appendChild(el('span',{class:'cnt'},'매트리스 '+models.length+'개 모델'));
+  var on=tabs.querySelector('[aria-current]');if(on&&on.scrollIntoView)on.scrollIntoView({block:'nearest',inline:'center'});
+
+  var box=$('sizes');box.textContent='';
+  cur.sizes.forEach(function(s,i){
+    var b=el('button',{type:'button',class:'opt',role:'radio','data-i':i});
+    b.appendChild(el('strong',{},s.size));
+    if(SIZE_KO[s.size]){b.appendChild(el('i'));b.appendChild(el('small',{},SIZE_KO[s.size]))}
+    b.appendChild(el('em',{class:'num'},won(s.price)+'원'));
+    b.addEventListener('click',function(){si=i;render()});
+    box.appendChild(b);
+  });
+  var ib=$('inst');ib.textContent='';
+  MONTHS.forEach(function(mo){
+    var b=el('button',{type:'button',class:'opt',role:'radio','data-m':mo});
+    b.appendChild(el('strong',{},mo?mo+'개월':'일시불'));
+    b.appendChild(el('em',{class:'num'}));
+    b.addEventListener('click',function(){months=mo;render()});
+    ib.appendChild(b);
+  });
+}
+
+function render(){
+  var s=cur.sizes[si],total=s.price*qty,title=cur.name+' 매트리스';
+  document.title=title+' · ACE BED';
+  $('series').textContent=cur.series+' 시리즈';
+  $('title').textContent=title;$('sTitle').textContent=title;$('stTitle').textContent=title;
+  $('code').textContent=s.code;$('sCode').textContent=s.code;
+  $('ghost').textContent=cur.series;
+  $('stSize').textContent=s.size+(SIZE_KO[s.size]?' · '+SIZE_KO[s.size]:'');
+  $('barPrice').textContent=won(total);
+  $('barInstLabel').textContent=months?months+'개월로 나누면':'결제 방식';
+  $('barInst').textContent=months?'월 '+won(total/months)+'원':'일시불';
+  $('fSizes').textContent=cur.sizes.length+'가지';
+  $('fFrom').textContent=won(cur.sizes.reduce(function(a,b){return Math.min(a,b.price)},Infinity))+'원';
+  $('fDate').textContent=meta.updated||'-';
+  $('sUnit').textContent=won(s.price)+' 원';
+  $('sQty').textContent=qty+' 개';
+  $('sTotal').textContent=won(total)+' 원';
+  $('sInstRow').hidden=!months;
+  $('sInstLabel').textContent=months+'개월로 나누면';
+  $('sInst').textContent='월 '+won(total/months)+'원';
+  $('sSrc').textContent=meta.source||'-';
+  $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
+  $('prev').disabled=si<=0;$('next').disabled=si>=cur.sizes.length-1;
+  Array.prototype.forEach.call($('sizes').children,function(b,i){b.setAttribute('aria-checked',String(i===si))});
+  Array.prototype.forEach.call($('inst').children,function(b){
+    var mo=+b.getAttribute('data-m');
+    b.setAttribute('aria-checked',String(mo===months));
+    b.querySelector('em').textContent=mo?'월 '+won(total/mo)+'원':won(total)+'원';
+  });
+  // 규격이 클수록 그림 폭이 넓어져요(어림 표현)
+  var r=ORDER.indexOf(s.size)/(ORDER.length-1);
+  $('bed').style.transform='scale('+(0.78+0.22*r).toFixed(3)+','+(0.9+0.1*r).toFixed(3)+')';
+}
+
+function quoteText(){
+  var s=cur.sizes[si],total=s.price*qty;
+  var lines=['[ACE BED 견적]',cur.name+' 매트리스 '+s.size+(SIZE_KO[s.size]?'('+SIZE_KO[s.size]+')':''),'코드 '+s.code,'판매가 '+won(s.price)+'원 × '+qty+'개','합계 '+won(total)+'원'];
+  if(months)lines.push(months+'개월로 나누면 월 '+won(total/months)+'원 (단순 계산)');
+  lines.push('가격 기준일 '+(meta.updated||'-')+' · 할인·배송비 미포함');
+  return lines.join('\n');
+}
+var tt;
+function toast(msg){var t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(tt);tt=setTimeout(function(){t.hidden=true},2200)}
+function copy(){
+  var text=quoteText();
+  var fallback=function(){
+    var ta=el('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    var ok=false;try{ok=document.execCommand('copy')}catch(e){}
+    ta.remove();toast(ok?'견적을 복사했어요':'복사하지 못했어요. 브라우저 권한을 확인해 주세요');
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){toast('견적을 복사했어요')},fallback);
+  else fallback();
+}
+
+Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'),function(b){b.addEventListener('click',copy)});
+$('qm').addEventListener('click',function(){if(qty>1){qty--;render()}});
+$('qp').addEventListener('click',function(){if(qty<99){qty++;render()}});
+$('prev').addEventListener('click',function(){if(si>0){si--;render()}});
+$('next').addEventListener('click',function(){if(si<cur.sizes.length-1){si++;render()}});
+function search(){
+  var v=$('q').value.trim();if(!v)return;
+  var m=byName[v]||models.filter(function(x){return x.name.toLowerCase().indexOf(v.toLowerCase())>=0})[0];
+  if(m){pick(m,true);$('q').value='';$('q').blur()}else toast('"'+v+'" 모델을 찾지 못했어요');
+}
+$('q').addEventListener('change',search);
+$('q').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();search()}});
+
+fetch('prices.json').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(data){
+  meta={updated:data.updated,source:data.source};
+  build(data);
+  if(!models.length)throw new Error('empty');
+  var dl=$('models');models.forEach(function(m){dl.appendChild(el('option',{value:m.name}))});
+  var want=new URLSearchParams(location.search).get('m');
+  $('state').hidden=true;$('page').hidden=false;
+  pick(byName[want]||models[0],false);
+}).catch(function(){
+  $('state').textContent='가격표(prices.json)를 불러오지 못했어요. 잠시 뒤 새로 고쳐 주세요.';
+});
+})();
+</script>
+</body>
+</html>
