@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>여행 숙소 지도</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="title-row">
+    <h1 id="title">여행 숙소 지도</h1>
+    <span id="sample-badge" class="badge" hidden>예시 데이터</span>
+    <button id="reload" class="icon-btn" type="button" title="시트 다시 불러오기" aria-label="시트 다시 불러오기">↻</button>
+  </div>
+  <p id="subtitle" class="subtitle"></p>
+  <nav id="tabs" class="tabs" aria-label="동네 선택"></nav>
+</header>
+
+<main class="layout">
+  <section class="map-wrap">
+    <div id="map" aria-label="지도"></div>
+    <div id="status" class="status" role="status"></div>
+  </section>
+  <aside class="side">
+    <div id="area-info" class="area-info"></div>
+    <ol id="list" class="list"></ol>
+    <p id="disclosure" class="disclosure"></p>
+  </aside>
+</main>
+
+<div id="sheet-backdrop" class="backdrop" hidden></div>
+<article id="card" class="card" hidden aria-modal="true" role="dialog" aria-labelledby="card-name">
+  <button id="card-close" class="card-close" type="button" aria-label="닫기">✕</button>
+  <div class="card-photo"><img id="card-img" alt=""><span id="card-rank" class="card-rank"></span><span id="card-photo-note" class="photo-note" hidden>예시 사진</span></div>
+  <div class="card-body">
+    <p id="card-area" class="card-area"></p>
+    <h2 id="card-name"></h2>
+    <p id="card-meta" class="card-meta"></p>
+    <p id="card-desc" class="card-desc"></p>
+    <ul id="card-points" class="card-points"></ul>
+    <p id="card-price" class="card-price"></p>
+    <div id="card-actions" class="card-actions"></div>
+  </div>
+</article>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

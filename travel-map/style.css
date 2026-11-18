@@ -1,0 +1,109 @@
+:root {
+  --bg: #111827; --panel: #1f2937; --line: #374151; --text: #f9fafb; --mut: #9ca3af;
+  --red: #dc2626; --white: #fff; --ink: #111827;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+       background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+[hidden] { display: none !important; }
+
+/* ── 상단 ── */
+.top { padding: 14px 16px 10px; }
+.title-row { display: flex; align-items: center; gap: 8px; }
+h1 { font-size: 20px; margin: 0; font-weight: 800; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: #111; font-weight: 700; }
+.icon-btn { margin-left: auto; background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px;
+            width: 34px; height: 34px; font-size: 18px; cursor: pointer; }
+.subtitle { margin: 4px 0 10px; color: var(--mut); font-size: 13px; }
+.tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; padding: 8px 14px; border-radius: 20px; border: 1px solid #4b5563; background: none; color: var(--text);
+       font-size: 14px; white-space: nowrap; cursor: pointer; }
+.tab.active { background: var(--white); color: var(--ink); font-weight: 700; border-color: var(--white); }
+
+/* ── 본문 배치: 모바일은 위아래, PC는 좌우 ── */
+.layout { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.map-wrap { position: relative; height: 58vh; min-height: 320px; }
+#map { position: absolute; inset: 0; background: #e5e7eb; }
+.side { padding: 12px 16px 24px; }
+@media (min-width: 900px) {
+  .layout { flex-direction: row; }
+  .map-wrap { flex: 1; height: auto; margin: 0 0 16px 16px; border-radius: 14px; overflow: hidden; }
+  .side { width: 360px; overflow-y: auto; }
+}
+.status { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 500; background: rgba(17,24,39,.9);
+          color: #fff; padding: 8px 14px; border-radius: 10px; font-size: 13px; max-width: 90%; text-align: center; }
+.status:empty { display: none; }
+.status.error { background: #7f1d1d; }
+
+/* ── 지도 위 마커 ── */
+.pin { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--red); color: #fff; font-weight: 800; font-size: 13px;
+       display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.label { background: #fff; color: var(--ink); padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 600;
+         white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.pin.on .num { background: #111827; transform: scale(1.15); }
+.pin.on .label { background: #111827; color: #fff; }
+.landmark { background: #1f2937; color: #fff; padding: 4px 10px; border-radius: 14px; font-size: 12px; font-weight: 600;
+            white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.landmark::before { content: "★ "; color: #fbbf24; }
+
+/* ── 오른쪽(아래) 패널 ── */
+.area-info { background: var(--panel); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; line-height: 1.55; }
+.area-info:empty { display: none; }
+.area-info h3 { margin: 0 0 4px; font-size: 15px; }
+.area-info p { margin: 0 0 6px; color: #d1d5db; }
+.area-info .good::before { content: "👍 "; }
+.area-info .bad::before { content: "🤔 "; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.item { display: flex; gap: 10px; align-items: center; background: var(--panel); border: 1px solid transparent; border-radius: 12px;
+        padding: 10px 12px; cursor: pointer; width: 100%; color: inherit; text-align: left; font: inherit; }
+.item:hover, .item.on { border-color: #f87171; }
+.item .num { width: 26px; height: 26px; font-size: 12px; }
+.item b { display: block; font-size: 14px; }
+.item small { color: var(--mut); font-size: 12px; }
+.disclosure { color: var(--mut); font-size: 11px; line-height: 1.5; margin-top: 14px; }
+
+/* ── 호텔 상세 카드 (모바일: 아래에서 올라오는 시트, PC: 가운데 팝업) ── */
+.backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000; }
+.card { position: fixed; z-index: 1001; left: 0; right: 0; bottom: 0; max-height: 88vh; overflow-y: auto; background: #fff; color: var(--ink);
+        border-radius: 18px 18px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.3); animation: up .22s ease-out; }
+@media (min-width: 700px) {
+  .card { left: 50%; right: auto; bottom: auto; top: 50%; width: 420px; transform: translate(-50%, -50%); border-radius: 18px; animation: none; }
+}
+@keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.card-close { position: absolute; top: 10px; right: 10px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 0;
+              background: rgba(0,0,0,.55); color: #fff; font-size: 15px; cursor: pointer; }
+.card-photo { position: relative; aspect-ratio: 16 / 9; background: linear-gradient(135deg, #fca5a5, #7c3aed); }
+.card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-rank { position: absolute; left: 12px; bottom: -16px; width: 40px; height: 40px; border-radius: 50%; background: var(--red); color: #fff;
+             font-weight: 800; display: flex; align-items: center; justify-content: center; border: 3px solid #fff; }
+.card-body { padding: 22px 18px 18px; }
+.card-area { margin: 0; font-size: 12px; color: #6b7280; font-weight: 600; }
+.card h2 { margin: 2px 0 6px; font-size: 19px; }
+.card-meta { margin: 0 0 10px; font-size: 14px; color: #374151; }
+.card-meta .stars { color: #f59e0b; font-weight: 800; }
+.card-desc { margin: 0 0 10px; font-size: 14px; line-height: 1.55; }
+.card-points { list-style: none; margin: 0 0 10px; padding: 10px 12px; background: #f3f4f6; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+.card-points li.good::before { content: "👍 "; }
+.card-points li.bad::before { content: "🤔 "; }
+.card-points li.time::before { content: "🕒 "; }
+.card-points:empty { display: none; }
+.card-price { margin: 0 0 12px; font-size: 13px; color: #6b7280; }
+.card-price b { color: var(--ink); font-size: 17px; }
+.card-actions { display: flex; flex-direction: column; gap: 8px; }
+.btn { display: block; text-align: center; padding: 13px; border-radius: 12px; font-weight: 700; font-size: 15px; text-decoration: none; }
+.btn.agoda { background: var(--red); color: #fff; }
+.btn.trip { background: #2563eb; color: #fff; }
+.btn.booking { background: #003580; color: #fff; }
+.btn.map { background: #f3f4f6; color: var(--ink); }
+
+.leaflet-container { font-family: inherit; }
+/* 기본 지도를 연한 회색 톤으로 (참고 이미지 느낌) */
+.leaflet-tile-pane { filter: grayscale(1) brightness(1.08) contrast(.88); }
+/* 전체 보기: 번호만 보이고, 마우스를 올리면 이름이 나와요 */
+.pin.compact .label { display: none; }
+.pin.compact:hover .label { display: block; }
+.photo-note { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: #fff; background: rgba(0,0,0,.55); padding: 2px 8px; border-radius: 8px; }
+@media (max-width: 600px) { .label { max-width: 130px; overflow: hidden; text-overflow: ellipsis; } }
