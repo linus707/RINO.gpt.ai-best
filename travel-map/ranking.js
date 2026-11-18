@@ -197,6 +197,8 @@
   buildCondPanel();
   preset('2w');
   if (location.hash === '#ranking') setMode('rank');
+  // 같은 페이지에서 주소의 #ranking 만 바뀌어도 화면을 맞춰요 (블로그 링크·뒤로 가기)
+  window.addEventListener('hashchange', () => setMode(location.hash === '#ranking' ? 'rank' : 'map'));
 
   window.__travelRanking = { scores, setMode, state };
 })();

@@ -14,16 +14,15 @@
 <header class="top">
   <div class="title-row">
     <h1 id="title">여행 숙소 지도</h1>
-    <span id="sample-badge" class="badge" hidden>예시 데이터</span>
     <div class="view-switch" role="group" aria-label="보기 방식">
-      <button class="view-btn active" type="button" data-view="map">🗺️ 지도</button>
-      <button class="view-btn" type="button" data-view="rank">🏆 순위</button>
+      <button class="view-btn active" type="button" data-view="map"><span class="vi" aria-hidden="true">🗺️ </span>지도</button>
+      <button class="view-btn" type="button" data-view="rank"><span class="vi" aria-hidden="true">🏆 </span>순위</button>
     </div>
     <button id="reload" class="icon-btn" type="button" title="시트 다시 불러오기" aria-label="시트 다시 불러오기">↻</button>
   </div>
-  <p id="subtitle" class="subtitle"></p>
+  <p class="subtitle"><span id="subtitle"></span><span id="sample-badge" class="badge" hidden>예시 데이터</span></p>
   <form id="search" class="search" role="search">
-    <input id="search-input" type="search" placeholder="호텔·동네·도시·역 이름 검색 (예: 대욕장, 교토역)" aria-label="검색어" enterkeyhint="search" autocomplete="off">
+    <input id="search-input" type="search" placeholder="호텔·동네·역 검색 (예: 대욕장)" aria-label="검색어" enterkeyhint="search" autocomplete="off">
     <button id="search-clear" class="search-clear" type="button" aria-label="검색 지우기" hidden>✕</button>
     <button class="search-go" type="submit" aria-label="검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M15.5 15.5 20 20m-3-9.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"/></svg></button>
   </form>

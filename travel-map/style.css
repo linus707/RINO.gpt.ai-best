@@ -38,7 +38,7 @@ h1 { font-size: 22px; line-height: 32px; margin: 0; font-weight: 700; white-spac
             font-size: 18px; cursor: pointer; display: grid; place-items: center; }
 .icon-btn:hover { background: var(--gray-200); }
 .view-switch + .icon-btn { margin-left: 4px; }
-.subtitle { margin: 2px 0 12px; color: var(--text-3); font-size: 14px; line-height: 22px; }
+.subtitle { margin: 2px 0 12px; color: var(--text-3); font-size: 14px; line-height: 22px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* 검색창: 48px 알약 */
 .search { position: relative; display: flex; align-items: center; height: 48px; margin: 0 0 4px; border: 1px solid var(--line-strong);
@@ -127,7 +127,7 @@ h1 { font-size: 22px; line-height: 32px; margin: 0; font-weight: 700; white-spac
 .disclosure { color: var(--text-3); font-size: 12px; line-height: 18px; margin-top: 16px; }
 
 /* 실시간 가격 */
-.live-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.live-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
 .live-form label, .rk-stay label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-3); }
 .live-form input, .live-form select, .rk-stay input, .rk-stay select, .cond-row input {
   height: 44px; padding: 0 12px; border: 1px solid var(--gray-500); border-radius: var(--r-md); background: #fff; color: var(--text); font-size: 14px; min-width: 0; width: 100%; }
@@ -213,7 +213,7 @@ body.rank-mode { overflow-y: auto; }
 .chip.active { background: var(--gray-800); color: #fff; font-weight: 500; }
 #rk-tags .chip { background: #fff; border: 1px solid var(--line-strong); }
 #rk-tags .chip.active { background: var(--green-200); border-color: var(--green-700); color: var(--green-900); font-weight: 700; }
-.rk-stay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 12px; background: var(--bg-subtle); padding: 16px; border-radius: var(--r-xl); }
+.rk-stay { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; background: var(--bg-subtle); padding: 16px; border-radius: var(--r-xl); }
 .rk-presets { grid-column: 1 / 3; display: flex; gap: 8px; align-items: center; }
 .rk-presets .chip { background: #fff; border: 1px solid var(--line-strong); }
 .rk-go { height: 44px; border: 0; border-radius: var(--r-md); background: var(--primary-700); color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; }
@@ -268,16 +268,20 @@ body.rank-mode { overflow-y: auto; }
 /* ── 작은 화면 ── */
 @media (max-width: 600px) {
   .top { padding: 12px 16px 0; }
-  h1 { font-size: 19px; }
-  .view-btn { padding: 0 10px; height: 30px; font-size: 13px; }
-  .icon-btn { width: 36px; height: 36px; }
+  /* 상단 한 줄: 제목(길면 … 처리) · 지도/순위 · 새로고침 */
+  .title-row { flex-wrap: nowrap; gap: 6px; }
+  h1 { flex: 1; min-width: 0; font-size: 18px; line-height: 28px; overflow: hidden; text-overflow: ellipsis; }
+  .view-switch { flex: none; padding: 2px; }
+  .view-btn { padding: 0 9px; height: 30px; font-size: 13px; }
+  .icon-btn { flex: none; width: 34px; height: 34px; font-size: 16px; }
+  .subtitle { font-size: 13px; margin-bottom: 10px; }
   .search { height: 44px; }
   .tabs { gap: 18px; }
   .tab { font-size: 15px; height: 44px; }
   .side { padding: 14px 16px 24px; }
   .label { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
   .rank-view { padding: 16px 16px 40px; }
-  .rk-stay { grid-template-columns: 1fr 1fr; padding: 14px; }
+  .rk-stay { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 14px; }
   .rk-stay label:nth-child(3) { grid-column: 1 / 2; }
   .rk-presets { grid-column: 2 / 3; align-self: end; flex-wrap: wrap; gap: 6px; }
   .rk-presets .chip { height: 32px; padding: 0 10px; font-size: 13px; }
@@ -291,4 +295,10 @@ body.rank-mode { overflow-y: auto; }
   .rk-thumb { width: 84px; height: 72px; }
   .rk-name { font-size: 16px; line-height: 24px; }
   .cond-row { grid-template-columns: 1fr 72px 12px 72px; }
+}
+/* 아주 좁은 화면(360px 이하)에서는 버튼 아이콘을 빼고 제목을 살려요 */
+@media (max-width: 380px) {
+  .vi { display: none; }
+  .view-btn { padding: 0 10px; }
+  h1 { font-size: 17px; }
 }
