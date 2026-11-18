@@ -536,6 +536,7 @@ body.test .cstrip{background:#fff6dc}
 .adm-pvbox .pd-h{font-size:22px;line-height:30px}.adm-pvbox .pd-lead{font-size:15px;line-height:24px}
 .adm-pvbox .pd-b{margin-top:32px}.adm-pvbox .pd-b h3{margin-top:16px;font-size:19px;line-height:26px}.adm-pvbox .pd-b p{font-size:14px;line-height:22px}
 .adm-pvbox .pd-empty{margin:24px 0 0;text-align:center;font-size:13px;color:var(--tx3)}
+.pl-steps{margin:0;padding-left:20px;font-size:14px;line-height:24px}
 .admgo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px;padding:16px 18px;border-radius:var(--r-lg);background:#eef5ff}
 .admgo div{flex:1;min-width:220px}.admgo b{display:block;font-size:15px}.admgo span{display:block;margin-top:2px;font-size:12px;line-height:17px;color:var(--tx2)}
 @media (max-width:1100px){.adm-split{grid-template-columns:minmax(0,1fr)}.adm-pv{position:static}}
@@ -810,7 +811,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
 <section class="adm" id="admin" hidden aria-labelledby="admTitle">
   <div class="adm-top">
     <div><p class="adm-k">관리</p><h1 id="admTitle">제품 설정</h1><p class="adm-sub">제품을 골라 가격·사진·상세페이지를 만들어요. 바꾼 내용은 이 기기에 저장돼요.</p></div>
-    <div class="adm-acts"><button class="btn outl" type="button" id="admTools">새 제품·되살리기·백업</button><button class="btn" type="button" id="admClose">닫기</button></div>
+    <div class="adm-acts"><button class="btn outl" type="button" id="admPl">가격표 엑셀 불러오기</button><button class="btn outl" type="button" id="admTools">새 제품·되살리기·백업</button><button class="btn" type="button" id="admClose">닫기</button></div>
   </div>
   <div class="adm-body">
     <aside class="adm-side" aria-label="제품 목록">
@@ -915,6 +916,10 @@ select.pin{height:36px;font-weight:700;font-size:14px}
             <div class="adm-pv"><p class="adm-k">미리보기 (저장 전 내용)</p><div class="adm-pvbox" id="dbPrev"></div></div>
           </div>
         </div>
+      </div>
+      <div id="admPlPane" hidden>
+        <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>가격표 엑셀 불러오기</h2><p class="adm-meta">엑셀 한 파일로 모든 제품의 메뉴·모델·규격·색상·가격·설명을 한꺼번에 넣어요</p></div></div>
+        <div id="plPane"></div>
       </div>
       <div id="admToolPane" hidden>
         <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>새 제품·되살리기·백업</h2><p class="adm-meta">가격표에 없는 제품 만들기, 이름 바꾼·삭제한 제품 되돌리기, 사진 백업, 테스트 모드</p></div></div>
@@ -1297,7 +1302,7 @@ function finishGroup(g,map,custom){
     return !best||m.sizes.length>best.sizes.length||(m.sizes.length===best.sizes.length&&m.variants.length>best.variants.length)?m:best;
   },null)||box.models[0];
 }
-/* 엑셀 가격표(설정 › 가격표·검색에서 불러온 것) — 이 기기에 NS+'pricelist'로 저장, 적용 중이면 이것만 써요 */
+/* 엑셀 가격표(제품 설정 › 가격표 엑셀 불러오기에서 불러온 것) — 이 기기에 NS+'pricelist'로 저장, 적용 중이면 이것만 써요 */
 function buildCustom(pl){
   var maps={};
   GROUPS.forEach(function(g){G[g.id]={def:g,models:[],byName:{}};maps[g.id]={}});
@@ -1577,7 +1582,22 @@ var STORE_N=0;
 function renderPricePane(){
   var A=SET.aliases||{},mine=Object.keys(A);
   $('pricePane').innerHTML=
-    '<section class="sh-sec"><h4>가격표</h4>'
+    '<div class="admgo"><div><b>가격표 엑셀 불러오기는 「제품 설정」에서</b><span>지금 쓰는 가격표: '+esc(meta.source||'-')+' · '+(PRICELIST?'불러온 날':'기준일')+' '+esc(meta.updated||'-')+'</span></div><button class="btn" type="button" data-pl="goadm">가격표 엑셀 열기</button></div>'
+    +'<section class="sh-sec"><h4>검색 별칭 (한글 이름 → 영문 모델명)</h4>'
+    +'<p class="hint">기본으로 라노떼→LANOTTE, 노벨라→NOVELLA, 로얄에이스→RA, 라지퀸→LQ 등 '+Object.keys(BASE_ALIASES).length+'개가 들어 있어요. 손님·직원이 부르는 이름이 검색되지 않으면 여기에 더해요. 영문은 1~2자 오타도 찾아요.</p>'
+    +'<ul class="mlist">'+(mine.map(function(k){return '<li><span>'+esc(k)+' → <b>'+esc(String(A[k]).toUpperCase())+'</b></span><button class="btn outl sm" type="button" data-unalias="'+esc(k)+'">빼기</button></li>'}).join('')||'<li class="none">매장에서 더한 별칭이 없어요.</li>')+'</ul>'
+    +'<div class="srow"><input class="pin" id="alKo" style="width:150px;text-align:left" placeholder="한글 (예: 루나또)" aria-label="한글 별칭"><span class="u">→</span><input class="pin" id="alEn" style="width:150px;text-align:left" placeholder="영문 (예: LUNATO)" aria-label="영문 모델명"><button class="btn outl sm" type="button" data-pl="addAlias">더하기</button></div>'
+    +'</section>';
+}
+
+// 제품 설정 › 가격표 엑셀 불러오기
+function plCounts(){
+  var c={};(PRICELIST?PRICELIST.items:SRC&&SRC.kind!=='builtin'&&SRC.data&&SRC.data.items||[]).forEach(function(it){c[it.group]=(c[it.group]||0)+1});
+  return GROUPS.filter(function(g){return c[g.id]}).map(function(g){return g.name+' '+won(c[g.id])+'줄'}).join(' · ');
+}
+function renderPlPane(){
+  var cnt=plCounts();
+  $('plPane').innerHTML='<section class="sh-sec"><h4>가격표</h4>'
     +'<div class="srow"><span class="lb">지금 쓰는 가격표<small>'+esc(meta.source||'-')+' · '+(PRICELIST?'불러온 날':'기준일')+' '+esc(meta.updated||'-')+(PRICELIST?' · '+won(PRICELIST.items.length)+'줄':'')+'</small></span></div>'
     +'<p class="hint">엑셀 1행에 <b>메뉴 · 모델명 · 정상가(원)</b> 제목은 꼭 있어야 하고, <b>순서 · 규격 · 색상 · 할인율(%) · 검색어 · 상품코드 · 설명</b>은 있으면 써요. 메뉴는 매트리스·프레임·사이드옵션·슬립케어·사은품 중 하나예요. 「가격표」 시트가 있으면 그 시트를, 없으면 첫 시트를 읽어요.</p>'
     +'<div class="sh-foot" style="justify-content:flex-start"><label class="btn"><input type="file" id="plFile" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>엑셀 가격표 불러오기</label>'
@@ -1587,11 +1607,7 @@ function renderPricePane(){
     +(PSRC==='store'?'<button class="btn outl" type="button" data-pl="src-builtin">전체 정상가 파일로</button>':'')
     +(PSRC==='builtin'?'<button class="btn outl" type="button" data-pl="src-store">매장 가격표로</button>':'')+'</div>'
     +'<p class="hint">기본은 <b>매장 가격표</b>(매장이 채운 엑셀을 POS에 넣어 둔 것)예요. 「전체 정상가 파일로」는 에이스침대 전체 정상가(약 2만 개)를 써요. 엑셀을 불러오면 그 기기에서는 엑셀이 먼저예요.</p></section>'
-    +'<section class="sh-sec"><h4>검색 별칭 (한글 이름 → 영문 모델명)</h4>'
-    +'<p class="hint">기본으로 라노떼→LANOTTE, 노벨라→NOVELLA, 로얄에이스→RA, 라지퀸→LQ 등 '+Object.keys(BASE_ALIASES).length+'개가 들어 있어요. 손님·직원이 부르는 이름이 검색되지 않으면 여기에 더해요. 영문은 1~2자 오타도 찾아요.</p>'
-    +'<ul class="mlist">'+(mine.map(function(k){return '<li><span>'+esc(k)+' → <b>'+esc(String(A[k]).toUpperCase())+'</b></span><button class="btn outl sm" type="button" data-unalias="'+esc(k)+'">빼기</button></li>'}).join('')||'<li class="none">매장에서 더한 별칭이 없어요.</li>')+'</ul>'
-    +'<div class="srow"><input class="pin" id="alKo" style="width:150px;text-align:left" placeholder="한글 (예: 루나또)" aria-label="한글 별칭"><span class="u">→</span><input class="pin" id="alEn" style="width:150px;text-align:left" placeholder="영문 (예: LUNATO)" aria-label="영문 모델명"><button class="btn outl sm" type="button" data-pl="addAlias">더하기</button></div>'
-    +'</section>';
+    +'<section class="sh-sec"><h4>순서</h4><ol class="pl-steps"><li>「엑셀 양식 내려받기」(빈 양식) 또는 「매장 가격표 엑셀로 받기」(지금 가격표 729줄)를 받아요.</li><li>엑셀에서 가격·이름·설명을 고치거나 줄을 더해 저장해요.</li><li>「엑셀 가격표 불러오기」로 그 파일을 골라요 → 메뉴별 줄 수와 오류 줄을 확인하고 「적용」.</li></ol><p class="hint">사진·상세페이지·이름 바꾸기·가격 수정은 상품코드(없으면 모델명)에 붙어 있어서, 같은 코드로 다시 불러오면 그대로 남아요.</p></section>';
 }
 // xlsx(zip) 읽기 — 외부 라이브러리 없이 브라우저 기능(DecompressionStream)만 써요
 function unzipXlsx(buf){
@@ -1702,16 +1718,16 @@ function importFile(f){
       +'<p class="sh-sub">'+esc(f.name)+' · 「'+esc(t.sheet)+'」 시트</p>'
       +'<ul class="mlist">'+GROUPS.map(function(g){return '<li><span>'+g.name+'</span><b class="num">'+won(cnt(g.id))+'줄</b></li>'}).join('')+'<li><span><b>합계</b></span><b class="num">'+won(res.items.length)+'줄</b></li></ul>'
       +(res.errors.length?'<h4 class="rec-h" style="color:var(--err)">확인할 줄 '+won(res.errors.length)+'개</h4><ul class="mlist" style="max-height:200px;overflow:auto">'+res.errors.slice(0,50).map(function(x){return '<li><span><b>'+x[0]+'행</b> '+esc(x[1])+'</span></li>'}).join('')+(res.errors.length>50?'<li class="none">… 외 '+(res.errors.length-50)+'줄</li>':'')+'</ul><p class="hint">오류 줄은 빼고 적용돼요. 엑셀에서 고친 뒤 다시 불러와도 돼요.</p>':'<p class="hint">오류 없이 모두 읽었어요.</p>')
-      +'<p class="hint">적용하면 이 기기에서는 <b>이 가격표만</b> 써요(기본 가격표 '+'prices.json은 숨김). 설정 › 가격표·검색에서 언제든 되돌릴 수 있어요. 장바구니·견적에 담긴 상품은 같은 상품코드가 있으면 새 가격으로 바뀌어요.</p>'
+      +'<p class="hint">적용하면 이 기기에서는 <b>이 가격표만</b> 써요(기본 가격표 '+'prices.json은 숨김). 제품 설정 › 가격표 엑셀 불러오기에서 언제든 되돌릴 수 있어요. 장바구니·견적에 담긴 상품은 같은 상품코드가 있으면 새 가격으로 바뀌어요.</p>'
       +'<div class="sh-foot"><button class="btn outl" type="button" data-im="close">취소</button><button class="btn" type="button" data-im="apply"'+(res.items.length?'':' disabled')+'>적용</button></div>';
     $('impModal').hidden=false;
   }).catch(function(e){impError(e&&e.message||String(e))});
 }
-$('pricePane').addEventListener('change',function(e){
+$('plPane').addEventListener('change',function(e){
   if(e.target.id!=='plFile')return;
   var f=e.target.files&&e.target.files[0];e.target.value='';if(f){touch();importFile(f)}
 });
-$('pricePane').addEventListener('click',function(e){
+$('plPane').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;touch();
   var a=b.getAttribute('data-pl');
   if(a==='reset'){
@@ -1722,7 +1738,13 @@ $('pricePane').addEventListener('click',function(e){
     if(!confirm(a==='src-builtin'?'전체 정상가 파일(약 2만 개)로 바꿀까요?\n매장 가격표는 「매장 가격표로」 버튼으로 언제든 돌아올 수 있어요.':'매장 가격표(기본)로 돌아갈까요?'))return;
     try{if(a==='src-builtin')localStorage.setItem(NS+'pricesrc',JSON.stringify('builtin'));else localStorage.removeItem(NS+'pricesrc')}catch(x){}
     location.reload();
-  }else if(a==='addAlias'){
+  }
+});
+$('pricePane').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;touch();
+  var a=b.getAttribute('data-pl');
+  if(a==='goadm'){closeSettings();requireUnlock(function(){openAdmin(cur&&VIEW==='detail'?cur.gid:'',cur&&VIEW==='detail'?cur.name:'',true);admShowPl()})}
+  else if(a==='addAlias'){
     var ko=$('alKo').value.trim(),en=$('alEn').value.trim();
     if(!/[가-힣]/.test(ko)){toast('왼쪽 칸에 한글 이름을 적어 주세요');return}
     if(!/^[0-9A-Za-z][0-9A-Za-z \-]*$/.test(en)){toast('오른쪽 칸에 영문 모델명을 적어 주세요');return}
@@ -1910,7 +1932,7 @@ function admSelect(m,quiet){
   if(!m)return;
   if(!quiet&&cur&&cur.oid!==m.oid&&detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 다른 제품으로 갈까요?'))return;
   group=G[m.gid];cur=m;vi=0;fillModels();render();
-  ADM.tool=false;$('admEdit').hidden=false;$('admToolPane').hidden=true;
+  ADM.tool=false;$('admEdit').hidden=false;$('admToolPane').hidden=true;$('admPlPane').hidden=true;
   admFill();
   Array.prototype.forEach.call($('admList').querySelectorAll('[data-aoid]'),function(b){if(b.getAttribute('data-aoid')===m.oid)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')});
   admUrl();
@@ -1920,6 +1942,7 @@ function admRefresh(){if(VIEW!=='admin'||!cur)return;admHead();var sc=$('admList
 function admAfterRebuild(m){
   if(!m&&cur){var o=cur.oid;admAll().some(function(x){if(x.oid===o){m=x;return true}return false})}
   admRenderList(false);
+  if(ADM.tool==='pl'){renderPlPane();return}
   if(ADM.tool){renderProdPane();return}
   var first=m||admModels()[0]||admAll()[0];
   if(first){DB_OID=m?DB_OID:null;admSelect(first,true)}
@@ -1961,8 +1984,15 @@ $('admView').addEventListener('click',function(){
   try{history.pushState({v:'detail'},'','?g='+gid+'&m='+encodeURIComponent(nm))}catch(e){}
   group=G[gid];cur=null;openModel(gid,nm,false);
 });
+function admShowPl(){
+  if(detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 갈까요?'))return;
+  touch();ADM.tool='pl';$('admEdit').hidden=true;$('admToolPane').hidden=true;$('admPlPane').hidden=false;renderPlPane();
+  try{history.replaceState({v:'admin'},'','?admin=1&pl=1')}catch(e){}
+  Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
+}
+$('admPl').addEventListener('click',admShowPl);
 $('admTools').addEventListener('click',function(){
-  touch();ADM.tool=true;$('admEdit').hidden=true;$('admToolPane').hidden=false;renderProdPane();admUrl();
+  touch();ADM.tool='prod';$('admEdit').hidden=true;$('admPlPane').hidden=true;$('admToolPane').hidden=false;renderProdPane();admUrl();
   Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
 });
 $('admList').addEventListener('click',function(e){
@@ -2756,7 +2786,7 @@ function renderList(more){
   var from=more?LIST.shown:0;LIST.shown=Math.min(ms.length,from+PAGE);
   var html=ms.slice(from,LIST.shown).map(function(m){return cardHTML(m,LIST.gid)}).join('');
   if(more)$('cards').insertAdjacentHTML('beforeend',html);
-  else $('cards').innerHTML=html||'<div class="empty-box" style="grid-column:1/-1">'+(box.def.gift?'사은품이 아직 없어요. 제품 설정 › 기본 정보에서 「사은품 메뉴에 넣기」를 켜 주세요.':'지금 가격표에는 '+box.def.name+' 상품이 없어요.'+(PSRC==='store'?'<br>설정 › 가격표·검색에서 「전체 정상가 파일로」를 고르면 전체 상품이 보여요.':''))+'</div>';
+  else $('cards').innerHTML=html||'<div class="empty-box" style="grid-column:1/-1">'+(box.def.gift?'사은품이 아직 없어요. 제품 설정 › 기본 정보에서 「사은품 메뉴에 넣기」를 켜 주세요.':'지금 가격표에는 '+box.def.name+' 상품이 없어요.'+(PSRC==='store'?'<br>제품 설정 › 가격표 엑셀 불러오기에서 「전체 정상가 파일로」를 고르면 전체 상품이 보여요.':''))+'</div>';
   $('plMore').parentNode.hidden=LIST.shown>=ms.length;
   $('plMore').textContent='더 보기 ('+won(ms.length-LIST.shown)+'개 남음)';
 }
@@ -2782,9 +2812,9 @@ function openModel(gid,name,push){
 function route(){
   var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
   if(qs.get('admin')){
-    if(unlocked()){openAdmin(gid,want,false);return}
+    if(unlocked()){openAdmin(gid,want,false);if(qs.get('pl'))admShowPl();return}
     showList(G[gid]?gid:firstMenuId(),'',false);
-    requireUnlock(function(){openAdmin(gid,want,true)});return;
+    requireUnlock(function(){openAdmin(gid,want,true);if(qs.get('pl'))admShowPl()});return;
   }
   if(VIEW==='admin'){$('admin').hidden=true;VIEW='list'}
   if(want){
