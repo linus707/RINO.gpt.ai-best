@@ -106,7 +106,39 @@ body.test .cstrip{background:#fff6dc}
 
 /* 본문 */
 .main{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:32px;align-items:start;padding:12px var(--space-lg) var(--space-3xl);max-width:1440px;margin:0 auto}
-.gal{position:sticky;top:78px;min-width:0}
+.gal{position:sticky;top:78px;min-width:0;grid-area:gal}
+.main{grid-template-areas:"gal opts" "det opts"}
+.main>.opts{grid-area:opts}
+/* 상세페이지: 그림 아래 사진·글 블록 + 옵션별 가격 */
+.pdet{grid-area:det;min-width:0;margin-top:40px;padding-top:40px;border-top:1px solid var(--hair)}
+.pdet .pd-k{font-size:14px;font-weight:700;color:var(--tx2);text-align:center}
+.pdet .pd-h{margin:6px 0 0;font-size:32px;line-height:42px;letter-spacing:-.64px;text-align:center;overflow-wrap:anywhere}
+.pdet .pd-lead{max-width:640px;margin:16px auto 0;font-size:18px;line-height:29px;color:var(--tx);text-align:center;white-space:pre-line;overflow-wrap:anywhere}
+.pd-b{margin:56px 0 0}
+.pd-b img{display:block;width:100%;height:auto;border-radius:var(--r-lg,16px);background:var(--sub)}
+.pd-b h3{max-width:680px;margin:28px auto 0;font-size:26px;line-height:35px;letter-spacing:-.5px;text-align:center;overflow-wrap:anywhere}
+.pd-b p{max-width:640px;margin:12px auto 0;font-size:16px;line-height:27px;color:var(--tx2);text-align:center;white-space:pre-line;overflow-wrap:anywhere}
+.pd-b img+p{margin-top:24px}
+.pd-spec{margin-top:64px}
+.pd-spec h3{margin:0 0 14px;font-size:22px;line-height:30px}
+.pd-spec table{width:100%;border-collapse:collapse;font-size:15px}
+.pd-spec th,.pd-spec td{padding:13px 12px;border-bottom:1px solid var(--hair);text-align:left;vertical-align:top}
+.pd-spec thead th{border-bottom:1px solid #000;font-size:13px;color:var(--tx2);font-weight:700}
+.pd-spec tbody th{width:132px;font-weight:700;color:var(--tx2);background:var(--sub)}
+.pd-spec .r{text-align:right;white-space:nowrap}
+.pd-spec .num{font-variant-numeric:tabular-nums}
+.pd-spec table+table{margin-top:24px}
+/* 설정 › 상세 설명 블록 편집 */
+.db-list{display:grid;gap:12px}
+.db-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:12px;border-radius:var(--r-sm);box-shadow:var(--ring);background:#fff}
+.db-im{width:96px;height:96px;border-radius:var(--r-sm);background:var(--sub);display:grid;place-items:center;overflow:hidden;color:var(--tx3);font-size:12px;text-align:center}
+.db-im img{width:100%;height:100%;object-fit:cover;display:block}
+.db-f{display:grid;gap:8px;min-width:0}
+.db-f input,.db-f textarea{width:100%;text-align:left;height:auto;padding:8px 10px;line-height:1.5}
+.db-f textarea{resize:vertical;font:inherit;font-size:14px}
+.db-b{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.db-b .btn{height:32px;padding:0 12px;font-size:13px}
+.db-b label.btn{cursor:pointer}
 .stage{position:relative;height:clamp(340px,calc(100vh - 240px),640px);overflow:hidden;background:radial-gradient(60% 50% at 50% 78%,rgba(230,236,244,.4),rgba(230,236,244,0) 70%),linear-gradient(180deg,var(--stage-top) 0%,var(--stage-mid) 48%,var(--stage-bottom) 100%)}
 .stage .ghost{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-weight:800;font-size:clamp(90px,17vw,230px);line-height:1;letter-spacing:-.03em;color:rgba(255,255,255,.13);white-space:nowrap;user-select:none}
 .stage .gt{position:absolute;left:0;right:0;top:18px;text-align:center;color:#fff}
@@ -544,6 +576,13 @@ select.pin{height:36px;font-weight:700;font-size:14px}
   .bar>.btn{width:100%}
   .main{grid-template-columns:minmax(0,1fr);gap:24px;padding:0 0 var(--space-2xl)}
   .gal{position:static}
+  .main{grid-template-areas:"gal" "opts" "det"}
+  .pdet{margin:24px var(--space-md) 0;padding-top:28px}
+  .pdet .pd-h{font-size:24px;line-height:32px}
+  .pd-b{margin-top:40px}
+  .pd-b h3{font-size:21px;line-height:29px}
+  .pd-spec tbody th{width:96px}
+  .db-row{grid-template-columns:72px minmax(0,1fr)}.db-im{width:72px;height:72px}
   .stage{height:300px}
   .arw{display:none}
   .opts{padding:0 var(--space-md)}
@@ -663,6 +702,14 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <p class="note" id="photoNote">그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.</p>
     </section>
 
+    <section class="pdet" id="pdet" aria-labelledby="pdH">
+      <p class="pd-k">제품 상세</p>
+      <h2 class="pd-h" id="pdH"></h2>
+      <p class="pd-lead" id="pdLead" hidden></p>
+      <div id="pdBlocks"></div>
+      <div class="pd-spec" id="pdSpec"></div>
+    </section>
+
     <section class="opts" aria-label="구매 옵션">
       <div class="feat">
         <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22V10M27 22V10M5 16h22M9 13l-4 3 4 3M23 13l4 3-4 3"/></svg><b id="fSizes"></b>옵션</div>
@@ -757,10 +804,18 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     </section>
 
     <section class="sh-sec">
+      <h4>상세 설명 (그림 아래)</h4>
+      <p class="hint" style="margin:0 0 10px">상세페이지처럼 사진과 글을 한 칸씩 쌓아요. 칸마다 사진·제목·내용은 있는 것만 보여요. 아래 「옵션별 가격」 표는 자동으로 붙어요.</p>
+      <div class="db-list" id="dbList"></div>
+      <input type="file" id="dbFile" accept="image/*" hidden>
+      <div class="sh-foot"><button class="btn outl" type="button" id="dbAdd">+ 칸 더하기</button><button class="btn" type="button" id="dbSave">상세 설명 저장</button></div>
+    </section>
+
+    <section class="sh-sec">
       <h4>제품 정보</h4>
       <div class="srow"><label for="pmName">이름<small id="pmOrig"></small></label><input class="pin" id="pmName" style="width:200px;text-align:left" maxlength="40"></div>
       <div class="srow"><label for="pmMenu">메뉴<small>다른 메뉴로 옮겨요(사은품 메뉴는 「사은품 메뉴에 넣기」로)</small></label><select class="pin" id="pmMenu" style="width:200px;text-align:left"></select></div>
-      <div class="srow" style="align-items:flex-start"><label for="pmDesc">설명<small>제품 그림(사진) 안, 제품 아래와 목록 카드에 보여요. 3줄까지 보여요. 비우면 안 보여요</small></label><textarea class="pin" id="pmDesc" rows="3" maxlength="200" style="width:260px;height:auto;text-align:left;padding:8px 10px;line-height:1.5;resize:vertical" placeholder="예) 7존 독립 스프링으로 몸을 고르게 받쳐 줘요"></textarea></div>
+      <div class="srow" style="align-items:flex-start"><label for="pmDesc">설명<small>제품 그림(사진) 안, 제품 아래와 목록 카드에 보여요. 3줄까지 보여요. 비우면 안 보여요</small></label><textarea class="pin" id="pmDesc" rows="3" maxlength="200" style="width:260px;height:auto;text-align:left;padding:8px 10px;line-height:1.5;resize:vertical;font:inherit;font-size:14px" placeholder="예) 7존 독립 스프링으로 몸을 고르게 받쳐 줘요"></textarea></div>
       <div class="sh-foot"><button class="btn outl" type="button" id="pmDel" style="color:var(--err);border-color:var(--err)">이 제품 삭제</button><button class="btn" type="button" id="pmSave">제품 정보 저장</button></div>
     </section>
 
@@ -973,7 +1028,7 @@ var SET_KEY=NS+'settings',CART_KEY=NS+'cart';
 var DEFAULT_SET={
   storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
   branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
-  menus:null,moved:{},names:{},descs:{},deleted:[],flow:true,
+  menus:null,moved:{},names:{},descs:{},details:{},deleted:[],flow:true,
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -1245,6 +1300,7 @@ function render(){
   pimg.parentNode.classList.toggle('has-photo',!!ph);
   $('photoNote').textContent=ph?'매장에서 넣은 사진이에요.':'그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.';
   $('stSize').textContent=optText||group.def.name;
+  renderDetail(v);
   var dsc=String(cur.desc||'').trim();$('stDesc').textContent=dsc;$('stDesc').hidden=!dsc;pimg.parentNode.classList.toggle('has-desc',!!dsc);
 
   $('fSizes').textContent=cur.variants.length+'가지';
@@ -1586,6 +1642,92 @@ function rebuildAll(keep){
 }
 function menuOptions(sel,withGift){return GROUPS.filter(function(g){return withGift||!g.gift}).map(function(g){return '<option value="'+g.id+'"'+(g.id===sel?' selected':'')+'>'+esc(g.name)+(g.off?' (숨긴 메뉴)':'')+'</option>'}).join('')}
 
+/* ───── 상세페이지(그림 아래) ─────
+   SET.details[oid] = [{id, t:제목, x:내용}] · 칸 사진은 IndexedDB 'detail:'+oid+':'+id (사진 백업에 함께 들어가요) */
+function detailOf(oid){var d=SET.details&&SET.details[oid];return Array.isArray(d)?d:[]}
+function detailPhotoId(oid,id){return 'detail:'+oid+':'+id}
+var PD_KEY='';
+function renderDetail(v){
+  var title=cur.name+(cur.gid==='matt'?' 매트리스':''),dsc=String(cur.desc||'').trim();
+  $('pdH').textContent=title;$('pdLead').textContent=dsc;$('pdLead').hidden=!dsc;
+  var blocks=detailOf(cur.oid),key=cur.oid+'#'+JSON.stringify(blocks)+'#'+blocks.map(function(b){return PHOTO.get(detailPhotoId(cur.oid,b.id))||''}).join();
+  if(key!==PD_KEY){
+    PD_KEY=key;
+    $('pdBlocks').innerHTML=blocks.map(function(b){
+      var u=PHOTO.get(detailPhotoId(cur.oid,b.id)),t=String(b.t||'').trim(),x=String(b.x||'').trim();
+      if(!u&&!t&&!x)return '';
+      return '<figure class="pd-b">'+(u?'<img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy">':'')+(t?'<h3>'+esc(t)+'</h3>':'')+(x?'<p>'+esc(x)+'</p>':'')+'</figure>';
+    }).join('');
+  }
+  var colors=[];cur.variants.forEach(function(w){if(w.color&&colors.indexOf(w.color)<0)colors.push(w.color)});
+  var sizes=cur.sizes.filter(Boolean).map(function(z){var l=sizeLabel(z);return z+(l?'('+l+')':'')});
+  var info=[['모델명',title],['메뉴',group.def.name]];
+  if(sizes.length)info.push(['규격',sizes.join(', ')]);
+  if(colors.length)info.push(['색상·옵션',colors.join(', ')]);
+  info.push(['가격 기준일',meta.updated||'-']);
+  var gm=isGiftMenu();
+  $('pdSpec').innerHTML='<h3>제품 정보</h3><table><tbody>'+info.map(function(r){return '<tr><th scope="row">'+esc(r[0])+'</th><td>'+esc(r[1])+'</td></tr>'}).join('')+'</tbody></table>'
+    +'<table><thead><tr><th scope="col">옵션</th><th scope="col">상품코드</th><th scope="col" class="r">'+(gm?'정상가':'가격')+'</th></tr></thead><tbody>'
+    +cur.variants.map(function(w){var o=[w.size,sizeLabel(w.size),w.color].filter(Boolean).join(' · ')||'기본';return '<tr'+(w===v?' aria-current="true" style="font-weight:700"':'')+'><td>'+esc(o)+'</td><td class="num">'+esc(String(w.code).indexOf('M:')===0?'-':w.code)+'</td><td class="r num">'+won(w.price)+'원</td></tr>'}).join('')
+    +'</tbody></table>';
+}
+// 설정: 칸 편집(저장 전까지는 DB_EDIT에만)
+var DB_EDIT=[],DB_PICK=null,DB_OID=null; // DB_OID: 편집 중인 모델(설정을 닫으면 비워요)
+function dbNewId(){return 'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function renderDetailEdit(){
+  if(!cur)return;
+  var oid=cur.oid;
+  $('dbList').innerHTML=DB_EDIT.length?DB_EDIT.map(function(b,i){
+    var u=PHOTO.get(detailPhotoId(oid,b.id));
+    return '<div class="db-row" data-db="'+i+'"><div class="db-im">'+(u?'<img src="'+esc(u)+'" alt="">':'사진 없음')+'</div>'
+      +'<div class="db-f"><input class="pin" data-dbt="'+i+'" maxlength="60" placeholder="제목 (예: 7존 독립 스프링)" value="'+esc(b.t||'')+'" aria-label="'+(i+1)+'번째 칸 제목">'
+      +'<textarea class="pin" data-dbx="'+i+'" rows="3" maxlength="1000" placeholder="내용 (줄바꿈 그대로 보여요)" aria-label="'+(i+1)+'번째 칸 내용">'+esc(b.x||'')+'</textarea>'
+      +'<div class="db-b"><button class="btn outl" type="button" data-dba="photo">'+(u?'사진 바꾸기':'사진 넣기')+'</button>'
+      +(u?'<button class="btn outl" type="button" data-dba="unphoto">사진 빼기</button>':'')
+      +'<button class="btn outl" type="button" data-dba="up"'+(i?'':' disabled')+' aria-label="위로">↑</button><button class="btn outl" type="button" data-dba="down"'+(i<DB_EDIT.length-1?'':' disabled')+' aria-label="아래로">↓</button>'
+      +'<button class="btn outl" type="button" data-dba="del" style="color:var(--err);border-color:var(--err)">칸 지우기</button></div></div></div>';
+  }).join(''):'<p class="hint" style="margin:0">아직 칸이 없어요. 「+ 칸 더하기」로 시작해요.</p>';
+}
+function openDetailEdit(){if(!cur)return;if(DB_OID!==cur.oid){DB_OID=cur.oid;DB_EDIT=clone(detailOf(cur.oid))}renderDetailEdit()}
+$('dbList').addEventListener('input',function(e){
+  var t=e.target,i=t.getAttribute('data-dbt')||t.getAttribute('data-dbx');if(i==null)return;
+  DB_EDIT[+i][t.hasAttribute('data-dbt')?'t':'x']=t.value;
+});
+$('dbList').addEventListener('click',function(e){
+  var b=e.target.closest('[data-dba]');if(!b)return;touch();
+  var i=+b.closest('[data-db]').getAttribute('data-db'),a=b.getAttribute('data-dba'),blk=DB_EDIT[i];
+  if(a==='photo'){DB_PICK=blk.id;$('dbFile').click();return}
+  if(a==='unphoto'){var pid=detailPhotoId(cur.oid,blk.id);phTx('readwrite',function(st){return st.delete(pid)}).then(loadPhotos).then(function(){renderDetailEdit();render();toast('사진을 뺐어요')});return}
+  if(a==='up'&&i>0)DB_EDIT.splice(i-1,0,DB_EDIT.splice(i,1)[0]);
+  else if(a==='down'&&i<DB_EDIT.length-1)DB_EDIT.splice(i+1,0,DB_EDIT.splice(i,1)[0]);
+  else if(a==='del'){if((blk.t||blk.x||PHOTO.has(detailPhotoId(cur.oid,blk.id)))&&!confirm('이 칸을 지울까요? (「상세 설명 저장」을 눌러야 반영돼요)'))return;DB_EDIT.splice(i,1)}
+  renderDetailEdit();
+});
+$('dbAdd').addEventListener('click',function(){touch();DB_EDIT.push({id:dbNewId(),t:'',x:''});renderDetailEdit();var r=$('dbList').querySelectorAll('[data-dbt]');if(r.length)r[r.length-1].focus()});
+$('dbFile').addEventListener('change',function(){
+  var f=this.files&&this.files[0];this.value='';
+  if(!f||!DB_PICK||!cur)return;
+  if(!/^image\//.test(f.type)){toast('사진 파일을 골라 주세요');return}
+  var id=detailPhotoId(cur.oid,DB_PICK);
+  shrink(f).then(function(blob){return phTx('readwrite',function(st){return st.put({id:id,blob:blob,at:Date.now()})})})
+    .then(loadPhotos).then(function(){renderDetailEdit();toast('사진을 넣었어요. 「상세 설명 저장」을 눌러 마무리해요')})
+    .catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+});
+$('dbSave').addEventListener('click',function(){
+  if(!cur)return;touch();
+  var oid=cur.oid,keep={},list=DB_EDIT.map(function(b){return {id:b.id,t:String(b.t||'').trim(),x:String(b.x||'').replace(/\r/g,'').trim()}})
+    .filter(function(b){return b.t||b.x||PHOTO.has(detailPhotoId(oid,b.id))});
+  list.forEach(function(b){keep[detailPhotoId(oid,b.id)]=1});
+  SET.details=SET.details||{};
+  if(list.length)SET.details[oid]=list;else delete SET.details[oid];
+  saveSet();
+  // 지운 칸의 사진은 함께 지워요
+  var pre='detail:'+oid+':',gone=[];PHOTO.forEach(function(u,k){if(k.indexOf(pre)===0&&!keep[k])gone.push(k)});
+  (gone.length?phTx('readwrite',function(st){var r;gone.forEach(function(k){r=st.delete(k)});return r}).then(loadPhotos):Promise.resolve()).then(function(){
+    DB_EDIT=clone(list);renderDetailEdit();render();toast(list.length?'상세 설명을 저장했어요 ('+list.length+'칸)':'상세 설명을 비웠어요');
+  });
+});
+
 // 이 상품 탭: 이름·메뉴·삭제
 function renderProdInfo(){
   if(!cur)return;
@@ -1595,6 +1737,7 @@ function renderProdInfo(){
   $('pmMenu').innerHTML=menuOptions(cur.gid,false);
   $('pmMenu').disabled=cur.gid==='gift'&&!SET.moved[cur.oid];
   $('pmDesc').value=cur.desc||'';
+  openDetailEdit();
 }
 $('pmSave').addEventListener('click',function(){
   if(!cur)return;
@@ -1666,7 +1809,7 @@ function importPhotos(file){
     if(!d||!Array.isArray(d.photos))throw 0;
     d.photos.forEach(function(p){
       if(!p||!/^data:image\//.test(p.data))return;
-      if(d.kind==='pos-photos-v2'&&/^(code|model):/.test(p.id)){out.push({id:p.id,blob:dataToBlob(p.data),at:p.at||Date.now()});return}
+      if(d.kind==='pos-photos-v2'&&/^(code|model|detail):/.test(p.id)){out.push({id:p.id,blob:dataToBlob(p.data),at:p.at||Date.now()});return}
       if(d.kind!=='pos-photos')return;
       // 예전 POS 백업: code(품목) · model(모델명) · kw(이름에 든 글자)
       var K=String(p.key||'').toUpperCase();
@@ -2509,7 +2652,7 @@ function openSettings(){
   $('setModal').hidden=false;
   $('setModal').querySelector('[data-close]').focus();
 }
-function closeSettings(){if(unlocked())touch();$('setModal').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+function closeSettings(){DB_OID=null;if(unlocked())touch();$('setModal').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus()}
 
 /* ───── 설정 탭 ───── */
 function showTab(t){
