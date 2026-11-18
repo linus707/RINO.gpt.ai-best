@@ -496,6 +496,7 @@ body.test .cstrip{background:#fff6dc}
 .adm-k{margin:0;font-size:13px;font-weight:700;color:var(--tx2)}
 .adm-sub{margin:6px 0 0;font-size:14px;color:var(--tx2)}
 .adm-acts{display:flex;gap:8px;flex-wrap:wrap}
+.adm-acts .btn[aria-pressed="true"]{background:#000;color:#fff}
 .adm-body{display:grid;grid-template-columns:320px minmax(0,1fr);gap:32px;align-items:start;margin-top:24px}
 .adm-side{position:sticky;top:78px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 100px)}
 .adm-q{height:44px;padding:0 16px;border:0;outline-offset:2px;border-radius:var(--r-full);background:var(--sub);font-size:15px;width:100%}
@@ -811,7 +812,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
 <section class="adm" id="admin" hidden aria-labelledby="admTitle">
   <div class="adm-top">
     <div><p class="adm-k">관리</p><h1 id="admTitle">제품 설정</h1><p class="adm-sub">제품을 골라 가격·사진·상세페이지를 만들어요. 바꾼 내용은 이 기기에 저장돼요.</p></div>
-    <div class="adm-acts"><button class="btn outl" type="button" id="admPl">가격표 엑셀 불러오기</button><button class="btn outl" type="button" id="admTools">새 제품·되살리기·백업</button><button class="btn" type="button" id="admClose">닫기</button></div>
+    <div class="adm-acts"><button class="btn outl" type="button" id="admMenuEd" data-atool="menu" aria-pressed="false">메뉴 편집</button><button class="btn outl" type="button" id="admPl" data-atool="pl" aria-pressed="false">가격표 엑셀 불러오기</button><button class="btn outl" type="button" id="admTools" data-atool="prod" aria-pressed="false">새 제품·되살리기·백업</button><button class="btn" type="button" id="admClose">닫기</button></div>
   </div>
   <div class="adm-body">
     <aside class="adm-side" aria-label="제품 목록">
@@ -917,6 +918,10 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           </div>
         </div>
       </div>
+      <div id="admMenuPane" hidden>
+        <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>메뉴 편집</h2><p class="adm-meta">위쪽 메뉴의 이름·순서·보이기를 바꾸고, 새 메뉴를 만들어요. 메뉴 칸의 제품 수를 누르면 그 메뉴 제품을 왼쪽에 보여요</p></div></div>
+        <div id="menuPane"></div>
+      </div>
       <div id="admPlPane" hidden>
         <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>가격표 엑셀 불러오기</h2><p class="adm-meta">엑셀 한 파일로 모든 제품의 메뉴·모델·규격·색상·가격·설명을 한꺼번에 넣어요</p></div></div>
         <div id="plPane"></div>
@@ -937,19 +942,17 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     <div class="stabs" role="tablist" aria-label="설정 종류">
         <button type="button" role="tab" data-stab="disc" aria-selected="true">할인·결제</button>
       <button type="button" role="tab" data-stab="mgr" aria-selected="false">상품 관리</button>
-      <button type="button" role="tab" data-stab="menu" aria-selected="false">메뉴</button>
       <button type="button" role="tab" data-stab="price" aria-selected="false">가격표·검색</button>
     </div>
 
     <div class="admgo">
-      <div><b>제품별 가격·사진·상세페이지는 「제품 설정」에서</b><span>제품 목록에서 골라 기본 정보·가격·사진·상세페이지를 한곳에서 바꿔요. 새 제품 만들기·되살리기·사진 백업도 거기 있어요.</span></div>
+      <div><b>제품별 가격·사진·상세페이지, 메뉴 편집, 가격표 엑셀은 「제품 설정」에서</b><span>제품 목록에서 골라 기본 정보·가격·사진·상세페이지를 한곳에서 바꿔요. 메뉴 편집·가격표 엑셀 불러오기·새 제품 만들기·사진 백업도 거기 있어요.</span></div>
       <button class="btn" type="button" id="setToAdm">제품 설정 열기</button>
     </div>
 
     <div data-spane="disc" id="discPane"></div>
     <div data-spane="mgr" hidden id="mgrPane"></div>
     <div data-spane="price" hidden id="pricePane"></div>
-    <div data-spane="menu" hidden id="menuPane"></div>
 
     <p class="fine">설정·사진·가격·장바구니는 <b>이 기기의 브라우저에만</b> 저장돼요. 다른 기기·손님 휴대폰에는 보이지 않아요. <span id="setInfo"></span> <button class="lnk" type="button" id="allReset">모든 수정 되돌리기</button></p>
     <div class="sh-lock">
@@ -1582,7 +1585,7 @@ var STORE_N=0;
 function renderPricePane(){
   var A=SET.aliases||{},mine=Object.keys(A);
   $('pricePane').innerHTML=
-    '<div class="admgo"><div><b>가격표 엑셀 불러오기는 「제품 설정」에서</b><span>지금 쓰는 가격표: '+esc(meta.source||'-')+' · '+(PRICELIST?'불러온 날':'기준일')+' '+esc(meta.updated||'-')+'</span></div><button class="btn" type="button" data-pl="goadm">가격표 엑셀 열기</button></div>'
+    '<div class="admgo"><div><b>가격표 엑셀 불러오기·메뉴 편집은 「제품 설정」에서</b><span>지금 쓰는 가격표: '+esc(meta.source||'-')+' · '+(PRICELIST?'불러온 날':'기준일')+' '+esc(meta.updated||'-')+'</span></div><button class="btn" type="button" data-pl="goadm">가격표 엑셀 열기</button></div>'
     +'<section class="sh-sec"><h4>검색 별칭 (한글 이름 → 영문 모델명)</h4>'
     +'<p class="hint">기본으로 라노떼→LANOTTE, 노벨라→NOVELLA, 로얄에이스→RA, 라지퀸→LQ 등 '+Object.keys(BASE_ALIASES).length+'개가 들어 있어요. 손님·직원이 부르는 이름이 검색되지 않으면 여기에 더해요. 영문은 1~2자 오타도 찾아요.</p>'
     +'<ul class="mlist">'+(mine.map(function(k){return '<li><span>'+esc(k)+' → <b>'+esc(String(A[k]).toUpperCase())+'</b></span><button class="btn outl sm" type="button" data-unalias="'+esc(k)+'">빼기</button></li>'}).join('')||'<li class="none">매장에서 더한 별칭이 없어요.</li>')+'</ul>'
@@ -1932,7 +1935,7 @@ function admSelect(m,quiet){
   if(!m)return;
   if(!quiet&&cur&&cur.oid!==m.oid&&detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 다른 제품으로 갈까요?'))return;
   group=G[m.gid];cur=m;vi=0;fillModels();render();
-  ADM.tool=false;$('admEdit').hidden=false;$('admToolPane').hidden=true;$('admPlPane').hidden=true;
+  ADM.tool=false;admPane('');
   admFill();
   Array.prototype.forEach.call($('admList').querySelectorAll('[data-aoid]'),function(b){if(b.getAttribute('data-aoid')===m.oid)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')});
   admUrl();
@@ -1940,9 +1943,11 @@ function admSelect(m,quiet){
 function admUrl(){try{history.replaceState({v:'admin'},'','?admin=1'+(cur&&!ADM.tool?'&g='+cur.gid+'&m='+encodeURIComponent(cur.name):''))}catch(e){}}
 function admRefresh(){if(VIEW!=='admin'||!cur)return;admHead();var sc=$('admList').scrollTop;admRenderList(false);$('admList').scrollTop=sc}
 function admAfterRebuild(m){
+  Array.prototype.forEach.call($('menu').children,function(b){b.removeAttribute('aria-current')});
   if(!m&&cur){var o=cur.oid;admAll().some(function(x){if(x.oid===o){m=x;return true}return false})}
   admRenderList(false);
   if(ADM.tool==='pl'){renderPlPane();return}
+  if(ADM.tool==='menu'){renderMenuPane();return}
   if(ADM.tool){renderProdPane();return}
   var first=m||admModels()[0]||admAll()[0];
   if(first){DB_OID=m?DB_OID:null;admSelect(first,true)}
@@ -1984,15 +1989,26 @@ $('admView').addEventListener('click',function(){
   try{history.pushState({v:'detail'},'','?g='+gid+'&m='+encodeURIComponent(nm))}catch(e){}
   group=G[gid];cur=null;openModel(gid,nm,false);
 });
+function admPane(t){
+  $('admEdit').hidden=!!t;$('admToolPane').hidden=t!=='prod';$('admPlPane').hidden=t!=='pl';$('admMenuPane').hidden=t!=='menu';
+  Array.prototype.forEach.call(document.querySelectorAll('.adm-acts [data-atool]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-atool')===t))});
+}
+function admShowMenu(){
+  if(detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 갈까요?'))return;
+  touch();ADM.tool='menu';admPane('menu');renderMenuPane();
+  try{history.replaceState({v:'admin'},'','?admin=1&menu=1')}catch(e){}
+  Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
+}
+$('admMenuEd').addEventListener('click',admShowMenu);
 function admShowPl(){
   if(detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 갈까요?'))return;
-  touch();ADM.tool='pl';$('admEdit').hidden=true;$('admToolPane').hidden=true;$('admPlPane').hidden=false;renderPlPane();
+  touch();ADM.tool='pl';admPane('pl');renderPlPane();
   try{history.replaceState({v:'admin'},'','?admin=1&pl=1')}catch(e){}
   Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
 }
 $('admPl').addEventListener('click',admShowPl);
 $('admTools').addEventListener('click',function(){
-  touch();ADM.tool='prod';$('admEdit').hidden=true;$('admPlPane').hidden=true;$('admToolPane').hidden=false;renderProdPane();admUrl();
+  touch();ADM.tool='prod';admPane('prod');renderProdPane();admUrl();
   Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
 });
 $('admList').addEventListener('click',function(e){
@@ -2139,7 +2155,7 @@ $('prodPane').addEventListener('click',function(e){
 function renderMenuPane(){
   var rows=GROUPS.map(function(g,i){
     return '<li class="mrow'+(g.off?' off':'')+'" data-mi="'+i+'"><input class="pin" data-mname="'+i+'" value="'+esc(g.name)+'" maxlength="20" style="width:140px;text-align:left" aria-label="메뉴 이름">'
-      +'<small>'+(g.custom?'새 메뉴':g.gift?'담으면 0원':'기본 메뉴')+' · '+(G[g.id]?visibleModels(G[g.id]).length:0)+'개</small>'
+      +'<small>'+(g.custom?'새 메뉴':g.gift?'담으면 0원':'기본 메뉴')+' · <button class="lnk" type="button" data-mshow="'+esc(g.id)+'">제품 '+(G[g.id]?(G[g.id].own||[]).length:0)+'개 보기</button></small>'
       +'<span class="mord"><button class="btn outl sm" type="button" data-mup="'+i+'" aria-label="위로"'+(i?'':' disabled')+'>↑</button><button class="btn outl sm" type="button" data-mdown="'+i+'" aria-label="아래로"'+(i<GROUPS.length-1?'':' disabled')+'>↓</button></span>'
       +'<button class="tg" type="button" data-mon="'+i+'" aria-pressed="'+!g.off+'" aria-label="'+esc(g.name)+' 보이기"></button>'
       +(g.custom?'<button class="btn outl sm" type="button" data-mdel="'+i+'" style="color:var(--err);border-color:var(--err)">지우기</button>':'')+'</li>';
@@ -2147,7 +2163,7 @@ function renderMenuPane(){
   $('menuPane').innerHTML='<section class="sh-sec"><h4>상단 메뉴</h4><p class="hint">이름을 고치고, ↑↓로 순서를 바꾸고, 오른쪽 스위치로 숨겨요. 맨 위에 있는(보이는) 메뉴가 첫 화면이에요. 숨긴 메뉴의 제품도 검색으로는 찾을 수 있어요.</p>'
     +'<ul class="mlist mmenu">'+rows+'</ul>'
     +'<div class="srow"><input class="pin" id="newMenu" maxlength="20" placeholder="새 메뉴 이름 (예: 침구)" style="width:200px;text-align:left" aria-label="새 메뉴 이름"><button class="btn outl sm" type="button" data-madd>＋ 새 메뉴</button></div>'
-    +'<p class="hint">새 메뉴에는 「제품·사진」 탭에서 만든 제품이나, 상품의 「제품 정보 › 메뉴」로 옮긴 제품이 들어가요.</p>'
+    +'<p class="hint">새 메뉴에는 「새 제품·되살리기·백업」에서 만든 제품이나, 제품의 「기본 정보 › 메뉴」로 옮긴 제품이 들어가요.</p>'
     +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-mreset>기본 메뉴로 되돌리기</button></div></section>'
     +'<section class="sh-sec"><h4>상담 단계 바</h4><div class="srow"><span class="lb">위쪽 상담 단계 바 보이기<small>상담 번호 · ①상담 시작 → ②상품 담기 → ③견적 비교 → ④결제·기록 · 새 상담</small></span><button class="tg" type="button" data-flow aria-pressed="'+(SET.flow!==false)+'" aria-label="상담 단계 바 보이기"></button></div></section>';
 }
@@ -2161,6 +2177,7 @@ $('menuPane').addEventListener('change',function(e){
 $('menuPane').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;
   var i,t;
+  if(b.hasAttribute('data-mshow')){ADM.gid=b.getAttribute('data-mshow');ADM.q='';ADM.f='';$('admQ').value='';$('admFilter').value='';admRenderList(false);toast('왼쪽 목록에 이 메뉴 제품을 보여요');return}
   if((i=b.getAttribute('data-mup'))!=null){i=+i;t=GROUPS[i-1];GROUPS[i-1]=GROUPS[i];GROUPS[i]=t;menuChanged()}
   else if((i=b.getAttribute('data-mdown'))!=null){i=+i;t=GROUPS[i+1];GROUPS[i+1]=GROUPS[i];GROUPS[i]=t;menuChanged()}
   else if((i=b.getAttribute('data-mon'))!=null){
@@ -2812,9 +2829,9 @@ function openModel(gid,name,push){
 function route(){
   var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
   if(qs.get('admin')){
-    if(unlocked()){openAdmin(gid,want,false);if(qs.get('pl'))admShowPl();return}
+    if(unlocked()){openAdmin(gid,want,false);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu();return}
     showList(G[gid]?gid:firstMenuId(),'',false);
-    requireUnlock(function(){openAdmin(gid,want,true);if(qs.get('pl'))admShowPl()});return;
+    requireUnlock(function(){openAdmin(gid,want,true);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu()});return;
   }
   if(VIEW==='admin'){$('admin').hidden=true;VIEW='list'}
   if(want){
@@ -2944,7 +2961,6 @@ function showTab(t){
   if(t==='disc')renderDiscPane();
   if(t==='mgr')renderMgrPane();
   if(t==='price')renderPricePane();
-  if(t==='menu')renderMenuPane();
 }
 Array.prototype.forEach.call(document.querySelectorAll('[data-stab]'),function(b){b.addEventListener('click',function(){touch();showTab(b.getAttribute('data-stab'))})});
 function setChanged(msg){touch();saveSet();renderCart();if(cur)render();if(VIEW==='list'&&!$('plist').hidden)renderList(false);if(VIEW==='admin')admRefresh();if(msg)toast(msg)}
