@@ -107,3 +107,60 @@ h1 { font-size: 20px; margin: 0; font-weight: 800; }
 .pin.compact:hover .label { display: block; }
 .photo-note { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: #fff; background: rgba(0,0,0,.55); padding: 2px 8px; border-radius: 8px; }
 @media (max-width: 600px) { .label { max-width: 130px; overflow: hidden; text-overflow: ellipsis; } }
+
+/* ── 검색창 ── */
+.search { display: flex; gap: 6px; margin: 0 0 10px; position: relative; }
+.search input { flex: 1; min-width: 0; padding: 11px 36px 11px 14px; border-radius: 12px; border: 1px solid #4b5563; background: #0b1220;
+                color: var(--text); font-size: 15px; outline: none; }
+.search input:focus { border-color: #f87171; }
+.search input::-webkit-search-cancel-button { display: none; }
+.search-clear { position: absolute; right: 78px; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--mut);
+                font-size: 15px; cursor: pointer; padding: 6px; }
+.search-go { flex: none; padding: 0 16px; border-radius: 12px; border: 0; background: var(--red); color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; }
+
+/* ── 이 지역 호텔 찾기 버튼 ── */
+.nearby-btn { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 500; border: 0; border-radius: 20px;
+              background: #fff; color: var(--ink); font-weight: 700; font-size: 14px; padding: 10px 16px; box-shadow: 0 2px 10px rgba(0,0,0,.3); cursor: pointer; }
+
+/* ── 주변 호텔 회색 점 ── */
+.dot { position: relative; width: 14px; height: 14px; border-radius: 50%; background: #6b7280; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); cursor: pointer; }
+.dot.static { flex: none; display: inline-block; }
+.dot-label { display: none; position: absolute; left: 16px; top: -5px; background: #fff; color: var(--ink); font-size: 12px; padding: 2px 6px;
+             border-radius: 5px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.dot:hover .dot-label { display: block; }
+
+/* ── 패널 제목 ── */
+.sec-title { font-size: 14px; color: #e5e7eb; margin: 18px 0 8px; display: flex; align-items: center; gap: 6px; }
+.side > .sec-title:first-of-type { margin-top: 4px; }
+.sec-note { font-size: 12px; color: var(--mut); margin: -2px 0 8px; }
+.sec-badge { font-size: 11px; background: var(--red); color: #fff; padding: 1px 7px; border-radius: 8px; }
+
+/* ── 실시간 가격 ── */
+.live-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.live-form label { display: flex; flex-direction: column; font-size: 12px; color: var(--mut); gap: 3px; }
+.live-form input, .live-form select { background: #0b1220; color: var(--text); border: 1px solid #4b5563; border-radius: 8px; padding: 8px; font-size: 14px; color-scheme: dark; }
+.live-form button { grid-column: 1 / -1; padding: 10px; border-radius: 10px; border: 0; background: #fff; color: var(--ink); font-weight: 700; cursor: pointer; }
+.live-item { display: flex; gap: 10px; width: 100%; background: var(--panel); border: 1px solid transparent; border-radius: 12px; padding: 8px;
+             color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.live-item:hover { border-color: #f87171; }
+.live-item img, .live-noimg { flex: none; width: 84px; height: 64px; border-radius: 8px; object-fit: cover; background: #374151; }
+.live-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.live-text > b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-text small { color: #fbbf24; font-size: 12px; }
+.live-price { font-size: 13px; color: #d1d5db; }
+.live-price b { color: #fff; font-size: 15px; }
+.live-price s { color: var(--mut); }
+.live-price em { color: #f87171; font-style: normal; font-weight: 700; }
+
+/* ── 카드 변형 ── */
+.card.no-photo .card-photo { aspect-ratio: auto; height: 56px; }
+.card-rank.gray { background: #6b7280; }
+.card-rank.live { background: #2563eb; font-size: 14px; }
+.card-price s { color: #9ca3af; }
+
+/* 장소 검색 후에는 '주변 호텔'을 목록 맨 위로 */
+.side { display: flex; flex-direction: column; }
+.side > * { order: 2; }
+.side > .area-info { order: 0; }
+.side.has-nearby > #nearby-section { order: 1; }
+.side > .disclosure { order: 9; }

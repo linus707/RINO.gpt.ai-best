@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems https://*.workers.dev; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>여행 숙소 지도</title>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -17,6 +17,11 @@
     <button id="reload" class="icon-btn" type="button" title="시트 다시 불러오기" aria-label="시트 다시 불러오기">↻</button>
   </div>
   <p id="subtitle" class="subtitle"></p>
+  <form id="search" class="search" role="search">
+    <input id="search-input" type="search" placeholder="호텔·동네·도시·역 이름 검색 (예: 대욕장, 교토역)" aria-label="검색어" enterkeyhint="search" autocomplete="off">
+    <button id="search-clear" class="search-clear" type="button" aria-label="검색 지우기" hidden>✕</button>
+    <button class="search-go" type="submit">검색</button>
+  </form>
   <nav id="tabs" class="tabs" aria-label="동네 선택"></nav>
 </header>
 
@@ -24,10 +29,35 @@
   <section class="map-wrap">
     <div id="map" aria-label="지도"></div>
     <div id="status" class="status" role="status"></div>
+    <button id="nearby-btn" class="nearby-btn" type="button" hidden>🔍 이 지역 호텔 찾기</button>
   </section>
   <aside class="side">
     <div id="area-info" class="area-info"></div>
+    <h2 id="list-title" class="sec-title">추천 호텔</h2>
     <ol id="list" class="list"></ol>
+
+    <section id="nearby-section" hidden>
+      <h2 id="nearby-title" class="sec-title">주변 호텔</h2>
+      <p class="sec-note">OpenStreetMap에 등록된 숙소예요. 직접 확인한 곳은 아니에요.</p>
+      <ol id="nearby-list" class="list"></ol>
+    </section>
+
+    <section id="live-section" class="live" hidden>
+      <h2 class="sec-title">실시간 가격 <span class="sec-badge">아고다</span></h2>
+      <form id="live-form" class="live-form">
+        <label>체크인<input id="live-in" type="date" required></label>
+        <label>체크아웃<input id="live-out" type="date" required></label>
+        <label>인원<select id="live-adults"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+        <label>정렬<select id="live-sort">
+          <option value="Recommended">추천순</option><option value="PriceAsc">낮은 가격순</option>
+          <option value="AllGuestsReviewScore">평점순</option><option value="StarRatingDesc">성급 높은순</option>
+        </select></label>
+        <button type="submit">가격 보기</button>
+      </form>
+      <p id="live-note" class="sec-note"></p>
+      <ol id="live-list" class="list"></ol>
+    </section>
+
     <p id="disclosure" class="disclosure"></p>
   </aside>
 </main>

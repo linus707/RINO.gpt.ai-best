@@ -1,14 +1,21 @@
-// 여행 숙소 지도: 구글 시트(CSV) 한 장을 읽어서 동네 영역, 명소, 호텔 마커, 상세 카드를 그려요.
-// 데이터를 바꾸려면 시트만 고치면 돼요. 이 파일은 건드릴 필요가 없어요.
+// 여행 숙소 지도
+// - 구글 시트(CSV) 한 장으로 동네 영역·명소·추천 호텔(빨간 번호)을 그려요.
+// - 검색창: ① 내 추천 호텔 검색  ② 장소 검색 → 주변 호텔(회색 점, OpenStreetMap)  ③ 아고다 실시간 가격(워커 연결 시)
+// 설정은 config.js 에서만 바꾸면 돼요.
 (function () {
   'use strict';
-  const CFG = Object.assign({ title: '여행 숙소 지도', subtitle: '', sheetCsvUrl: '', bookingAid: '', disclosure: '' }, window.TRAVEL_MAP_CONFIG || {});
+  const CFG = Object.assign({
+    title: '여행 숙소 지도', subtitle: '', sheetCsvUrl: '', bookingAid: '', disclosure: '',
+    hotelApiUrl: '', agodaCityId: '', agodaCities: {}, currency: 'KRW', language: 'ko-kr',
+    overpassUrls: ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'],
+    geocodeUrl: 'https://nominatim.openstreetmap.org/search',
+  }, window.TRAVEL_MAP_CONFIG || {});
   const SAMPLE_URL = 'data/sample.csv';
   const ALL = '전체 보기';
+  const NEARBY_MIN_ZOOM = 14;
   const $ = (id) => document.getElementById(id);
 
-  // ───────── 1. CSV 읽기 ─────────
-  // 따옴표로 감싼 칸(쉼표·줄바꿈 포함)도 제대로 읽어요.
+  // ───────── 1. 데이터 읽기 ─────────
   function parseCSV(text) {
     const rows = []; let row = []; let cell = ''; let q = false;
     text = text.replace(/^﻿/, '');
@@ -49,7 +56,9 @@
   const num = (v) => { const t = String(v ?? '').replace(/,/g, '').trim(); if (!t) return null; const n = Number(t); return Number.isFinite(n) ? n : null; };
   // 링크는 https/http 만 허용 (javascript: 같은 위험한 주소 차단)
   const safeUrl = (u) => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch { return ''; } };
+  const hostIs = (u, domain) => { try { const h = new URL(u).hostname; return h === domain || h.endsWith('.' + domain); } catch { return false; } };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (n) => Number(n).toLocaleString('ko-KR');
 
   function toModel(rows) {
     const areas = new Map(); const hotels = []; const landmarks = [];
@@ -75,8 +84,7 @@
     return { areas: [...areas.values()], hotels, landmarks };
   }
 
-  // ───────── 2. 시트 주소 정리 ─────────
-  // 초보자가 시트 '편집' 주소를 그대로 붙여넣어도 CSV 주소로 바꿔줘요. (시트가 '링크가 있는 모든 사용자' 보기 공유여야 해요)
+  // 시트 '편집' 주소를 붙여넣어도 CSV 주소로 바꿔줘요. (시트 공유: 링크가 있는 모든 사용자 보기)
   function normalizeSheetUrl(u) {
     const m = u.match(/docs\.google\.com\/spreadsheets\/d\/([A-Za-z0-9_-]{20,})\/(edit|view)/);
     if (m) {
@@ -91,125 +99,318 @@
     return u ? normalizeSheetUrl(u) : SAMPLE_URL;
   }
 
-  // ───────── 3. 지도 ─────────
+  // ───────── 2. 지도 ─────────
   const map = L.map('map', { zoomControl: true, attributionControl: true });
-  // 무료 OpenStreetMap 지도 (회색 톤은 style.css 에서 입혀요). 방문자가 아주 많아지면 유료 지도(Mapbox 등)로 바꾸세요.
+  // 무료 OpenStreetMap 지도 (회색 톤은 style.css). 방문자가 아주 많아지면 유료 지도(Mapbox 등)로 바꾸세요.
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(map);
   map.setView([37.5665, 126.978], 12);
-  const layer = L.layerGroup().addTo(map);
+  const layer = L.layerGroup().addTo(map);      // 추천 호텔·영역·명소
+  const nearbyLayer = L.layerGroup().addTo(map); // 주변 호텔(회색 점)
 
   let model = { areas: [], hotels: [], landmarks: [] };
   let isSampleData = false;
   let current = ALL; let markers = new Map(); let selected = null;
+  let searchHits = null;   // ① 검색으로 걸러진 추천 호텔 (null 이면 전체)
+  let searchText = '';
+  let nearby = [];         // ② 주변 호텔
+  let autoMoving = false;  // 코드가 지도를 움직이는 중이면 "이 지역 찾기" 버튼을 띄우지 않아요
 
   function setStatus(msg, isError) { const s = $('status'); s.textContent = msg || ''; s.classList.toggle('error', !!isError); }
+  function fit(bounds, opts) { if (!bounds.isValid()) return; autoMoving = true; map.fitBounds(bounds, Object.assign({ padding: [40, 40], maxZoom: 16 }, opts)); setTimeout(() => { autoMoving = false; }, 400); }
+  function moveTo(lat, lng, zoom) { autoMoving = true; map.setView([lat, lng], zoom, { animate: false }); setTimeout(() => { autoMoving = false; }, 400); }
 
   function renderTabs() {
     const tabs = $('tabs'); tabs.textContent = '';
     [ALL, ...model.areas.map((a) => a.name)].forEach((name) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'tab' + (name === current ? ' active' : ''); b.textContent = name;
-      b.addEventListener('click', () => { current = name; render(); });
+      b.addEventListener('click', () => { current = name; clearSearch(false); render(); });
       tabs.appendChild(b);
     });
   }
 
-  function render() {
+  const visibleHotels = () => model.hotels.filter((h) => (current === ALL || h.area === current) && (!searchHits || searchHits.has(h)));
+
+  function render(skipFit) {
     renderTabs(); layer.clearLayers(); markers = new Map();
     const inArea = (x) => current === ALL || x.area === current;
     const bounds = L.latLngBounds([]);
+    const compact = current === ALL && !searchHits;
 
     model.areas.filter((a) => a.polygon && (current === ALL || a.name === current)).forEach((a) => {
       const poly = L.polygon(a.polygon, { color: '#dc2626', weight: 2, dashArray: '6 6', fillColor: '#dc2626', fillOpacity: current === ALL ? 0.07 : 0.12 }).addTo(layer);
       if (current === ALL) poly.bindTooltip(a.name, { sticky: true });
-      poly.on('click', () => { if (current === ALL) { current = a.name; render(); } });
-      bounds.extend(poly.getBounds());
+      poly.on('click', () => { if (current === ALL && !searchHits) { current = a.name; render(); } });
+      if (!searchHits) bounds.extend(poly.getBounds());
     });
 
-    model.landmarks.filter(inArea).forEach((l) => {
+    if (!searchHits) model.landmarks.filter(inArea).forEach((l) => {
       L.marker([l.lat, l.lng], { interactive: false, keyboard: false, zIndexOffset: -100,
         icon: L.divIcon({ className: '', iconSize: null, iconAnchor: [10, 12], html: `<div class="landmark">${esc(l.name)}</div>` }) }).addTo(layer);
       bounds.extend([l.lat, l.lng]);
     });
 
     const list = $('list'); list.textContent = '';
-    model.hotels.filter(inArea).forEach((h) => {
-      const m = L.marker([h.lat, h.lng], { title: h.name, riseOnHover: true,
+    visibleHotels().forEach((h) => {
+      const m = L.marker([h.lat, h.lng], { title: h.name, riseOnHover: true, zIndexOffset: 500,
         icon: L.divIcon({ className: '', iconSize: null, iconAnchor: [14, 14],
-          html: `<div class="pin${current === ALL ? ' compact' : ''}"><div class="num">${esc(h.rank)}</div><div class="label">${esc(h.name)}</div></div>` }) })
-        .on('click', () => openCard(h)).addTo(layer);
+          html: `<div class="pin${compact ? ' compact' : ''}"><div class="num">${esc(h.rank)}</div><div class="label">${esc(h.name)}</div></div>` }) })
+        .on('click', () => openHotel(h)).addTo(layer);
       markers.set(h, m); bounds.extend([h.lat, h.lng]);
-
-      const li = document.createElement('li');
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'item';
-      b.innerHTML = `<span class="num">${esc(h.rank)}</span><span><b>${esc(h.name)}</b><small>${esc([h.area, ratingText(h), h.walk].filter(Boolean).join(' · '))}</small></span>`;
-      b.addEventListener('click', () => { map.panTo([h.lat, h.lng]); openCard(h); });
-      li.appendChild(b); list.appendChild(li);
+      list.appendChild(listItem(`<span class="num">${esc(h.rank)}</span>`, h.name, [h.area, ratingText(h), h.walk], () => { map.panTo([h.lat, h.lng]); openHotel(h); }, h));
     });
+    $('list-title').textContent = searchHits ? `"${searchText}" 추천 호텔 ${searchHits.size}곳` : '추천 호텔';
 
     const a = model.areas.find((x) => x.name === current);
-    $('area-info').innerHTML = a && (a.desc || a.good || a.bad)
+    $('area-info').innerHTML = !searchHits && a && (a.desc || a.good || a.bad)
       ? `<h3>${esc(a.name)}</h3>${a.desc ? `<p>${esc(a.desc)}</p>` : ''}${a.good ? `<p class="good">${esc(a.good)}</p>` : ''}${a.bad ? `<p class="bad">${esc(a.bad)}</p>` : ''}`
       : '';
 
-    if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+    if (!skipFit) fit(bounds);
   }
 
-  const ratingText = (h) => h.rating ? `★ ${h.rating}${h.reviews ? ` (${h.reviews.toLocaleString('ko-KR')})` : ''}` : '';
+  function listItem(iconHtml, title, subs, onClick, key) {
+    const li = document.createElement('li');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'item';
+    b.innerHTML = `${iconHtml}<span><b>${esc(title)}</b><small>${esc(subs.filter(Boolean).join(' · '))}</small></span>`;
+    b.addEventListener('click', onClick);
+    if (key) b._key = key;
+    li.appendChild(b); return li;
+  }
 
-  // ───────── 4. 호텔 상세 카드 ─────────
-  function openCard(h) {
-    if (selected && markers.get(selected)) markers.get(selected).getElement()?.querySelector('.pin')?.classList.remove('on');
-    selected = h;
-    markers.get(h)?.getElement()?.querySelector('.pin')?.classList.add('on');
-    document.querySelectorAll('.item').forEach((el, i) => el.classList.toggle('on', model.hotels.filter((x) => current === ALL || x.area === current)[i] === h));
+  const ratingText = (h) => h.rating ? `★ ${h.rating}${h.reviews ? ` (${fmt(h.reviews)})` : ''}` : '';
 
+  // ───────── 3. 상세 카드 (추천 호텔·주변 호텔·실시간 결과 공용) ─────────
+  function openCard(v, key) {
+    highlight(key);
     const img = $('card-img');
-    img.hidden = !h.photo; img.src = h.photo || ''; img.alt = h.name;
+    img.hidden = !v.photo; img.src = v.photo || ''; img.alt = v.name;
     img.onerror = () => { img.hidden = true; };
-    $('card-rank').textContent = h.rank;
-    $('card-photo-note').hidden = !(isSampleData && h.photo);
-    $('card-area').textContent = h.area || '';
-    $('card-name').textContent = h.name;
-    $('card-meta').innerHTML = [h.rating ? `<span class="stars">★ ${esc(h.rating)}</span>${h.reviews ? ` 후기 ${esc(h.reviews.toLocaleString('ko-KR'))}개` : ''}` : '', h.walk ? `🚶 ${esc(h.walk)}` : '']
-      .filter(Boolean).join(' &nbsp;·&nbsp; ');
-    $('card-desc').textContent = h.desc || '';
-    $('card-points').innerHTML = [
-      h.good && `<li class="good">${esc(h.good)}</li>`,
-      h.bad && `<li class="bad">${esc(h.bad)}</li>`,
-      (h.checkin || h.checkout) && `<li class="time">체크인 ${esc(h.checkin || '-')} · 체크아웃 ${esc(h.checkout || '-')}</li>`,
-    ].filter(Boolean).join('');
-    $('card-price').innerHTML = h.price ? `1박 <b>${esc(h.price)}</b>부터 <small>(시트 기준, 날짜마다 달라요)</small>` : '가격은 날짜마다 달라요. 아래 버튼에서 확인하세요.';
-
+    $('card').classList.toggle('no-photo', !v.photo);
+    $('card-rank').textContent = v.rank || '';
+    $('card-rank').className = 'card-rank' + (v.kind ? ' ' + v.kind : '');
+    $('card-photo-note').hidden = !v.photoNote;
+    $('card-area').textContent = v.area || '';
+    $('card-name').textContent = v.name;
+    $('card-meta').innerHTML = v.metaHtml || '';
+    $('card-desc').textContent = v.desc || '';
+    $('card-points').innerHTML = (v.points || []).map(([cls, t]) => `<li class="${cls}">${esc(t)}</li>`).join('');
+    $('card-price').innerHTML = v.priceHtml || '';
     const acts = $('card-actions'); acts.textContent = '';
-    const add = (cls, label, href, sponsored) => {
+    (v.actions || []).forEach(([cls, label, href, sponsored]) => {
       const a = document.createElement('a'); a.className = 'btn ' + cls; a.textContent = label; a.href = href;
       a.target = '_blank'; a.rel = sponsored ? 'sponsored noopener' : 'noopener'; acts.appendChild(a);
-    };
-    if (h.agoda) add('agoda', '아고다에서 가격 보기', h.agoda, true);
-    if (h.trip) add('trip', '트립닷컴 가격 비교', h.trip, true);
-    if (!h.agoda && !h.trip) {
-      const q = encodeURIComponent(h.name);
-      add('booking', '부킹닷컴에서 가격 보기', `https://www.booking.com/searchresults.ko.html?ss=${q}${CFG.bookingAid ? `&aid=${encodeURIComponent(CFG.bookingAid)}` : ''}`, !!CFG.bookingAid);
-    }
-    add('map', '구글맵에서 위치 보기', `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}`, false);
-
+    });
     $('card').hidden = false; $('sheet-backdrop').hidden = false; $('card-close').focus();
   }
-  function closeCard() {
-    $('card').hidden = true; $('sheet-backdrop').hidden = true;
-    if (selected) markers.get(selected)?.getElement()?.querySelector('.pin')?.classList.remove('on');
-    document.querySelectorAll('.item.on').forEach((el) => el.classList.remove('on'));
-    selected = null;
+  function highlight(key) {
+    if (selected && markers.get(selected)) markers.get(selected).getElement()?.querySelector('.pin')?.classList.remove('on');
+    selected = key || null;
+    if (key && markers.get(key)) markers.get(key).getElement()?.querySelector('.pin')?.classList.add('on');
+    document.querySelectorAll('.item').forEach((el) => el.classList.toggle('on', !!key && el._key === key));
   }
+  function closeCard() { $('card').hidden = true; $('sheet-backdrop').hidden = true; highlight(null); }
   $('card-close').addEventListener('click', closeCard);
   $('sheet-backdrop').addEventListener('click', closeCard);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCard(); });
 
-  // ───────── 5. 불러오기 ─────────
+  const bookingSearch = (name) => `https://www.booking.com/searchresults.ko.html?ss=${encodeURIComponent(name)}${CFG.bookingAid ? `&aid=${encodeURIComponent(CFG.bookingAid)}` : ''}`;
+  const gmaps = (lat, lng, name) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name || `${lat},${lng}`)}`;
+
+  function openHotel(h) {
+    const actions = [];
+    if (h.agoda) actions.push(['agoda', '아고다에서 가격 보기', h.agoda, true]);
+    if (h.trip) actions.push(['trip', '트립닷컴 가격 비교', h.trip, true]);
+    if (!h.agoda && !h.trip) actions.push(['booking', '부킹닷컴에서 가격 보기', bookingSearch(h.name), !!CFG.bookingAid]);
+    actions.push(['map', '구글맵에서 위치 보기', `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}`, false]);
+    openCard({
+      photo: h.photo, photoNote: isSampleData && h.photo, rank: h.rank, area: h.area, name: h.name,
+      metaHtml: [h.rating ? `<span class="stars">★ ${esc(h.rating)}</span>${h.reviews ? ` 후기 ${esc(fmt(h.reviews))}개` : ''}` : '', h.walk ? `🚶 ${esc(h.walk)}` : ''].filter(Boolean).join(' &nbsp;·&nbsp; '),
+      desc: h.desc,
+      points: [h.good && ['good', h.good], h.bad && ['bad', h.bad], (h.checkin || h.checkout) && ['time', `체크인 ${h.checkin || '-'} · 체크아웃 ${h.checkout || '-'}`]].filter(Boolean),
+      priceHtml: h.price ? `1박 <b>${esc(h.price)}</b>부터 <small>(시트 기준, 날짜마다 달라요)</small>` : '가격은 날짜마다 달라요. 아래 버튼에서 확인하세요.',
+      actions,
+    }, h);
+  }
+
+  // ───────── 4. 검색 ─────────
+  // ① 내 추천 호텔에서 찾기
+  function localSearch(q) {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    return model.hotels.filter((h) => {
+      const text = [h.name, h.area, h.desc, h.good, h.walk].join(' ').toLowerCase();
+      return words.every((w) => text.includes(w));
+    });
+  }
+  function clearSearch(rerender) {
+    searchHits = null; searchText = ''; $('search-clear').hidden = true;
+    if (rerender) render();
+  }
+
+  // ② 장소 이름 → 좌표 (Nominatim, 무료. 정책상 버튼을 누를 때만 1번 요청해요)
+  async function geocode(q) {
+    const u = `${CFG.geocodeUrl}?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(q)}`;
+    const res = await fetch(u, { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error('장소 검색 서버 응답 ' + res.status);
+    const [hit] = await res.json();
+    if (!hit) return null;
+    const bb = (hit.boundingbox || []).map(Number);
+    return { lat: Number(hit.lat), lng: Number(hit.lon), name: hit.name || hit.display_name, bbox: bb.length === 4 ? bb : null };
+  }
+
+  // ② 지도에 보이는 범위의 호텔 (Overpass, OpenStreetMap 데이터)
+  async function findNearby() {
+    if (map.getZoom() < NEARBY_MIN_ZOOM) { setStatus('지도를 조금 더 확대한 뒤 눌러주세요.'); return; }
+    $('nearby-btn').hidden = true;
+    const b = map.getBounds();
+    const box = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].map((n) => n.toFixed(5)).join(',');
+    const query = `[out:json][timeout:20];nwr["tourism"~"^(hotel|hostel|guest_house|motel|apartment)$"](${box});out center tags 150;`;
+    setStatus('주변 호텔을 찾는 중…');
+    let data = null; let lastErr = null;
+    for (const url of CFG.overpassUrls) {
+      try {
+        const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: query }) });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        data = await res.json(); break;
+      } catch (e) { lastErr = e; }
+    }
+    if (!data) { setStatus('주변 호텔 서버가 바빠요. 잠시 뒤 다시 눌러주세요. (' + (lastErr && lastErr.message) + ')', true); $('nearby-btn').hidden = false; return; }
+    const near = (lat, lng) => model.hotels.some((h) => map.distance([h.lat, h.lng], [lat, lng]) < 60);
+    nearby = (data.elements || []).map((e) => {
+      const t = e.tags || {}; const lat = e.lat ?? e.center?.lat; const lng = e.lon ?? e.center?.lon;
+      const name = t['name:ko'] || t.name || t['name:en'];
+      if (!name || !okLatLng([lat, lng]) || near(lat, lng)) return null; // 추천 호텔과 겹치면 빼요
+      return { lat, lng, name, nameEn: t['name:en'] || '', kind: t.tourism, stars: num(t.stars),
+        addr: [t['addr:city'], t['addr:street'] || t['addr:place'], t['addr:housenumber']].filter(Boolean).join(' '),
+        website: safeUrl(t.website || t['contact:website'] || '') };
+    }).filter(Boolean);
+    renderNearby();
+    setStatus(nearby.length ? '' : '이 범위에는 등록된 호텔이 없어요. 지도를 옮겨서 다시 찾아보세요.');
+  }
+  const KIND = { hotel: '호텔', hostel: '호스텔', guest_house: '게스트하우스', motel: '모텔', apartment: '레지던스' };
+  function renderNearby() {
+    nearbyLayer.clearLayers();
+    const list = $('nearby-list'); list.textContent = '';
+    $('nearby-section').hidden = !nearby.length;
+    document.querySelector('.side').classList.toggle('has-nearby', nearby.length > 0);
+    $('nearby-title').textContent = `주변 호텔 ${nearby.length}곳`;
+    nearby.forEach((n) => {
+      L.marker([n.lat, n.lng], { title: n.name, riseOnHover: true,
+        icon: L.divIcon({ className: '', iconSize: null, iconAnchor: [7, 7], html: `<div class="dot"><span class="dot-label">${esc(n.name)}</span></div>` }) })
+        .on('click', () => openNearby(n)).addTo(nearbyLayer);
+      list.appendChild(listItem('<span class="dot static"></span>', n.name, [KIND[n.kind] || '숙소', n.stars ? `${n.stars}성급` : ''], () => { map.panTo([n.lat, n.lng]); openNearby(n); }, n));
+    });
+  }
+  function openNearby(n) {
+    const actions = [['booking', '부킹닷컴에서 가격 보기', bookingSearch(n.nameEn || n.name), !!CFG.bookingAid]];
+    if (n.website) actions.push(['map', '호텔 홈페이지', n.website, false]);
+    actions.push(['map', '구글맵에서 보기', gmaps(n.lat, n.lng, n.nameEn || n.name), false]);
+    openCard({
+      rank: '·', kind: 'gray', area: `주변 ${KIND[n.kind] || '숙소'} · OpenStreetMap 정보`, name: n.name,
+      metaHtml: [n.stars ? `<span class="stars">${'★'.repeat(Math.min(5, Math.round(n.stars)))}</span> ${esc(n.stars)}성급` : '', n.nameEn && n.nameEn !== n.name ? esc(n.nameEn) : ''].filter(Boolean).join(' &nbsp;·&nbsp; '),
+      desc: n.addr ? '📍 ' + n.addr : '',
+      points: [['bad', '아직 직접 확인하지 않은 숙소예요. 후기와 평점은 예약 사이트에서 확인하세요.']],
+      priceHtml: '가격은 날짜마다 달라요. 아래 버튼에서 확인하세요.',
+      actions,
+    }, n);
+  }
+
+  // ③ 아고다 실시간 가격 (워커가 연결된 경우에만)
+  const liveOn = !!safeUrl(CFG.hotelApiUrl);
+  function cityIdFor(q) {
+    const key = Object.keys(CFG.agodaCities || {}).find((k) => q && (q.includes(k) || k.includes(q)));
+    return key ? CFG.agodaCities[key] : CFG.agodaCityId;
+  }
+  const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  function initDates() {
+    const a = new Date(); a.setDate(a.getDate() + 30); const b = new Date(a); b.setDate(b.getDate() + 1);
+    $('live-in').value = iso(a); $('live-out').value = iso(b); $('live-in').min = iso(new Date());
+  }
+  async function liveSearch(q) {
+    if (!liveOn) return;
+    const cityId = cityIdFor(q || '');
+    const list = $('live-list'); list.textContent = '';
+    if (!cityId) { $('live-note').textContent = '이 도시의 아고다 도시 ID가 config.js에 없어요.'; return; }
+    const p = new URLSearchParams({ cityId, checkIn: $('live-in').value, checkOut: $('live-out').value, adults: $('live-adults').value,
+      currency: CFG.currency, lang: CFG.language, sort: $('live-sort').value, max: '20' });
+    $('live-note').textContent = '실시간 가격을 불러오는 중…';
+    try {
+      const res = await fetch(CFG.hotelApiUrl.replace(/\/$/, '') + '/search?' + p, { headers: { Accept: 'application/json' } });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || ('HTTP ' + res.status));
+      const results = (body.results || []).filter((r) => r && r.name && hostIs(r.url, 'agoda.com'));
+      $('live-note').textContent = results.length ? `${$('live-in').value} 체크인 · 1박 기준 · 아고다 제공` : '조건에 맞는 호텔이 없어요.';
+      results.forEach((r) => {
+        const li = document.createElement('li');
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'live-item';
+        const img = safeUrl(r.image);
+        b.innerHTML = `${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="live-noimg"></span>'}
+          <span class="live-text"><b>${esc(r.name)}</b>
+          <small>${r.reviewScore ? `★ ${esc(r.reviewScore)}` : ''}${r.reviewCount ? ` (${esc(fmt(r.reviewCount))})` : ''}${r.stars ? ` · ${esc(r.stars)}성급` : ''}</small>
+          <span class="live-price">${r.crossedOut && r.crossedOut > r.price ? `<s>${esc(fmt(Math.round(r.crossedOut)))}</s> ` : ''}<b>${esc(fmt(Math.round(r.price)))}</b> ${esc(r.currency)}${r.discount ? ` <em>-${esc(Math.round(r.discount))}%</em>` : ''}</span></span>`;
+        b.querySelectorAll('img').forEach((im) => im.addEventListener('error', () => { im.hidden = true; }));
+        b.addEventListener('click', () => openLive(r));
+        li.appendChild(b); list.appendChild(li);
+      });
+    } catch (e) {
+      $('live-note').textContent = '실시간 가격을 못 불러왔어요: ' + e.message;
+    }
+  }
+  function openLive(r) {
+    openCard({
+      photo: safeUrl(r.image), rank: '₩', kind: 'live', area: '아고다 실시간 가격', name: r.name,
+      metaHtml: [r.reviewScore ? `<span class="stars">★ ${esc(r.reviewScore)}</span>${r.reviewCount ? ` 후기 ${esc(fmt(r.reviewCount))}개` : ''}` : '', r.stars ? `${esc(r.stars)}성급` : ''].filter(Boolean).join(' &nbsp;·&nbsp; '),
+      points: [r.breakfast && ['good', '조식 포함 요금'], r.wifi && ['good', '무료 와이파이']].filter(Boolean),
+      priceHtml: `1박 <b>${esc(fmt(Math.round(r.price)))} ${esc(r.currency)}</b>${r.crossedOut && r.crossedOut > r.price ? ` <s>${esc(fmt(Math.round(r.crossedOut)))}</s>` : ''} <small>(${esc($('live-in').value)} 기준, 세금·수수료 별도일 수 있어요)</small>`,
+      actions: [['agoda', '아고다에서 예약하기', r.url, true]],
+    });
+  }
+
+  // 검색창 제출: ① 내 목록에 있으면 그걸 보여주고, 없으면 ② 장소로 이동해서 주변 호텔을 찾아요. ③은 함께 실행.
+  async function onSearch(e) {
+    e.preventDefault();
+    const q = $('search-input').value.trim();
+    if (!q) { clearSearch(true); return; }
+    closeCard();
+    const hits = localSearch(q);
+    liveSearch(q);
+    if (hits.length) {
+      searchHits = new Set(hits); searchText = q; current = ALL; $('search-clear').hidden = false;
+      render(); setStatus(''); return;
+    }
+    clearSearch(false); render(true);
+    setStatus(`"${q}" 위치를 찾는 중…`);
+    try {
+      const g = await geocode(q);
+      if (!g) { setStatus(`"${q}"을(를) 찾지 못했어요. 도시·역·동네 이름으로 다시 검색해 보세요.`, true); return; }
+      const bb = g.bbox; // [남, 북, 서, 동]
+      const small = bb && map.distance([bb[0], bb[2]], [bb[1], bb[3]]) < 3000;
+      if (bb && small) fit(L.latLngBounds([bb[0], bb[2]], [bb[1], bb[3]]), { maxZoom: 16, padding: [0, 0], animate: false });
+      else moveTo(g.lat, g.lng, 15);
+      if (map.getZoom() < NEARBY_MIN_ZOOM) moveTo(g.lat, g.lng, 15);
+      $('search-clear').hidden = false;
+      await findNearby();
+    } catch (err) {
+      setStatus('장소 검색 실패: ' + err.message, true);
+    }
+  }
+  $('search').addEventListener('submit', onSearch);
+  $('search-clear').addEventListener('click', () => {
+    $('search-input').value = ''; nearby = []; renderNearby(); $('nearby-btn').hidden = true; setStatus('');
+    clearSearch(true);
+  });
+  $('nearby-btn').addEventListener('click', findNearby);
+  map.on('moveend', () => { if (!autoMoving && map.getZoom() >= NEARBY_MIN_ZOOM) $('nearby-btn').hidden = false; });
+
+  if (liveOn) {
+    $('live-section').hidden = false; initDates();
+    $('live-form').addEventListener('submit', (e) => { e.preventDefault(); liveSearch($('search-input').value.trim() || CFG.title); });
+  }
+
+  // ───────── 5. 시트 불러오기 ─────────
   async function load() {
     const url = sourceUrl(); const isSample = url === SAMPLE_URL;
     $('sample-badge').hidden = !isSample; isSampleData = isSample;
@@ -222,9 +423,11 @@
       model = toModel(parseCSV(text));
       if (!model.hotels.length) throw new Error('호텔 줄을 못 찾았어요. 첫 줄 제목(구분, 동네, 이름, 위도, 경도…)을 확인하세요.');
       if (current !== ALL && !model.areas.some((a) => a.name === current)) current = ALL;
-      const anyAffiliate = model.hotels.some((h) => h.agoda || h.trip) || !!CFG.bookingAid;
+      if (searchHits) searchHits = new Set(localSearch(searchText));
+      const anyAffiliate = model.hotels.some((h) => h.agoda || h.trip) || !!CFG.bookingAid || liveOn;
       $('disclosure').textContent = anyAffiliate ? CFG.disclosure : '';
       render(); setStatus('');
+      if (liveOn) liveSearch($('search-input').value.trim() || CFG.title);
     } catch (e) {
       setStatus('불러오기 실패: ' + e.message, true);
     }
@@ -235,6 +438,6 @@
   $('reload').addEventListener('click', load);
   load();
 
-  // 테스트·디버깅용으로만 내보내요.
-  window.__travelMap = { parseCSV, parsePolygon, normalizeSheetUrl, toModel };
+  // 테스트·디버깅용
+  window.__travelMap = { parseCSV, parsePolygon, normalizeSheetUrl, toModel, localSearch: (q) => localSearch(q).map((h) => h.name) };
 })();
