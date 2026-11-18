@@ -112,7 +112,10 @@ body.test .cstrip{background:#fff6dc}
 .stage .gt{position:absolute;left:0;right:0;top:18px;text-align:center;color:#fff}
 .stage .gt b{display:block;font-size:22px;line-height:28px;letter-spacing:-.44px}
 .stage .gt span{font-size:15px;line-height:22px;opacity:.9}
-.stage .art{position:absolute;left:50%;bottom:26px;width:min(620px,88%);height:auto;transform:translateX(-50%)}
+.stage .art{position:absolute;left:50%;bottom:26px;width:min(620px,88%);height:auto;transform:translateX(-50%);transition:bottom 300ms}
+.stage.has-desc .art{bottom:92px;width:min(560px,80%)}
+.stage .desc{position:absolute;left:0;right:0;bottom:0;margin:0;padding:18px 28px 22px;text-align:center;color:#fff;font-size:15px;line-height:23px;letter-spacing:-.2px;white-space:pre-line;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.stage.has-photo .desc{padding-top:44px;background:linear-gradient(0deg,rgba(0,0,0,.55),rgba(0,0,0,0))}
 .stage .art .bed{transform-origin:50% 100%;transition:transform 500ms cubic-bezier(0,.18,.07,1)}
 .arw{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:rgba(255,255,255,.72);display:grid;place-items:center}
 .arw.l{left:12px}.arw.r{right:12px}
@@ -197,6 +200,7 @@ body.test .cstrip{background:#fff6dc}
 .pcard .im svg{width:100%;height:auto}
 .pcard .nm{font-weight:700;font-size:20px;line-height:27px;letter-spacing:-.4px;overflow-wrap:anywhere}
 .pcard .cd{margin-top:8px;font-size:14px;color:var(--tx2)}
+.pcard .ds{margin-top:8px;font-size:14px;line-height:20px;color:var(--tx);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .pcard .cl{margin-top:14px;font-size:13px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pcard .sz{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .pcard .sz span{min-width:40px;height:32px;padding:0 10px;display:grid;place-items:center;border-radius:var(--r-sm);box-shadow:var(--ring);background:#fff;font-weight:700;font-size:13px}
@@ -652,6 +656,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
             <path d="M196 160 Q300 150 420 124 M190 196 Q300 190 440 160" fill="none" stroke="#c9c7bf" stroke-width="1.5" stroke-opacity=".8"/>
           </g>
         </svg>
+        <p class="desc" id="stDesc" hidden></p>
         <button class="arw l" type="button" id="prev" aria-label="이전 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
         <button class="arw r" type="button" id="next" aria-label="다음 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
       </div>
@@ -755,6 +760,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <h4>제품 정보</h4>
       <div class="srow"><label for="pmName">이름<small id="pmOrig"></small></label><input class="pin" id="pmName" style="width:200px;text-align:left" maxlength="40"></div>
       <div class="srow"><label for="pmMenu">메뉴<small>다른 메뉴로 옮겨요(사은품 메뉴는 「사은품 메뉴에 넣기」로)</small></label><select class="pin" id="pmMenu" style="width:200px;text-align:left"></select></div>
+      <div class="srow" style="align-items:flex-start"><label for="pmDesc">설명<small>제품 그림(사진) 안, 제품 아래와 목록 카드에 보여요. 3줄까지 보여요. 비우면 안 보여요</small></label><textarea class="pin" id="pmDesc" rows="3" maxlength="200" style="width:260px;height:auto;text-align:left;padding:8px 10px;line-height:1.5;resize:vertical" placeholder="예) 7존 독립 스프링으로 몸을 고르게 받쳐 줘요"></textarea></div>
       <div class="sh-foot"><button class="btn outl" type="button" id="pmDel" style="color:var(--err);border-color:var(--err)">이 제품 삭제</button><button class="btn" type="button" id="pmSave">제품 정보 저장</button></div>
     </section>
 
@@ -967,7 +973,7 @@ var SET_KEY=NS+'settings',CART_KEY=NS+'cart';
 var DEFAULT_SET={
   storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
   branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
-  menus:null,moved:{},names:{},deleted:[],flow:true,
+  menus:null,moved:{},names:{},descs:{},deleted:[],flow:true,
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -1112,8 +1118,8 @@ function finishGroup(g,map,custom){
   box.models=Object.keys(map).map(function(k){
     var vs=map[k].vs.sort(function(a,b){return sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size)||a.price-b.price||a.color.localeCompare(b.color,'ko')});
     var sizes=[];vs.forEach(function(v){if(sizes.indexOf(v.size)<0)sizes.push(v.size)});
-    var oid=map[k].oid||g.id+'|'+k,nm=SET.names&&SET.names[oid];
-    return {key:k,oid:oid,gid:g.id,name:nm||(custom?k:clean(k)),series:seriesOf(nm||k),variants:vs,sizes:sizes,main:map[k].main,ord:map[k].ord==null?1e7:map[k].ord,mine:!!map[k].mine};
+    var oid=map[k].oid||g.id+'|'+k,nm=SET.names&&SET.names[oid],ds=SET.descs&&SET.descs[oid];
+    return {key:k,oid:oid,gid:g.id,name:nm||(custom?k:clean(k)),series:seriesOf(nm||k),desc:ds!=null?ds:(map[k].desc||''),variants:vs,sizes:sizes,main:map[k].main,ord:map[k].ord==null?1e7:map[k].ord,mine:!!map[k].mine};
   }).sort(custom||g.custom?function(a,b){return a.ord-b.ord||a.name.localeCompare(b.name,'ko')}:function(a,b){return (b.main-a.main)||a.ord-b.ord||a.name.localeCompare(b.name,'ko')});
   box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m;m.variants.forEach(function(v){CODE[v.code]={m:m,v:v,gid:g.id}})});
   box.own=box.models.slice();
@@ -1131,7 +1137,7 @@ function buildCustom(pl){
     var ov=PRICES[it.code],price=ov>0?ov:it.price;
     var v={size:it.size||'',color:it.color||'',price:price,base:it.price,code:it.code,rate:it.rate==null?null:it.rate,kw:it.kw||''};
     var e=maps[it.group][it.model]=maps[it.group][it.model]||{vs:[],main:true,ord:it.ord,oid:it.group+'|'+it.model};
-    e.vs.push(v);e.ord=Math.min(e.ord,it.ord);
+    e.vs.push(v);e.ord=Math.min(e.ord,it.ord);if(it.desc&&!e.desc)e.desc=it.desc;
   });
   applyEdits(maps);
   GROUPS.forEach(function(g){finishGroup(g,maps[g.id],true)});
@@ -1239,6 +1245,7 @@ function render(){
   pimg.parentNode.classList.toggle('has-photo',!!ph);
   $('photoNote').textContent=ph?'매장에서 넣은 사진이에요.':'그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.';
   $('stSize').textContent=optText||group.def.name;
+  var dsc=String(cur.desc||'').trim();$('stDesc').textContent=dsc;$('stDesc').hidden=!dsc;pimg.parentNode.classList.toggle('has-desc',!!dsc);
 
   $('fSizes').textContent=cur.variants.length+'가지';
   $('fFrom').textContent=won(cur.variants.reduce(function(a,b){return Math.min(a,b.price)},Infinity))+'원';
@@ -1402,9 +1409,10 @@ function renderPricePane(){
   $('pricePane').innerHTML=
     '<section class="sh-sec"><h4>가격표</h4>'
     +'<div class="srow"><span class="lb">지금 쓰는 가격표<small>'+esc(meta.source||'-')+' · '+(PRICELIST?'불러온 날':'기준일')+' '+esc(meta.updated||'-')+(PRICELIST?' · '+won(PRICELIST.items.length)+'줄':'')+'</small></span></div>'
-    +'<p class="hint">엑셀 1행에 <b>메뉴 · 모델명 · 정상가(원)</b> 제목은 꼭 있어야 하고, <b>순서 · 규격 · 색상 · 할인율(%) · 검색어 · 상품코드</b>는 있으면 써요. 메뉴는 매트리스·프레임·사이드옵션·슬립케어·사은품 중 하나예요. 「가격표」 시트가 있으면 그 시트를, 없으면 첫 시트를 읽어요.</p>'
+    +'<p class="hint">엑셀 1행에 <b>메뉴 · 모델명 · 정상가(원)</b> 제목은 꼭 있어야 하고, <b>순서 · 규격 · 색상 · 할인율(%) · 검색어 · 상품코드 · 설명</b>은 있으면 써요. 메뉴는 매트리스·프레임·사이드옵션·슬립케어·사은품 중 하나예요. 「가격표」 시트가 있으면 그 시트를, 없으면 첫 시트를 읽어요.</p>'
     +'<div class="sh-foot" style="justify-content:flex-start"><label class="btn"><input type="file" id="plFile" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>엑셀 가격표 불러오기</label>'
-    +'<button class="btn outl" type="button" data-pl="tpl">양식 내려받기(CSV)</button>'
+    +'<a class="btn outl" href="pos-price-template.xlsx" download="pos-price-template.xlsx">엑셀 양식 내려받기</a>'
+    +'<a class="btn outl" href="pos-price-store.xlsx" download="pos-price-store.xlsx">매장 가격표 엑셀로 받기</a>'
     +(PRICELIST?'<button class="btn outl" type="button" data-pl="reset" style="color:var(--err);border-color:var(--err)">불러온 엑셀 지우기</button>':'')
     +(PSRC==='store'?'<button class="btn outl" type="button" data-pl="src-builtin">전체 정상가 파일로</button>':'')
     +(PSRC==='builtin'?'<button class="btn outl" type="button" data-pl="src-store">매장 가격표로</button>':'')+'</div>'
@@ -1486,7 +1494,7 @@ var MENU_NAMES={'매트리스':'matt','메트리스':'matt','매트':'matt','프
 function parsePriceRows(rows){
   var h=(rows[0]||[]).map(function(x){return String(x==null?'':x).replace(/\s+/g,'')});
   var col=function(){var names=arguments;return h.findIndex(function(x){return Array.prototype.some.call(names,function(n){return x.indexOf(n)===0})})};
-  var C={menu:col('메뉴'),ord:col('순서'),model:col('모델명','제품명','품명'),size:col('규격','사이즈'),color:col('색상','옵션'),price:col('정상가','가격','판매가'),rate:col('할인율'),kw:col('검색어','별칭'),code:col('상품코드','코드')};
+  var C={menu:col('메뉴'),ord:col('순서'),model:col('모델명','제품명','품명'),size:col('규격','사이즈'),color:col('색상','옵션'),price:col('정상가','가격','판매가'),rate:col('할인율'),kw:col('검색어','별칭'),code:col('상품코드','코드'),desc:col('설명')};
   var miss=[['메뉴',C.menu],['모델명',C.model],['정상가(원)',C.price]].filter(function(x){return x[1]<0}).map(function(x){return x[0]});
   if(miss.length)throw new Error('1행에서 「'+miss.join('」「')+'」 제목을 찾지 못했어요. 양식의 1행 제목을 그대로 두고 다시 저장해 주세요');
   var cell=function(r,k){return k<0?'':String(r[k]==null?'':r[k]).trim()};
@@ -1507,7 +1515,7 @@ function parsePriceRows(rows){
     if(seen[code]){errors.push([line,'상품코드·이름이 위 줄과 같아요 ('+(code.indexOf('M:')===0?'모델명·규격·색상':code)+') — 따로 저장했어요']);code+='#'+line}
     seen[code]=1;
     var ordT=cell(r,C.ord);
-    items.push({code:code,group:g,model:model,size:size,color:color,price:Math.round(+priceT),rate:rate,kw:cell(r,C.kw),ord:/^\d+$/.test(ordT)?+ordT:1e6+line});
+    items.push({code:code,group:g,model:model,size:size,color:color,price:Math.round(+priceT),rate:rate,kw:cell(r,C.kw),desc:cell(r,C.desc).slice(0,200),ord:/^\d+$/.test(ordT)?+ordT:1e6+line});
   });
   return {items:items,errors:errors};
 }
@@ -1536,15 +1544,7 @@ $('pricePane').addEventListener('change',function(e){
 $('pricePane').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;touch();
   var a=b.getAttribute('data-pl');
-  if(a==='tpl'){
-    var rows=[['메뉴','순서','모델명','규격','색상','정상가(원)','할인율(%)','검색어','상품코드'],
-      ['매트리스','1','HT-R 26NEW','SS','','2159000','','하이브리드',''],
-      ['매트리스','1','HT-R 26NEW','LQ','','2838000','','하이브리드',''],
-      ['프레임','1','DADO-N(HT-R)','SS','그레이','3135000','5','다도',''],
-      ['사이드옵션','1','협탁#51','','내츄럴오크','157000','','',''],
-      ['사은품','1','마이크로케어 방수커버','SS','화이트','185000','','','']];
-    downloadText('price-template.csv',rows.map(function(r){return r.map(csvCell).join(',')}).join('\r\n'));
-  }else if(a==='reset'){
+  if(a==='reset'){
     if(!confirm('이 기기에서 불러온 엑셀 가격표를 지울까요?\n'+(PSRC==='custom'?'매장 가격표(기본)로 돌아가요. ':'')+'(엑셀 파일 자체는 그대로 있어요)'))return;
     try{localStorage.removeItem(PL_KEY)}catch(x){}
     location.reload();
@@ -1594,10 +1594,13 @@ function renderProdInfo(){
   $('pmOrig').textContent=cur.mine?'매장에서 만든 제품이에요':(SET.names[cur.oid]?'가격표 이름: '+orig:'비우면 가격표 이름('+orig+')');
   $('pmMenu').innerHTML=menuOptions(cur.gid,false);
   $('pmMenu').disabled=cur.gid==='gift'&&!SET.moved[cur.oid];
+  $('pmDesc').value=cur.desc||'';
 }
 $('pmSave').addEventListener('click',function(){
   if(!cur)return;
   var nm=$('pmName').value.trim(),orig=cur.oid.slice(cur.oid.indexOf('|')+1),to=$('pmMenu').value,from=cur.oid.split('|')[0];
+  var ds=$('pmDesc').value.replace(/\r/g,'').trim();SET.descs=SET.descs||{};
+  if(ds!==(cur.desc||''))SET.descs[cur.oid]=ds;
   if(cur.mine){
     var list=customList(),key=cur.key;
     list.forEach(function(c){if(String(c.name).trim()===key&&(c.group===from||!c.group)){if(nm)c.name=nm;c.group=to}});
@@ -2336,6 +2339,7 @@ function cardHTML(m,gid){
     +'<span class="tag">'+(gift?'사은품':isHidden(m.gid,m)?'숨김':'')+'</span>'
     +'<span class="im">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy">':artFor(m.gid))+'</span>'
     +'<span class="nm">'+esc(m.name+(m.gid==='matt'?' 매트리스':''))+'</span>'
+    +(m.desc?'<span class="ds">'+esc(m.desc)+'</span>':'')
     +'<span class="cd num">'+esc(v0.code)+(m.variants.length>1?' 외 '+(m.variants.length-1)+'개 옵션':'')+'</span>'
     +(colors.length?'<span class="cl">'+esc(colors.slice(0,3).join(' · ')+(colors.length>3?' 외 '+(colors.length-3):''))+'</span>':'')
     +(sizes.length?'<span class="sz">'+sizes.slice(0,6).map(function(z){return '<span>'+esc(z.replace(/\(.*$/,''))+'</span>'}).join('')+(sizes.length>6?'<span>+'+(sizes.length-6)+'</span>':'')+'</span>':'')
