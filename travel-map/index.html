@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="theme-color" content="#FFFFFF">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems https://*.workers.dev; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -24,7 +25,7 @@
   <form id="search" class="search" role="search">
     <input id="search-input" type="search" placeholder="호텔·동네·도시·역 이름 검색 (예: 대욕장, 교토역)" aria-label="검색어" enterkeyhint="search" autocomplete="off">
     <button id="search-clear" class="search-clear" type="button" aria-label="검색 지우기" hidden>✕</button>
-    <button class="search-go" type="submit">검색</button>
+    <button class="search-go" type="submit" aria-label="검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M15.5 15.5 20 20m-3-9.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"/></svg></button>
   </form>
   <nav id="tabs" class="tabs" aria-label="동네 선택"></nav>
 </header>

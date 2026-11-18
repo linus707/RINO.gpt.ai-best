@@ -148,7 +148,7 @@
     const compact = current === ALL && !searchHits;
 
     model.areas.filter((a) => a.polygon && (current === ALL || a.name === current)).forEach((a) => {
-      const poly = L.polygon(a.polygon, { color: '#dc2626', weight: 2, dashArray: '6 6', fillColor: '#dc2626', fillOpacity: current === ALL ? 0.07 : 0.12 }).addTo(layer);
+      const poly = L.polygon(a.polygon, { color: '#5055B1', weight: 2, dashArray: '6 6', fillColor: '#5055B1', fillOpacity: current === ALL ? 0.06 : 0.1 }).addTo(layer);
       if (current === ALL) poly.bindTooltip(a.name, { sticky: true });
       poly.on('click', () => { if (current === ALL && !searchHits) { current = a.name; render(); } });
       if (!searchHits) bounds.extend(poly.getBounds());
