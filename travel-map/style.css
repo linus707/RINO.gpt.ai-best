@@ -164,3 +164,91 @@ h1 { font-size: 20px; margin: 0; font-weight: 800; }
 .side > .area-info { order: 0; }
 .side.has-nearby > #nearby-section { order: 1; }
 .side > .disclosure { order: 9; }
+
+/* ── 지도 / 순위 전환 ── */
+.view-switch { margin-left: auto; display: flex; background: #0b1220; border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.view-switch + .icon-btn { margin-left: 8px; }
+.view-btn { border: 0; background: none; color: var(--mut); padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.view-btn.active { background: #fff; color: var(--ink); }
+body.rank-mode .layout { display: none; }
+body.rank-mode { overflow-y: auto; }
+
+/* ── 순위 화면 ── */
+.rank-view { padding: 4px 16px 40px; max-width: 920px; width: 100%; margin: 0 auto; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 7px 12px; border-radius: 18px; border: 1px solid #4b5563; background: none; color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; }
+.chip.active { background: #fff; color: var(--ink); border-color: #fff; font-weight: 700; }
+.rk-stay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: var(--panel); padding: 12px; border-radius: 12px; }
+.rk-stay label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--mut); }
+.rk-stay input, .rk-stay select { background: #0b1220; color: var(--text); border: 1px solid #4b5563; border-radius: 8px; padding: 8px; font-size: 14px; color-scheme: dark; min-width: 0; }
+.rk-presets { grid-column: 1 / 3; display: flex; gap: 6px; align-items: center; }
+.rk-go { border: 0; border-radius: 10px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+.rk-stay + .sec-note { margin: 6px 2px 12px; }
+.rk-bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.rk-bar .chips { flex: 1; }
+.cond-panel { background: var(--panel); border-radius: 12px; padding: 12px; margin-bottom: 8px; display: grid; gap: 8px; }
+.cond-row { display: grid; grid-template-columns: 1fr 80px 14px 80px; gap: 6px; align-items: center; font-size: 13px; }
+.cond-row input { background: #0b1220; color: var(--text); border: 1px solid #4b5563; border-radius: 8px; padding: 6px; font-size: 14px; width: 100%; }
+.cond-reset { justify-self: end; background: none; border: 1px solid #4b5563; color: var(--mut); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.rk-count { margin: 14px 2px 8px; font-size: 13px; color: var(--mut); }
+.rk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rk-item { display: grid; grid-template-columns: 34px 110px 1fr; gap: 12px; background: var(--panel); border-radius: 14px; padding: 12px; align-items: start; }
+.rk-rank { font-size: 20px; font-weight: 900; color: var(--mut); text-align: center; padding-top: 2px; }
+.rk-rank.top { color: #fbbf24; }
+.rk-thumb { width: 110px; height: 82px; border-radius: 10px; overflow: hidden; background: linear-gradient(135deg, #374151, #1f2937); }
+.rk-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rk-body { min-width: 0; }
+.rk-kind { margin: 0; font-size: 12px; color: var(--mut); }
+.rk-name { margin: 2px 0 0; font-size: 16px; }
+.rk-en { margin: 0; font-size: 12px; color: var(--mut); }
+.rk-tags, .rk-walk { margin: 4px 0 0; font-size: 12px; color: #d1d5db; }
+.tag { display: inline-block; background: #7f1d1d; color: #fecaca; border-radius: 6px; padding: 1px 6px; font-size: 11px; font-weight: 600; }
+.card .tag { background: #fee2e2; color: #991b1b; }
+.rk-scores { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 8px 0 0; font-size: 13px; align-items: center; }
+.rk-scores small { color: var(--mut); }
+.rk-total { background: #fff; color: var(--ink); border-radius: 8px; padding: 2px 8px; font-size: 12px; }
+.rk-total b { font-size: 15px; }
+.src { font-size: 11px; font-weight: 800; border-radius: 5px; padding: 1px 5px; }
+.src.google { background: #1d4ed8; color: #fff; }
+.src.agoda { background: var(--red); color: #fff; }
+.src.none { background: none; color: var(--mut); font-weight: 600; padding: 0; }
+.rk-summary { margin-top: 8px; font-size: 13px; }
+.rk-summary summary { cursor: pointer; color: #fca5a5; font-weight: 700; }
+.rk-summary dl { margin: 8px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; color: #d1d5db; }
+.rk-summary dt { color: var(--mut); white-space: nowrap; }
+.rk-summary dd { margin: 0; }
+.rk-desc { margin: 6px 0 0; font-size: 13px; color: #d1d5db; }
+.rk-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.btn.sm { padding: 7px 11px; font-size: 13px; border-radius: 9px; border: 0; cursor: pointer; font-family: inherit; }
+.btn.rakuten { background: #bf0000; color: #fff; }
+.rk-empty { color: var(--mut); padding: 30px; text-align: center; }
+.rk-method { margin-top: 18px; background: var(--panel); border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.6; color: #d1d5db; }
+.rk-method summary { cursor: pointer; font-weight: 700; color: #fff; }
+.card-points li.note { color: #6b7280; font-size: 12px; }
+.card-points li.loc::before { content: "📍 "; }
+.card-points li.room::before { content: "🛏️ "; }
+.card-points li.svc::before { content: "🙋 "; }
+.card-points li.for::before { content: "🎯 "; }
+.card-meta small { color: #6b7280; }
+@media (max-width: 600px) {
+  .rk-item { grid-template-columns: 26px 76px 1fr; gap: 8px; padding: 10px; }
+  .rk-thumb { width: 76px; height: 64px; }
+  .rk-stay { grid-template-columns: 1fr 1fr; }
+  .rk-stay label:nth-child(3) { grid-column: 1 / 2; }
+  .rk-presets { grid-column: 1 / -1; }
+  .rk-go { grid-column: 1 / -1; padding: 10px; }
+  .view-btn { padding: 6px 9px; }
+  h1 { font-size: 18px; }
+}
+.title-row { flex-wrap: wrap; row-gap: 8px; }
+.badge, .view-btn, h1 { white-space: nowrap; }
+@media (max-width: 600px) {
+  .rk-stay label:nth-child(3) { grid-column: 1 / 2; }
+  .rk-presets { grid-column: 2 / 3; align-self: end; flex-wrap: wrap; }
+  .rk-presets .chip { padding: 6px 9px; font-size: 12px; }
+  .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .rk-bar { flex-wrap: nowrap; }
+  .rk-bar .chips { min-width: 0; }
+  .rk-bar #rk-cond-btn { flex: none; }
+}

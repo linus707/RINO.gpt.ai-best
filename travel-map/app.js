@@ -75,9 +75,16 @@
       ensure(area);
       if (type === '명소') landmarks.push({ name: r['이름'], area, lat, lng });
       else if (type === '호텔' || !type) hotels.push({
-        area, lat, lng, name: r['이름'], rank: r['번호'] || String(hotels.length + 1),
-        rating: r['평점'], reviews: num(r['후기수']), walk: r['역까지'], price: r['가격'], photo: safeUrl(r['사진']),
-        agoda: safeUrl(r['아고다']), trip: safeUrl(r['트립닷컴']), desc: r['한줄소개'], good: r['장점'], bad: r['아쉬운점'],
+        area, lat, lng, name: r['이름'], nameEn: r['영문이름'] || '', rank: r['번호'] || String(hotels.length + 1),
+        kind: r['유형'] || '호텔', stars: num(r['성급']),
+        tags: (r['태그'] || '').split(/[,#·]/).map((t) => t.trim()).filter(Boolean),
+        // 아고다 평점(10점 만점). 예전 시트의 '평점'·'후기수' 칸도 그대로 읽어요.
+        rating: r['아고다평점'] || r['평점'], reviews: num(r['아고다후기수'] || r['후기수']),
+        gRating: num(r['구글평점']), gReviews: num(r['구글후기수']), gUrl: safeUrl(r['구글맵']),
+        walk: r['역까지'], price: r['가격'], photo: safeUrl(r['사진']),
+        agoda: safeUrl(r['아고다']), trip: safeUrl(r['트립닷컴']), rakuten: safeUrl(r['라쿠텐']), detail: safeUrl(r['상세링크']),
+        desc: r['한줄소개'], good: r['장점'], bad: r['아쉬운점'],
+        sumBase: num(r['요약후기수']), sumLoc: r['위치교통'], sumRoom: r['객실'], sumService: r['서비스'], sumFor: r['추천대상'],
         checkin: r['체크인'], checkout: r['체크아웃'],
       });
     });
@@ -170,6 +177,7 @@
       : '';
 
     if (!skipFit) fit(bounds);
+    document.dispatchEvent(new CustomEvent('travelmap:render'));
   }
 
   function listItem(iconHtml, title, subs, onClick, key) {
@@ -197,7 +205,8 @@
     $('card-name').textContent = v.name;
     $('card-meta').innerHTML = v.metaHtml || '';
     $('card-desc').textContent = v.desc || '';
-    $('card-points').innerHTML = (v.points || []).map(([cls, t]) => `<li class="${cls}">${esc(t)}</li>`).join('');
+    $('card-points').innerHTML = (v.points || []).map(([cls, t]) => `<li class="${cls}">${esc(t)}</li>`).join('')
+      + (v.pointsNote ? `<li class="note">${esc(v.pointsNote)}</li>` : '');
     $('card-price').innerHTML = v.priceHtml || '';
     const acts = $('card-actions'); acts.textContent = '';
     (v.actions || []).forEach(([cls, label, href, sponsored]) => {
@@ -220,18 +229,42 @@
   const bookingSearch = (name) => `https://www.booking.com/searchresults.ko.html?ss=${encodeURIComponent(name)}${CFG.bookingAid ? `&aid=${encodeURIComponent(CFG.bookingAid)}` : ''}`;
   const gmaps = (lat, lng, name) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name || `${lat},${lng}`)}`;
 
-  function openHotel(h) {
+  // 날짜·인원(순위 화면에서 고른 값)을 아고다 제휴 링크(partnersearch.aspx)에 붙여요. 단축 링크(tpk.lu 등)는 그대로 둬요.
+  function withStay(u) {
+    const st = window.__travelStay;
+    if (!u || !st || !hostIs(u, 'agoda.com') || !/partnersearch\.aspx/i.test(u)) return u;
+    const x = new URL(u);
+    x.searchParams.set('checkin', st.checkIn); x.searchParams.set('checkout', st.checkOut);
+    x.searchParams.set('NumberofAdults', String(st.adults)); x.searchParams.set('Rooms', '1');
+    return x.href;
+  }
+  function priceActions(h) {
     const actions = [];
-    if (h.agoda) actions.push(['agoda', '아고다에서 가격 보기', h.agoda, true]);
+    if (h.agoda) actions.push(['agoda', '아고다 가격 보기', withStay(h.agoda), true]);
     if (h.trip) actions.push(['trip', '트립닷컴 가격 비교', h.trip, true]);
-    if (!h.agoda && !h.trip) actions.push(['booking', '부킹닷컴에서 가격 보기', bookingSearch(h.name), !!CFG.bookingAid]);
-    actions.push(['map', '구글맵에서 위치 보기', `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}`, false]);
+    if (h.rakuten) actions.push(['rakuten', '라쿠텐 트래블 가격 비교', h.rakuten, true]);
+    if (!h.agoda && !h.trip && !h.rakuten) actions.push(['booking', '부킹닷컴에서 가격 보기', bookingSearch(h.name), !!CFG.bookingAid]);
+    return actions;
+  }
+  function openHotel(h) {
+    const actions = priceActions(h);
+    if (h.detail) actions.push(['map', '자세히 보기 (후기 글)', h.detail, false]);
+    actions.push(['map', '구글맵에서 위치 보기', h.gUrl || `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}`, false]);
+    const summary = [['loc', '위치·교통', h.sumLoc], ['room', '객실', h.sumRoom], ['svc', '서비스', h.sumService], ['for', '이런 분께 추천', h.sumFor]]
+      .filter((x) => x[2]).map(([cls, label, t]) => [cls, `${label}: ${t}`]);
     openCard({
-      photo: h.photo, photoNote: isSampleData && h.photo, rank: h.rank, area: h.area, name: h.name,
-      metaHtml: [h.rating ? `<span class="stars">★ ${esc(h.rating)}</span>${h.reviews ? ` 후기 ${esc(fmt(h.reviews))}개` : ''}` : '', h.walk ? `🚶 ${esc(h.walk)}` : ''].filter(Boolean).join(' &nbsp;·&nbsp; '),
+      photo: h.photo, photoNote: isSampleData && h.photo, rank: h.rank,
+      area: [h.kind, h.stars ? `${h.stars}성급` : '', h.area].filter(Boolean).join(' · '), name: h.name,
+      metaHtml: [
+        h.rating ? `<span class="src agoda">아고다</span> <span class="stars">${esc(h.rating)}</span>${h.reviews ? ` (${esc(fmt(h.reviews))})` : ''}` : '',
+        h.gRating ? `<span class="src google">구글</span> <span class="stars">★ ${esc(h.gRating)}</span>${h.gReviews ? ` (${esc(fmt(h.gReviews))})` : ''}` : '<span class="src none">구글 정보 없음</span>',
+        h.walk ? `🚶 ${esc(h.walk)}` : '',
+      ].filter(Boolean).join(' &nbsp;·&nbsp; ') + (h.tags.length ? `<br>${h.tags.map((t) => `<span class="tag">#${esc(t)}</span>`).join(' ')}` : '') + (h.nameEn ? `<br><small>${esc(h.nameEn)}</small>` : ''),
       desc: h.desc,
-      points: [h.good && ['good', h.good], h.bad && ['bad', h.bad], (h.checkin || h.checkout) && ['time', `체크인 ${h.checkin || '-'} · 체크아웃 ${h.checkout || '-'}`]].filter(Boolean),
-      priceHtml: h.price ? `1박 <b>${esc(h.price)}</b>부터 <small>(시트 기준, 날짜마다 달라요)</small>` : '가격은 날짜마다 달라요. 아래 버튼에서 확인하세요.',
+      points: [...summary, h.good && ['good', h.good], h.bad && ['bad', h.bad],
+        (h.checkin || h.checkout) && ['time', `체크인 ${h.checkin || '-'} · 체크아웃 ${h.checkout || '-'}`]].filter(Boolean),
+      pointsNote: summary.length && h.sumBase ? `후기 ${fmt(h.sumBase)}개를 읽고 정리했어요` : '',
+      priceHtml: h.price ? `1박 <b>${esc(h.price)}</b>부터 <small>(시트 기준, 날짜마다 달라요)</small>` : '가격은 매일 달라요. 아래 버튼에서 확인하세요.',
       actions,
     }, h);
   }
@@ -440,4 +473,11 @@
 
   // 테스트·디버깅용
   window.__travelMap = { parseCSV, parsePolygon, normalizeSheetUrl, toModel, localSearch: (q) => localSearch(q).map((h) => h.name) };
+  // 순위 화면(ranking.js)이 쓰는 연결 고리
+  window.__travelApp = {
+    model: () => model, area: () => current, isSample: () => isSampleData, esc, fmt, priceActions,
+    openHotel, liveSearch: (q) => liveSearch(q || $('search-input').value.trim() || CFG.title), liveOn,
+    focusHotel: (h) => { map.invalidateSize(); moveTo(h.lat, h.lng, 16); openHotel(h); },
+    invalidate: () => map.invalidateSize(),
+  };
 })();
