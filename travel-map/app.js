@@ -61,10 +61,12 @@
   const fmt = (n) => Number(n).toLocaleString('ko-KR');
 
   function toModel(rows) {
-    const areas = new Map(); const hotels = []; const landmarks = [];
+    const areas = new Map(); const hotels = []; const landmarks = []; const settings = {};
     const ensure = (name) => { if (name && !areas.has(name)) areas.set(name, { name, desc: '', good: '', bad: '', polygon: null }); return areas.get(name); };
     rows.forEach((r) => {
       const type = r['구분']; const area = r['동네'];
+      // '제목' 줄: 이 시트(도시)의 지도 제목·부제목. 도시마다 시트를 따로 쓸 때 편해요.
+      if (type === '제목') { settings.title = r['이름']; settings.subtitle = r['한줄소개']; return; }
       if (type === '동네') {
         const a = ensure(area || r['이름']);
         Object.assign(a, { desc: r['한줄소개'], good: r['장점'], bad: r['아쉬운점'], polygon: parsePolygon(r['영역좌표']) });
@@ -88,7 +90,7 @@
         checkin: r['체크인'], checkout: r['체크아웃'],
       });
     });
-    return { areas: [...areas.values()], hotels, landmarks };
+    return { areas: [...areas.values()], hotels, landmarks, settings };
   }
 
   // 시트 '편집' 주소를 붙여넣어도 CSV 주소로 바꿔줘요. (시트 공유: 링크가 있는 모든 사용자 보기)
@@ -274,7 +276,7 @@
   function localSearch(q) {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);
     return model.hotels.filter((h) => {
-      const text = [h.name, h.area, h.desc, h.good, h.walk].join(' ').toLowerCase();
+      const text = [h.name, h.nameEn, h.area, h.kind, (h.tags || []).join(' '), h.desc, h.good, h.walk, h.sumLoc, h.sumFor].join(' ').toLowerCase();
       return words.every((w) => text.includes(w));
     });
   }
@@ -284,11 +286,32 @@
   }
 
   // ② 장소 이름 → 좌표 (Nominatim, 무료. 정책상 버튼을 누를 때만 1번 요청해요)
+  // 지도 데이터(시트의 호텔·명소) 주변을 먼저 찾도록 범위를 알려줘요.
+  // 예: 뉴욕 지도에서 "타임스 스퀘어"를 치면 홍콩의 같은 이름 쇼핑몰이 아니라 뉴욕이 나와요.
+  function searchArea() {
+    const pts = [...model.hotels, ...model.landmarks].map((x) => [x.lat, x.lng]);
+    if (!pts.length) return null;
+    let b = L.latLngBounds(pts);
+    const minPad = 0.25; // 최소 약 25km 여유
+    b = L.latLngBounds([b.getSouth() - minPad, b.getWest() - minPad], [b.getNorth() + minPad, b.getEast() + minPad]);
+    return [b.getWest(), b.getNorth(), b.getEast(), b.getSouth()].map((n) => n.toFixed(4)).join(',');
+  }
+  let lastGeocode = 0;
   async function geocode(q) {
-    const u = `${CFG.geocodeUrl}?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(q)}`;
-    const res = await fetch(u, { headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error('장소 검색 서버 응답 ' + res.status);
-    const [hit] = await res.json();
+    // 무료 서버 정책: 1초에 1번까지만
+    const wait = lastGeocode + 1100 - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastGeocode = Date.now();
+    const area = searchArea();
+    const u = `${CFG.geocodeUrl}?format=jsonv2&limit=1&accept-language=ko&q=${encodeURIComponent(q)}${area ? `&viewbox=${area}&bounded=0` : ''}`;
+    let res;
+    try { res = await fetch(u, { headers: { Accept: 'application/json' } }); }
+    catch { throw new Error('인터넷 연결을 확인해 주세요.'); }
+    if (res.status === 429) throw new Error('검색이 잠시 몰렸어요. 몇 초 뒤 다시 눌러주세요.');
+    if (!res.ok) throw new Error('장소 검색 서버가 잠시 응답하지 않아요 (' + res.status + ').');
+    let list;
+    try { list = await res.json(); } catch { throw new Error('검색이 잠시 몰렸어요. 몇 초 뒤 다시 눌러주세요.'); }
+    const hit = Array.isArray(list) ? list[0] : null;
     if (!hit) return null;
     const bb = (hit.boundingbox || []).map(Number);
     return { lat: Number(hit.lat), lng: Number(hit.lon), name: hit.name || hit.display_name, bbox: bb.length === 4 ? bb : null };
@@ -412,13 +435,20 @@
     liveSearch(q);
     if (hits.length) {
       searchHits = new Set(hits); searchText = q; current = ALL; $('search-clear').hidden = false;
-      render(); setStatus(''); return;
+      render(); setStatus('');
+      $('nearby-btn').hidden = false; // 추천 호텔을 보여준 뒤에도 주변 호텔을 더 찾을 수 있게
+      return;
     }
+    current = ALL; // 다른 곳으로 이동하니 동네 탭은 '전체 보기'로 돌려요
     clearSearch(false); render(true);
     setStatus(`"${q}" 위치를 찾는 중…`);
     try {
       const g = await geocode(q);
-      if (!g) { setStatus(`"${q}"을(를) 찾지 못했어요. 도시·역·동네 이름으로 다시 검색해 보세요.`, true); return; }
+      if (!g) {
+        // 외국 지명은 한글 이름이 등록되지 않은 곳이 많아요 (예: 카오산로드 → Khao San Road)
+        const hint = /[가-힣]/.test(q) ? ' 외국 장소는 영어로 검색하면 잘 찾아져요. (예: Khao San Road)' : ' 도시·역·동네 이름으로 다시 검색해 보세요.';
+        setStatus(`"${q}"을(를) 찾지 못했어요.${hint}`, true); return;
+      }
       const bb = g.bbox; // [남, 북, 서, 동]
       const small = bb && map.distance([bb[0], bb[2]], [bb[1], bb[3]]) < 3000;
       if (bb && small) fit(L.latLngBounds([bb[0], bb[2]], [bb[1], bb[3]]), { maxZoom: 16, padding: [0, 0], animate: false });
@@ -427,7 +457,7 @@
       $('search-clear').hidden = false;
       await findNearby();
     } catch (err) {
-      setStatus('장소 검색 실패: ' + err.message, true);
+      setStatus(err.message, true);
     }
   }
   $('search').addEventListener('submit', onSearch);
@@ -459,6 +489,9 @@
       if (searchHits) searchHits = new Set(localSearch(searchText));
       const anyAffiliate = model.hotels.some((h) => h.agoda || h.trip) || !!CFG.bookingAid || liveOn;
       $('disclosure').textContent = anyAffiliate ? CFG.disclosure : '';
+      const title = (model.settings && model.settings.title) || CFG.title;
+      $('title').textContent = title; document.title = title;
+      $('subtitle').textContent = (model.settings && model.settings.subtitle) || CFG.subtitle;
       render(); setStatus('');
       if (liveOn) liveSearch($('search-input').value.trim() || CFG.title);
     } catch (e) {
