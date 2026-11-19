@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="theme-color" content="#FFFFFF">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems https://*.workers.dev; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems https://*.workers.dev https://maps.googleapis.com https://maps.gstatic.com; font-src 'self' data: https://fonts.gstatic.com; worker-src blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>여행 숙소 지도</title>
 <link rel="stylesheet" href="../fonts/ibm-plex-sans-kr/font.css">
@@ -14,6 +14,7 @@
 <body>
 <header class="top">
   <div class="title-row">
+    <a class="home-btn" href="../travel/" aria-label="여행 홈으로" title="여행 홈으로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg></a>
     <h1 id="title">여행 숙소 지도</h1>
     <div class="view-switch" role="group" aria-label="보기 방식">
       <button class="view-btn active" type="button" data-view="map"><span class="vi" aria-hidden="true">🗺️ </span>지도</button>
@@ -21,7 +22,7 @@
     </div>
     <button id="reload" class="icon-btn" type="button" title="시트 다시 불러오기" aria-label="시트 다시 불러오기">↻</button>
   </div>
-  <p class="subtitle"><a class="home-link" href="../travel/">← 도시 목록</a><span id="subtitle"></span><span id="sample-badge" class="badge" hidden>예시 데이터</span></p>
+  <p class="subtitle"><span id="subtitle"></span><span id="sample-badge" class="badge" hidden>예시 데이터</span></p>
   <form id="search" class="search" role="search">
     <input id="search-input" type="search" placeholder="호텔·동네·역 검색 (예: 대욕장)" aria-label="검색어" enterkeyhint="search" autocomplete="off">
     <button id="search-clear" class="search-clear" type="button" aria-label="검색 지우기" hidden>✕</button>
@@ -120,7 +121,6 @@
 
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="config.js"></script>
-<script src="app.js"></script>
-<script src="ranking.js"></script>
+<script src="mapengine.js"></script>
 </body>
 </html>
