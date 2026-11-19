@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems https://*.workers.dev; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>여행 숙소 지도</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="title-row">
+    <h1 id="title">여행 숙소 지도</h1>
+    <div class="view-switch" role="group" aria-label="보기 방식">
+      <button class="view-btn active" type="button" data-view="map"><span class="vi" aria-hidden="true">🗺️ </span>지도</button>
+      <button class="view-btn" type="button" data-view="rank"><span class="vi" aria-hidden="true">🏆 </span>순위</button>
+    </div>
+    <button id="reload" class="icon-btn" type="button" title="시트 다시 불러오기" aria-label="시트 다시 불러오기">↻</button>
+  </div>
+  <p class="subtitle"><span id="subtitle"></span><span id="sample-badge" class="badge" hidden>예시 데이터</span></p>
+  <form id="search" class="search" role="search">
+    <input id="search-input" type="search" placeholder="호텔·동네·역 검색 (예: 대욕장)" aria-label="검색어" enterkeyhint="search" autocomplete="off">
+    <button id="search-clear" class="search-clear" type="button" aria-label="검색 지우기" hidden>✕</button>
+    <button class="search-go" type="submit" aria-label="검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M15.5 15.5 20 20m-3-9.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"/></svg></button>
+  </form>
+  <nav id="tabs" class="tabs" aria-label="동네 선택"></nav>
+</header>
+
+<main class="layout">
+  <section class="map-wrap">
+    <div id="map" aria-label="지도"></div>
+    <div id="status" class="status" role="status"></div>
+    <button id="nearby-btn" class="nearby-btn" type="button" hidden>🔍 이 지역 호텔 찾기</button>
+  </section>
+  <aside class="side">
+    <div id="area-info" class="area-info"></div>
+    <h2 id="list-title" class="sec-title">추천 호텔</h2>
+    <ol id="list" class="list"></ol>
+
+    <section id="nearby-section" hidden>
+      <h2 id="nearby-title" class="sec-title">주변 호텔</h2>
+      <p class="sec-note">OpenStreetMap에 등록된 숙소예요. 직접 확인한 곳은 아니에요.</p>
+      <ol id="nearby-list" class="list"></ol>
+    </section>
+
+    <section id="live-section" class="live" hidden>
+      <h2 class="sec-title">실시간 가격 <span class="sec-badge">아고다</span></h2>
+      <form id="live-form" class="live-form">
+        <label>체크인<input id="live-in" type="date" required></label>
+        <label>체크아웃<input id="live-out" type="date" required></label>
+        <label>인원<select id="live-adults"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+        <label>정렬<select id="live-sort">
+          <option value="Recommended">추천순</option><option value="PriceAsc">낮은 가격순</option>
+          <option value="AllGuestsReviewScore">평점순</option><option value="StarRatingDesc">성급 높은순</option>
+        </select></label>
+        <button type="submit">가격 보기</button>
+      </form>
+      <p id="live-note" class="sec-note"></p>
+      <ol id="live-list" class="list"></ol>
+    </section>
+
+    <p id="disclosure" class="disclosure"></p>
+  </aside>
+</main>
+
+<section id="rank-view" class="rank-view" hidden aria-label="숙소 순위">
+  <form id="rk-stay" class="rk-stay">
+    <label>체크인<input id="rk-in" type="date" required></label>
+    <label>체크아웃<input id="rk-out" type="date" required></label>
+    <label>인원<select id="rk-adults"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+    <div class="rk-presets">
+      <button id="rk-preset-2w" class="chip" type="button">2주 뒤 1박</button>
+      <button id="rk-preset-weekend" class="chip" type="button">이번 주말</button>
+    </div>
+    <button class="rk-go" type="submit">가격 보기</button>
+  </form>
+  <p id="rk-stay-note" class="sec-note"></p>
+
+  <div class="rk-bar">
+    <div id="rk-sorts" class="chips" role="group" aria-label="정렬"></div>
+    <button id="rk-cond-btn" class="chip" type="button" aria-expanded="false" aria-controls="rk-cond-panel">평점 조건 ▾</button>
+  </div>
+  <div id="rk-cond-panel" class="cond-panel" hidden></div>
+  <div id="rk-tags" class="chips" role="group" aria-label="필터"></div>
+
+  <p id="rk-count" class="rk-count"></p>
+  <ol id="rk-list" class="rk-list"></ol>
+
+  <details class="rk-method">
+    <summary>점수는 이렇게 계산했어요</summary>
+    <ol>
+      <li>구글 평점(5점 만점)은 ×2 해서 아고다처럼 10점 만점으로 맞춰요.</li>
+      <li>후기가 적은 숙소는 점수를 믿기 어려워서, 평균(8.0점) 쪽으로 당겨요. 계산식: (후기 수 × 평점 + 300 × 8.0) ÷ (후기 수 + 300)</li>
+      <li>종합 점수는 구글과 아고다 보정 점수의 평균이에요. 한쪽만 있으면 그 점수를 써요.</li>
+    </ol>
+    <p>그래서 후기 30개에 9.8점인 곳보다 후기 1만 개에 9.2점인 곳이 더 높게 나와요.</p>
+  </details>
+  <p class="sec-note">평점과 후기 수는 직접 확인해 적은 날 기준이라 지금 값과 다를 수 있어요. 가격은 매일 달라요.</p>
+  <p class="disclosure" id="rk-disclosure"></p>
+</section>
+
+<div id="sheet-backdrop" class="backdrop" hidden></div>
+<article id="card" class="card" hidden aria-modal="true" role="dialog" aria-labelledby="card-name">
+  <button id="card-close" class="card-close" type="button" aria-label="닫기">✕</button>
+  <div class="card-photo"><img id="card-img" alt=""><span id="card-rank" class="card-rank"></span><span id="card-photo-note" class="photo-note" hidden>예시 사진</span></div>
+  <div class="card-body">
+    <p id="card-area" class="card-area"></p>
+    <h2 id="card-name"></h2>
+    <p id="card-meta" class="card-meta"></p>
+    <p id="card-desc" class="card-desc"></p>
+    <ul id="card-points" class="card-points"></ul>
+    <p id="card-price" class="card-price"></p>
+    <div id="card-actions" class="card-actions"></div>
+  </div>
+</article>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="ranking.js"></script>
+</body>
+</html>

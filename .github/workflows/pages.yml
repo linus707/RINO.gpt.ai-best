@@ -21,6 +21,7 @@ jobs:
       - name: Collect site files
         run: |
           mkdir _site
+          cp -r travel-map _site/travel-map && rm -rf _site/travel-map/worker
           cp index.html price.html buy.html pos.html translate.html japanese.html japanese.webmanifest japanese-icon.svg japanese-icon-*.png prices.json store-prices.json pos-price-template.xlsx pos-price-store.xlsx offline.html sw.js manifest.webmanifest icon.svg icon-*.png CNAME _site/
       - name: Put login server address into the site
         run: node scripts/inject-auth.mjs _site/index.html

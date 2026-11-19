@@ -7,7 +7,9 @@
 ```bash
 node tests/firewall-unit.mjs     # 워커 방화벽 단위 테스트 (19가지 경우) — 추가 설치 불필요
 node tests/worker-firewall.mjs   # 워커에 실제 HTTP로 63건 공격 — 추가 설치 불필요
-node tests/pages-csp.mjs         # 브라우저로 6개 페이지 공격 — Playwright(Chromium) 필요
+node tests/pages-csp.mjs         # 브라우저로 페이지 공격 — Playwright(Chromium) 필요
+node tests/travel-hotel-api.mjs  # 여행 지도 실시간 가격 워커 22가지 검사 — 추가 설치 불필요
+node tests/travel-map-cities.mjs # 여행 지도를 로마·방콕·뉴욕·시드니 테스트 데이터로 37가지 검사 — Playwright 필요
 ```
 
 세 개를 한 번에:
