@@ -6,8 +6,13 @@
   const CFG = window.TRAVEL_MAP_CONFIG || {};
   const params = new URLSearchParams(location.search);
   const key = String(CFG.googleMapsKey || '').trim();
-  // ?map=osm 이면 키가 있어도 무료 지도로 (구글 키 오류 때 자동으로 넘어오는 길이기도 해요)
-  const wantGoogle = /^[A-Za-z0-9_-]{20,60}$/.test(key) && params.get('map') !== 'osm';
+  // 구글 지도가 안 될 때(키 오류·하루 사용량 상한 초과) 잠시 무료 지도만 쓰도록 기억해요
+  const OSM_UNTIL = 'travelMapOsmUntil';
+  const osmUntil = () => { try { return Number(localStorage.getItem(OSM_UNTIL)) || 0; } catch (e) { return 0; } };
+  // ?map=osm 이면 키가 있어도 무료 지도로 (구글 오류 때 자동으로 넘어오는 길이기도 해요)
+  // ?map=google 이면 기억을 지우고 바로 구글 지도를 다시 시도해요 (키를 고친 뒤 확인할 때)
+  if (params.get('map') === 'google') { try { localStorage.removeItem(OSM_UNTIL); } catch (e) { /* 무시 */ } }
+  const wantGoogle = /^[A-Za-z0-9_-]{20,60}$/.test(key) && params.get('map') !== 'osm' && Date.now() > osmUntil();
 
   function loadScripts(list) {
     return list.reduce((p, src) => p.then(() => new Promise((ok, fail) => {
@@ -154,10 +159,29 @@
 
   if (!wantGoogle) { useLeaflet(); return; }
 
-  // 키가 틀렸거나 이 사이트에서 쓰도록 허용되지 않았으면 구글이 이 함수를 불러요 → 무료 지도로 다시 열어요
-  window.gm_authFailure = () => {
+  // 구글 지도를 못 쓰면 무료 지도로 다시 열고, 1시간 동안은 구글을 다시 시도하지 않아요
+  let fellBack = false;
+  function fallbackToOsm() {
+    if (fellBack) return; fellBack = true;
+    try { localStorage.setItem(OSM_UNTIL, String(Date.now() + 60 * 60 * 1000)); } catch (e) { /* 저장 못 해도 이번엔 무료 지도로 */ }
     const u = new URL(location.href); u.searchParams.set('map', 'osm'); location.replace(u.href);
+  }
+  // ① 키가 틀렸거나 이 사이트에서 쓰도록 허용되지 않았을 때 구글이 부르는 함수
+  window.gm_authFailure = fallbackToOsm;
+  // ② 하루 사용량 상한 초과(OverQuotaMapError) 등은 위 함수가 불리지 않아요.
+  //    구글이 콘솔에 남기는 "Google Maps JavaScript API error: …MapError" 를 보고 넘어가요.
+  const origError = console.error;
+  console.error = function (...args) {
+    try { if (/Google Maps JavaScript API error: \w*MapError/.test(args.map(String).join(' '))) fallbackToOsm(); } catch (e) { /* 무시 */ }
+    return origError.apply(this, args);
   };
+  // ③ 혹시 메시지를 못 잡아도, 지도 자리에 구글 오류 화면이 뜨면 넘어가요
+  const mapEl = document.getElementById('map');
+  if (mapEl && window.MutationObserver) {
+    const mo = new MutationObserver(() => { if (mapEl.querySelector('.gm-err-container')) { mo.disconnect(); fallbackToOsm(); } });
+    mo.observe(mapEl, { childList: true, subtree: true });
+    setTimeout(() => mo.disconnect(), 20000);
+  }
   window.__travelGmReady = async () => {
     try {
       const maps = await google.maps.importLibrary('maps');

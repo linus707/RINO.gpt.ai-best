@@ -14,6 +14,7 @@ window.TRAVEL_MAP_CONFIG = {
   // 구글 클라우드에서 만든 'Maps JavaScript API' 키를 넣으면 구글 지도로 바뀌어요.
   // 비워두면 무료 OpenStreetMap 지도를 써요. 키가 틀리면 자동으로 무료 지도로 돌아가요.
   // ⚠️ 키는 화면 코드에 그대로 보이므로, 구글 클라우드에서 꼭 'HTTP 리퍼러'를 linuscompany.co.kr 로 제한하세요.
+  // 💰 요금 0원 유지: 할당량(Quotas)에서 'Map loads per day'를 320으로 걸어 두세요. 넘으면 그날은 무료 지도로 자동 전환돼요. (README 참고)
   googleMapsKey: '',
 
   // 시트에 링크를 안 적은 호텔에 자동으로 붙일 예약 검색 링크 (선택)
