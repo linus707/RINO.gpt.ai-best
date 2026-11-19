@@ -1,6 +1,6 @@
 name: Security tests
 # 방화벽이 공격을 막는지 자동으로 확인해요(tests/ 폴더의 AI 해커 테스트).
-# 보안·테스트 코드가 바뀌면 자동으로 돌고, Actions 탭에서 수동 실행도 돼요.
+# 보안·테스트 코드나 페이지(여행 홈·여행 지도·글꼴 포함)가 바뀌면 자동으로 돌고, Actions 탭에서 수동 실행도 돼요.
 on:
   push:
     paths:
@@ -13,6 +13,9 @@ on:
       - 'translate.html'
       - 'japanese.html'
       - 'offline.html'
+      - 'travel/**'
+      - 'travel-map/**'
+      - 'fonts/**'
       - '.github/workflows/security-tests.yml'
   pull_request:
     paths:
@@ -25,6 +28,9 @@ on:
       - 'translate.html'
       - 'japanese.html'
       - 'offline.html'
+      - 'travel/**'
+      - 'travel-map/**'
+      - 'fonts/**'
       - '.github/workflows/security-tests.yml'
   workflow_dispatch:
 permissions:
@@ -46,6 +52,8 @@ jobs:
         run: node tests/firewall-unit.mjs
       - name: 공격 테스트
         run: node tests/worker-firewall.mjs
+      - name: 여행 지도 실시간 가격 워커 테스트
+        run: node tests/travel-hotel-api.mjs
 
   pages:
     name: 페이지 방화벽 (CSP·클릭재킹)
@@ -60,3 +68,5 @@ jobs:
         run: npm i --no-save --no-audit --no-fund playwright@1.56.0
       - name: 페이지 테스트
         run: node tests/pages-csp.mjs
+      - name: 여행 지도 도시별 테스트 (로마·방콕·뉴욕·시드니)
+        run: node tests/travel-map-cities.mjs

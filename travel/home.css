@@ -121,3 +121,9 @@ button, input { font: inherit; letter-spacing: inherit; }
   .wx-table th, .wx-table td { padding: 7px 3px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+
+/* 사진 출처 */
+.credits { margin-top: 10px; font-size: 12px; color: var(--text-3); }
+.credits summary { cursor: pointer; font-weight: 500; color: var(--text-2); }
+.credits ul { margin: 8px 0; padding-left: 18px; line-height: 1.8; }
+.credits a { color: var(--primary-800); }
