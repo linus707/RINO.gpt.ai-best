@@ -812,7 +812,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
 <section class="adm" id="admin" hidden aria-labelledby="admTitle">
   <div class="adm-top">
     <div><p class="adm-k">관리</p><h1 id="admTitle">제품 설정</h1><p class="adm-sub">제품을 골라 가격·사진·상세페이지를 만들어요. 바꾼 내용은 이 기기에 저장돼요.</p></div>
-    <div class="adm-acts"><button class="btn outl" type="button" id="admDisc" data-atool="disc" aria-pressed="false">할인·결제</button><button class="btn outl" type="button" id="admMenuEd" data-atool="menu" aria-pressed="false">메뉴 편집</button><button class="btn outl" type="button" id="admPl" data-atool="pl" aria-pressed="false">가격표 엑셀 불러오기</button><button class="btn outl" type="button" id="admTools" data-atool="prod" aria-pressed="false">새 제품·되살리기·백업</button><button class="btn" type="button" id="admClose">닫기</button></div>
+    <div class="adm-acts"><button class="btn outl" type="button" id="admMgr" data-atool="mgr" aria-pressed="false">상품 관리</button><button class="btn outl" type="button" id="admDisc" data-atool="disc" aria-pressed="false">할인·결제</button><button class="btn outl" type="button" id="admMenuEd" data-atool="menu" aria-pressed="false">메뉴 편집</button><button class="btn outl" type="button" id="admPl" data-atool="pl" aria-pressed="false">가격표 엑셀 불러오기</button><button class="btn outl" type="button" id="admTools" data-atool="prod" aria-pressed="false">새 제품·되살리기·백업</button><button class="btn" type="button" id="admClose">닫기</button></div>
   </div>
   <div class="adm-body">
     <aside class="adm-side" aria-label="제품 목록">
@@ -850,7 +850,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     <section class="sh-sec">
       <h4>보이기</h4>
       <div class="srow" id="giftRow"><label for="giftTg">사은품 메뉴에 넣기<small>「사은품」 메뉴에 모이고, 그 메뉴에서 담으면 0원으로 들어가요. 원래 메뉴에서는 그대로 팔 수 있어요.</small></label><button class="tg" type="button" id="giftTg" aria-pressed="false" aria-label="사은품 메뉴에 넣기"></button></div>
-      <div class="srow"><label for="hideTg">이 모델 숨기기<small>메뉴 탭·검색 목록에서 빠져요(품절 등). 「상품 관리」에서 다시 보이게 해요.</small></label><button class="tg" type="button" id="hideTg" aria-pressed="false" aria-label="이 모델 숨기기"></button></div>
+      <div class="srow"><label for="hideTg">이 모델 숨기기<small>메뉴 탭·검색 목록에서 빠져요(품절 등). 제품 설정 › 「상품 관리」에서 다시 보이게 해요.</small></label><button class="tg" type="button" id="hideTg" aria-pressed="false" aria-label="이 모델 숨기기"></button></div>
     </section>
         </div>
         <div data-apane="price" hidden>
@@ -918,6 +918,10 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           </div>
         </div>
       </div>
+      <div id="admMgrPane" hidden>
+        <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>상품 관리</h2><p class="adm-meta">매장 이름, 숨긴 상품·사은품 목록·모델별 할인율을 한눈에 보고 되돌려요. 이름을 누르면 그 제품을 열어요</p></div></div>
+        <div id="mgrPane"></div>
+      </div>
       <div id="admDiscPane" hidden>
         <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>할인·결제</h2><p class="adm-meta">할인 적용 방식, 기본·메뉴별 제품 할인율, 지점·매니저 할인, 할부 이자·끝자리, 페이백을 정해요. 장바구니 계산에 바로 반영돼요</p></div></div>
         <div id="discPane"></div>
@@ -944,17 +948,15 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     <div class="sh-head"><h3 id="setTitle">설정</h3><button class="x" type="button" data-close aria-label="설정 닫기">×</button></div>
     <p class="sh-sub" id="setSub"></p>
     <div class="stabs" role="tablist" aria-label="설정 종류">
-      <button type="button" role="tab" data-stab="mgr" aria-selected="true">상품 관리</button>
-      <button type="button" role="tab" data-stab="price" aria-selected="false">가격표·검색</button>
+      <button type="button" role="tab" data-stab="price" aria-selected="true">검색 별칭</button>
     </div>
 
     <div class="admgo">
-      <div><b>할인·결제, 메뉴 편집, 가격표 엑셀, 제품별 가격·사진·상세페이지는 「제품 설정」에서</b><span>제품 목록에서 골라 기본 정보·가격·사진·상세페이지를 한곳에서 바꿔요. 할인·결제·메뉴 편집·가격표 엑셀 불러오기·새 제품 만들기·사진 백업도 거기 있어요.</span></div>
+      <div><b>매장 설정은 모두 「제품 설정」에서</b><span>상품 관리·할인·결제·메뉴 편집·가격표 엑셀 불러오기·새 제품 만들기·사진 백업, 그리고 제품별 기본 정보·가격·사진·상세페이지를 한곳에서 바꿔요.</span></div>
       <button class="btn" type="button" id="setToAdm">제품 설정 열기</button>
     </div>
 
-    <div data-spane="mgr" id="mgrPane"></div>
-    <div data-spane="price" hidden id="pricePane"></div>
+    <div data-spane="price" id="pricePane"></div>
 
     <p class="fine">설정·사진·가격·장바구니는 <b>이 기기의 브라우저에만</b> 저장돼요. 다른 기기·손님 휴대폰에는 보이지 않아요. <span id="setInfo"></span> <button class="lnk" type="button" id="allReset">모든 수정 되돌리기</button></p>
     <div class="sh-lock">
@@ -1951,6 +1953,7 @@ function admAfterRebuild(m){
   if(ADM.tool==='pl'){renderPlPane();return}
   if(ADM.tool==='menu'){renderMenuPane();return}
   if(ADM.tool==='disc'){renderDiscPane();return}
+  if(ADM.tool==='mgr'){renderMgrPane();return}
   if(ADM.tool){renderProdPane();return}
   var first=m||admModels()[0]||admAll()[0];
   if(first){DB_OID=m?DB_OID:null;admSelect(first,true)}
@@ -1993,7 +1996,7 @@ $('admView').addEventListener('click',function(){
   group=G[gid];cur=null;openModel(gid,nm,false);
 });
 function admPane(t){
-  $('admEdit').hidden=!!t;$('admDiscPane').hidden=t!=='disc';$('admToolPane').hidden=t!=='prod';$('admPlPane').hidden=t!=='pl';$('admMenuPane').hidden=t!=='menu';
+  $('admEdit').hidden=!!t;$('admMgrPane').hidden=t!=='mgr';$('admDiscPane').hidden=t!=='disc';$('admToolPane').hidden=t!=='prod';$('admPlPane').hidden=t!=='pl';$('admMenuPane').hidden=t!=='menu';
   Array.prototype.forEach.call(document.querySelectorAll('.adm-acts [data-atool]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-atool')===t))});
 }
 function admShowMenu(){
@@ -2010,6 +2013,13 @@ function admShowDisc(){
   Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
 }
 $('admDisc').addEventListener('click',admShowDisc);
+function admShowMgr(){
+  if(detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 갈까요?'))return;
+  touch();ADM.tool='mgr';admPane('mgr');renderMgrPane();
+  try{history.replaceState({v:'admin'},'','?admin=1&mgr=1')}catch(e){}
+  Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
+}
+$('admMgr').addEventListener('click',admShowMgr);
 function admShowPl(){
   if(detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 갈까요?'))return;
   touch();ADM.tool='pl';admPane('pl');renderPlPane();
@@ -2839,9 +2849,9 @@ function openModel(gid,name,push){
 function route(){
   var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
   if(qs.get('admin')){
-    if(unlocked()){openAdmin(gid,want,false);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu();else if(qs.get('disc'))admShowDisc();return}
+    if(unlocked()){openAdmin(gid,want,false);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu();else if(qs.get('disc'))admShowDisc();else if(qs.get('mgr'))admShowMgr();return}
     showList(G[gid]?gid:firstMenuId(),'',false);
-    requireUnlock(function(){openAdmin(gid,want,true);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu();else if(qs.get('disc'))admShowDisc()});return;
+    requireUnlock(function(){openAdmin(gid,want,true);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu();else if(qs.get('disc'))admShowDisc();else if(qs.get('mgr'))admShowMgr()});return;
   }
   if(VIEW==='admin'){$('admin').hidden=true;VIEW='list'}
   if(want){
@@ -2955,8 +2965,8 @@ function renderPriceTable(){
 function markRow(tr,inp,v){var n=numOf(inp.value);inp.setAttribute('aria-invalid',String(!(n>0)));tr.classList.toggle('chg',n>0&&n!==v.base)}
 function openSettings(){
   lastFocus=document.activeElement;
-  $('setSub').textContent='매장 전체 설정이에요 — 매장 이름·숨긴 상품·사은품 목록, 검색 별칭';
-  setInfo();showTab(SET_TAB||'mgr');
+  $('setSub').textContent='검색 별칭과 비밀번호 — 나머지 설정은 모두 「제품 설정」에 있어요';
+  setInfo();showTab('price');
   $('setModal').hidden=false;
   $('setModal').querySelector('[data-close]').focus();
 }
@@ -2968,7 +2978,6 @@ function showTab(t){
   Array.prototype.forEach.call(document.querySelectorAll('[data-stab]'),function(b){b.setAttribute('aria-selected',String(b.getAttribute('data-stab')===t))});
   Array.prototype.forEach.call(document.querySelectorAll('[data-spane]'),function(p){p.hidden=p.getAttribute('data-spane')!==t});
   SET_TAB=t;
-  if(t==='mgr')renderMgrPane();
   if(t==='price')renderPricePane();
 }
 Array.prototype.forEach.call(document.querySelectorAll('[data-stab]'),function(b){b.addEventListener('click',function(){touch();showTab(b.getAttribute('data-stab'))})});
@@ -3085,24 +3094,24 @@ function renderMgrPane(){
   var gname={};GROUPS.forEach(function(g){gname[g.id]=g.name});
   var hid=SET.hidden.map(function(k,i){
     var gid=k.split('|')[0],key=k.slice(gid.length+1),m=G[gid]&&G[gid].models.filter(function(x){return x.key===key})[0];
-    return '<li><span>'+esc(m?m.name:key)+'<small>'+esc(gname[gid]||'')+'</small></span><button class="btn outl sm" type="button" data-unhide="'+i+'">보이기</button></li>';
+    return '<li><span>'+(m?'<button class="lnk" type="button" data-mgo="'+esc(m.oid)+'">'+esc(m.name)+'</button>':esc(key))+'<small>'+esc(gname[gid]||'')+'</small></span><button class="btn outl sm" type="button" data-unhide="'+i+'">보이기</button></li>';
   }).join('');
   var byModel={};
   Object.keys(SET.itemRates).forEach(function(code){
     var x=CODE[code],id=x?x.gid+'|'+x.m.key:'?|'+code;
-    (byModel[id]=byModel[id]||{name:x?x.m.name:code,gid:x?x.gid:'',codes:[],rates:[]}).codes.push(code);
+    (byModel[id]=byModel[id]||{name:x?x.m.name:code,oid:x?x.m.oid:'',gid:x?x.gid:'',codes:[],rates:[]}).codes.push(code);
     byModel[id].rates.push(SET.itemRates[code]);
   });
   var promo=Object.keys(byModel).map(function(id){
     var o=byModel[id],lo=Math.min.apply(null,o.rates),hi=Math.max.apply(null,o.rates);
-    return '<li><span>'+esc(o.name)+'<small>'+esc(gname[o.gid]||'')+' · 옵션 '+o.codes.length+'개</small></span><b>'+(lo===hi?pct(lo):pct(lo)+'~'+pct(hi))+'</b><button class="btn outl sm" type="button" data-unpromo="'+esc(o.codes.join(','))+'">빼기</button></li>';
+    return '<li><span>'+(o.oid?'<button class="lnk" type="button" data-mgo="'+esc(o.oid)+'">'+esc(o.name)+'</button>':esc(o.name))+'<small>'+esc(gname[o.gid]||'')+' · 옵션 '+o.codes.length+'개</small></span><b>'+(lo===hi?pct(lo):pct(lo)+'~'+pct(hi))+'</b><button class="btn outl sm" type="button" data-unpromo="'+esc(o.codes.join(','))+'">빼기</button></li>';
   }).join('');
   $('mgrPane').innerHTML=
     '<section class="sh-sec"><h4>매장 이름</h4><div class="srow"><label for="storeIn">왼쪽 위에 보이는 이름<small>견적 복사 첫 줄에도 들어가요</small></label><input class="pin" id="storeIn" style="width:180px;text-align:left" maxlength="30" value="'+esc(SET.storeName)+'"></div></section>'
     +'<section class="sh-sec"><h4>숨긴 상품 ('+SET.hidden.length+')</h4><ul class="mlist">'+(hid||'<li class="none">없어요</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>사은품으로 등록한 상품 ('+SET.gifts.length+')</h4><ul class="mlist">'+(SET.gifts.map(function(k,i){
       var gid=k.split('|')[0],key=k.slice(gid.length+1),m=G[gid]&&G[gid].models.filter(function(x){return x.key===key})[0];
-      return '<li><span>'+esc(m?m.name:key)+'<small>'+esc(gname[gid]||'')+'</small></span><button class="btn outl sm" type="button" data-ungift="'+i+'">빼기</button></li>';
+      return '<li><span>'+(m?'<button class="lnk" type="button" data-mgo="'+esc(m.oid)+'">'+esc(m.name)+'</button>':esc(key))+'<small>'+esc(gname[gid]||'')+'</small></span><button class="btn outl sm" type="button" data-ungift="'+i+'">빼기</button></li>';
     }).join('')||'<li class="none">없어요. 제품 설정 › 기본 정보에서 「사은품 메뉴에 넣기」를 켜요.</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>모델별 할인율 ('+Object.keys(byModel).length+')</h4><ul class="mlist">'+(promo||'<li class="none">없어요. 제품 설정 › 가격·할인에서 넣어요.</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>되돌리기</h4><div class="srow"><span class="lb">할인·결제 설정 초기화<small>할인율·페이백·숨긴 상품·사은품 목록·모델별 할인율·매장 이름을 처음 상태로 (사진·가격은 아래 「모든 수정 되돌리기」)</small></span><button class="btn outl sm" type="button" data-resetset>초기화</button></div></section>';
@@ -3113,12 +3122,13 @@ $('mgrPane').addEventListener('change',function(e){
 });
 $('mgrPane').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;
+  if(b.hasAttribute('data-mgo')){var o=b.getAttribute('data-mgo'),m=null;admAll().some(function(x){if(x.oid===o){m=x;return true}return false});if(m){ADM.gid=m.gid;admRenderList(false);admSelect(m)}return}
   if(b.hasAttribute('data-unhide')){SET.hidden.splice(+b.getAttribute('data-unhide'),1);setChanged('다시 보이게 했어요');fillModels();renderModel()}
-  else if(b.hasAttribute('data-ungift')){SET.gifts.splice(+b.getAttribute('data-ungift'),1);giftRefresh();setChanged('사은품 목록에서 뺐어요');if(isGiftMenu()){if(!group.models.length)setGroup('gift');else{fillModels();renderModel()}}}
+  else if(b.hasAttribute('data-ungift')){SET.gifts.splice(+b.getAttribute('data-ungift'),1);giftRefresh();setChanged('사은품 목록에서 뺐어요');if(VIEW!=='admin'&&isGiftMenu()){if(!group.models.length)setGroup('gift');else{fillModels();renderModel()}}}
   else if(b.hasAttribute('data-unpromo')){b.getAttribute('data-unpromo').split(',').forEach(function(c){delete SET.itemRates[c]});setChanged('모델 할인율을 뺐어요')}
   else if(b.hasAttribute('data-resetset')){
     if(!confirm('할인·결제 설정, 숨긴 상품, 모델별 할인율, 매장 이름을 처음 상태로 되돌릴까요?'))return;
-    var keep={menus:SET.menus,moved:SET.moved,names:SET.names,deleted:SET.deleted,flow:SET.flow};
+    var keep={menus:SET.menus,moved:SET.moved,names:SET.names,descs:SET.descs,details:SET.details,deleted:SET.deleted,flow:SET.flow,aliases:SET.aliases};
     SET=Object.assign(clone(DEFAULT_SET),keep);giftRefresh();applyStoreName();setChanged('설정을 초기화했어요');fillModels();renderModel();
   }else return;
   renderMgrPane();
