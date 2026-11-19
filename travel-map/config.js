@@ -10,6 +10,12 @@ window.TRAVEL_MAP_CONFIG = {
   // 비워두면 data/sample.csv(예시 데이터)를 보여줘요.
   sheetCsvUrl: '',
 
+  // ───── 구글 지도 (선택) ─────
+  // 구글 클라우드에서 만든 'Maps JavaScript API' 키를 넣으면 구글 지도로 바뀌어요.
+  // 비워두면 무료 OpenStreetMap 지도를 써요. 키가 틀리면 자동으로 무료 지도로 돌아가요.
+  // ⚠️ 키는 화면 코드에 그대로 보이므로, 구글 클라우드에서 꼭 'HTTP 리퍼러'를 linuscompany.co.kr 로 제한하세요.
+  googleMapsKey: '',
+
   // 시트에 링크를 안 적은 호텔에 자동으로 붙일 예약 검색 링크 (선택)
   // 부킹닷컴 제휴 ID(aid)가 있으면 적어주세요. 없으면 비워두세요.
   bookingAid: '',

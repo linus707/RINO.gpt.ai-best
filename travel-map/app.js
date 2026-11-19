@@ -11,6 +11,8 @@
     geocodeUrl: 'https://nominatim.openstreetmap.org/search',
   }, window.TRAVEL_MAP_CONFIG || {});
   const SAMPLE_URL = 'data/sample.csv';
+  // 동네별 색 (남보라 · 산호 · 청록 · 겨자 · 보라 · 하늘 · 벽돌 · 초록)
+  const PALETTE = ['#5055B1', '#E0656B', '#2A9D8F', '#E39B2D', '#8E6CC9', '#3A86C8', '#C8553D', '#4DAC27'];
   const ALL = '전체 보기';
   const NEARBY_MIN_ZOOM = 14;
   const $ = (id) => document.getElementById(id);
@@ -62,14 +64,14 @@
 
   function toModel(rows) {
     const areas = new Map(); const hotels = []; const landmarks = []; const settings = {};
-    const ensure = (name) => { if (name && !areas.has(name)) areas.set(name, { name, desc: '', good: '', bad: '', polygon: null }); return areas.get(name); };
+    const ensure = (name) => { if (name && !areas.has(name)) areas.set(name, { name, desc: '', good: '', bad: '', polygon: null, color: '' }); return areas.get(name); };
     rows.forEach((r) => {
       const type = r['구분']; const area = r['동네'];
       // '제목' 줄: 이 시트(도시)의 지도 제목·부제목. 도시마다 시트를 따로 쓸 때 편해요.
       if (type === '제목') { settings.title = r['이름']; settings.subtitle = r['한줄소개']; return; }
       if (type === '동네') {
         const a = ensure(area || r['이름']);
-        Object.assign(a, { desc: r['한줄소개'], good: r['장점'], bad: r['아쉬운점'], polygon: parsePolygon(r['영역좌표']) });
+        Object.assign(a, { desc: r['한줄소개'], good: r['장점'], bad: r['아쉬운점'], polygon: parsePolygon(r['영역좌표']), color: /^#[0-9a-f]{6}$/i.test(r['색상'] || '') ? r['색상'] : '' });
         return;
       }
       const lat = num(r['위도']); const lng = num(r['경도']);
@@ -90,7 +92,12 @@
         checkin: r['체크인'], checkout: r['체크아웃'],
       });
     });
-    return { areas: [...areas.values()], hotels, landmarks, settings };
+    // 색상 칸이 빈 동네는 팔레트에서 차례로 색을 줘요
+    const list = [...areas.values()];
+    list.forEach((a, i) => { if (!a.color) a.color = PALETTE[i % PALETTE.length]; });
+    const colorOf = (name) => (areas.get(name) || {}).color || PALETTE[0];
+    hotels.forEach((h) => { h.color = colorOf(h.area); });
+    return { areas: list, hotels, landmarks, settings };
   }
 
   // 시트 '편집' 주소를 붙여넣어도 CSV 주소로 바꿔줘요. (시트 공유: 링크가 있는 모든 사용자 보기)
@@ -109,15 +116,12 @@
   }
 
   // ───────── 2. 지도 ─────────
-  const map = L.map('map', { zoomControl: true, attributionControl: true });
-  // 무료 OpenStreetMap 지도 (회색 톤은 style.css). 방문자가 아주 많아지면 유료 지도(Mapbox 등)로 바꾸세요.
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(map);
+  // 지도 엔진(mapengine.js): 구글 지도 키가 있으면 구글 지도, 없으면 무료 OpenStreetMap
+  const E = window.MapEngine;
+  const map = E.createMap('map');
   map.setView([37.5665, 126.978], 12);
-  const layer = L.layerGroup().addTo(map);      // 추천 호텔·영역·명소
-  const nearbyLayer = L.layerGroup().addTo(map); // 주변 호텔(회색 점)
+  const layer = E.layerGroup().addTo(map);      // 추천 호텔·영역·명소
+  const nearbyLayer = E.layerGroup().addTo(map); // 주변 호텔(회색 점)
 
   let model = { areas: [], hotels: [], landmarks: [] };
   let isSampleData = false;
@@ -137,6 +141,8 @@
     [ALL, ...model.areas.map((a) => a.name)].forEach((name) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'tab' + (name === current ? ' active' : ''); b.textContent = name;
+      const ar = model.areas.find((x) => x.name === name);
+      if (ar) { b.classList.add('has-dot'); b.style.setProperty('--c', ar.color); }
       b.addEventListener('click', () => { current = name; clearSearch(false); render(); });
       tabs.appendChild(b);
     });
@@ -151,30 +157,31 @@
     const compact = current === ALL && !searchHits;
 
     model.areas.filter((a) => a.polygon && (current === ALL || a.name === current)).forEach((a) => {
-      const poly = L.polygon(a.polygon, { color: '#5055B1', weight: 2, dashArray: '6 6', fillColor: '#5055B1', fillOpacity: current === ALL ? 0.06 : 0.1 }).addTo(layer);
+      const poly = E.polygon(a.polygon, { color: a.color, weight: 2, dashArray: '6 6', fillColor: a.color, fillOpacity: current === ALL ? 0.1 : 0.14 }).addTo(layer);
       if (current === ALL) poly.bindTooltip(a.name, { sticky: true });
       poly.on('click', () => { if (current === ALL && !searchHits) { current = a.name; render(); } });
       if (!searchHits) bounds.extend(poly.getBounds());
     });
 
     if (!searchHits) model.landmarks.filter(inArea).forEach((l) => {
-      L.marker([l.lat, l.lng], { interactive: false, keyboard: false, zIndexOffset: -100,
-        icon: L.divIcon({ className: '', iconSize: null, iconAnchor: [10, 12], html: `<div class="landmark">${esc(l.name)}</div>` }) }).addTo(layer);
+      E.marker([l.lat, l.lng], { interactive: false, keyboard: false, zIndexOffset: -100,
+        icon: E.divIcon({ className: '', iconSize: null, iconAnchor: [10, 12], html: `<div class="landmark">${esc(l.name)}</div>` }) }).addTo(layer);
       bounds.extend([l.lat, l.lng]);
     });
 
     const list = $('list'); list.textContent = '';
     visibleHotels().forEach((h) => {
-      const m = L.marker([h.lat, h.lng], { title: h.name, riseOnHover: true, zIndexOffset: 500,
-        icon: L.divIcon({ className: '', iconSize: null, iconAnchor: [14, 14],
-          html: `<div class="pin${compact ? ' compact' : ''}"><div class="num">${esc(h.rank)}</div><div class="label">${esc(h.name)}</div></div>` }) })
+      const m = E.marker([h.lat, h.lng], { title: h.name, riseOnHover: true, zIndexOffset: 500,
+        icon: E.divIcon({ className: '', iconSize: null, iconAnchor: [14, 14],
+          html: `<div class="pin${compact ? ' compact' : ''}" style="--c:${h.color}"><div class="num">${esc(h.rank)}</div><div class="label">${esc(h.name)}</div></div>` }) })
         .on('click', () => openHotel(h)).addTo(layer);
       markers.set(h, m); bounds.extend([h.lat, h.lng]);
-      list.appendChild(listItem(`<span class="num">${esc(h.rank)}</span>`, h.name, [h.area, ratingText(h), h.walk], () => { map.panTo([h.lat, h.lng]); openHotel(h); }, h));
+      list.appendChild(listItem(`<span class="num" style="--c:${h.color}">${esc(h.rank)}</span>`, h.name, [h.area, ratingText(h), h.walk], () => { map.panTo([h.lat, h.lng]); openHotel(h); }, h));
     });
     $('list-title').textContent = searchHits ? `"${searchText}" 추천 호텔 ${searchHits.size}곳` : '추천 호텔';
 
     const a = model.areas.find((x) => x.name === current);
+    $('area-info').style.setProperty('--c', a ? a.color : '');
     $('area-info').innerHTML = !searchHits && a && (a.desc || a.good || a.bad)
       ? `<h3>${esc(a.name)}</h3>${a.desc ? `<p>${esc(a.desc)}</p>` : ''}${a.good ? `<p class="good">${esc(a.good)}</p>` : ''}${a.bad ? `<p class="bad">${esc(a.bad)}</p>` : ''}`
       : '';
@@ -203,6 +210,7 @@
     $('card').classList.toggle('no-photo', !v.photo);
     $('card-rank').textContent = v.rank || '';
     $('card-rank').className = 'card-rank' + (v.kind ? ' ' + v.kind : '');
+    $('card-rank').style.setProperty('--c', v.color || '');
     $('card-photo-note').hidden = !v.photoNote;
     $('card-area').textContent = v.area || '';
     $('card-name').textContent = v.name;
@@ -256,7 +264,7 @@
     const summary = [['loc', '위치·교통', h.sumLoc], ['room', '객실', h.sumRoom], ['svc', '서비스', h.sumService], ['for', '이런 분께 추천', h.sumFor]]
       .filter((x) => x[2]).map(([cls, label, t]) => [cls, `${label}: ${t}`]);
     openCard({
-      photo: h.photo, photoNote: isSampleData && h.photo, rank: h.rank,
+      photo: h.photo, photoNote: isSampleData && h.photo, rank: h.rank, color: h.color,
       area: [h.kind, h.stars ? `${h.stars}성급` : '', h.area].filter(Boolean).join(' · '), name: h.name,
       metaHtml: [
         h.rating ? `<span class="src agoda">아고다</span> <span class="stars">${esc(h.rating)}</span>${h.reviews ? ` (${esc(fmt(h.reviews))})` : ''}` : '',
@@ -355,8 +363,8 @@
     document.querySelector('.side').classList.toggle('has-nearby', nearby.length > 0);
     $('nearby-title').textContent = `주변 호텔 ${nearby.length}곳`;
     nearby.forEach((n) => {
-      L.marker([n.lat, n.lng], { title: n.name, riseOnHover: true,
-        icon: L.divIcon({ className: '', iconSize: null, iconAnchor: [7, 7], html: `<div class="dot"><span class="dot-label">${esc(n.name)}</span></div>` }) })
+      E.marker([n.lat, n.lng], { title: n.name, riseOnHover: true,
+        icon: E.divIcon({ className: '', iconSize: null, iconAnchor: [7, 7], html: `<div class="dot"><span class="dot-label">${esc(n.name)}</span></div>` }) })
         .on('click', () => openNearby(n)).addTo(nearbyLayer);
       list.appendChild(listItem('<span class="dot static"></span>', n.name, [KIND[n.kind] || '숙소', n.stars ? `${n.stars}성급` : ''], () => { map.panTo([n.lat, n.lng]); openNearby(n); }, n));
     });
@@ -454,7 +462,8 @@
       const small = bb && map.distance([bb[0], bb[2]], [bb[1], bb[3]]) < 3000;
       if (bb && small) fit(L.latLngBounds([bb[0], bb[2]], [bb[1], bb[3]]), { maxZoom: 16, padding: [0, 0], animate: false });
       else moveTo(g.lat, g.lng, 15);
-      if (map.getZoom() < NEARBY_MIN_ZOOM) moveTo(g.lat, g.lng, 15);
+      await map.whenIdle();
+      if (map.getZoom() < NEARBY_MIN_ZOOM) { moveTo(g.lat, g.lng, 15); await map.whenIdle(); }
       $('search-clear').hidden = false;
       await findNearby();
     } catch (err) {
