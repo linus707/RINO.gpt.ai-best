@@ -812,7 +812,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
 <section class="adm" id="admin" hidden aria-labelledby="admTitle">
   <div class="adm-top">
     <div><p class="adm-k">관리</p><h1 id="admTitle">제품 설정</h1><p class="adm-sub">제품을 골라 가격·사진·상세페이지를 만들어요. 바꾼 내용은 이 기기에 저장돼요.</p></div>
-    <div class="adm-acts"><button class="btn outl" type="button" id="admMenuEd" data-atool="menu" aria-pressed="false">메뉴 편집</button><button class="btn outl" type="button" id="admPl" data-atool="pl" aria-pressed="false">가격표 엑셀 불러오기</button><button class="btn outl" type="button" id="admTools" data-atool="prod" aria-pressed="false">새 제품·되살리기·백업</button><button class="btn" type="button" id="admClose">닫기</button></div>
+    <div class="adm-acts"><button class="btn outl" type="button" id="admDisc" data-atool="disc" aria-pressed="false">할인·결제</button><button class="btn outl" type="button" id="admMenuEd" data-atool="menu" aria-pressed="false">메뉴 편집</button><button class="btn outl" type="button" id="admPl" data-atool="pl" aria-pressed="false">가격표 엑셀 불러오기</button><button class="btn outl" type="button" id="admTools" data-atool="prod" aria-pressed="false">새 제품·되살리기·백업</button><button class="btn" type="button" id="admClose">닫기</button></div>
   </div>
   <div class="adm-body">
     <aside class="adm-side" aria-label="제품 목록">
@@ -918,6 +918,10 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           </div>
         </div>
       </div>
+      <div id="admDiscPane" hidden>
+        <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>할인·결제</h2><p class="adm-meta">할인 적용 방식, 기본·메뉴별 제품 할인율, 지점·매니저 할인, 할부 이자·끝자리, 페이백을 정해요. 장바구니 계산에 바로 반영돼요</p></div></div>
+        <div id="discPane"></div>
+      </div>
       <div id="admMenuPane" hidden>
         <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>메뉴 편집</h2><p class="adm-meta">위쪽 메뉴의 이름·순서·보이기를 바꾸고, 새 메뉴를 만들어요. 메뉴 칸의 제품 수를 누르면 그 메뉴 제품을 왼쪽에 보여요</p></div></div>
         <div id="menuPane"></div>
@@ -940,18 +944,16 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     <div class="sh-head"><h3 id="setTitle">설정</h3><button class="x" type="button" data-close aria-label="설정 닫기">×</button></div>
     <p class="sh-sub" id="setSub"></p>
     <div class="stabs" role="tablist" aria-label="설정 종류">
-        <button type="button" role="tab" data-stab="disc" aria-selected="true">할인·결제</button>
-      <button type="button" role="tab" data-stab="mgr" aria-selected="false">상품 관리</button>
+      <button type="button" role="tab" data-stab="mgr" aria-selected="true">상품 관리</button>
       <button type="button" role="tab" data-stab="price" aria-selected="false">가격표·검색</button>
     </div>
 
     <div class="admgo">
-      <div><b>제품별 가격·사진·상세페이지, 메뉴 편집, 가격표 엑셀은 「제품 설정」에서</b><span>제품 목록에서 골라 기본 정보·가격·사진·상세페이지를 한곳에서 바꿔요. 메뉴 편집·가격표 엑셀 불러오기·새 제품 만들기·사진 백업도 거기 있어요.</span></div>
+      <div><b>할인·결제, 메뉴 편집, 가격표 엑셀, 제품별 가격·사진·상세페이지는 「제품 설정」에서</b><span>제품 목록에서 골라 기본 정보·가격·사진·상세페이지를 한곳에서 바꿔요. 할인·결제·메뉴 편집·가격표 엑셀 불러오기·새 제품 만들기·사진 백업도 거기 있어요.</span></div>
       <button class="btn" type="button" id="setToAdm">제품 설정 열기</button>
     </div>
 
-    <div data-spane="disc" id="discPane"></div>
-    <div data-spane="mgr" hidden id="mgrPane"></div>
+    <div data-spane="mgr" id="mgrPane"></div>
     <div data-spane="price" hidden id="pricePane"></div>
 
     <p class="fine">설정·사진·가격·장바구니는 <b>이 기기의 브라우저에만</b> 저장돼요. 다른 기기·손님 휴대폰에는 보이지 않아요. <span id="setInfo"></span> <button class="lnk" type="button" id="allReset">모든 수정 되돌리기</button></p>
@@ -975,7 +977,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <section class="dsec">
         <div class="dsec-h"><h4>할인 <small id="modeTag"></small></h4><button class="lnk" type="button" id="cartSet">할인 설정 열기</button></div>
         <div class="dcells" id="dcells"></div>
-        <p class="hint">이 주문에만 적용돼요. 기본값은 설정 › 할인·결제에서 정해요.</p>
+        <p class="hint">이 주문에만 적용돼요. 기본값은 제품 설정 › 할인·결제에서 정해요.</p>
       </section>
       <section class="dsec"><h4>할부</h4><div class="chips" id="instChips" role="radiogroup" aria-label="할부 개월"></div><p class="hint" id="instHint"></p></section>
       <section class="dsec" id="pbSec"><h4>페이백</h4><div class="chips" id="pbChips"></div></section>
@@ -1948,6 +1950,7 @@ function admAfterRebuild(m){
   admRenderList(false);
   if(ADM.tool==='pl'){renderPlPane();return}
   if(ADM.tool==='menu'){renderMenuPane();return}
+  if(ADM.tool==='disc'){renderDiscPane();return}
   if(ADM.tool){renderProdPane();return}
   var first=m||admModels()[0]||admAll()[0];
   if(first){DB_OID=m?DB_OID:null;admSelect(first,true)}
@@ -1990,7 +1993,7 @@ $('admView').addEventListener('click',function(){
   group=G[gid];cur=null;openModel(gid,nm,false);
 });
 function admPane(t){
-  $('admEdit').hidden=!!t;$('admToolPane').hidden=t!=='prod';$('admPlPane').hidden=t!=='pl';$('admMenuPane').hidden=t!=='menu';
+  $('admEdit').hidden=!!t;$('admDiscPane').hidden=t!=='disc';$('admToolPane').hidden=t!=='prod';$('admPlPane').hidden=t!=='pl';$('admMenuPane').hidden=t!=='menu';
   Array.prototype.forEach.call(document.querySelectorAll('.adm-acts [data-atool]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-atool')===t))});
 }
 function admShowMenu(){
@@ -2000,6 +2003,13 @@ function admShowMenu(){
   Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
 }
 $('admMenuEd').addEventListener('click',admShowMenu);
+function admShowDisc(){
+  if(detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 갈까요?'))return;
+  touch();ADM.tool='disc';admPane('disc');renderDiscPane();
+  try{history.replaceState({v:'admin'},'','?admin=1&disc=1')}catch(e){}
+  Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
+}
+$('admDisc').addEventListener('click',admShowDisc);
 function admShowPl(){
   if(detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 갈까요?'))return;
   touch();ADM.tool='pl';admPane('pl');renderPlPane();
@@ -2480,7 +2490,7 @@ $('cview').addEventListener('click',function(e){
 });
 addEventListener('afterprint',function(){document.body.classList.remove('cvp')});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('cview').hidden){e.stopImmediatePropagation();closeCust()}},true);
-$('cartSet').addEventListener('click',function(){requireUnlock(function(){openSettings();showTab('disc')})});
+$('cartSet').addEventListener('click',function(){requireUnlock(function(){openAdmin(VIEW==='detail'&&cur?cur.gid:'',VIEW==='detail'&&cur?cur.name:'',true);admShowDisc()})});
 
 
 /* ───── 상담 · 결제 기록 (매장 POS의 「상담 기록」·「주문 내역」을 가져왔어요) ─────
@@ -2829,9 +2839,9 @@ function openModel(gid,name,push){
 function route(){
   var qs=new URLSearchParams(location.search),want=qs.get('m'),gid=qs.get('g');
   if(qs.get('admin')){
-    if(unlocked()){openAdmin(gid,want,false);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu();return}
+    if(unlocked()){openAdmin(gid,want,false);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu();else if(qs.get('disc'))admShowDisc();return}
     showList(G[gid]?gid:firstMenuId(),'',false);
-    requireUnlock(function(){openAdmin(gid,want,true);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu()});return;
+    requireUnlock(function(){openAdmin(gid,want,true);if(qs.get('pl'))admShowPl();else if(qs.get('menu'))admShowMenu();else if(qs.get('disc'))admShowDisc()});return;
   }
   if(VIEW==='admin'){$('admin').hidden=true;VIEW='list'}
   if(want){
@@ -2945,8 +2955,8 @@ function renderPriceTable(){
 function markRow(tr,inp,v){var n=numOf(inp.value);inp.setAttribute('aria-invalid',String(!(n>0)));tr.classList.toggle('chg',n>0&&n!==v.base)}
 function openSettings(){
   lastFocus=document.activeElement;
-  $('setSub').textContent='매장 전체 설정이에요 — 할인·결제, 메뉴, 가격표·검색';
-  setInfo();showTab(SET_TAB||'disc');
+  $('setSub').textContent='매장 전체 설정이에요 — 매장 이름·숨긴 상품·사은품 목록, 검색 별칭';
+  setInfo();showTab(SET_TAB||'mgr');
   $('setModal').hidden=false;
   $('setModal').querySelector('[data-close]').focus();
 }
@@ -2958,7 +2968,6 @@ function showTab(t){
   Array.prototype.forEach.call(document.querySelectorAll('[data-stab]'),function(b){b.setAttribute('aria-selected',String(b.getAttribute('data-stab')===t))});
   Array.prototype.forEach.call(document.querySelectorAll('[data-spane]'),function(p){p.hidden=p.getAttribute('data-spane')!==t});
   SET_TAB=t;
-  if(t==='disc')renderDiscPane();
   if(t==='mgr')renderMgrPane();
   if(t==='price')renderPricePane();
 }
