@@ -5,7 +5,7 @@
   --bg: #FFFFFF; --bg-subtle: #F7F7F7; --text: #000; --text-2: #595959; --text-3: #767676;
   --line: #EAEAEA; --line-strong: #D5D5D5; --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-full: 9999px;
   --shadow-sm: 0 5px 10px rgba(0,0,0,.10); --shadow-lg: 0 20px 40px rgba(0,0,0,.10); --ease: cubic-bezier(.4,0,.2,1);
-  --font: "Pretendard", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font: "IBM Plex Sans KR", "Pretendard", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: var(--font); letter-spacing: -.01em; color: var(--text); background: var(--bg); line-height: 1.6; }

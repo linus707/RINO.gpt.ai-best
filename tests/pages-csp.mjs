@@ -10,7 +10,7 @@ import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGES = ['index.html', 'pos.html', 'price.html', 'buy.html', 'translate.html', 'japanese.html', 'offline.html', 'travel-map/index.html', 'travel/index.html'];
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.css': 'text/css', '.csv': 'text/csv; charset=utf-8' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.css': 'text/css', '.woff2': 'font/woff2', '.csv': 'text/csv; charset=utf-8' };
 
 function siteServer() {
   return http.createServer(async (req, res) => {
