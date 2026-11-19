@@ -1,7 +1,7 @@
 // Linus Company service worker.
 // 업무 데이터는 기기에 캐시하지 않아요: 캐시하는 파일은 오프라인 안내 페이지 하나뿐이에요.
 // API 호출·GitHub/Gist 요청·Next 식 데이터 요청은 가로채지 않고 항상 네트워크로 보내요.
-const OFFLINE_CACHE = 'linus-offline-v1';
+const OFFLINE_CACHE = 'linus-offline-v2';
 const OFFLINE_URL = '/offline.html';
 
 function previewText(value, limit) {

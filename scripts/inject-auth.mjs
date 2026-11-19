@@ -15,7 +15,13 @@ export function pickWorker(D) {
 export function inject(html, url) {
   const re = /const AUTH_WORKER="[^"]*";/;
   if (!re.test(html)) return null;
-  return html.replace(re, `const AUTH_WORKER=${JSON.stringify(url)};`);
+  return allowHost(html.replace(re, `const AUTH_WORKER=${JSON.stringify(url)};`), url);
+}
+// 방화벽(콘텐츠 보안 정책)의 연결 허용 목록에 로그인 서버 주소를 넣어요. *.workers.dev 는 이미 허용돼 있어서, 자체 도메인을 쓸 때만 추가돼요.
+export function allowHost(html, url) {
+  const origin = new URL(url).origin;
+  if (/\.workers\.dev$/.test(origin)) return html;
+  return html.replace(/(<meta http-equiv="Content-Security-Policy" content="[^"]*connect-src 'self')/, `$1 ${origin}`);
 }
 
 async function main() {
