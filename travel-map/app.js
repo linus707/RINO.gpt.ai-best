@@ -121,6 +121,7 @@
 
   let model = { areas: [], hotels: [], landmarks: [] };
   let isSampleData = false;
+  let autoSearched = false;
   let current = ALL; let markers = new Map(); let selected = null;
   let searchHits = null;   // ① 검색으로 걸러진 추천 호텔 (null 이면 전체)
   let searchText = '';
@@ -493,6 +494,9 @@
       $('title').textContent = title; document.title = title;
       $('subtitle').textContent = (model.settings && model.settings.subtitle) || CFG.subtitle;
       render(); setStatus('');
+      // 여행 홈 검색에서 넘어온 검색어(?q=)가 있으면 한 번 바로 찾아요
+      const q0 = new URLSearchParams(location.search).get('q');
+      if (q0 && !autoSearched) { autoSearched = true; $('search-input').value = q0.slice(0, 80); $('search').requestSubmit(); }
       if (liveOn) liveSearch($('search-input').value.trim() || CFG.title);
     } catch (e) {
       setStatus('불러오기 실패: ' + e.message, true);
