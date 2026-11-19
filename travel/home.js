@@ -175,12 +175,27 @@
     $('disclosure').textContent = '이 페이지에는 광고와 제휴 링크가 있어요. 예약하시면 일정 수수료를 받을 수 있고, 가격은 같아요.';
   }
 
+  // ───────── 사진 출처 (자유 라이선스 사진은 저작자·라이선스·원본을 꼭 밝혀야 해요) ─────────
+  function renderCredits() {
+    const list = $('credit-list'); list.textContent = '';
+    cities.filter((c) => c.photo && c.photoCredit).forEach((c) => {
+      const cr = c.photoCredit; const li = document.createElement('li');
+      const src = safeUrl(cr.source); const lic = safeUrl(cr.licenseUrl);
+      li.innerHTML = `<b>${esc(c.name)}</b> — ${src ? `<a href="${esc(src)}" target="_blank" rel="noopener">원본 사진</a>` : '사진'}`
+        + `${cr.artist ? ` © ${esc(cr.artist)}` : ''}, `
+        + (lic ? `<a href="${esc(lic)}" target="_blank" rel="noopener license">${esc(cr.license)}</a>` : esc(cr.license || ''))
+        + ' · 위키미디어 커먼즈';
+      list.appendChild(li);
+    });
+    $('credits').hidden = !list.children.length;
+  }
+
   function renderAll() { renderCities(); renderWeather(); }
 
   async function start() {
     $('title').textContent = CFG.title; document.title = CFG.title; $('subtitle').textContent = CFG.subtitle;
     try { const r = await fetch('data/climate.json', { cache: 'no-cache' }); if (r.ok) climate = await r.json(); } catch { climate = {}; }
-    renderQuick(); renderAll();
+    renderQuick(); renderAll(); renderCredits();
     seen.observe($('cities')); seen.observe($('weather-row'));
     initAds();
   }
