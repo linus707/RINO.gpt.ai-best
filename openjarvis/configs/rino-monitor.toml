@@ -1,0 +1,20 @@
+# 리노 - 매일 자동 실행(스케줄) 모니터링용
+# 사용: jarvis scheduler start 후 03-채널별-활용.md의 예시로 작업 등록
+[engine]
+default = "ollama"
+
+[intelligence]
+default_model = "qwen3.5:9b"
+temperature = 0.3
+
+[agent]
+default_agent = "operative"
+max_turns = 20
+context_from_memory = true         # 이전 실행 기록을 기억
+
+[tools]
+# 읽기·검색 위주 최소 권한. 파일 쓰기/쉘 실행 도구는 일부러 뺐어요.
+enabled = ["knowledge_search", "knowledge_sql", "scan_chunks", "memory_store", "memory_search", "think", "web_search"]
+
+[tools.storage]
+default_backend = "sqlite"

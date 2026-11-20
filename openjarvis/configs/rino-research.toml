@@ -1,0 +1,19 @@
+# 리노 - 블로그/콘텐츠 자료조사용
+# 먼저 내 자료 색인: jarvis memory index ./docs ./travel
+# 사용: jarvis ask --agent deep_research "질문"
+[engine]
+default = "ollama"
+
+[intelligence]
+default_model = "qwen3.5:9b"
+temperature = 0.3                  # 사실 확인용으로 낮게
+
+[agent]
+default_agent = "deep_research"
+max_turns = 8
+
+[tools]
+enabled = ["knowledge_search", "knowledge_sql", "scan_chunks", "think", "web_search"]
+
+[tools.storage]
+default_backend = "sqlite"
