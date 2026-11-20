@@ -517,6 +517,11 @@ body.test .cstrip{background:#fff6dc}
 .adm-list small{display:block;font-size:12px;line-height:17px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .adm-list i{font-style:normal;display:inline-block;margin-right:4px;padding:0 5px;border-radius:4px;background:var(--sub);color:var(--tx2);font-size:11px;line-height:16px}
 .adm-list i.on{background:#e7f1ff;color:#1366d6}
+.adm-list button{user-select:none;-webkit-user-select:none}
+.adm-list button[data-sel="1"]{background:#eef5ff;box-shadow:inset 3px 0 0 #2189ff}
+.adm-bulk-list{margin:12px 0 0;padding:0;list-style:none;max-height:260px;overflow:auto;border-radius:var(--r-lg);box-shadow:var(--ring)}
+.adm-bulk-list li{padding:8px 12px;font-size:13px;line-height:18px}.adm-bulk-list li+li{box-shadow:inset 0 1px 0 var(--hair)}
+.adm-bulk-list small{color:var(--tx3);margin-left:6px}
 .adm-list .none{padding:24px 12px;text-align:center;color:var(--tx3);font-size:13px}
 .adm-more{width:100%}
 .adm-main{min-width:0;border-radius:var(--r-lg);box-shadow:var(--ring);padding:24px 28px 28px;background:#fff}
@@ -822,6 +827,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
         <option value="">모든 제품</option><option value="nophoto">사진 없는 제품</option><option value="nodetail">상세페이지 없는 제품</option><option value="price">가격 바꾼 제품</option><option value="hidden">숨긴 제품</option><option value="mine">매장에서 만든 제품</option>
       </select>
       <p class="adm-cnt" id="admCnt"></p>
+      <p class="hint" style="margin:0 0 6px;font-size:12px">Ctrl(맥은 ⌘)+클릭: 하나씩 추가·해제 · Shift+클릭: 범위 선택</p>
       <ul class="adm-list" id="admList"></ul>
       <button class="btn outl adm-more" type="button" id="admMore" hidden>더 보기</button>
     </aside>
@@ -917,6 +923,16 @@ select.pin{height:36px;font-weight:700;font-size:14px}
             <div class="adm-pv"><p class="adm-k">미리보기 (저장 전 내용)</p><div class="adm-pvbox" id="dbPrev"></div></div>
           </div>
         </div>
+      </div>
+      <div id="admBulkPane" hidden>
+        <section class="sh-sec">
+          <h4><span id="bkCnt"></span>개 제품 선택됨</h4>
+          <p class="hint">고른 제품에 한꺼번에 적용해요. 하나만 편집하려면 목록에서 일반 클릭하세요.</p>
+          <div class="srow"><label for="bkMenu">메뉴 옮기기<small>사은품 메뉴 제품은 옮기지 않아요</small></label><span style="display:flex;gap:8px"><select class="pin" id="bkMenu" style="width:160px;text-align:left"></select><button class="btn outl sm" type="button" id="bkMove">옮기기</button></span></div>
+          <div class="srow"><label>숨기기<small>메뉴 탭·검색 목록에서 빠져요</small></label><span style="display:flex;gap:8px"><button class="btn outl sm" type="button" id="bkHide">모두 숨기기</button><button class="btn outl sm" type="button" id="bkShow">모두 보이기</button></span></div>
+          <div class="sh-foot"><button class="btn outl" type="button" id="bkClear">선택 해제</button><button class="btn outl" type="button" id="bkDel" style="color:var(--err);border-color:var(--err)">선택한 제품 삭제</button></div>
+          <ul class="adm-bulk-list" id="bkList"></ul>
+        </section>
       </div>
       <div id="admMgrPane" hidden>
         <div class="adm-head"><div class="adm-ht"><p class="adm-k">제품 설정</p><h2>상품 관리</h2><p class="adm-meta">매장 이름, 숨긴 상품·사은품 목록·모델별 할인율을 한눈에 보고 되돌려요. 이름을 누르면 그 제품을 열어요</p></div></div>
@@ -1882,7 +1898,7 @@ $('dbSave').addEventListener('click',function(){
 
 /* ───── 제품 설정 화면 ─────
    제품 목록에서 하나를 고르면 cur·group을 그 제품으로 두고, 기본 정보·가격·사진·상세페이지 칸(예전 설정 › 이 상품)을 그 제품으로 채워요 */
-var ADM={gid:'',q:'',f:'',tab:'info',shown:0,ret:'',tool:false},ADM_PAGE=80;
+var ADM={gid:'',q:'',f:'',tab:'info',shown:0,ret:'',tool:false,sel:[],anchor:''},ADM_PAGE=80;
 function admAll(){var out=[];GROUPS.forEach(function(g){(G[g.id]&&G[g.id].own||[]).forEach(function(m){out.push(m)})});return out}
 function admFlags(m){
   return {photo:!!modelThumb(m),detail:detailOf(m.oid).length,desc:!!String(m.desc||'').trim(),price:m.variants.some(function(v){return PRICES[v.code]>0}),hidden:isHidden(m.gid,m),mine:!!m.mine};
@@ -1899,7 +1915,7 @@ function admModels(){
 }
 function admItem(m){
   var th=modelThumb(m),x=admFlags(m),min=minPrice(m);
-  return '<li><button type="button" data-aoid="'+esc(m.oid)+'"'+(cur&&!ADM.tool&&cur.oid===m.oid?' aria-current="true"':'')+'>'
+  return '<li><button type="button" data-aoid="'+esc(m.oid)+'"'+(ADM.sel.indexOf(m.oid)>=0?' data-sel="1" aria-selected="true"':cur&&!ADM.tool&&cur.oid===m.oid?' aria-current="true"':'')+'>'
     +'<span class="ti">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy">':esc((m.series||m.name).slice(0,3)))+'</span>'
     +'<span><b>'+esc(m.name)+'</b><small>'+esc((G[m.gid]?G[m.gid].def.name:'')+' · '+m.variants.length+'개 옵션 · '+won(min)+'원~')+'</small>'
     +'<small><i'+(x.photo?' class="on"':'')+'>사진</i><i'+(x.detail?' class="on"':'')+'>상세'+(x.detail?' '+x.detail:'')+'</i>'+(x.price?'<i class="on">가격</i>':'')+(x.hidden?'<i>숨김</i>':'')+(x.mine?'<i>매장</i>':'')+'</small></span></button></li>';
@@ -1939,9 +1955,9 @@ function admSelect(m,quiet){
   if(!m)return;
   if(!quiet&&cur&&cur.oid!==m.oid&&detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 다른 제품으로 갈까요?'))return;
   group=G[m.gid];cur=m;vi=0;fillModels();render();
-  ADM.tool=false;admPane('');
+  ADM.sel=[];ADM.anchor=m.oid;ADM.tool=false;admPane('');
   admFill();
-  Array.prototype.forEach.call($('admList').querySelectorAll('[data-aoid]'),function(b){if(b.getAttribute('data-aoid')===m.oid)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')});
+  Array.prototype.forEach.call($('admList').querySelectorAll('[data-aoid]'),function(b){b.removeAttribute('data-sel');b.removeAttribute('aria-selected');if(b.getAttribute('data-aoid')===m.oid)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')});
   admUrl();
 }
 function admUrl(){try{history.replaceState({v:'admin'},'','?admin=1'+(cur&&!ADM.tool?'&g='+cur.gid+'&m='+encodeURIComponent(cur.name):''))}catch(e){}}
@@ -1950,6 +1966,7 @@ function admAfterRebuild(m){
   Array.prototype.forEach.call($('menu').children,function(b){b.removeAttribute('aria-current')});
   if(!m&&cur){var o=cur.oid;admAll().some(function(x){if(x.oid===o){m=x;return true}return false})}
   admRenderList(false);
+  if(ADM.tool==='bulk'){admShowBulk();return}
   if(ADM.tool==='pl'){renderPlPane();return}
   if(ADM.tool==='menu'){renderMenuPane();return}
   if(ADM.tool==='disc'){renderDiscPane();return}
@@ -1996,7 +2013,8 @@ $('admView').addEventListener('click',function(){
   group=G[gid];cur=null;openModel(gid,nm,false);
 });
 function admPane(t){
-  $('admEdit').hidden=!!t;$('admMgrPane').hidden=t!=='mgr';$('admDiscPane').hidden=t!=='disc';$('admToolPane').hidden=t!=='prod';$('admPlPane').hidden=t!=='pl';$('admMenuPane').hidden=t!=='menu';
+  if(t!=='bulk')ADM.sel=[];
+  $('admEdit').hidden=!!t;$('admBulkPane').hidden=t!=='bulk';$('admMgrPane').hidden=t!=='mgr';$('admDiscPane').hidden=t!=='disc';$('admToolPane').hidden=t!=='prod';$('admPlPane').hidden=t!=='pl';$('admMenuPane').hidden=t!=='menu';
   Array.prototype.forEach.call(document.querySelectorAll('.adm-acts [data-atool]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-atool')===t))});
 }
 function admShowMenu(){
@@ -2031,10 +2049,91 @@ $('admTools').addEventListener('click',function(){
   touch();ADM.tool='prod';admPane('prod');renderProdPane();admUrl();
   Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
 });
+function admByOid(o){var m=null;admAll().some(function(x){if(x.oid===o){m=x;return true}return false});return m}
+function admMarkSel(){
+  Array.prototype.forEach.call($('admList').querySelectorAll('[data-aoid]'),function(b){
+    var o=b.getAttribute('data-aoid'),on=ADM.sel.indexOf(o)>=0;
+    if(on){b.setAttribute('data-sel','1');b.setAttribute('aria-selected','true');b.removeAttribute('aria-current')}
+    else{b.removeAttribute('data-sel');b.removeAttribute('aria-selected');if(ADM.sel.length<2&&cur&&!ADM.tool&&cur.oid===o)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')}
+  });
+}
+function admSelMs(){return ADM.sel.map(admByOid).filter(Boolean)}
+function admShowBulk(){
+  var ms=admSelMs();
+  if(ms.length<2){ADM.sel=[];if(ms[0])admSelect(ms[0],true);return}
+  ADM.tool='bulk';admPane('bulk');
+  $('bkCnt').textContent=ms.length;
+  $('bkMenu').innerHTML=menuOptions(ms[0].gid,false);
+  $('bkList').innerHTML=ms.map(function(m){return '<li>'+esc(m.name)+'<small>'+esc(G[m.gid]?G[m.gid].def.name:'')+(isHidden(m.gid,m)?' · 숨김':'')+'</small></li>'}).join('');
+  try{history.replaceState({v:'admin'},'','?admin=1')}catch(e){}
+  admMarkSel();
+}
+function admMultiClick(o,e){
+  var ms=admModels(),ids=ms.map(function(m){return m.oid});
+  if(e.shiftKey){
+    var a=ids.indexOf(ADM.anchor||(cur&&cur.oid)||o),b=ids.indexOf(o);
+    if(a<0)a=b;
+    var lo=Math.min(a,b),hi=Math.max(a,b),range=ids.slice(lo,hi+1);
+    var base=e.ctrlKey||e.metaKey?ADM.sel.slice():[];
+    range.forEach(function(x){if(base.indexOf(x)<0)base.push(x)});
+    ADM.sel=base;
+  }else{
+    if(!ADM.sel.length&&cur&&!ADM.tool&&cur.oid!==o)ADM.sel=[cur.oid];
+    var i=ADM.sel.indexOf(o);
+    if(i>=0)ADM.sel.splice(i,1);else ADM.sel.push(o);
+    ADM.anchor=o;
+  }
+  admShowBulk();
+}
 $('admList').addEventListener('click',function(e){
   var b=e.target.closest('[data-aoid]');if(!b)return;touch();
-  var o=b.getAttribute('data-aoid'),m=null;admAll().some(function(x){if(x.oid===o){m=x;return true}return false});
+  var o=b.getAttribute('data-aoid');
+  if(e.shiftKey||e.ctrlKey||e.metaKey){
+    if(detailDirty()&&!confirm('저장하지 않은 상세페이지 칸이 있어요. 버리고 여러 제품을 고를까요?'))return;
+    admMultiClick(o,e);return;
+  }
+  var m=admByOid(o);
   admSelect(m);if(matchMedia('(max-width:900px)').matches)$('admEdit').scrollIntoView({block:'start'});
+});
+function admBulkDone(msg,clear){
+  saveSet();touch();
+  if(clear){ADM.sel=[];ADM.anchor='';ADM.tool=false;cur=null}
+  rebuildAll(false);
+  if(!clear&&ADM.sel.length>1)admShowBulk();
+  toast(msg);
+}
+$('bkClear').addEventListener('click',function(){var f=admSelMs()[0];ADM.sel=[];if(f)admSelect(f,true)});
+$('bkHide').addEventListener('click',function(){
+  var n=0;admSelMs().forEach(function(m){var k=hidKey(m.gid,m);if(SET.hidden.indexOf(k)<0){SET.hidden.push(k);n++}});
+  admBulkDone(n+'개 제품을 숨겼어요',false);
+});
+$('bkShow').addEventListener('click',function(){
+  var n=0;admSelMs().forEach(function(m){var i=SET.hidden.indexOf(hidKey(m.gid,m));if(i>=0){SET.hidden.splice(i,1);n++}});
+  admBulkDone(n+'개 제품을 다시 보이게 했어요',false);
+});
+$('bkMove').addEventListener('click',function(){
+  var to=$('bkMenu').value,n=0,skip=0,list=customList(),customChanged=false;
+  admSelMs().forEach(function(m){
+    var from=m.oid.split('|')[0];
+    if(m.gid==='gift'&&!SET.moved[m.oid]){skip++;return}
+    if(!to||to===from)return;
+    if(m.mine){list.forEach(function(c){if(String(c.name).trim()===m.key&&(c.group===from||!c.group)){c.group=to;customChanged=true}})}
+    else SET.moved[m.oid]=to;
+    n++;
+  });
+  if(customChanged)saveCustom(list);
+  admBulkDone(n+'개 제품을 옮겼어요'+(skip?' (사은품 '+skip+'개는 그대로)':''),true);
+});
+$('bkDel').addEventListener('click',function(){
+  var ms=admSelMs();if(!ms.length)return;
+  if(!confirm(ms.length+'개 제품을 삭제할까요?\n가격표 파일은 그대로이고, 가격표 제품은 제품 설정 › 새 제품·되살리기·백업에서 되살릴 수 있어요. 매장에서 만든 제품은 완전히 지워져요.'))return;
+  var list=customList(),customChanged=false;
+  ms.forEach(function(m){
+    if(m.mine){var key=m.key,from=m.oid.split('|')[0];list=list.filter(function(c){return !(String(c.name).trim()===key&&(c.group===from||!c.group||m.gid===c.group))});customChanged=true}
+    else SET.deleted.push({id:m.oid,name:m.name});
+  });
+  if(customChanged)saveCustom(list);
+  admBulkDone(ms.length+'개 제품을 삭제했어요',true);
 });
 $('admMenus').addEventListener('click',function(e){var b=e.target.closest('[data-agid]');if(!b)return;ADM.gid=b.getAttribute('data-agid');admRenderList(false)});
 $('admQ').addEventListener('input',function(){ADM.q=this.value;admRenderList(false)});
