@@ -1,0 +1,38 @@
+# 리노 - 아침 브리핑 + AI 목소리(ElevenLabs) 설정
+# 적용: cp openjarvis/configs/rino-digest.toml ~/.openjarvis/config.toml
+#
+# 준비물
+#   1) jarvis connect gdrive          # Gmail·캘린더 연결 (한 번만)
+#   2) export ELEVENLABS_API_KEY="..."  # API 키는 환경변수로만! 이 파일/레포에 쓰지 마세요
+#   3) jarvis digest --fresh          # 첫 브리핑 생성
+#
+# voice_id는 비밀값이 아니라 목소리 식별자라서 파일에 적어도 괜찮아요.
+# (ElevenLabs 보이스 ID는 20자 영숫자 형식)
+
+[engine]
+default = "ollama"
+
+[intelligence]
+default_model = "qwen3.5:4b"
+
+[speech]
+tts_backend = "elevenlabs"
+voice_id = "PGoKnSD4gKn2aS99wOR2"
+voice_speed = 1.0
+
+[tools]
+enabled = ["digest_collect", "text_to_speech"]
+
+[digest]
+enabled = true
+persona = "jarvis"
+honorific = "리노님"
+tts_backend = "elevenlabs"
+voice_id = "PGoKnSD4gKn2aS99wOR2"
+sections = ["messages", "calendar"]
+
+[digest.messages]
+sources = ["gmail"]
+
+[digest.calendar]
+sources = ["gcalendar"]

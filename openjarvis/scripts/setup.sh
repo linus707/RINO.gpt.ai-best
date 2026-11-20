@@ -9,7 +9,7 @@ TARGET="${OPENJARVIS_DIR:-$HERE/../../OpenJarvis}"
 CONF_SRC="$HERE/configs/rino-$PRESET.toml"
 CONF_DST="$HOME/.openjarvis/config.toml"
 
-[ -f "$CONF_SRC" ] || { echo "알 수 없는 프리셋: $PRESET (chat|research|monitor)"; exit 1; }
+[ -f "$CONF_SRC" ] || { echo "알 수 없는 프리셋: $PRESET (chat|research|monitor|digest)"; exit 1; }
 command -v git >/dev/null || { echo "git이 필요해요"; exit 1; }
 command -v uv  >/dev/null || { echo "uv가 필요해요: https://docs.astral.sh/uv/"; exit 1; }
 

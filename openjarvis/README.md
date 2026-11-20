@@ -19,7 +19,8 @@ openjarvis/
 ├─ configs/
 │  ├─ rino-chat.toml          # 가벼운 대화용 (도구 없음)
 │  ├─ rino-research.toml      # 블로그·콘텐츠 자료조사용
-│  └─ rino-monitor.toml       # 매일 자동 실행(스케줄) 모니터링용
+│  ├─ rino-monitor.toml       # 매일 자동 실행(스케줄) 모니터링용
+│  └─ rino-digest.toml        # 아침 브리핑 + ElevenLabs AI 목소리
 └─ scripts/
    └─ setup.sh                # 원본 clone + 설정 복사
 ```
