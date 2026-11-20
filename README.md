@@ -68,7 +68,7 @@
 - [`extension/README.md`](extension/README.md): 크롬 확장 프로그램 설치와 사용
 - [`docs/pos.md`](docs/pos.md): 매장 POS 상세 설명
 - [`tests/README.md`](tests/README.md): 보안 테스트 실행 방법
-- [`docs/content-plan-2026-11.md`](docs/content-plan-2026-11.md): 콘텐츠 운영 플랜 (블로그·인스타)
+- [`docs/content-plan-2026-11.md`](docs/content-plan-2026-11.md): 콘텐츠 운영 플랜 (인스타그램 중심)
 
 ## 알아둘 점
 
