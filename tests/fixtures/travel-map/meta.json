@@ -1,0 +1,66 @@
+{
+ "rome": {
+  "title": "로마 숙소 지도",
+  "center": [
+   41.9,
+   12.488
+  ],
+  "local": "분수",
+  "place": [
+   "콜로세움",
+   41.8902,
+   12.4922
+  ],
+  "areas": 3,
+  "hotels": 6,
+  "landmarks": 5
+ },
+ "bangkok": {
+  "title": "방콕 숙소 지도",
+  "center": [
+   13.75,
+   100.528
+  ],
+  "local": "수영장",
+  "place": [
+   "Khao San Road",
+   13.759,
+   100.4974
+  ],
+  "areas": 3,
+  "hotels": 6,
+  "landmarks": 4
+ },
+ "newyork": {
+  "title": "뉴욕 숙소 지도",
+  "center": [
+   40.735,
+   -73.99
+  ],
+  "local": "브리지",
+  "place": [
+   "타임스 스퀘어",
+   40.758,
+   -73.9855
+  ],
+  "areas": 2,
+  "hotels": 6,
+  "landmarks": 3
+ },
+ "sydney": {
+  "title": "시드니 숙소 지도",
+  "center": [
+   -33.87,
+   151.24
+  ],
+  "local": "해변",
+  "place": [
+   "본디 비치",
+   -33.8908,
+   151.2743
+  ],
+  "areas": 2,
+  "hotels": 6,
+  "landmarks": 3
+ }
+}

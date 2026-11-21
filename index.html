@@ -2,6 +2,13 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<!-- 방화벽(콘텐츠 보안 정책): 아래에 적힌 주소로만 연결·불러오기를 허용해요. 새 외부 서비스를 붙이면 여기에 주소를 추가해야 해요 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://api.anthropic.com https://*.workers.dev; frame-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<script>/* 방화벽: 다른 사이트가 이 화면을 몰래 끼워 넣어 클릭을 가로채지 못하게 해요(클릭재킹 방지). 같은 사이트 안에서 끼우는 것은 괜찮아요 */
+(function(){try{if(top!==self&&top.location.origin!==location.origin)throw 0}catch(e){document.documentElement.style.display="none";try{top.location=self.location.href}catch(_){}}})();
+/* 방화벽이 연결을 막으면 조용히 실패하지 않고 어느 주소가 막혔는지 한 번 알려 줘요 */
+document.addEventListener("securitypolicyviolation",function(e){if(e.effectiveDirective!=="connect-src"||window.__fwTold)return;window.__fwTold=1;var h="";try{h=new URL(e.blockedURI).host}catch(_){}if(typeof toast==="function")toast("보안 방화벽이 허용되지 않은 주소"+(h?"("+h+")":"")+"로의 연결을 막았어요")});</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Linus Company</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -330,7 +337,9 @@ body.out #bgph,body.out header{display:none!important}
 
 <script>
 /* 아이콘 (SF Symbols 느낌의 선 아이콘) */
-const IC={
+const IC={travelmap:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+translate:'<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
+
  home:'<path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',
  contents:'<path d="M7 4h10M5.5 7.5h13"/><rect x="4" y="10.5" width="16" height="9.5" rx="2.5"/>',
  tasks:'<circle cx="12" cy="12" r="8.5"/><path d="m8.3 12.3 2.6 2.6 4.8-5.4"/>',
@@ -721,7 +730,7 @@ function nav(){
     const items=ks.map(k=>PAGES.find(p=>p[0]===k)).filter(p=>p&&!p[4]&&(!p[3]||m.role==="admin"));
     if(!items.length)return "";
     const gap=first?"":'<div style="height:12px" aria-hidden="true"></div>';first=false;
-    return gap+items.map(([k,i,n])=>{const b=navBadge(k);return `<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${ic(k,21)}<span class="grow">${n}</span>${b?`<span class="nbadge">${b>99?"99+":b}</span>`:""}</button>`}).join("");
+    return gap+items.map(([k,i,n])=>{const b=navBadge(k);return `<button class="navbtn ${k===page?"on":""}" onclick="go('${k}')">${ic(k,21)}<span class="grow">${n}</span>${b?`<span class="nbadge">${b>99?"99+":b}</span>`:""}</button>`}).join("")+(g==="일하기"?`<a class="navbtn" href="translate.html" style="text-decoration:none">${ic("translate",21)}<span class="grow">키보드 번역</span></a><a class="navbtn" href="japanese.html" style="text-decoration:none">${ic("translate",21)}<span class="grow">일본어 회화</span></a><a class="navbtn" href="travel/" style="text-decoration:none">${ic("travelmap",21)}<span class="grow">여행 숙소·날씨</span></a>`:"");
   }).join(""):"";
 }
 $("#menu").onclick=()=>{if(!me())return;nav();$("#drawer").classList.add("open")};
@@ -1964,7 +1973,7 @@ async function sendInbox(id){
       body:JSON.stringify({message:`지시 ${fid}: ${x.who} — ${x.title.slice(0,50)}`,content:b64enc(instrMd(x)),branch:br})});
     if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status===401?"토큰이 올바르지 않거나 만료됐어요":r.status===403||r.status===404?"쓰기 권한이 없거나 저장소/브랜치를 찾지 못했어요 ("+r.status+")"+(j.message?" · GitHub 응답: "+String(j.message).slice(0,160):""):r.status===422?"같은 번호의 지시가 이미 있어요":(j.message||"저장하지 못했어요 ("+r.status+")"))}
     x.inbox=1;x.as="sent";x.u=Date.now();save();render();
-    toast("지시함에 저장했어요 · 바로 시키려면 ‘⚡ 지금 바로 실행’, 아니면 다음 정기 확인(매일 08:00)에 착수해요");
+    toast(/^수정 요청/.test(x.title)?"수정 지시를 보냈어요 · "+x.who+((c=>c>=0&&c<11172&&c%28)(x.who.charCodeAt(x.who.length-1)-44032)?"이":"가")+" 바로 착수해요 (보통 1~3분)":"지시함에 저장했어요 · 바로 시키려면 ‘⚡ 지금 바로 실행’, 아니면 다음 정기 확인(매일 08:00)에 착수해요");
   }catch(e){const why=/40[134]/.test(String(e.message||e))?"\n\n🔎 원인 점검\n"+await inboxWhy():"";alert("지시함에 보내지 못했어요: "+(e.message||e)+why+"\n\n(‘지시문 복사’나 ‘이 직원만 깨우기’로 직접 전달할 수도 있어요)")}
 }
 /* 예약을 기다리지 않고 바로 실행: 지시함에 저장 → 직원 개인 세션을 열고 "지금 확인" 문구를 복사해요 */
@@ -2148,9 +2157,9 @@ function docNotesHtml(c){
     <div class="m sub">${esc(n.by||"")} · ${new Date(n.at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${n.to?" · 📨 "+esc(n.to)+"에게 수정 지시":""}${st?" · "+st:""}</div>
     <div style="white-space:pre-wrap;margin-top:4px">${esc(n.txt)}</div>${n.img?`<img src="${n.img}" alt="첨부 사진" style="max-width:100%;max-height:220px;border-radius:10px;margin-top:6px">`:""}${(n.fn||[]).length?`<div class="m sub" style="margin-top:4px">📎 ${esc(n.fn.join(", "))}</div>`:""}
     ${t&&t.rep?`<div class="m" style="margin-top:6px;white-space:pre-wrap">📝 ${esc(t.rep)}</div>`:""}
-    ${t&&!t.done?`<div class="row" style="margin-top:6px;gap:6px"><button class="pill" style="background:var(--ready)" onclick="runNow('${t.id}')">⚡ 지금 바로 실행</button></div>`:""}</div>`};
+    ${t&&!t.done&&(!t.as||t.as==="sent")?`<div class="row" style="margin-top:6px;gap:6px;align-items:center;flex-wrap:wrap"><span class="m sub">🤖 자동으로 착수해요 · 5분이 지나도 ‘착수’로 안 바뀌면</span><button class="pill" style="background:var(--ready)" onclick="runNow('${t.id}')" title="자동 착수가 안 됐을 때만 눌러요">⚡ 직접 실행</button></div>`:""}</div>`};
   return `<h3 style="margin:22px 0 6px">💬 수정 요청·메모</h3>
-  <div class="m sub">원하는 수정을 적어서 직원에게 보내면, 그 직원이 작업 폴더의 글을 고쳐요. 고친 글은 「작업 폴더 불러오기」로 다시 가져오면 위에 반영돼요. 혜택 내용처럼 직접 아는 내용은 위의 ‘본문 직접 고치기’가 가장 빨라요.</div>
+  <div class="m sub">고칠 내용을 적고 <b>📨 직원에게 수정 지시</b>를 누르면, 그 직원이 <b>바로 착수</b>해 이 글을 고쳐요(보통 1~3분, 버튼을 따로 누를 필요 없어요). 끝나면 아래에 📝 보고가 붙고, 「작업 폴더 불러오기」를 누르면 고친 글이 위에 반영돼요. ‘메모만 남기기’는 직원에게 가지 않아요. 혜택 내용처럼 직접 아는 내용은 위의 ‘본문 직접 고치기’가 가장 빨라요.</div>
   <div id="notes">${ns.length?ns.map(row).join(""):`<div class="m sub" style="margin:8px 0">아직 대화가 없어요.</div>`}</div>
   <textarea id="noteTxt" placeholder="예) 혜택 ① 프로모션 내용을 이렇게 바꿔줘 …" style="width:100%;min-height:84px;font:inherit;padding:10px;border:1px solid var(--line,#ddd);border-radius:10px" oninput="noteDraft=this.value" onpaste="mPaste(event,2)" ondragover="event.preventDefault()" ondrop="mDrop(event,2)">${esc(noteDraft)}</textarea>
   ${nFiles.length?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${nFiles.map((x,i)=>`<span class="pill" style="background:var(--g);display:inline-flex;align-items:center;gap:6px">${x.thumb?`<img src="${x.thumb}" alt="" style="height:28px;border-radius:6px">`:mIcon(x.f)} ${esc(x.f.name.slice(0,24))} · ${mSize(x.f.size)} <a href="#" onclick="nFileDel(${i});return false" aria-label="첨부 빼기">✕</a></span>`).join("")}</div>`:""}
@@ -2944,17 +2953,13 @@ function posFit(){
 }
 window.addEventListener("resize",()=>{try{posFit()}catch{}});
 views.inventory=()=>{
-  if(!INV_TABS.some(t=>t[0]===invTab)&&invTab!=="log"&&invTab!=="led")invTab="frame";
+  if(!INV_TABS.some(t=>t[0]===invTab))invTab="frame";
   const gift=D.inv.filter(x=>invCatOf(x)==="사은품"),giftN=gift.reduce((a,x)=>a+x.qty,0);
-  const tabs=[...INV_TABS.map(([k,n])=>[k,`${n} ${invCnt(k)}`]),["log","기록"],["led","장부"]];
+  /* 기록·장부 탭은 2026-11-10 대표 지시로 뺐어요(장부는 수익 → 장부에서 봐요, 입출고 기록 데이터는 계속 쌓여요) */
+  const tabs=INV_TABS.map(([k,n])=>[k,`${n} ${invCnt(k)}`]);
   const head=`<h1>물품·재고</h1><div class="sub">에이스침대 매장의 프레임·매트리스·기타 가구와 사은품 재고예요. 부족하면 빨간색으로 보여요</div>
   <div class="stats">${stat("전체 품목",D.inv.length)}${stat("부족 품목",invLowN())}${stat("사은품 재고",giftN+"개")}</div>
   <div class="tabs setTabs">${tabs.map(([k,n])=>`<button class="${invTab===k?"on":""}" onclick="invTabSet('${k}')">${n}</button>`).join("")}</div>`;
-  if(invTab==="led")return head+ledView(today().slice(0,7));
-  if(invTab==="log"){
-    const L=D.invlog.slice().sort((a,b)=>b.t-a.t).slice(0,100);
-    return head+(L.map(l=>`<div class="item"><div class="row"><div class="grow"><div class="t">${esc(l.item)} <b style="color:${l.delta>0?"#34c759":"#ff3b30"}">${l.delta>0?"+":""}${l.delta}</b></div><div class="m">${esc(dn(l.by))} · ${new Date(l.t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}${l.note?" · "+esc(l.note):""}</div></div></div></div>`).join("")||'<div class="empty">아직 기록이 없어요. 수량을 늘리거나 줄이면 입고·판매·지급 기록이 남아요</div>');
-  }
   const cat=invTabCat(invTab),q=invQ.trim().toLowerCase(),isGift=cat==="사은품";
   const list=D.inv.filter(x=>invCatOf(x)===cat&&(!q||(x.name+" "+(x.spec||"")+" "+(x.color||"")+" "+(x.loc||"")+" "+(x.memo||"")).toLowerCase().includes(q))&&(!invLow||x.qty<=x.min)).sort((a,b)=>(b.qty<=b.min)-(a.qty<=a.min)||a.name.localeCompare(b.name,"ko"));
   const ed=invEdit==="new"?{name:"",cat,spec:"",color:"",qty:0,unit:isGift?"개":"개",min:isGift?5:0,loc:"",memo:""}:D.inv.find(x=>x.id===invEdit);

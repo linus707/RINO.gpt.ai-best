@@ -1,0 +1,500 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0E5B9A16B9D13E0B3D556004 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1C993E4E0155DE6C19C180A3 /* Foundation.framework */; };
+		2A26599E2831E6DABA444BBB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA92F1021A41B11C482DF12A /* ContentView.swift */; };
+		2E5FB5BB24692F308ABC0DEC /* RinoTranslateApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CED5461FC48781020B5D922 /* RinoTranslateApp.swift */; };
+		68DA27192BAF9047C21DDC41 /* Translator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8DEF029354E7B3DA007172E /* Translator.swift */; };
+		7B0C1D0A494D99F871A58014 /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3061177F57D98C22790BFBD1 /* KeyboardView.swift */; };
+		7E29164C06F32496F5943BE2 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC82040AAA31322ACEAEDE4 /* KeyboardViewController.swift */; };
+		9949AD84C415C89FCA478B05 /* Translator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8DEF029354E7B3DA007172E /* Translator.swift */; };
+		D6AC5018BB84695ABE712D49 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1C993E4E0155DE6C19C180A3 /* Foundation.framework */; };
+		E3C39D1E6A4FCFA218FD6917 /* TranslateKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D625EC47F9FC910930DAFB55 /* TranslateKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		951CB5BA52F5FCE715841688 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 372583887FC7F0DA9755E100 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5C82CC8A725564484D675CA7;
+			remoteInfo = TranslateKeyboard;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		92CD1EC9D092D900DD491D62 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E3C39D1E6A4FCFA218FD6917 /* TranslateKeyboard.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1C993E4E0155DE6C19C180A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		3061177F57D98C22790BFBD1 /* KeyboardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardView.swift; sourceTree = "<group>"; };
+		3CED5461FC48781020B5D922 /* RinoTranslateApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RinoTranslateApp.swift; sourceTree = "<group>"; };
+		493CFBE49A487E8FB214229F /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7DC82040AAA31322ACEAEDE4 /* KeyboardViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		CA92F1021A41B11C482DF12A /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		D625EC47F9FC910930DAFB55 /* TranslateKeyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TranslateKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		EDF1F4CB71910D722A418EC9 /* RinoTranslate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RinoTranslate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F8DEF029354E7B3DA007172E /* Translator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Translator.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		45E1C5DCB21F357DD6EC55EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D6AC5018BB84695ABE712D49 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4A7AF20F62C9741401EDD4C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0E5B9A16B9D13E0B3D556004 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0A86BB8F45902CC50565E454 /* RinoTranslate */ = {
+			isa = PBXGroup;
+			children = (
+				3CED5461FC48781020B5D922 /* RinoTranslateApp.swift */,
+				CA92F1021A41B11C482DF12A /* ContentView.swift */,
+			);
+			name = RinoTranslate;
+			path = RinoTranslate;
+			sourceTree = "<group>";
+		};
+		1D914DC7398395ACE3698651 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				F8DEF029354E7B3DA007172E /* Translator.swift */,
+			);
+			name = Shared;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		2102C8565A0E944B298F7092 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				1C993E4E0155DE6C19C180A3 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		30C6B01580B76C01FB0A2D81 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2102C8565A0E944B298F7092 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		47CAC415A9A34DC94C8C8B0D /* TranslateKeyboard */ = {
+			isa = PBXGroup;
+			children = (
+				7DC82040AAA31322ACEAEDE4 /* KeyboardViewController.swift */,
+				3061177F57D98C22790BFBD1 /* KeyboardView.swift */,
+				493CFBE49A487E8FB214229F /* Info.plist */,
+			);
+			name = TranslateKeyboard;
+			path = TranslateKeyboard;
+			sourceTree = "<group>";
+		};
+		49ABB44022B8AFCD10E41D5E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EDF1F4CB71910D722A418EC9 /* RinoTranslate.app */,
+				D625EC47F9FC910930DAFB55 /* TranslateKeyboard.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5F5FC4221FB57A7A67359650 = {
+			isa = PBXGroup;
+			children = (
+				49ABB44022B8AFCD10E41D5E /* Products */,
+				30C6B01580B76C01FB0A2D81 /* Frameworks */,
+				1D914DC7398395ACE3698651 /* Shared */,
+				0A86BB8F45902CC50565E454 /* RinoTranslate */,
+				47CAC415A9A34DC94C8C8B0D /* TranslateKeyboard */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		11E93C0538B970DADCD9E23F /* RinoTranslate */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1ACD8AD04A2D572DB314CD15 /* Build configuration list for PBXNativeTarget "RinoTranslate" */;
+			buildPhases = (
+				7FF2722C331A7816DFF05823 /* Sources */,
+				4A7AF20F62C9741401EDD4C0 /* Frameworks */,
+				7C142EBEC460D6DB6BC845A0 /* Resources */,
+				92CD1EC9D092D900DD491D62 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				88B16F6AC9494732CCDB6ECA /* PBXTargetDependency */,
+			);
+			name = RinoTranslate;
+			productName = RinoTranslate;
+			productReference = EDF1F4CB71910D722A418EC9 /* RinoTranslate.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5C82CC8A725564484D675CA7 /* TranslateKeyboard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5445AAE87BDA479528CFBBE4 /* Build configuration list for PBXNativeTarget "TranslateKeyboard" */;
+			buildPhases = (
+				226057FACC74AE9B9749FB3F /* Sources */,
+				45E1C5DCB21F357DD6EC55EA /* Frameworks */,
+				4F31F557A61CA1E500657FDB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TranslateKeyboard;
+			productName = TranslateKeyboard;
+			productReference = D625EC47F9FC910930DAFB55 /* TranslateKeyboard.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		372583887FC7F0DA9755E100 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = 6E6E0EDBE43DC9A2BB1229FD /* Build configuration list for PBXProject "RinoTranslate" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5F5FC4221FB57A7A67359650;
+			minimizedProjectReferenceProxies = 0;
+			preferredProjectObjectVersion = 100;
+			productRefGroup = 49ABB44022B8AFCD10E41D5E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				11E93C0538B970DADCD9E23F /* RinoTranslate */,
+				5C82CC8A725564484D675CA7 /* TranslateKeyboard */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4F31F557A61CA1E500657FDB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7C142EBEC460D6DB6BC845A0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		226057FACC74AE9B9749FB3F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68DA27192BAF9047C21DDC41 /* Translator.swift in Sources */,
+				7E29164C06F32496F5943BE2 /* KeyboardViewController.swift in Sources */,
+				7B0C1D0A494D99F871A58014 /* KeyboardView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7FF2722C331A7816DFF05823 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9949AD84C415C89FCA478B05 /* Translator.swift in Sources */,
+				2E5FB5BB24692F308ABC0DEC /* RinoTranslateApp.swift in Sources */,
+				2A26599E2831E6DABA444BBB /* ContentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		88B16F6AC9494732CCDB6ECA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = TranslateKeyboard;
+			target = 5C82CC8A725564484D675CA7 /* TranslateKeyboard */;
+			targetProxy = 951CB5BA52F5FCE715841688 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2D466E4A0989370EF346AD8F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		4B4CF63BFB16B39D29807F2D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A2F12F034A8FFB2B9D3D4A79 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TranslateKeyboard/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "리노 번역";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = kr.co.linuscompany.translate.keyboard;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A53D4E6197462B67B791B864 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TranslateKeyboard/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "리노 번역";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = kr.co.linuscompany.translate.keyboard;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		ACC739E21364217948CD6123 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "리노 번역";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = kr.co.linuscompany.translate;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B941B56EF422D1DD89CBA883 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "리노 번역";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = kr.co.linuscompany.translate;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1ACD8AD04A2D572DB314CD15 /* Build configuration list for PBXNativeTarget "RinoTranslate" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B941B56EF422D1DD89CBA883 /* Release */,
+				ACC739E21364217948CD6123 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5445AAE87BDA479528CFBBE4 /* Build configuration list for PBXNativeTarget "TranslateKeyboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A2F12F034A8FFB2B9D3D4A79 /* Release */,
+				A53D4E6197462B67B791B864 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6E6E0EDBE43DC9A2BB1229FD /* Build configuration list for PBXProject "RinoTranslate" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4B4CF63BFB16B39D29807F2D /* Debug */,
+				2D466E4A0989370EF346AD8F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 372583887FC7F0DA9755E100 /* Project object */;
+}

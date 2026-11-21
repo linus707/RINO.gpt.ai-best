@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 방화벽(콘텐츠 보안 정책): 아래에 적힌 주소로만 연결·불러오기를 허용해요 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>매장 POS로 이동</title>
+<script>/* 예전 주소(buy.html) → 매장 POS(pos.html). 주소 뒤 ?g=…&m=… 는 그대로 넘겨요 */
+location.replace('pos.html'+location.search+location.hash);</script>
+</head>
+<body style="font-family:-apple-system,system-ui,sans-serif;padding:40px;text-align:center">
+<p>매장 POS가 <a href="pos.html">pos.html</a>로 옮겨졌어요. 잠시 뒤 자동으로 이동해요.</p>
+</body>
+</html>
