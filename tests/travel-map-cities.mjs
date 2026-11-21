@@ -1,6 +1,6 @@
 // 여행 지도 도시별 테스트: 로마(유럽·geojson 영역) · 방콕(태국어 이름) · 뉴욕(서반구, 경도 음수) · 시드니(남반구, 위도 음수)
 // 호텔은 모두 가상의 "테스트 호텔"이에요. 구글 시트·장소 검색·주변 호텔 서버는 실제 응답 형식의 가짜 응답으로 대신해요.
-// 확인: 지도(핀·명소·영역·제목), 동네 탭+카드, 내 목록 검색(태그 포함), 장소 검색(한글 못 찾음 안내, 도시 근처 우선), 주변 호텔, 순위, 방화벽 위반·오류 없음
+// 확인: 구글 지도 오류 시 무료 지도 전환, 지도(핀·명소·영역·제목), 동네 탭+카드, 내 목록 검색(태그 포함), 장소 검색(한글 못 찾음 안내, 도시 근처 우선), 주변 호텔, 순위, 방화벽 위반·오류 없음
 // 실행: node tests/travel-map-cities.mjs   (Playwright·Chromium 필요)
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -84,6 +84,37 @@ for (const [key, m] of Object.entries(meta)) {
   const ranking = await p.locator('#rk-list .rk-name').allTextContents();
   check(`${T} 순위 ${m.hotels}곳, 후기 40개 호텔은 1위가 아님`, ranking.length === m.hotels && !/B\b|B,|B$/.test(ranking[0]), ranking[0]);
   check(`${T} 방화벽 위반·오류 없음`, !(await p.evaluate(() => window.__v.length)) && !errs.length, errs.join(' | '));
+  await ctx.close();
+}
+
+// 구글 지도 오류 → 무료 지도로 자동 전환 (가짜 키 + 가짜 구글 스크립트)
+const CFG_SRC = readFileSync(path.join(SITE, 'config.js'), 'utf8').replace("googleMapsKey: ''", "googleMapsKey: 'AIzaFAKEFAKEFAKEFAKEFAKEFAKE12345'");
+const GM_CASES = [
+  ['하루 사용량 상한 초과(OverQuotaMapError)', "console.error('Google Maps JavaScript API error: OverQuotaMapError\\nhttps://developers.google.com/maps/documentation/javascript/error-messages#over-quota-map-error');"],
+  ['키 오류(gm_authFailure)', 'window.gm_authFailure();'],
+  ['구글 오류 화면(.gm-err-container)', "var d=document.createElement('div');d.className='gm-err-container';document.getElementById('map').appendChild(d);"],
+];
+for (const [label, body] of GM_CASES) {
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 860 } });
+  await ctx.route('**/config.js', (r) => r.fulfill({ contentType: 'text/javascript', body: CFG_SRC }));
+  await ctx.route('https://maps.googleapis.com/**', (r) => r.fulfill({ contentType: 'text/javascript', body }));
+  await ctx.route('https://tile.openstreetmap.org/**', (r) => r.fulfill({ status: 204, body: '' }));
+  await ctx.route('https://images.unsplash.com/**', (r) => r.fulfill({ status: 404, body: '' }));
+  const p = await ctx.newPage();
+  await p.goto(BASE);
+  await p.waitForURL(/map=osm/, { timeout: 10000 }).catch(() => {});
+  await p.waitForSelector('.leaflet-marker-pane .pin', { timeout: 10000 }).catch(() => {});
+  const st = await p.evaluate(() => ({ map: document.documentElement.dataset.map, until: Number(localStorage.getItem('travelMapOsmUntil')) || 0, pins: document.querySelectorAll('.leaflet-marker-pane .pin').length }));
+  const hour = st.until - Date.now();
+  check(`구글 ${label} → 무료 지도로 전환`, /map=osm/.test(p.url()) && st.map === 'osm' && st.pins > 0 && hour > 50 * 60e3 && hour <= 60 * 60e3, JSON.stringify({ ...st, until: undefined }));
+  if (label.startsWith('키 오류')) {
+    // 1시간 안에 다시 와도 구글을 부르지 않아요
+    let gmCalls = 0; await ctx.route('https://maps.googleapis.com/**', (r) => { gmCalls++; r.fulfill({ contentType: 'text/javascript', body: '' }); });
+    await p.goto(BASE); await p.waitForSelector('.leaflet-marker-pane .pin', { timeout: 10000 }).catch(() => {});
+    check('전환 뒤 1시간은 구글을 다시 부르지 않음', gmCalls === 0 && (await p.evaluate(() => document.documentElement.dataset.map)) === 'osm');
+    await p.goto(BASE + '?map=google'); await p.waitForTimeout(800);
+    check('?map=google 이면 기억을 지우고 구글을 다시 시도', gmCalls === 1 && !(await p.evaluate(() => localStorage.getItem('travelMapOsmUntil'))));
+  }
   await ctx.close();
 }
 await b.close(); server.close();
