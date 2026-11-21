@@ -833,7 +833,7 @@ contents(){
   if(!_nudgeClean){_nudgeClean=1;setTimeout(cleanNudgePh,0)}
   const all=D.contents.filter(c=>(chF==="all"||c.ch===chF)&&(c.title+c.memo).toLowerCase().includes(q));
   const cnt=k=>all.filter(c=>stKey(c.stage)===k).length,live=all.filter(c=>c.stage!=="done").length;
-  if(cStage===null)cStage=["report","review","make","idea"].find(k=>cnt(k))||"all";
+  if(cStage===null)cStage="all";
   const tabs=[["all","전체 진행",live],...ST.filter(x=>x[0]!=="done").map(x=>[x[0],x[1],cnt(x[0])]),["arc","📦 보관함",cnt("done")]];
   const list=cStage==="all"?all.filter(c=>c.stage!=="done"):cStage==="arc"?all.filter(c=>c.stage==="done"):all.filter(c=>stKey(c.stage)===cStage);
   const COL={all:"--accent",arc:"--done"};
