@@ -887,6 +887,19 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <button class="btn" type="button" id="ptSave">가격 저장</button>
     </div>
 
+    <section class="sh-sec" id="vSec">
+      <h4>사이즈·옵션 관리</h4>
+      <p class="hint">이 모델의 사이즈(규격)·색상을 바꾸거나 빼고, 새 사이즈를 더해요. 바꾼 내용은 이 기기에 저장돼요. 가격은 위 표에서 고쳐요.</p>
+      <div id="vList"></div>
+      <div class="adj" style="flex-wrap:wrap;gap:6px;margin-top:8px">
+        <input class="pin" id="vNewSize" list="vSizes" maxlength="12" placeholder="규격 (SS·Q·K…)" style="width:110px;text-align:left" aria-label="추가할 규격">
+        <datalist id="vSizes"><option value="S"><option value="SS"><option value="DS"><option value="DD"><option value="Q"><option value="LQ"><option value="K"><option value="K3"><option value="LK"></datalist>
+        <input class="pin" id="vNewColor" maxlength="20" placeholder="색상·옵션(선택)" style="width:130px;text-align:left" aria-label="추가할 색상·옵션">
+        <input class="pin num" id="vNewPrice" inputmode="numeric" placeholder="정상가" style="width:110px" aria-label="추가할 정상가"><span class="u">원</span>
+        <button class="btn sm" type="button" id="vAdd">＋ 사이즈 추가</button>
+      </div>
+    </section>
+
     <section class="sh-sec">
       <h4>이 모델 할인율 (프로모션)</h4>
       <div class="adj">
@@ -1171,7 +1184,7 @@ var SET_KEY=NS+'settings',CART_KEY=NS+'cart';
 var DEFAULT_SET={
   storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
   branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
-  menus:null,moved:{},names:{},descs:{},details:{},deleted:[],flow:true,
+  menus:null,moved:{},names:{},descs:{},details:{},deleted:[],vadd:[],vedit:{},flow:true,
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -1303,6 +1316,19 @@ function applyEdits(maps){
     var e=maps[gid][key]=maps[gid][key]||{vs:[],main:true,ord:5e6+k,oid:gid+'|'+key};
     e.mine=true;e.vs.push({size:String(c.size||'').toUpperCase(),color:c.color||'',price:price,base:Math.round(+c.price),code:c.code,rate:null,kw:''});
   });
+  /* 사이즈(옵션) 추가·변경·삭제: SET.vadd(추가) → SET.vedit(코드별 삭제·규격·색상 변경) 순서로 반영 */
+  (SET.vadd||[]).forEach(function(a){
+    var gid=String(a.oid).split('|')[0],key=String(a.oid).slice(gid.length+1),e=maps[gid]&&maps[gid][key];
+    if(!e||!a.code)return;
+    var ov=PRICES[a.code];e.vs.push({size:String(a.size||'').toUpperCase(),color:a.color||'',price:ov>0?ov:Math.round(+a.price),base:Math.round(+a.price),code:a.code,rate:null,kw:''});
+  });
+  var ve=SET.vedit||{};
+  Object.keys(maps).forEach(function(gid){Object.keys(maps[gid]).forEach(function(k){
+    var e=maps[gid][k];
+    e.vs=e.vs.filter(function(v){return !(ve[v.code]&&ve[v.code].del)});
+    e.vs.forEach(function(v){var x=ve[v.code];if(x&&!x.del){if(x.size!=null)v.size=String(x.size).toUpperCase();if(x.color!=null)v.color=x.color}});
+    if(!e.vs.length)delete maps[gid][k];
+  })});
   var mv=SET.moved||{};
   Object.keys(mv).forEach(function(oid){
     var gid=oid.split('|')[0],key=oid.slice(gid.length+1),to=mv[oid];
@@ -3042,7 +3068,71 @@ function renderPriceTable(){
     c.appendChild(inp);tr.appendChild(c);body.appendChild(tr);
     markRow(tr,inp,v);
   });
+  renderVarMgr();
 }
+/* 사이즈·옵션 관리 */
+function renderVarMgr(){
+  var box=$('vList');if(!box||!cur)return;box.textContent='';
+  cur.variants.forEach(function(v){
+    var row=el('div',{class:'adj','data-vcode':v.code,style:'flex-wrap:wrap;gap:6px;margin-bottom:6px'});
+    var sz=el('input',{class:'pin',maxlength:'12',list:'vSizes','aria-label':'규격',style:'width:110px;text-align:left'});sz.value=v.size||'';
+    var co=el('input',{class:'pin',maxlength:'20','aria-label':'색상·옵션',placeholder:'색상·옵션',style:'width:130px;text-align:left'});co.value=v.color||'';
+    var chg=!!(SET.vedit&&SET.vedit[v.code]),add=(SET.vadd||[]).some(function(a){return a.code===v.code});
+    var lb=el('span',{class:'u'},sizeLabel(v.size||'')+(add?' · 추가한 옵션':chg?' · 바꿈':''));
+    row.appendChild(sz);row.appendChild(co);row.appendChild(lb);
+    row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'edit'},'변경'));
+    if(chg)row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'undo'},'↺ 원래대로'));
+    var del=el('button',{class:'btn outl sm',type:'button','data-vact':'del',style:'color:#e5252a'},'삭제');row.appendChild(del);
+    box.appendChild(row);
+  });
+  Object.keys(SET.vedit||{}).forEach(function(c){
+    var x=SET.vedit[c];if(!x||!x.del||x.oid!==cur.oid)return;
+    var r=el('div',{class:'adj','data-vcode':c,style:'gap:6px;margin-bottom:6px;opacity:.75'});
+    r.appendChild(el('span',{class:'u'},'삭제한 옵션: '+(x.label||c)));
+    r.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'restore'},'되살리기'));
+    box.appendChild(r);
+  });
+}
+function varAfter(msg){saveSet();touch();rebuildAll(true);toast(msg)}
+$('vSec').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b||!cur)return;
+  if(b.id==='vAdd'){
+    var size=$('vNewSize').value.trim().toUpperCase(),color=$('vNewColor').value.trim(),price=numOf($('vNewPrice').value);
+    if(!size&&!color){toast('규격이나 색상 중 하나는 적어 주세요');return}
+    if(!(price>0)){$('vNewPrice').setAttribute('aria-invalid','true');toast('정상가를 적어 주세요');return}
+    if(cur.variants.some(function(v){return (v.size||'')===size&&(v.color||'')===color})){toast('같은 규격·색상이 이미 있어요');return}
+    var code='V'+Date.now().toString(36).toUpperCase();
+    SET.vadd=SET.vadd||[];SET.vadd.push({oid:cur.oid,code:code,size:size,color:color,price:price});
+    $('vNewSize').value='';$('vNewColor').value='';$('vNewPrice').value='';
+    varAfter('「'+(size||color)+'」 옵션을 더했어요');return;
+  }
+  var row=b.closest('[data-vcode]');if(!row)return;
+  var code=row.getAttribute('data-vcode'),v=cur.variants.filter(function(x){return x.code===code})[0],act=b.getAttribute('data-vact');
+  if(act==='restore'){if(SET.vedit)delete SET.vedit[code];varAfter('옵션을 되살렸어요');return}
+  if(!v)return;
+  if(act==='edit'){
+    var ns=row.querySelectorAll('input')[0].value.trim().toUpperCase(),nc=row.querySelectorAll('input')[1].value.trim();
+    if(!ns&&!nc){toast('규격이나 색상 중 하나는 있어야 해요');return}
+    if(cur.variants.some(function(x){return x.code!==code&&(x.size||'')===ns&&(x.color||'')===nc})){toast('같은 규격·색상이 이미 있어요');return}
+    var ad=(SET.vadd||[]).filter(function(a){return a.code===code})[0],cl=customList(),ci=cl.filter(function(c){return c.code===code})[0];
+    if(ad){ad.size=ns;ad.color=nc}else if(ci){ci.size=ns;ci.color=nc;saveCustom(cl)}
+    else{SET.vedit=SET.vedit||{};SET.vedit[code]=Object.assign(SET.vedit[code]||{},{size:ns,color:nc})}
+    varAfter('옵션을 바꿨어요');
+  }else if(act==='undo'){
+    if(SET.vedit)delete SET.vedit[code];varAfter('원래 규격·색상으로 되돌렸어요');
+  }else if(act==='del'){
+    if(cur.variants.length<=1){toast('마지막 옵션이에요. 제품을 지우려면 「이 제품 삭제」를 써 주세요');return}
+    if(!confirm('「'+([v.size,v.color].filter(Boolean).join(' · ')||'기본')+'」 옵션을 삭제할까요?'))return;
+    var inAdd=(SET.vadd||[]).some(function(a){return a.code===code});
+    SET.vadd=(SET.vadd||[]).filter(function(a){return a.code!==code});
+    var cl2=customList(),had=cl2.some(function(c){return c.code===code});
+    if(had)saveCustom(cl2.filter(function(c){return c.code!==code}));
+    else if(inAdd){}
+    else{SET.vedit=SET.vedit||{};SET.vedit[code]={del:1,oid:cur.oid,label:[v.size,v.color].filter(Boolean).join(' · ')||'기본',price:v.base}}
+    delete PRICES[code];savePrices();
+    varAfter('옵션을 삭제했어요');
+  }
+});
 function markRow(tr,inp,v){var n=numOf(inp.value);inp.setAttribute('aria-invalid',String(!(n>0)));tr.classList.toggle('chg',n>0&&n!==v.base)}
 function openSettings(){
   lastFocus=document.activeElement;
@@ -3209,7 +3299,7 @@ $('mgrPane').addEventListener('click',function(e){
   else if(b.hasAttribute('data-unpromo')){b.getAttribute('data-unpromo').split(',').forEach(function(c){delete SET.itemRates[c]});setChanged('모델 할인율을 뺐어요')}
   else if(b.hasAttribute('data-resetset')){
     if(!confirm('할인·결제 설정, 숨긴 상품, 모델별 할인율, 매장 이름을 처음 상태로 되돌릴까요?'))return;
-    var keep={menus:SET.menus,moved:SET.moved,names:SET.names,descs:SET.descs,details:SET.details,deleted:SET.deleted,flow:SET.flow,aliases:SET.aliases};
+    var keep={menus:SET.menus,moved:SET.moved,names:SET.names,descs:SET.descs,details:SET.details,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
     SET=Object.assign(clone(DEFAULT_SET),keep);giftRefresh();applyStoreName();setChanged('설정을 초기화했어요');fillModels();renderModel();
   }else return;
   renderMgrPane();
