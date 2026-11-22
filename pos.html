@@ -835,7 +835,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
         <select id="admBMenu" aria-label="옮길 메뉴"></select><button type="button" data-bulk="move">메뉴로 옮기기</button>
         <button type="button" data-bulk="hide">숨기기</button><button type="button" data-bulk="show">보이기</button>
         <button type="button" data-bulk="gift">사은품 넣기</button><button type="button" data-bulk="ungift">사은품 빼기</button>
-        <button type="button" data-bulk="del" style="color:#e5252a">선택 삭제</button><button type="button" data-bulk="clear">선택 해제</button>
+        <button type="button" data-bulk="del" style="color:#e5252a">선택 삭제</button><button type="button" data-bulk="purge" style="color:#e5252a">선택 완전 삭제</button><button type="button" data-bulk="clear">선택 해제</button>
         <p class="hint">Shift+클릭=범위 선택 · Ctrl(⌘)+클릭=하나씩 추가/빼기 · 터치는 「☑ 여러 개 선택」을 켜요</p>
       </div>
       <button class="btn outl" type="button" id="admMulti" aria-pressed="false" style="height:32px">☑ 여러 개 선택</button>
@@ -2064,21 +2064,21 @@ $('admBulk').addEventListener('click',function(e){
   var act=b.getAttribute('data-bulk');if(act==='clear'){ADM.multi=false;admSelClear();return}
   var ms=ADM.sel.map(admByOid).filter(Boolean);if(!ms.length){toast('먼저 제품을 선택해 주세요');return}
   var n=0,skip=0,to=$('admBMenu').value;
-  if(act==='del'){
+  if(act==='del'||act==='purge'){var PG=act==='purge';
     var okm=ms.filter(function(m){return m.gid!=='gift'});skip=ms.length-okm.length;
     if(!okm.length){toast('사은품 메뉴 제품은 여기서 삭제하지 않아요. 원래 메뉴에서 「사은품 빼기」를 써 주세요');return}
     var names=okm.slice(0,6).map(function(m){return '· '+m.name}).join('\n')+(okm.length>6?'\n· 외 '+(okm.length-6)+'개':'');
-    if(!confirm('선택한 '+okm.length+'개 제품을 삭제할까요?\n\n'+names+'\n\n가격표 제품은 「새 제품·되살리기·백업」에서 되살릴 수 있어요. 매장에서 직접 만든 제품은 완전히 지워져요.'))return;
+    if(!confirm('선택한 '+okm.length+'개 제품을 삭제할까요?\n\n'+names+'\n\n'+(PG?'완전 삭제라서 되살릴 수 없어요.':'가격표 제품은 「새 제품·되살리기·백업」에서 되살릴 수 있어요. 매장에서 직접 만든 제품은 완전히 지워져요.')))return;
     var list=customList(),delIds={};
     okm.forEach(function(m){
       if(m.mine){var key=m.key,from=m.oid.split('|')[0];list=list.filter(function(c){return !(String(c.name).trim()===key&&(c.group===from||!c.group||m.gid===c.group))})}
-      else if(!SET.deleted.some(function(d){return d.id===m.oid}))SET.deleted.push({id:m.oid,name:m.name});
+      else{var ex=SET.deleted.filter(function(d){return d.id===m.oid})[0];if(!ex)SET.deleted.push({id:m.oid,name:m.name,gone:PG?1:undefined});else if(PG)ex.gone=1}
       delIds[m.oid]=1;n++;
     });
     saveCustom(list);saveSet();touch();
     if(cur&&delIds[cur.oid])cur=null;
     ADM.sel=[];ADM.anchor='';ADM.multi=false;rebuildAll(false);admSelPaint();
-    toast(n+'개 삭제했어요'+(skip?' · 사은품 메뉴 제품 '+skip+'개는 건너뛰었어요':'')+' · 「새 제품·되살리기·백업」에서 되살릴 수 있어요');
+    toast(n+'개 '+(PG?'완전 ':'')+'삭제했어요'+(skip?' · 사은품 메뉴 제품 '+skip+'개는 건너뛰었어요':'')+(PG?'':' · 「새 제품·되살리기·백업」에서 되살릴 수 있어요'));
     return;
   }
   if(act==='move'){
@@ -2175,7 +2175,7 @@ function renderProdPane(){
     +'<div class="sh-foot">'+(ed?'<button class="btn outl" type="button" data-pp="cancel">그만 고치기</button>':'')+'<button class="btn" type="button" data-pp="save">'+(ed?'고친 내용 저장':'＋ 만들기')+'</button></div></section>'
     +'<section class="sh-sec"><h4>매장에서 만든 제품 ('+list.length+')</h4><ul class="mlist">'+(list.map(function(c){return '<li><span>'+esc(c.name)+'<small>'+esc([gname[c.group]||'',c.size,c.color,won(c.price)+'원',c.code].filter(Boolean).join(' · '))+'</small></span><button class="btn outl sm" type="button" data-pedit="'+esc(c.code)+'">고치기</button><button class="btn outl sm" type="button" data-pdel="'+esc(c.code)+'" style="color:var(--err);border-color:var(--err)">지우기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>이름·메뉴를 바꾼 제품 ('+named.length+')</h4><ul class="mlist">'+(named.map(function(k){var o=k.slice(k.indexOf('|')+1);return '<li><span>'+esc(SET.names[k]||o)+'<small>가격표 이름 '+esc(o)+(SET.moved[k]?' · '+esc(gname[k.split('|')[0]]||'')+' → '+esc(gname[SET.moved[k]]||''):'')+'</small></span><button class="btn outl sm" type="button" data-prev="'+esc(k)+'">되돌리기</button></li>'}).join('')||'<li class="none">없어요. 제품을 고른 뒤 「기본 정보」에서 바꿔요.</li>')+'</ul></section>'
-    +'<section class="sh-sec"><h4>삭제한 제품 ('+SET.deleted.length+')</h4><ul class="mlist">'+(SET.deleted.map(function(d,i){return '<li><span>'+esc(d.name)+'<small>'+esc(gname[d.id.split('|')[0]]||'')+'</small></span><button class="btn outl sm" type="button" data-pundel="'+i+'">되살리기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul></section>'
+    +'<section class="sh-sec"><h4>삭제한 제품 ('+SET.deleted.filter(function(d){return !d.gone}).length+')</h4><ul class="mlist">'+(SET.deleted.map(function(d,i){if(d.gone)return '';return '<li><span>'+esc(d.name)+'<small>'+esc(gname[d.id.split('|')[0]]||'')+'</small></span><button class="btn outl sm" type="button" data-pundel="'+i+'">되살리기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul>'+(SET.deleted.some(function(d){return !d.gone})?'<div class="sh-foot"><button class="btn outl" type="button" data-prpurge="1" style="color:#e5252a">삭제 목록 비우기 (되살리기 불가)</button></div>':'')+'</section>'
     +'<section class="sh-sec"><h4>사진 백업</h4><p class="hint">사진은 이 기기에만 저장돼요. 다른 태블릿으로 옮기거나 기기를 바꿀 때 백업 파일을 내보내 그 기기에서 불러와요. 예전 POS의 사진 백업 파일도 불러올 수 있어요. 지금 사진 '+PHOTO.size+'장.</p>'
     +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-pp="phexp">백업 내보내기</button><label class="btn outl" style="cursor:pointer"><input type="file" id="phImp" accept="application/json,.json" hidden>백업 불러오기</label></div></section>'
     +'<section class="sh-sec"><h4>테스트 모드</h4><div class="srow"><span class="lb">테스트 모드'+(TEST?' (켜짐)':'')+'<small>연습·교육용이에요. 켜면 장바구니·견적·상담·판매 기록·가격 수정·사진을 실제와 따로 저장하고, 위쪽에 노란 「테스트 모드」 표시가 떠요. 처음 켤 때 지금 설정·가격표를 복사해 가요.</small></span><button class="tg" type="button" data-pp="test" aria-pressed="'+TEST+'" aria-label="테스트 모드"></button></div>'
@@ -2244,6 +2244,11 @@ $('prodPane').addEventListener('click',function(e){
     if(!c||!confirm('「'+c.name+'」을(를) 완전히 지울까요?'))return;
     saveCustom(customList().filter(function(x){return x.code!==code}));if(PEDIT===code)PEDIT=null;rebuildAll(true);renderProdPane();toast('지웠어요');
   }else if(b.hasAttribute('data-prev')){var k=b.getAttribute('data-prev');delete SET.names[k];delete SET.moved[k];saveSet();rebuildAll(true);renderProdPane();toast('가격표 그대로 되돌렸어요')}
+  else if(b.hasAttribute('data-prpurge')){
+    var nn=SET.deleted.filter(function(d){return !d.gone}).length;
+    if(!nn||!confirm('삭제한 제품 '+nn+'개를 완전히 지울까요?\n이후에는 되살릴 수 없어요. (가격표 파일 자체는 그대로예요)'))return;
+    SET.deleted.forEach(function(d){d.gone=1});saveSet();renderProdPane();toast(nn+'개를 완전히 지웠어요')
+  }
   else if(b.hasAttribute('data-pundel')){SET.deleted.splice(+b.getAttribute('data-pundel'),1);saveSet();rebuildAll(true);renderProdPane();toast('되살렸어요')}
 });
 
