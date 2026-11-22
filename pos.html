@@ -835,7 +835,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
         <select id="admBMenu" aria-label="옮길 메뉴"></select><button type="button" data-bulk="move">메뉴로 옮기기</button>
         <button type="button" data-bulk="hide">숨기기</button><button type="button" data-bulk="show">보이기</button>
         <button type="button" data-bulk="gift">사은품 넣기</button><button type="button" data-bulk="ungift">사은품 빼기</button>
-        <button type="button" data-bulk="clear">선택 해제</button>
+        <button type="button" data-bulk="del" style="color:#e5252a">선택 삭제</button><button type="button" data-bulk="clear">선택 해제</button>
         <p class="hint">Shift+클릭=범위 선택 · Ctrl(⌘)+클릭=하나씩 추가/빼기 · 터치는 「☑ 여러 개 선택」을 켜요</p>
       </div>
       <button class="btn outl" type="button" id="admMulti" aria-pressed="false" style="height:32px">☑ 여러 개 선택</button>
@@ -2064,6 +2064,23 @@ $('admBulk').addEventListener('click',function(e){
   var act=b.getAttribute('data-bulk');if(act==='clear'){ADM.multi=false;admSelClear();return}
   var ms=ADM.sel.map(admByOid).filter(Boolean);if(!ms.length){toast('먼저 제품을 선택해 주세요');return}
   var n=0,skip=0,to=$('admBMenu').value;
+  if(act==='del'){
+    var okm=ms.filter(function(m){return m.gid!=='gift'});skip=ms.length-okm.length;
+    if(!okm.length){toast('사은품 메뉴 제품은 여기서 삭제하지 않아요. 원래 메뉴에서 「사은품 빼기」를 써 주세요');return}
+    var names=okm.slice(0,6).map(function(m){return '· '+m.name}).join('\n')+(okm.length>6?'\n· 외 '+(okm.length-6)+'개':'');
+    if(!confirm('선택한 '+okm.length+'개 제품을 삭제할까요?\n\n'+names+'\n\n가격표 제품은 「새 제품·되살리기·백업」에서 되살릴 수 있어요. 매장에서 직접 만든 제품은 완전히 지워져요.'))return;
+    var list=customList(),delIds={};
+    okm.forEach(function(m){
+      if(m.mine){var key=m.key,from=m.oid.split('|')[0];list=list.filter(function(c){return !(String(c.name).trim()===key&&(c.group===from||!c.group||m.gid===c.group))})}
+      else if(!SET.deleted.some(function(d){return d.id===m.oid}))SET.deleted.push({id:m.oid,name:m.name});
+      delIds[m.oid]=1;n++;
+    });
+    saveCustom(list);saveSet();touch();
+    if(cur&&delIds[cur.oid])cur=null;
+    ADM.sel=[];ADM.anchor='';ADM.multi=false;rebuildAll(false);admSelPaint();
+    toast(n+'개 삭제했어요'+(skip?' · 사은품 메뉴 제품 '+skip+'개는 건너뛰었어요':'')+' · 「새 제품·되살리기·백업」에서 되살릴 수 있어요');
+    return;
+  }
   if(act==='move'){
     if(!to)return;
     if(!confirm(ms.length+'개 제품을 「'+(G[to]?G[to].def.name:to)+'」 메뉴로 옮길까요?'))return;
