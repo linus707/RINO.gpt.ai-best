@@ -789,6 +789,11 @@ select.pin{height:36px;font-weight:700;font-size:14px}
         <div><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="7" width="20" height="19" rx="2"/><path d="M6 13h20M11 4v5M21 4v5"/></svg><b id="fDate"></b>가격 기준일</div>
       </div>
 
+      <div class="grp" id="typeGrp" hidden>
+        <h2>타입</h2><p>제품 타입을 골라 주세요.</p>
+        <div id="types" role="radiogroup" aria-label="타입"></div>
+      </div>
+
       <div class="grp" id="sizeGrp">
         <h2>규격</h2><p>침대 크기에 맞는 규격을 골라 주세요.</p>
         <div id="sizes" role="radiogroup" aria-label="규격"></div>
@@ -862,6 +867,15 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <div class="srow"><label for="pmMenu">메뉴<small>다른 메뉴로 옮겨요(사은품 메뉴는 「사은품 메뉴에 넣기」로)</small></label><select class="pin" id="pmMenu" style="width:200px;text-align:left"></select></div>
       <div class="srow" style="align-items:flex-start"><label for="pmDesc">설명<small>제품 그림(사진) 안, 제품 아래와 목록 카드에 보여요. 3줄까지 보여요. 비우면 안 보여요</small></label><textarea class="pin" id="pmDesc" rows="3" maxlength="200" style="width:260px;height:auto;text-align:left;padding:8px 10px;line-height:1.5;resize:vertical;font:inherit;font-size:14px" placeholder="예) 7존 독립 스프링으로 몸을 고르게 받쳐 줘요"></textarea></div>
       <div class="sh-foot"><button class="btn outl" type="button" id="pmDel" style="color:var(--err);border-color:var(--err)">이 제품 삭제</button><button class="btn" type="button" id="pmSave">제품 정보 저장</button></div>
+    </section>
+
+    <section class="sh-sec" id="mergeSec">
+      <h4>다른 제품에 합치기 (타입으로 묶기)</h4>
+      <p class="hint">예) BARONT-N을 BARONT 안에 합치면, 손님 화면에서 BARONT 하나를 열고 안에서 「타입」(T·N)을 골라요. 상품코드·가격·사진은 그대로예요.</p>
+      <div class="srow"><label for="mgTo">합칠 제품 이름<small>이 제품이 들어갈 제품이에요. 목록에 없는 이름이면 새로 만들어요(예: BARONT)</small></label><input class="pin" id="mgTo" list="mgList" style="width:200px;text-align:left" maxlength="40" autocomplete="off"><datalist id="mgList"></datalist></div>
+      <div class="srow"><label for="mgType">이 제품의 타입 이름<small>예) N, T, T (LED일체형)</small></label><input class="pin" id="mgType" style="width:200px;text-align:left" maxlength="30" autocomplete="off"></div>
+      <div class="sh-foot"><button class="btn" type="button" id="mgGo">합치기</button></div>
+      <ul class="mlist" id="mgDone"></ul>
     </section>
 
     <section class="sh-sec">
@@ -1184,7 +1198,7 @@ var SET_KEY=NS+'settings',CART_KEY=NS+'cart';
 var DEFAULT_SET={
   storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
   branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
-  menus:null,moved:{},names:{},descs:{},details:{},deleted:[],vadd:[],vedit:{},flow:true,
+  menus:null,moved:{},merge:{},names:{},descs:{},details:{},deleted:[],vadd:[],vedit:{},flow:true,
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -1334,16 +1348,31 @@ function applyEdits(maps){
     var gid=oid.split('|')[0],key=oid.slice(gid.length+1),to=mv[oid];
     if(maps[gid]&&maps[gid][key]&&maps[to]&&to!==gid&&!maps[to][key]){maps[to][key]=maps[gid][key];delete maps[gid][key]}
   });
+  /* 타입으로 합치기(SET.merge: 원래 제품 → {to:합칠 제품 이름, type:타입 이름}) — 다른 제품 안에 「타입」 옵션으로 넣어요 */
+  var mg=SET.merge||{};
+  Object.keys(mg).forEach(function(oid){
+    var key=oid.slice(oid.indexOf('|')+1),to=String(mg[oid].to||'').trim(),gk=null;
+    Object.keys(maps).forEach(function(g){if(maps[g][key]&&maps[g][key].oid===oid)gk=g});
+    if(!gk||!to||to===key)return;
+    var e=maps[gk][key];
+    if(mg[oid].type)e.vs.forEach(function(v){v.type=mg[oid].type});
+    var t=maps[gk][to];
+    if(!t){t=maps[gk][to]={vs:[],main:e.main,ord:e.ord,oid:gk+'|'+to};if(e.mine)t.mine=true}
+    t.vs=t.vs.concat(e.vs);t.main=t.main||e.main;
+    if(e.ord!=null)t.ord=t.ord==null?e.ord:Math.min(t.ord,e.ord);
+    delete maps[gk][key];
+  });
   var del={};(SET.deleted||[]).forEach(function(d){del[d.id]=1});
   Object.keys(maps).forEach(function(gid){Object.keys(maps[gid]).forEach(function(k){if(del[maps[gid][k].oid])delete maps[gid][k]})});
 }
 function finishGroup(g,map,custom){
   var box=G[g.id];
   box.models=Object.keys(map).map(function(k){
-    var vs=map[k].vs.sort(function(a,b){return sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size)||a.price-b.price||a.color.localeCompare(b.color,'ko')});
+    var tord=[];map[k].vs.forEach(function(v){var t=v.type||'';if(tord.indexOf(t)<0)tord.push(t)});
+    var vs=map[k].vs.sort(function(a,b){return tord.indexOf(a.type||'')-tord.indexOf(b.type||'')||sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size)||a.price-b.price||a.color.localeCompare(b.color,'ko')});
     var sizes=[];vs.forEach(function(v){if(sizes.indexOf(v.size)<0)sizes.push(v.size)});
     var oid=map[k].oid||g.id+'|'+k,nm=SET.names&&SET.names[oid],ds=SET.descs&&SET.descs[oid];
-    return {key:k,oid:oid,gid:g.id,name:nm||(custom?k:clean(k)),series:seriesOf(nm||k),desc:ds!=null?ds:(map[k].desc||''),variants:vs,sizes:sizes,main:map[k].main,ord:map[k].ord==null?1e7:map[k].ord,mine:!!map[k].mine};
+    return {key:k,oid:oid,gid:g.id,name:nm||(custom?k:clean(k)),series:seriesOf(nm||k),desc:ds!=null?ds:(map[k].desc||''),variants:vs,sizes:sizes,types:tord.filter(Boolean).length?tord:[],main:map[k].main,ord:map[k].ord==null?1e7:map[k].ord,mine:!!map[k].mine};
   }).sort(custom||g.custom?function(a,b){return a.ord-b.ord||a.name.localeCompare(b.name,'ko')}:function(a,b){return (b.main-a.main)||a.ord-b.ord||a.name.localeCompare(b.name,'ko')});
   box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m;m.variants.forEach(function(v){CODE[v.code]={m:m,v:v,gid:g.id}})});
   box.own=box.models.slice();
@@ -1359,7 +1388,7 @@ function buildCustom(pl){
   pl.items.forEach(function(it){
     if(!maps[it.group]||HIDE_RE.test(it.model))return;
     var ov=PRICES[it.code],price=ov>0?ov:it.price;
-    var v={size:it.size||'',color:it.color||'',price:price,base:it.price,code:it.code,rate:it.rate==null?null:it.rate,kw:it.kw||''};
+    var v={size:it.size||'',color:it.color||'',price:price,base:it.price,code:it.code,rate:it.rate==null?null:it.rate,kw:it.kw||'',type:it.type||''};
     var e=maps[it.group][it.model]=maps[it.group][it.model]||{vs:[],main:true,ord:it.ord,oid:it.group+'|'+it.model};
     e.vs.push(v);e.ord=Math.min(e.ord,it.ord);if(it.desc&&!e.desc)e.desc=it.desc;
   });
@@ -1376,7 +1405,11 @@ function giftRefresh(){
 }
 function isGiftMenu(){return !!(group&&group.def.gift)}
 function el(tag,attrs,text){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e}
-function ofSize(sz){return cur.variants.filter(function(v){return v.size===sz})}
+/* 타입(T·N 등): 한 제품 안에서 규격·색상 위에 한 단계 더 골라요. 타입이 없는 제품은 ''(기본) 하나뿐이에요 */
+function curType(){return cur.variants[vi].type||''}
+function ofSize(sz){var t=curType();return cur.variants.filter(function(v){return v.size===sz&&(v.type||'')===t})}
+function typeSizes(t){var out=[];cur.variants.forEach(function(v){if((v.type||'')===t&&out.indexOf(v.size)<0)out.push(v.size)});return out}
+function optOf(v){return [v.type,v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ')}
 function setUrl(){try{history.replaceState({v:'detail'},'','?g='+group.def.id+'&m='+encodeURIComponent(cur.name))}catch(e){}
   $('crumbMenu').textContent=group.def.name+' 전체';$('crumbModel').textContent=cur.name}
 
@@ -1423,9 +1456,27 @@ function renderModel(){
   tabs.appendChild(el('span',{class:'cnt'},group.def.name+' '+won(visibleModels(group).length)+'개 모델'+(isHidden(gid,cur)?' · 지금 모델은 숨긴 상태':'')));
   var on=tabs.querySelector('[aria-current]');if(on)tabs.scrollLeft=Math.max(0,on.offsetLeft-tabs.clientWidth/2+on.offsetWidth/2);
 
-  var box=$('sizes');box.textContent='';
-  $('sizeGrp').hidden=!(cur.sizes.length>1||cur.sizes[0]);
-  cur.sizes.forEach(function(sz){
+  renderTypes();renderSizes();
+}
+function renderTypes(){
+  var box=$('types');box.textContent='';
+  var show=cur.types.length>1;$('typeGrp').hidden=!show;
+  if(!show)return;
+  cur.types.forEach(function(t){
+    var b=el('button',{type:'button',class:'opt',role:'radio','data-t':t});
+    b.appendChild(el('strong',{},t||'기본'));b.appendChild(el('em',{class:'num'}));
+    b.addEventListener('click',function(){
+      var v0=cur.variants[vi],list=cur.variants.filter(function(v){return (v.type||'')===t});
+      var hit=list.filter(function(v){return v.size===v0.size&&v.color===v0.color})[0]||list.filter(function(v){return v.size===v0.size})[0]||list[0];
+      vi=cur.variants.indexOf(hit);renderSizes();render();
+    });
+    box.appendChild(b);
+  });
+}
+function renderSizes(){
+  var box=$('sizes'),t=curType(),sizes=typeSizes(t);box.textContent='';box.setAttribute('data-t',t);
+  $('sizeGrp').hidden=!(sizes.length>1||sizes[0]);
+  sizes.forEach(function(sz){
     var b=el('button',{type:'button',class:'opt',role:'radio','data-s':sz});
     b.appendChild(el('strong',{},sz||'기본'));
     if(sizeLabel(sz)){b.appendChild(el('i'));b.appendChild(el('small',{},sizeLabel(sz)))}
@@ -1455,8 +1506,9 @@ function renderColors(){
 
 function render(){
   if(!cur)return;
+  if($('sizes').getAttribute('data-t')!==curType())renderSizes();
   var v=cur.variants[vi],total=v.price*qty,title=cur.name+(cur.gid==='matt'?' 매트리스':'');
-  var optText=[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ');
+  var optText=optOf(v);
   document.title=title+' · '+(SET.storeName||'ACE BED');
   var gm=isGiftMenu();
   $('series').textContent=gm?'사은품 · 담으면 0원':group.def.name;
@@ -1492,9 +1544,13 @@ function render(){
   $('sDisc').textContent=won(pv.pay)+' 원';
   $('sDiscNote').textContent='지금 할인 기준 '+pct(dRate)+' (장바구니에서 바꿔요)';
   $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
-  var sidx=cur.sizes.indexOf(v.size);
-  $('prev').disabled=sidx<=0;$('next').disabled=sidx>=cur.sizes.length-1;
-  $('prev').hidden=$('next').hidden=cur.sizes.length<2; // 고를 규격이 하나뿐이면 화살표를 숨겨요
+  var tsz=typeSizes(curType()),sidx=tsz.indexOf(v.size);
+  $('prev').disabled=sidx<=0;$('next').disabled=sidx>=tsz.length-1;
+  $('prev').hidden=$('next').hidden=tsz.length<2; // 고를 규격이 하나뿐이면 화살표를 숨겨요
+  Array.prototype.forEach.call($('types').children,function(b){
+    var t=b.getAttribute('data-t'),min=cur.variants.filter(function(x){return (x.type||'')===t}).reduce(function(a,x){return Math.min(a,x.price)},Infinity);
+    b.setAttribute('aria-checked',String(t===curType()));b.querySelector('em').textContent=won(min)+'원~';
+  });
   Array.prototype.forEach.call($('sizes').children,function(b){
     var sz=b.getAttribute('data-s'),list=ofSize(sz),hit=list.filter(function(x){return x.color===v.color})[0];
     var min=list.reduce(function(a,x){return Math.min(a,x.price)},Infinity);
@@ -1508,7 +1564,7 @@ function render(){
 }
 
 function quoteText(){
-  var v=cur.variants[vi],total=v.price*qty,opt=[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ');
+  var v=cur.variants[vi],total=v.price*qty,opt=optOf(v);
   var lines=['[ACE BED 견적]',cur.name+(cur.gid==='matt'?' 매트리스':'')+(opt?' ('+opt+')':''),'코드 '+v.code,'판매가 '+won(v.price)+'원 × '+qty+'개','합계 '+won(total)+'원'];
   lines.push('가격 기준일 '+(meta.updated||'-')+' · 할인·배송비 미포함');
   return lines.join('\n');
@@ -1526,8 +1582,8 @@ function copyText(text){
   else fallback();
 }
 function stepSize(d){
-  var i=cur.sizes.indexOf(cur.variants[vi].size)+d;
-  if(i<0||i>=cur.sizes.length)return;
+  var ts=typeSizes(curType()),i=ts.indexOf(cur.variants[vi].size)+d;
+  if(i<0||i>=ts.length)return;
   var b=$('sizes').children[i];if(b)b.click();
 }
 /* ───── 검색 (영문 모델명 · 한글 별칭 · 코드 · 규격 · 오타 1~2자) — 매장 POS의 검색과 같은 방식 ─────
@@ -1561,7 +1617,7 @@ function searchIndex(){
   if(SIDX)return SIDX;
   var list=[],vocab={};
   GROUPS.forEach(function(g){(G[g.id].own||[]).forEach(function(m){
-    var hay=[m.name,m.key,romanToNum(m.name),g.name].concat(m.variants.map(function(v){return v.code+' '+v.size+' '+v.color+' '+(v.kw||'')})).join(' ').toLowerCase();
+    var hay=[m.name,m.key,romanToNum(m.name),g.name].concat(m.variants.map(function(v){return v.code+' '+v.size+' '+v.color+' '+(v.kw||'')+' '+(v.type||'')}).concat((m.types||[]).filter(Boolean).map(function(t){return m.name+'-'+t}))).join(' ').toLowerCase();
     list.push({m:m,g:g,hay:hay,hc:hay.replace(/[-_.·]/g,''),nh:norm(hay),from:m.variants.reduce(function(a,v){return Math.min(a,v.price)},Infinity)});
     (hay.match(/[a-z]{4,}/g)||[]).forEach(function(w){vocab[w]=1});
   })});
@@ -1607,7 +1663,7 @@ function goModel(x,size){
   /* 목록 화면에서도 상세로 넘어가도록 항상 openModel을 거쳐요(주소·뒤로가기 포함) */
   try{history.pushState({v:'detail'},'','?g='+x.g.id+'&m='+encodeURIComponent(x.m.name))}catch(e){}
   openModel(x.g.id,x.m.name,false);
-  if(size){var hit=cur.sizes.filter(function(s){return s.replace(/\(.*$/,'').toLowerCase()===size})[0];if(hit!=null){var b=$('sizes').querySelector('[data-s="'+hit+'"]');if(b)b.click()}}
+  if(size){var hit=typeSizes(curType()).filter(function(s){return s.replace(/\(.*$/,'').toLowerCase()===size})[0];if(hit!=null){var b=$('sizes').querySelector('[data-s="'+hit+'"]');if(b)b.click()}}
 }
 var SRES=null;
 function search(){
@@ -1735,7 +1791,7 @@ var MENU_NAMES={'매트리스':'matt','메트리스':'matt','매트':'matt','프
 function parsePriceRows(rows){
   var h=(rows[0]||[]).map(function(x){return String(x==null?'':x).replace(/\s+/g,'')});
   var col=function(){var names=arguments;return h.findIndex(function(x){return Array.prototype.some.call(names,function(n){return x.indexOf(n)===0})})};
-  var C={menu:col('메뉴'),ord:col('순서'),model:col('모델명','제품명','품명'),size:col('규격','사이즈'),color:col('색상','옵션'),price:col('정상가','가격','판매가'),rate:col('할인율'),kw:col('검색어','별칭'),code:col('상품코드','코드'),desc:col('설명')};
+  var C={menu:col('메뉴'),ord:col('순서'),model:col('모델명','제품명','품명'),size:col('규격','사이즈'),color:col('색상','옵션'),price:col('정상가','가격','판매가'),rate:col('할인율'),type:col('타입','구분'),kw:col('검색어','별칭'),code:col('상품코드','코드'),desc:col('설명')};
   var miss=[['메뉴',C.menu],['모델명',C.model],['정상가(원)',C.price]].filter(function(x){return x[1]<0}).map(function(x){return x[0]});
   if(miss.length)throw new Error('1행에서 「'+miss.join('」「')+'」 제목을 찾지 못했어요. 양식의 1행 제목을 그대로 두고 다시 저장해 주세요');
   var cell=function(r,k){return k<0?'':String(r[k]==null?'':r[k]).trim()};
@@ -1752,11 +1808,11 @@ function parsePriceRows(rows){
     var rate=null;
     if(rateT){if(!/^\d+(\.\d+)?$/.test(rateT)||+rateT>100)return errors.push([line,'할인율 「'+cell(r,C.rate)+'」는 0~100 숫자로 적어 주세요']);rate=+rateT}
     var size=cell(r,C.size).toUpperCase(),color=cell(r,C.color);
-    var code=cell(r,C.code)||('M:'+[model,size,color].join('|'));
+    var code=cell(r,C.code)||('M:'+[model].concat(cell(r,C.type)?[cell(r,C.type)]:[],[size,color]).join('|'));
     if(seen[code]){errors.push([line,'상품코드·이름이 위 줄과 같아요 ('+(code.indexOf('M:')===0?'모델명·규격·색상':code)+') — 따로 저장했어요']);code+='#'+line}
     seen[code]=1;
     var ordT=cell(r,C.ord);
-    items.push({code:code,group:g,model:model,size:size,color:color,price:Math.round(+priceT),rate:rate,kw:cell(r,C.kw),desc:cell(r,C.desc).slice(0,200),ord:/^\d+$/.test(ordT)?+ordT:1e6+line});
+    items.push({code:code,group:g,model:model,type:cell(r,C.type),size:size,color:color,price:Math.round(+priceT),rate:rate,kw:cell(r,C.kw),desc:cell(r,C.desc).slice(0,200),ord:/^\d+$/.test(ordT)?+ordT:1e6+line});
   });
   return {items:items,errors:errors};
 }
@@ -1860,13 +1916,14 @@ function renderDetail(v){
   var colors=[];cur.variants.forEach(function(w){if(w.color&&colors.indexOf(w.color)<0)colors.push(w.color)});
   var sizes=cur.sizes.filter(Boolean).map(function(z){var l=sizeLabel(z);return z+(l?'('+l+')':'')});
   var info=[['모델명',title],['메뉴',group.def.name]];
+  if(cur.types.length>1)info.push(['타입',cur.types.join(', ')]);
   if(sizes.length)info.push(['규격',sizes.join(', ')]);
   if(colors.length)info.push(['색상·옵션',colors.join(', ')]);
   info.push(['가격 기준일',meta.updated||'-']);
   var gm=isGiftMenu();
   $('pdSpec').innerHTML='<h3>제품 정보</h3><table><tbody>'+info.map(function(r){return '<tr><th scope="row">'+esc(r[0])+'</th><td>'+esc(r[1])+'</td></tr>'}).join('')+'</tbody></table>'
     +'<table><thead><tr><th scope="col">옵션</th><th scope="col">상품코드</th><th scope="col" class="r">'+(gm?'정상가':'가격')+'</th></tr></thead><tbody>'
-    +cur.variants.map(function(w){var o=[w.size,sizeLabel(w.size),w.color].filter(Boolean).join(' · ')||'기본';return '<tr'+(w===v?' aria-current="true" style="font-weight:700"':'')+'><td>'+esc(o)+'</td><td class="num">'+esc(String(w.code).indexOf('M:')===0?'-':w.code)+'</td><td class="r num">'+won(w.price)+'원</td></tr>'}).join('')
+    +cur.variants.map(function(w){var o=optOf(w)||'기본';return '<tr'+(w===v?' aria-current="true" style="font-weight:700"':'')+'><td>'+esc(o)+'</td><td class="num">'+esc(String(w.code).indexOf('M:')===0?'-':w.code)+'</td><td class="r num">'+won(w.price)+'원</td></tr>'}).join('')
     +'</tbody></table>';
 }
 // 설정: 칸 편집(저장 전까지는 DB_EDIT에만)
@@ -1972,7 +2029,7 @@ function admHead(){
   $('admBadges').innerHTML='<span'+(x.photo?' class="on"':'')+'>'+(x.photo?'사진 있음':'사진 없음')+'</span><span'+(x.desc?' class="on"':'')+'>'+(x.desc?'설명 있음':'설명 없음')+'</span><span'+(x.detail?' class="on"':'')+'>상세 '+(x.detail?x.detail+'칸':'없음')+'</span>'+(x.price?'<span class="on">가격 바꿈</span>':'')+(x.hidden?'<span>숨김</span>':'')+(SET.gifts.indexOf(cur.gid+'|'+cur.key)>=0?'<span class="on">사은품</span>':'');
 }
 function admVarOptions(){
-  $('admVar').innerHTML=cur.variants.map(function(v,i){return '<option value="'+i+'"'+(i===vi?' selected':'')+'>'+esc(([v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ')||'기본')+' · '+v.code)+'</option>'}).join('');
+  $('admVar').innerHTML=cur.variants.map(function(v,i){return '<option value="'+i+'"'+(i===vi?' selected':'')+'>'+esc((optOf(v)||'기본')+' · '+v.code)+'</option>'}).join('');
 }
 function admShowTab(t){
   ADM.tab=t;
@@ -2159,8 +2216,33 @@ function renderProdInfo(){
   $('pmMenu').innerHTML=menuOptions(cur.gid,false);
   $('pmMenu').disabled=cur.gid==='gift'&&!SET.moved[cur.oid];
   $('pmDesc').value=cur.desc||'';
+  renderMergeUi();
   openDetailEdit();
 }
+/* 합치기: 이 제품을 다른 제품의 「타입」 옵션으로 넣어요(SET.merge). 합쳐진 제품 화면에서 하나씩 풀 수 있어요 */
+function renderMergeUi(){
+  $('mergeSec').hidden=cur.gid==='gift';
+  var pre=cur.oid.split('|')[0],box=$('mgList');
+  box.innerHTML=(G[cur.gid]?G[cur.gid].own:[]).filter(function(m){return m!==cur}).slice(0,600).map(function(m){return '<option value="'+esc(m.name)+'">'}).join('');
+  $('mgTo').value='';$('mgType').value='';
+  var ks=Object.keys(SET.merge||{}).filter(function(o){return o.split('|')[0]===pre&&String(SET.merge[o].to).trim()===cur.key});
+  $('mgDone').innerHTML=ks.length?ks.map(function(o){var nm=o.slice(o.indexOf('|')+1);return '<li><span>'+esc(nm)+'<small>타입 「'+esc(SET.merge[o].type||'')+'」</small></span><button class="btn outl sm" type="button" data-mgun="'+esc(o)+'">풀기</button></li>'}).join(''):'<li class="none">이 제품 안에 합친 제품이 없어요.</li>';
+}
+$('mgGo').addEventListener('click',function(){
+  if(!cur||cur.gid==='gift')return;
+  var to=$('mgTo').value.trim(),ty=$('mgType').value.trim(),pre=cur.oid.split('|')[0];
+  if(!to){toast('합칠 제품 이름을 적어 주세요');return}
+  if(!ty){toast('타입 이름을 적어 주세요 (예: T, N)');return}
+  var hit=(G[cur.gid]?G[cur.gid].own:[]).filter(function(m){return m!==cur&&(m.name===to||m.key===to)})[0],tk=hit?hit.key:to;
+  if(tk===cur.key||to===cur.name){toast('같은 제품이에요');return}
+  SET.merge=SET.merge||{};SET.merge[cur.oid]={to:tk,type:ty};
+  saveSet();touch();cur={oid:pre+'|'+tk};rebuildAll(true);toast('「'+tk+'」 안에 타입 「'+ty+'」로 합쳤어요');
+});
+$('mgDone').addEventListener('click',function(e){
+  var b=e.target.closest('[data-mgun]');if(!b)return;
+  delete SET.merge[b.getAttribute('data-mgun')];saveSet();touch();rebuildAll(true);toast('합치기를 풀었어요');
+});
+
 $('pmSave').addEventListener('click',function(){
   if(!cur)return;
   var nm=$('pmName').value.trim(),orig=cur.oid.slice(cur.oid.indexOf('|')+1),to=$('pmMenu').value,from=cur.oid.split('|')[0];
@@ -2359,7 +2441,7 @@ function addToCart(){
   var v=cur.variants[vi],gid=cur.gid,gift=isGiftMenu(),ix=-1;
   CART.lines.forEach(function(l,i){if(ix<0&&l.code===v.code&&l.rate==null&&!!l.gift===gift)ix=i});
   if(ix>=0)CART.lines[ix].qty=Math.min(99,CART.lines[ix].qty+qty);
-  else CART.lines.push({code:v.code,gid:gid,key:cur.key,name:cur.name+(gid==='matt'?' 매트리스':''),opt:[v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · '),price:v.price,qty:qty,rate:null,gift:gift});
+  else CART.lines.push({code:v.code,gid:gid,key:cur.key,name:cur.name+(gid==='matt'?' 매트리스':''),opt:optOf(v),price:v.price,qty:qty,rate:null,gift:gift});
   changed();
   toast((gift?'사은품(0원)으로 담았어요':'장바구니에 담았어요')+' · 모두 '+calc(CART).qty+'개');
 }
@@ -3062,7 +3144,7 @@ function renderPriceTable(){
   var body=$('ptBody');body.textContent='';
   cur.variants.forEach(function(v){
     var tr=el('tr',{'data-code':v.code}),td=el('td');
-    td.appendChild(document.createTextNode([v.size,sizeLabel(v.size),v.color].filter(Boolean).join(' · ')||'기본'));
+    td.appendChild(document.createTextNode(optOf(v)||'기본'));
     td.appendChild(el('small',{},v.code));
     tr.appendChild(td);
     tr.appendChild(el('td',{class:'r num'},won(v.base)+'원'));
@@ -3304,7 +3386,7 @@ $('mgrPane').addEventListener('click',function(e){
   else if(b.hasAttribute('data-unpromo')){b.getAttribute('data-unpromo').split(',').forEach(function(c){delete SET.itemRates[c]});setChanged('모델 할인율을 뺐어요')}
   else if(b.hasAttribute('data-resetset')){
     if(!confirm('할인·결제 설정, 숨긴 상품, 모델별 할인율, 매장 이름을 처음 상태로 되돌릴까요?'))return;
-    var keep={menus:SET.menus,moved:SET.moved,names:SET.names,descs:SET.descs,details:SET.details,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
+    var keep={menus:SET.menus,moved:SET.moved,merge:SET.merge,names:SET.names,descs:SET.descs,details:SET.details,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
     SET=Object.assign(clone(DEFAULT_SET),keep);giftRefresh();applyStoreName();setChanged('설정을 초기화했어요');fillModels();renderModel();
   }else return;
   renderMgrPane();
