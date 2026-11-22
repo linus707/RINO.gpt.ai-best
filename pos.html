@@ -1336,6 +1336,31 @@ function applyEdits(maps){
   });
   var del={};(SET.deleted||[]).forEach(function(d){del[d.id]=1});
   Object.keys(maps).forEach(function(gid){Object.keys(maps[gid]).forEach(function(k){if(del[maps[gid][k].oid])delete maps[gid][k]})});
+  mergeTypes(maps);
+}
+/* 프레임 타입 통폐합: BMA1171-E · BMA1171-N 처럼 이름 끝 「-알파벳」만 다른 프레임은 한 모델(BMA1171)로 묶고,
+   타입은 옵션(색상 칸) 앞에 「E타입」「N타입」으로 붙여요. 옮기기·삭제를 먼저 반영한 뒤에 묶어서 지운 제품은 다시 살아나지 않아요.
+   묶인 모델은 첫 타입의 oid를 이어받아 그 제품에 올려 둔 사진·설명이 그대로 남아요. */
+function mergeTypes(maps){
+  var fm=maps.frame;if(!fm)return;
+  var RE=/^(.*?[A-Za-z0-9])-([A-Z])(\s+(?:NEW|N))?(\s*\(.*\))?$/,groups={};
+  Object.keys(fm).forEach(function(k){
+    var m=k.match(RE);if(!m||fm[k].mine)return;
+    var b=m[1]+(m[4]||'');(groups[b]=groups[b]||[]).push({k:k,t:m[2]+'타입'+(m[3]||''),e:fm[k]});
+  });
+  Object.keys(groups).forEach(function(b){
+    var g=groups[b],types={};g.forEach(function(x){types[x.t]=1});
+    if(Object.keys(types).length<2)return;
+    g.sort(function(a,c){return a.t<c.t?-1:a.t>c.t?1:0});
+    var first=g[0].e,tgt=fm[b]&&!fm[b].mine?fm[b]:{vs:[],main:false,oid:first.oid};
+    g.forEach(function(x){
+      x.e.vs.forEach(function(v){v.color=x.t+(v.color?' '+v.color:'');tgt.vs.push(v)});
+      tgt.main=tgt.main||x.e.main;if(x.e.ord!=null)tgt.ord=tgt.ord==null?x.e.ord:Math.min(tgt.ord,x.e.ord);
+      if(x.e.desc&&!tgt.desc)tgt.desc=x.e.desc;
+      delete fm[x.k];
+    });
+    fm[b]=tgt;
+  });
 }
 function finishGroup(g,map,custom){
   var box=G[g.id];
