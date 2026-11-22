@@ -1343,10 +1343,10 @@ function applyEdits(maps){
    묶인 모델은 첫 타입의 oid를 이어받아 그 제품에 올려 둔 사진·설명이 그대로 남아요. */
 function mergeTypes(maps){
   var fm=maps.frame;if(!fm)return;
-  var RE=/^(.*?[A-Za-z0-9])-([A-Z])(\s+(?:NEW|N))?(\s*\(.*\))?$/,groups={};
+  var RE=/^(.*?[A-Za-z0-9])-([A-Z])(\s+(?:NEW|N))?(\s*\(.*\))?(\s+NEW)?$/,groups={};
   Object.keys(fm).forEach(function(k){
     var m=k.match(RE);if(!m||fm[k].mine)return;
-    var b=m[1]+(m[4]||'');(groups[b]=groups[b]||[]).push({k:k,t:m[2]+'타입'+(m[3]||''),e:fm[k]});
+    var b=m[1]+(m[4]||'')+(m[5]||'');(groups[b]=groups[b]||[]).push({k:k,t:m[2]+'타입'+(m[3]||''),e:fm[k]});
   });
   Object.keys(groups).forEach(function(b){
     var g=groups[b],types={};g.forEach(function(x){types[x.t]=1});
