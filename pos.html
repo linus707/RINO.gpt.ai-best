@@ -106,9 +106,9 @@ body.test .cstrip{background:#fff6dc}
 
 /* 본문 */
 .main{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:32px;align-items:start;padding:12px var(--space-lg) var(--space-3xl);max-width:1440px;margin:0 auto}
-.gal{position:sticky;top:78px;min-width:0;grid-area:gal}
+.gal{min-width:0;grid-area:gal}
 .main{grid-template-areas:"gal opts" "det opts"}
-.main>.opts{grid-area:opts}
+.main>.opts{grid-area:opts;position:sticky;top:78px;align-self:start;max-height:calc(100vh - 90px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 /* 상세페이지: 그림 아래 사진·글 블록 + 옵션별 가격 */
 .pdet{grid-area:det;min-width:0;margin-top:40px;padding-top:40px;border-top:1px solid var(--hair)}
 .pdet .pd-k{font-size:14px;font-weight:700;color:var(--tx2);text-align:center}
@@ -646,7 +646,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
   .pr dt{text-align:left}
   .bar>.btn{width:100%}
   .main{grid-template-columns:minmax(0,1fr);gap:24px;padding:0 0 var(--space-2xl)}
-  .gal{position:static}
+  .main>.opts{position:static;max-height:none;overflow:visible}
   .main{grid-template-areas:"gal" "opts" "det"}
   .pdet{margin:24px var(--space-md) 0;padding-top:28px}
   .pdet .pd-h{font-size:24px;line-height:32px}
