@@ -106,9 +106,9 @@ body.test .cstrip{background:#fff6dc}
 
 /* 본문 */
 .main{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:32px;align-items:start;padding:12px var(--space-lg) var(--space-3xl);max-width:1440px;margin:0 auto}
-.gal{position:sticky;top:78px;min-width:0;grid-area:gal}
+.gal{min-width:0;grid-area:gal}
 .main{grid-template-areas:"gal opts" "det opts"}
-.main>.opts{grid-area:opts}
+.main>.opts{grid-area:opts;position:sticky;top:78px;align-self:start;max-height:calc(100vh - 90px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 /* 상세페이지: 그림 아래 사진·글 블록 + 옵션별 가격 */
 .pdet{grid-area:det;min-width:0;margin-top:40px;padding-top:40px;border-top:1px solid var(--hair)}
 .pdet .pd-k{font-size:14px;font-weight:700;color:var(--tx2);text-align:center}
@@ -646,7 +646,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
   .pr dt{text-align:left}
   .bar>.btn{width:100%}
   .main{grid-template-columns:minmax(0,1fr);gap:24px;padding:0 0 var(--space-2xl)}
-  .gal{position:static}
+  .main>.opts{position:static;max-height:none;overflow:visible}
   .main{grid-template-areas:"gal" "opts" "det"}
   .pdet{margin:24px var(--space-md) 0;padding-top:28px}
   .pdet .pd-h{font-size:24px;line-height:32px}
@@ -1603,7 +1603,10 @@ function runSearch(q){
 }
 function goModel(x,size){
   $('sres').hidden=true;$('q').value='';$('q').blur();
-  if(x.g.id!==group.def.id)setGroup(x.g.id,x.m.name);else pick(x.m,true);
+  closeMega();
+  /* 목록 화면에서도 상세로 넘어가도록 항상 openModel을 거쳐요(주소·뒤로가기 포함) */
+  try{history.pushState({v:'detail'},'','?g='+x.g.id+'&m='+encodeURIComponent(x.m.name))}catch(e){}
+  openModel(x.g.id,x.m.name,false);
   if(size){var hit=cur.sizes.filter(function(s){return s.replace(/\(.*$/,'').toLowerCase()===size})[0];if(hit!=null){var b=$('sizes').querySelector('[data-s="'+hit+'"]');if(b)b.click()}}
 }
 var SRES=null;
@@ -1612,6 +1615,8 @@ function search(){
   var r=runSearch(v);SRES=r;
   if(!r.list.length){$('sres').hidden=true;toast('"'+v+'" 모델을 찾지 못했어요');return}
   if(r.list.length===1){goModel(r.list[0],r.size);return}
+  var qn=norm(v),exact=r.list.filter(function(x){return norm(x.m.name)===qn});
+  if(exact.length===1){goModel(exact[0],r.size);return}
   var ul=$('sres');
   ul.innerHTML=(r.fixed.length?'<li class="fix">「'+esc(v)+'」 → 비슷한 이름 '+esc(r.fixed.slice(0,3).join(', ').toUpperCase())+'(으)로 찾았어요</li>':'')
     +r.list.slice(0,30).map(function(x,i){return '<li><button type="button" data-si="'+i+'"><b>'+esc(x.m.name)+'</b><small>'+esc(x.g.name)+' · 옵션 '+x.m.variants.length+'</small><em class="num">'+won(x.from)+'원~</em></button></li>'}).join('')
