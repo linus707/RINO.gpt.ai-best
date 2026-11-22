@@ -508,6 +508,14 @@ body.test .cstrip{background:#fff6dc}
 .adm-cnt{margin:2px 0 0;font-size:12px;color:var(--tx3)}
 .adm-list{list-style:none;margin:0;padding:0;overflow:auto;min-height:120px;border-radius:var(--r-lg);box-shadow:var(--ring)}
 .adm-list li+li{box-shadow:inset 0 1px 0 var(--hair)}
+.adm-list button[aria-selected="true"]{background:#e8f1ff;box-shadow:inset 3px 0 0 #2189ff}
+.adm-list{user-select:none;-webkit-user-select:none}
+.adm-bulk{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border-radius:var(--r-lg);background:#eef5ff;box-shadow:var(--ring);font-size:13px}
+.adm-bulk[hidden]{display:none}
+.adm-bulk b{font-weight:800;margin-right:4px}
+.adm-bulk select{height:32px;border-radius:var(--r-full);padding:0 8px;font-size:13px;background:#fff;box-shadow:var(--ring)}
+.adm-bulk button{height:32px;padding:0 12px;border-radius:var(--r-full);box-shadow:var(--ring);background:#fff;font-size:13px;font-weight:700;white-space:nowrap}
+.adm-bulk .hint{flex-basis:100%;margin:0;font-size:12px;color:var(--tx3)}
 .adm-list button{display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:center;width:100%;padding:10px 12px;text-align:left}
 .adm-list button[aria-current="true"]{background:#eef5ff;box-shadow:inset 3px 0 0 #2189ff}
 @media (hover:hover){.adm-list button:not([aria-current="true"]):hover{background:var(--sub)}}
@@ -822,6 +830,15 @@ select.pin{height:36px;font-weight:700;font-size:14px}
         <option value="">모든 제품</option><option value="nophoto">사진 없는 제품</option><option value="nodetail">상세페이지 없는 제품</option><option value="price">가격 바꾼 제품</option><option value="hidden">숨긴 제품</option><option value="mine">매장에서 만든 제품</option>
       </select>
       <p class="adm-cnt" id="admCnt"></p>
+      <div class="adm-bulk" id="admBulk" hidden>
+        <b id="admSelN">0개 선택</b>
+        <select id="admBMenu" aria-label="옮길 메뉴"></select><button type="button" data-bulk="move">메뉴로 옮기기</button>
+        <button type="button" data-bulk="hide">숨기기</button><button type="button" data-bulk="show">보이기</button>
+        <button type="button" data-bulk="gift">사은품 넣기</button><button type="button" data-bulk="ungift">사은품 빼기</button>
+        <button type="button" data-bulk="clear">선택 해제</button>
+        <p class="hint">Shift+클릭=범위 선택 · Ctrl(⌘)+클릭=하나씩 추가/빼기 · 터치는 「☑ 여러 개 선택」을 켜요</p>
+      </div>
+      <button class="btn outl" type="button" id="admMulti" aria-pressed="false" style="height:32px">☑ 여러 개 선택</button>
       <ul class="adm-list" id="admList"></ul>
       <button class="btn outl adm-more" type="button" id="admMore" hidden>더 보기</button>
     </aside>
@@ -1882,7 +1899,7 @@ $('dbSave').addEventListener('click',function(){
 
 /* ───── 제품 설정 화면 ─────
    제품 목록에서 하나를 고르면 cur·group을 그 제품으로 두고, 기본 정보·가격·사진·상세페이지 칸(예전 설정 › 이 상품)을 그 제품으로 채워요 */
-var ADM={gid:'',q:'',f:'',tab:'info',shown:0,ret:'',tool:false},ADM_PAGE=80;
+var ADM={gid:'',q:'',f:'',tab:'info',shown:0,ret:'',tool:false,sel:[],anchor:'',multi:false},ADM_PAGE=80;
 function admAll(){var out=[];GROUPS.forEach(function(g){(G[g.id]&&G[g.id].own||[]).forEach(function(m){out.push(m)})});return out}
 function admFlags(m){
   return {photo:!!modelThumb(m),detail:detailOf(m.oid).length,desc:!!String(m.desc||'').trim(),price:m.variants.some(function(v){return PRICES[v.code]>0}),hidden:isHidden(m.gid,m),mine:!!m.mine};
@@ -1899,7 +1916,7 @@ function admModels(){
 }
 function admItem(m){
   var th=modelThumb(m),x=admFlags(m),min=minPrice(m);
-  return '<li><button type="button" data-aoid="'+esc(m.oid)+'"'+(cur&&!ADM.tool&&cur.oid===m.oid?' aria-current="true"':'')+'>'
+  return '<li><button type="button" data-aoid="'+esc(m.oid)+'"'+(cur&&!ADM.tool&&cur.oid===m.oid?' aria-current="true"':'')+(ADM.sel.indexOf(m.oid)>=0?' aria-selected="true"':'')+'>'
     +'<span class="ti">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy">':esc((m.series||m.name).slice(0,3)))+'</span>'
     +'<span><b>'+esc(m.name)+'</b><small>'+esc((G[m.gid]?G[m.gid].def.name:'')+' · '+m.variants.length+'개 옵션 · '+won(min)+'원~')+'</small>'
     +'<small><i'+(x.photo?' class="on"':'')+'>사진</i><i'+(x.detail?' class="on"':'')+'>상세'+(x.detail?' '+x.detail:'')+'</i>'+(x.price?'<i class="on">가격</i>':'')+(x.hidden?'<i>숨김</i>':'')+(x.mine?'<i>매장</i>':'')+'</small></span></button></li>';
@@ -1913,6 +1930,7 @@ function admRenderList(more){
   var html=ms.slice(from,ADM.shown).map(admItem).join('');
   if(more)$('admList').insertAdjacentHTML('beforeend',html);else $('admList').innerHTML=html||'<li class="none">맞는 제품이 없어요</li>';
   $('admMore').hidden=ADM.shown>=ms.length;$('admMore').textContent='더 보기 ('+won(ms.length-ADM.shown)+'개 남음)';
+  if(typeof admSelPaint==='function')admSelPaint();
 }
 function admHead(){
   var th=modelThumb(cur),x=admFlags(cur),codes=cur.variants.map(function(v){return v.code}).filter(function(c){return String(c).indexOf('M:')!==0});
@@ -2031,9 +2049,50 @@ $('admTools').addEventListener('click',function(){
   touch();ADM.tool='prod';admPane('prod');renderProdPane();admUrl();
   Array.prototype.forEach.call($('admList').querySelectorAll('[aria-current]'),function(b){b.removeAttribute('aria-current')});
 });
+/* 여러 개 선택: Shift=범위, Ctrl/⌘=하나씩, 터치는 「여러 개 선택」을 켜고 누르기 */
+function admSelPaint(){
+  Array.prototype.forEach.call($('admList').querySelectorAll('[data-aoid]'),function(b){if(ADM.sel.indexOf(b.getAttribute('data-aoid'))>=0)b.setAttribute('aria-selected','true');else b.removeAttribute('aria-selected')});
+  var n=ADM.sel.length;$('admBulk').hidden=!n&&!ADM.multi;$('admSelN').textContent=n+'개 선택';
+  $('admMulti').setAttribute('aria-pressed',String(ADM.multi));
+  if(!$('admBMenu').options.length)$('admBMenu').innerHTML=menuOptions('',false);
+}
+function admSelClear(){ADM.sel=[];ADM.anchor='';admSelPaint()}
+function admByOid(o){var m=null;admAll().some(function(x){if(x.oid===o){m=x;return true}return false});return m}
+$('admMulti').addEventListener('click',function(){ADM.multi=!ADM.multi;if(!ADM.multi)ADM.sel=[];admSelPaint()});
+$('admBulk').addEventListener('click',function(e){
+  var b=e.target.closest('[data-bulk]');if(!b)return;
+  var act=b.getAttribute('data-bulk');if(act==='clear'){ADM.multi=false;admSelClear();return}
+  var ms=ADM.sel.map(admByOid).filter(Boolean);if(!ms.length){toast('먼저 제품을 선택해 주세요');return}
+  var n=0,skip=0,to=$('admBMenu').value;
+  if(act==='move'){
+    if(!to)return;
+    if(!confirm(ms.length+'개 제품을 「'+(G[to]?G[to].def.name:to)+'」 메뉴로 옮길까요?'))return;
+    ms.forEach(function(m){var from=m.oid.split('|')[0];if(m.mine||m.gid==='gift'){skip++;return}if(to!==from)SET.moved[m.oid]=to;else delete SET.moved[m.oid];n++});
+  }else if(act==='hide'||act==='show'){
+    ms.forEach(function(m){var k=hidKey(m.gid,m),i=SET.hidden.indexOf(k);if(act==='hide'&&i<0){SET.hidden.push(k);n++}else if(act==='show'&&i>=0){SET.hidden.splice(i,1);n++}else skip++});
+  }else if(act==='gift'||act==='ungift'){
+    ms.forEach(function(m){if(m.gid==='gift'){skip++;return}var k=m.gid+'|'+m.key,i=SET.gifts.indexOf(k);if(act==='gift'&&i<0){SET.gifts.push(k);n++}else if(act==='ungift'&&i>=0){SET.gifts.splice(i,1);n++}else skip++});
+    giftRefresh();
+  }
+  saveSet();touch();
+  var keep=ADM.sel.slice();rebuildAll(true);ADM.sel=keep;admRenderList(false);admSelPaint();
+  toast(n+'개 적용했어요'+(skip?' · '+skip+'개는 건너뛰었어요(이미 그 상태이거나 옮길 수 없는 제품)':''));
+});
 $('admList').addEventListener('click',function(e){
   var b=e.target.closest('[data-aoid]');if(!b)return;touch();
   var o=b.getAttribute('data-aoid'),m=null;admAll().some(function(x){if(x.oid===o){m=x;return true}return false});
+  var ids=Array.prototype.map.call($('admList').querySelectorAll('[data-aoid]'),function(x){return x.getAttribute('data-aoid')});
+  if(e.shiftKey&&(ADM.anchor||cur)){
+    var a=ids.indexOf(ADM.anchor||(cur&&cur.oid)),z=ids.indexOf(o);
+    if(a>=0&&z>=0){var lo=Math.min(a,z),hi=Math.max(a,z);ADM.sel=ids.slice(lo,hi+1);if(!ADM.anchor)ADM.anchor=ids[a];admSelPaint();return}
+  }
+  if(e.ctrlKey||e.metaKey||ADM.multi){
+    var i=ADM.sel.indexOf(o);
+    if(i>=0)ADM.sel.splice(i,1);else{if(!ADM.sel.length&&cur&&!ADM.multi&&cur.oid!==o&&ids.indexOf(cur.oid)>=0)ADM.sel.push(cur.oid);ADM.sel.push(o)}
+    ADM.anchor=o;admSelPaint();return;
+  }
+  if(ADM.sel.length){ADM.sel=[];}
+  ADM.anchor=o;admSelPaint();
   admSelect(m);if(matchMedia('(max-width:900px)').matches)$('admEdit').scrollIntoView({block:'start'});
 });
 $('admMenus').addEventListener('click',function(e){var b=e.target.closest('[data-agid]');if(!b)return;ADM.gid=b.getAttribute('data-agid');admRenderList(false)});
