@@ -490,14 +490,14 @@ body.test .cstrip{background:#fff6dc}
 .box small{display:block;font-size:12px;color:var(--tx3);font-weight:400}
 
 /* 제품 설정 화면 */
-.adm{max-width:1440px;margin:0 auto;padding:24px var(--space-lg) var(--space-3xl)}
+.adm{max-width:1920px;margin:0 auto;padding:24px var(--space-lg) var(--space-3xl)}
 .adm-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:20px;border-bottom:1px solid var(--line)}
 .adm-top h1{margin:2px 0 0;font-size:32px;line-height:40px;letter-spacing:-.64px}
 .adm-k{margin:0;font-size:13px;font-weight:700;color:var(--tx2)}
 .adm-sub{margin:6px 0 0;font-size:14px;color:var(--tx2)}
 .adm-acts{display:flex;gap:8px;flex-wrap:wrap}
 .adm-acts .btn[aria-pressed="true"]{background:#000;color:#fff}
-.adm-body{display:grid;grid-template-columns:320px minmax(0,1fr);gap:32px;align-items:start;margin-top:24px}
+.adm-body{display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;align-items:start;margin-top:24px}
 .adm-side{position:sticky;top:78px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 100px)}
 .adm-q{height:44px;padding:0 16px;border:0;outline-offset:2px;border-radius:var(--r-full);background:var(--sub);font-size:15px;width:100%}
 .adm-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -537,7 +537,17 @@ body.test .cstrip{background:#fff6dc}
 .adm-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .adm-badges span{height:24px;padding:0 10px;display:inline-flex;align-items:center;border-radius:var(--r-full);background:var(--sub);font-size:12px;font-weight:700;color:var(--tx2)}
 .adm-badges span.on{background:#e7f1ff;color:#1366d6}
-.adm-tabs{margin-top:20px}
+.adm-tabs{margin-top:14px}
+.adm-panes{display:block}
+@media (min-width:1280px){
+  .adm-main{padding:18px 22px 24px}
+  .adm-tabs{position:sticky;top:0;z-index:6;background:#fff;margin-top:0;padding-top:6px}
+  .adm-panes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 24px;align-items:start;margin-top:12px}
+  .adm-panes>[data-apane]{border-radius:var(--r-lg);box-shadow:var(--ring);padding:2px 20px 16px;min-width:0;scroll-margin-top:64px}
+  .adm-panes>[data-apane="photo"],.adm-panes>[data-apane="detail"]{grid-column:1/-1}
+  .adm-panes .sh-sec{margin-top:14px}
+  .adm-panes .srow{padding:8px 0}
+}
 .adm .ph-prev{width:220px;height:220px}
 .adm-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
 .adm-pv{position:sticky;top:90px;margin-top:var(--space-lg)}
@@ -860,6 +870,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           <button type="button" role="tab" data-atab="photo" aria-selected="false">사진</button>
           <button type="button" role="tab" data-atab="detail" aria-selected="false">상세페이지</button>
         </div>
+        <div class="adm-panes" id="admPanes">
         <div data-apane="info">
     <section class="sh-sec">
       <h4>제품 정보</h4>
@@ -869,14 +880,14 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <div class="sh-foot"><button class="btn outl" type="button" id="pmDel" style="color:var(--err);border-color:var(--err)">이 제품 삭제</button><button class="btn" type="button" id="pmSave">제품 정보 저장</button></div>
     </section>
 
-    <section class="sh-sec" id="mergeSec">
-      <h4>다른 제품에 합치기 (타입으로 묶기)</h4>
+    <details class="sh-sec" id="mergeSec">
+      <summary style="cursor:pointer;font-weight:800;font-size:16px;padding:4px 0">다른 제품에 합치기 (타입으로 묶기)</summary>
       <p class="hint">예) BARONT-N을 BARONT 안에 합치면, 손님 화면에서 BARONT 하나를 열고 안에서 「타입」(T·N)을 골라요. 상품코드·가격·사진은 그대로예요.</p>
       <div class="srow"><label for="mgTo">합칠 제품 이름<small>이 제품이 들어갈 제품이에요. 목록에 없는 이름이면 새로 만들어요(예: BARONT)</small></label><input class="pin" id="mgTo" list="mgList" style="width:200px;text-align:left" maxlength="40" autocomplete="off"><datalist id="mgList"></datalist></div>
       <div class="srow"><label for="mgType">이 제품의 타입 이름<small>예) N, T, T (LED일체형)</small></label><input class="pin" id="mgType" style="width:200px;text-align:left" maxlength="30" autocomplete="off"></div>
       <div class="sh-foot"><button class="btn" type="button" id="mgGo">합치기</button></div>
       <ul class="mlist" id="mgDone"></ul>
-    </section>
+    </details>
 
     <section class="sh-sec">
       <h4>보이기</h4>
@@ -962,6 +973,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
             </div>
             <div class="adm-pv"><p class="adm-k">미리보기 (저장 전 내용)</p><div class="adm-pvbox" id="dbPrev"></div></div>
           </div>
+        </div>
         </div>
       </div>
       <div id="admMgrPane" hidden>
@@ -2079,11 +2091,17 @@ function admHead(){
 function admVarOptions(){
   $('admVar').innerHTML=cur.variants.map(function(v,i){return '<option value="'+i+'"'+(i===vi?' selected':'')+'>'+esc((optOf(v)||'기본')+' · '+v.code)+'</option>'}).join('');
 }
-function admShowTab(t){
+/* 넓은 화면(1280px 이상)에서는 네 칸(기본 정보·가격·사진·상세)을 한 화면에 같이 보여 주고, 위 탭은 그 칸으로 바로 가는 버튼이에요.
+   좁은 화면에서는 예전처럼 탭으로 한 칸씩 봐요. */
+function admWide(){return window.matchMedia&&matchMedia('(min-width:1280px)').matches}
+function admShowTab(t,jump){
   ADM.tab=t;
   Array.prototype.forEach.call(document.querySelectorAll('[data-atab]'),function(b){b.setAttribute('aria-selected',String(b.getAttribute('data-atab')===t))});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-apane]'),function(p){p.hidden=p.getAttribute('data-apane')!==t});
+  var wide=admWide();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-apane]'),function(p){p.hidden=wide?false:p.getAttribute('data-apane')!==t});
+  if(wide&&jump){var pn=document.querySelector('[data-apane="'+t+'"]');if(pn&&pn.scrollIntoView)pn.scrollIntoView({behavior:'smooth',block:'start'})}
 }
+window.addEventListener('resize',function(){if(VIEW==='admin')admShowTab(ADM.tab)});
 function admFill(){
   if(!cur)return;
   $('adjPct').value='';
@@ -2252,7 +2270,7 @@ $('admMenus').addEventListener('click',function(e){var b=e.target.closest('[data
 $('admQ').addEventListener('input',function(){ADM.q=this.value;admRenderList(false)});
 $('admFilter').addEventListener('change',function(){ADM.f=this.value;admRenderList(false)});
 $('admMore').addEventListener('click',function(){admRenderList(true)});
-Array.prototype.forEach.call(document.querySelectorAll('[data-atab]'),function(b){b.addEventListener('click',function(){touch();admShowTab(b.getAttribute('data-atab'))})});
+Array.prototype.forEach.call(document.querySelectorAll('[data-atab]'),function(b){b.addEventListener('click',function(){touch();admShowTab(b.getAttribute('data-atab'),true)})});
 $('admVar').addEventListener('change',function(){vi=+this.value;phScope='code';renderPhotoPart();render()});
 
 // 제품 설정 › 기본 정보: 이름·메뉴·삭제
