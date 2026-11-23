@@ -12,7 +12,10 @@
 <meta name="theme-color" content="#ffffff">
 <title>매장 POS · ACE BED</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<!-- 글꼴은 화면을 막지 않고 뒤늦게 입혀요(인터넷이 느려도 POS가 바로 떠요). 못 받으면 맑은 고딕·시스템 글꼴을 써요 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <style>
 /* 매장 POS — 왼쪽 갤러리 + 오른쪽 옵션 + 주문 요약. (2026-11-17 기존 POS를 이 화면으로 바꿈)
    규칙: 흰 바탕·검정 글자 / 결정은 검정 알약 버튼 / 고른 칸만 파란 안쪽 링 / 그림자 대신 1px 안쪽 테두리 */
@@ -1183,11 +1186,45 @@ function savePrices(){try{localStorage.setItem(PRICE_KEY,JSON.stringify(PRICES))
 var PRICES=loadPrices(),PHOTO=new Map(); // PHOTO: id → 화면용 주소(blob:)
 function phDB(){return new Promise(function(ok,no){var r=indexedDB.open(TEST?'buy-photos-test':'buy-photos',1);r.onupgradeneeded=function(){r.result.createObjectStore('p',{keyPath:'id'})};r.onsuccess=function(){ok(r.result)};r.onerror=function(){no(r.error)}})}
 function phTx(mode,fn){return phDB().then(function(db){return new Promise(function(ok,no){var t=db.transaction('p',mode),req=fn(t.objectStore('p'));t.oncomplete=function(){ok(req&&req.result)};t.onerror=function(){no(t.error)}})})}
+/* 작은 사진(목록·카드용): 큰 사진(1600px)을 목록에서 그대로 쓰면 저사양 PC가 느려져서, 긴 쪽 480px 복사본을 같은 저장소에 「th:」 이름으로 따로 둬요.
+   복사본은 사진을 넣을 때·처음 불러올 때 조용히 만들고, 백업·사진 수에는 세지 않아요. */
+var THUMB=new Map(),PHOTO_AT={},THUMB_SRC={},thumbBusy=false;
 function loadPhotos(){
   return phTx('readonly',function(st){return st.getAll()}).then(function(rows){
     PHOTO.forEach(function(u){URL.revokeObjectURL(u)});PHOTO.clear();
-    (rows||[]).forEach(function(r){if(r&&r.blob)PHOTO.set(r.id,URL.createObjectURL(r.blob))});
+    THUMB.forEach(function(u){URL.revokeObjectURL(u)});THUMB.clear();PHOTO_AT={};THUMB_SRC={};
+    (rows||[]).forEach(function(r){
+      if(!r||!r.blob)return;
+      if(String(r.id).indexOf('th:')===0){var k=r.id.slice(3);THUMB.set(k,URL.createObjectURL(r.blob));THUMB_SRC[k]=r.src||0}
+      else{PHOTO.set(r.id,URL.createObjectURL(r.blob));PHOTO_AT[r.id]=r.at||0}
+    });
+    setTimeout(makeThumbs,1200);
   }).catch(function(){});
+}
+function makeThumbs(){
+  if(thumbBusy)return;
+  var todo=[];PHOTO.forEach(function(u,k){if(/^(model|code):/.test(k)&&(!THUMB.has(k)||THUMB_SRC[k]!==PHOTO_AT[k]))todo.push(k)});
+  if(!todo.length)return;
+  thumbBusy=true;
+  (function next(){
+    var k=todo.shift();
+    if(!k||!PHOTO.has(k)){thumbBusy=false;return}
+    var img=new Image();
+    img.onload=function(){
+      var sc=Math.min(1,480/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.naturalWidth*sc));c.height=Math.max(1,Math.round(img.naturalHeight*sc));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      c.toBlob(function(b){
+        if(!b){setTimeout(next,200);return}
+        var at=PHOTO_AT[k]||0;
+        phTx('readwrite',function(st){return st.put({id:'th:'+k,blob:b,at:Date.now(),src:at})}).then(function(){
+          if(THUMB.has(k))URL.revokeObjectURL(THUMB.get(k));THUMB.set(k,URL.createObjectURL(b));THUMB_SRC[k]=at;
+        }).catch(function(){}).then(function(){setTimeout(next,250)}); // 한 장씩, 틈틈이(상담 중에 버벅이지 않게)
+      },'image/jpeg',.8);
+    };
+    img.onerror=function(){setTimeout(next,250)};
+    img.src=PHOTO.get(k);
+  })();
 }
 function modelPhotoId(){return 'model:'+cur.gid+':'+cur.key}
 function photoFor(v){return PHOTO.get('code:'+v.code)||PHOTO.get(modelPhotoId())||null}
@@ -2065,7 +2102,7 @@ function admModels(){
 function admItem(m){
   var th=modelThumb(m),x=admFlags(m),min=minPrice(m);
   return '<li><button type="button" data-aoid="'+esc(m.oid)+'"'+(cur&&!ADM.tool&&cur.oid===m.oid?' aria-current="true"':'')+(ADM.sel.indexOf(m.oid)>=0?' aria-selected="true"':'')+'>'
-    +'<span class="ti">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy">':esc((m.series||m.name).slice(0,3)))+'</span>'
+    +'<span class="ti">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy" decoding="async">':esc((m.series||m.name).slice(0,3)))+'</span>'
     +'<span><b>'+esc(m.name)+'</b><small>'+esc((G[m.gid]?G[m.gid].def.name:'')+' · '+m.variants.length+'개 옵션 · '+won(min)+'원~')+'</small>'
     +'<small><i'+(x.photo?' class="on"':'')+'>사진</i><i'+(x.detail?' class="on"':'')+'>상세'+(x.detail?' '+x.detail:'')+'</i>'+(x.price?'<i class="on">가격</i>':'')+(x.hidden?'<i>숨김</i>':'')+(x.mine?'<i>매장</i>':'')+'</small></span></button></li>';
 }
@@ -2365,7 +2402,7 @@ function dataToBlob(u){var h=String(u).split(','),mime=(h[0].match(/^data:([^;,]
 function downloadBlob(name,blob){var u=URL.createObjectURL(blob),a=el('a',{href:u,download:name});document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},2000)}
 function exportPhotos(){
   phTx('readonly',function(st){return st.getAll()}).then(function(rows){
-    rows=(rows||[]).filter(function(r){return r&&r.blob});
+    rows=(rows||[]).filter(function(r){return r&&r.blob&&String(r.id).indexOf('th:')!==0});
     if(!rows.length){toast('저장된 사진이 없어요');return}
     return Promise.all(rows.map(function(r){return blobToData(r.blob).then(function(d){return {id:r.id,at:r.at||0,data:d}})})).then(function(out){
       downloadBlob('pos-photos_'+localDate()+'.json',new Blob([JSON.stringify({kind:'pos-photos-v2',at:new Date().toISOString(),photos:out})],{type:'application/json'}));
@@ -3042,7 +3079,7 @@ function artFor(gid){
   ART[gid]='<svg viewBox="50 0 540 300" aria-hidden="true">'+(g?g.innerHTML:'')+'</svg>';
   return ART[gid];
 }
-function modelThumb(m){var u=PHOTO.get('model:'+m.gid+':'+m.key);if(!u)m.variants.some(function(v){u=PHOTO.get('code:'+v.code);return !!u});return u||null}
+function modelThumb(m){var k='model:'+m.gid+':'+m.key,u=THUMB.get(k)||PHOTO.get(k);if(!u)m.variants.some(function(v){var c='code:'+v.code;u=THUMB.get(c)||PHOTO.get(c);return !!u});return u||null}
 function minPrice(m){return m.variants.reduce(function(a,v){return Math.min(a,v.price)},Infinity)}
 function seriesList(box){
   var c={};visibleModels(box).forEach(function(m){c[m.series]=(c[m.series]||0)+1});
@@ -3056,7 +3093,7 @@ function cardHTML(m,gid){
   var sizes=m.sizes.filter(Boolean);
   return '<button type="button" class="pcard" data-open="'+esc(m.key)+'" data-gid="'+m.gid+'">'
     +'<span class="tag">'+(gift?'사은품':isHidden(m.gid,m)?'숨김':'')+'</span>'
-    +'<span class="im">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy">':artFor(m.gid))+'</span>'
+    +'<span class="im">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy" decoding="async">':artFor(m.gid))+'</span>'
     +'<span class="nm">'+esc(m.name+(m.gid==='matt'?' 매트리스':''))+'</span>'
     +(m.desc?'<span class="ds">'+esc(m.desc)+'</span>':'')
     +'<span class="cd num">'+esc(v0.code)+(m.variants.length>1?' 외 '+(m.variants.length-1)+'개 옵션':'')+'</span>'
@@ -3565,7 +3602,7 @@ $('phFile').addEventListener('change',function(){
 $('phDel').addEventListener('click',function(){
   var id=phScope==='code'?'code:'+cur.variants[vi].code:modelPhotoId();
   if(!PHOTO.has(id)||!confirm('이 사진을 뺄까요?'))return;
-  phTx('readwrite',function(st){return st.delete(id)}).then(loadPhotos).then(function(){renderPhotoPart();render();setInfo();if(VIEW==='admin')admRefresh();toast('사진을 뺐어요')}).catch(function(){toast('사진을 빼지 못했어요')});
+  phTx('readwrite',function(st){st.delete('th:'+id);return st.delete(id)}).then(loadPhotos).then(function(){renderPhotoPart();render();setInfo();if(VIEW==='admin')admRefresh();toast('사진을 뺐어요')}).catch(function(){toast('사진을 빼지 못했어요')});
 });
 $('adjApply').addEventListener('click',function(){
   var p=parseFloat(String($('adjPct').value).replace(',','.'));
