@@ -325,6 +325,7 @@ a.pd-ln:hover{background:var(--sub)}
 .stage .gdots button{width:9px;height:9px;padding:0;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .stage .gdots button[aria-selected="true"]{background:#fff;width:22px;border-radius:5px}
 .stage .gcnt{position:absolute;right:14px;top:14px;z-index:3;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:700}
+.mseg{display:flex;gap:6px;margin:6px 0 2px;flex-wrap:wrap}.mseg button{height:32px;padding:0 12px;border-radius:var(--r-full);box-shadow:var(--ring);background:#fff;font-size:13px;font-weight:700}.mseg button[aria-checked="true"]{background:#000;color:#fff;box-shadow:none}
 .mp-drop{display:grid;gap:4px;place-items:center;margin-top:10px;padding:22px 16px;border:2px dashed #bbb;border-radius:var(--r-lg,14px);background:#fafafa;cursor:pointer;font-weight:800;font-size:15px;text-align:center}
 .mp-drop small{font-weight:400;font-size:12px;color:var(--tx3)}.mp-drop:hover,.mp-drop.on{border-color:#2189ff;background:#f1f7ff}
 .mp-c{position:relative}.mp-top{position:absolute;left:4px;top:4px;padding:1px 7px;border-radius:10px;background:#000;color:#fff;font-size:11px;font-weight:700}
@@ -1126,6 +1127,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     <div id="cartOpts">
       <section class="dsec">
         <div class="dsec-h"><h4>할인 <small id="modeTag"></small></h4><button class="lnk" type="button" id="cartSet">할인 설정 열기</button></div>
+        <div class="mseg" id="modeSeg" role="radiogroup" aria-label="할인 계산 방식"><button type="button" role="radio" data-qmode="seq">순차 (할인에 할인)</button><button type="button" role="radio" data-qmode="sum">합산 (율을 더해서)</button></div>
         <div class="dcells" id="dcells"></div>
         <p class="hint">이 주문에만 적용돼요. 기본값은 제품 설정 › 할인·결제에서 정해요.</p>
       </section>
@@ -1376,7 +1378,7 @@ function shrink(file){
    mode: sum = 제품+지점+매니저 율을 더해 한 번에 / seq = 앞 할인 뒤 남은 금액에 다음 할인 */
 var SET_KEY=NS+'settings',CART_KEY=NS+'cart';
 var DEFAULT_SET={
-  storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
+  storeName:'ACE BED',mode:'seq',modeV:2,prodDefault:0,groupRates:{},itemRates:{},
   branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
   menus:null,moved:{},merge:{},names:{},descs:{},details:{},mph:{},deleted:[],vadd:[],vedit:{},flow:true,
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
@@ -1388,6 +1390,7 @@ function loadSet(){
   var s=clone(DEFAULT_SET),o={};
   try{o=JSON.parse(localStorage.getItem(SET_KEY)||'{}')||{}}catch(e){}
   Object.keys(s).forEach(function(k){if(o[k]!=null)s[k]=o[k]});
+  if(o.modeV!==2){s.mode='seq';s.modeV=2} // 2026-11: 할인은 「할인에 할인」(순차)이 기본이에요. 합산이 필요하면 장바구니 할인 줄에서 바꿔요
   s.paybacks=DEFAULT_SET.paybacks.map(function(d){return Object.assign({},d,(o.paybacks||[]).filter(function(p){return p.id===d.id})[0]||{})});
   return s;
 }
@@ -1442,6 +1445,7 @@ function qOrder(q){return Object.assign(newCart(),clone(q.o))}
 var INST=[0,2,3,6,10,12,24,36];
 
 /* 계산 순서: ① 품목마다 제품·지점·매니저 할인 → ② 합계 → ③ 끝자리 절사(또는 직접 입력한 금액) → ④ 페이백 → ⑤ 할부 */
+function dlbl(k,c){var sq=SET.mode==='seq';return k==='B'?'지점 할인 '+pct(c.br)+(sq?' (남은 금액의 '+pct(c.br)+')':''):'매니저 할인 '+pct(c.mr)+(sq?' (남은 금액의 '+pct(c.mr)+')':'')}
 function calc(o){
   var br=clampRate(o.br),mr=clampRate(o.mr);
   var rows=o.lines.map(function(l){
@@ -2923,7 +2927,7 @@ function renderCart(){
       +thumbHTML(l)
       +'<span class="n">'+esc(l.name)+'</span>'
       +'<span class="p num">'+(l.gift?'<del>'+won(l.price*l.qty)+'</del><em class="gtag">사은품</em> 0원':(r.sale<r.base?'<del>'+won(r.base)+'</del>':'')+won(r.sale)+'원')+'</span>'
-      +'<span class="s">'+esc([l.opt,l.code].filter(Boolean).join(' · '))+' · 개당 '+won(l.price)+'원'+(parts.length?' · <em>할인 '+pct(r.eff)+' ('+parts.join(' + ')+')</em>':'')+'</span>'
+      +'<span class="s">'+esc([l.opt,l.code].filter(Boolean).join(' · '))+' · 개당 '+won(l.price)+'원'+(parts.length?' · <em>할인 '+pct(r.eff)+' ('+parts.join(SET.mode==='seq'?' → ':' + ')+')</em>':'')+'</span>'
       +'<div class="c"><button class="q" type="button" data-act="minus" aria-label="수량 줄이기">−</button><b class="num">'+l.qty+'</b><button class="q" type="button" data-act="plus" aria-label="수량 늘리기">+</button><span class="sp"></span>'
       +(l.gift?'':'<button class="chip'+(l.rate!=null?' on':'')+'" type="button" data-act="disc">'+(l.rate!=null?'이 품목 '+pct(l.rate):'품목 할인')+'</button>')
       +'<button class="chip del" type="button" data-act="del">삭제</button></div>'
@@ -2931,7 +2935,8 @@ function renderCart(){
       +'</li>';
   }).join('');
   $('cartOpts').hidden=empty;$('cartCopy').disabled=empty;$('cartClear').disabled=empty;$('cartCust').disabled=empty&&!QS.list.length;
-  $('modeTag').textContent=SET.mode==='seq'?'순차 적용(앞 할인 뒤 금액에 다음 할인)':'합산 적용(율을 더해 한 번에)';
+  $('modeTag').textContent=SET.mode==='seq'?'제품 → 지점 → 매니저 순서로, 앞 할인 뒤 남은 금액에 다음 할인':'제품+지점+매니저 율을 더해 한 번에';
+  Array.prototype.forEach.call($('modeSeg').children,function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-qmode')===(SET.mode==='seq'?'seq':'sum')))});
   $('dcells').innerHTML=cellHTML('prod','제품',c)+cellHTML('br','지점',c)+cellHTML('mr','매니저',c);
   $('instChips').innerHTML=INST.map(function(m){
     var x=m?calc(Object.assign({},CART,{months:m})):c;
@@ -2946,8 +2951,9 @@ function renderCart(){
   if(!empty){
     T.push(['정상가 합계',won(c.base)+'원','sub']);
     if(c.dP)T.push(['제품 할인','-'+won(c.dP)+'원','minus sub']);
-    if(c.dB)T.push(['지점 할인 '+pct(c.br),'-'+won(c.dB)+'원','minus sub']);
-    if(c.dM)T.push(['매니저 할인 '+pct(c.mr),'-'+won(c.dM)+'원','minus sub']);
+    if(c.dB)T.push([dlbl('B',c),'-'+won(c.dB)+'원','minus sub']);
+    if(c.dM)T.push([dlbl('M',c),'-'+won(c.dM)+'원','minus sub']);
+    if(c.base&&(c.dP||c.dB||c.dM)){var tot=c.dP+c.dB+c.dM;T.push([(SET.mode==='seq'?'합계 할인율 (순차 적용 결과)':'합계 할인율'),pct(Math.round(tot/c.base*1000)/10),'sub'])}
     if(c.round)T.push(['끝자리 절사',won(c.round)+'원','minus sub']);
     if(c.adjust)T.push(['금액 조정(직접 입력)',(c.adjust>0?'+':'')+won(c.adjust)+'원','minus sub']);
     T.push(['결제 금액 · '+c.qty+'개',won(c.pay)+'원','big']);
@@ -3145,6 +3151,7 @@ $('cview').addEventListener('click',function(e){
 });
 addEventListener('afterprint',function(){document.body.classList.remove('cvp')});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('cview').hidden){e.stopImmediatePropagation();closeCust()}},true);
+$('modeSeg').addEventListener('click',function(e){var b=e.target.closest('[data-qmode]');if(!b)return;SET.mode=b.getAttribute('data-qmode');saveSet();changed()});
 $('cartSet').addEventListener('click',function(){requireUnlock(function(){openAdmin(VIEW==='detail'&&cur?cur.gid:'',VIEW==='detail'&&cur?cur.name:'',true);admShowDisc()})});
 
 
@@ -3262,8 +3269,8 @@ function openPay(){
     +'<p class="sh-sub">실제 결제는 매장 카드 단말기·간편결제에서 해요. 이 화면은 금액 확인과 판매 기록용이에요.'+(QS.active?' 지금 보는 '+QS.active+'안으로 기록해요.':'')+'</p>'
     +'<dl class="paysum"><dt>정상가 합계 · '+c.qty+'개</dt><dd class="num">'+won(c.base)+'원</dd>'
     +(c.dP?'<dt>제품 할인</dt><dd class="num minus">-'+won(c.dP)+'원</dd>':'')
-    +(c.dB?'<dt>지점 할인 '+pct(c.br)+'</dt><dd class="num minus">-'+won(c.dB)+'원</dd>':'')
-    +(c.dM?'<dt>매니저 할인 '+pct(c.mr)+'</dt><dd class="num minus">-'+won(c.dM)+'원</dd>':'')
+    +(c.dB?'<dt>'+dlbl('B',c)+'</dt><dd class="num minus">-'+won(c.dB)+'원</dd>':'')
+    +(c.dM?'<dt>'+dlbl('M',c)+'</dt><dd class="num minus">-'+won(c.dM)+'원</dd>':'')
     +(c.round?'<dt>끝자리 절사</dt><dd class="num minus">'+won(c.round)+'원</dd>':'')
     +(c.adjust?'<dt>금액 조정(직접 입력)</dt><dd class="num minus">'+(c.adjust>0?'+':'')+won(c.adjust)+'원</dd>':'')
     +'<dt class="big">결제 금액</dt><dd class="big num">'+won(c.pay)+'원</dd>'
