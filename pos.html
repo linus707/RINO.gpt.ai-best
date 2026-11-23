@@ -319,6 +319,13 @@ a.pd-ln:hover{background:var(--sub)}
 .gear:hover svg{stroke:#fff}
 
 /* 갤러리 사진 */
+.stage .gdots{position:absolute;left:0;right:0;bottom:14px;z-index:3;display:flex;justify-content:center;gap:7px}
+.stage.has-desc .gdots{bottom:104px}
+.stage .gdots button{width:9px;height:9px;padding:0;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.stage .gdots button[aria-selected="true"]{background:#fff;width:22px;border-radius:5px}
+.stage .gcnt{position:absolute;right:14px;top:14px;z-index:3;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:700}
+.mp-list{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.mp-c{width:104px;display:grid;gap:4px}.mp-c img{width:104px;height:78px;object-fit:cover;border-radius:6px;display:block;background:#eee}.mp-c div{display:flex;gap:2px}.mp-c .btn{height:24px;padding:0 6px;font-size:11px}
 .stage .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .stage .shade{display:none;position:absolute;left:0;right:0;top:0;height:110px;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
 .stage.has-photo .art,.stage.has-photo .ghost{display:none}
@@ -802,6 +809,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <div class="stage">
         <div class="ghost" id="ghost" aria-hidden="true"></div>
         <img class="photo" id="photo" alt="" hidden>
+        <div class="gcnt" id="gcnt" hidden></div><div class="gdots" id="gdots" hidden role="tablist" aria-label="사진 번호"></div>
         <div class="shade" aria-hidden="true"></div>
         <div class="gt"><b id="stTitle"></b><span id="stSize"></span></div>
         <svg class="art" viewBox="0 0 620 300" role="img" aria-label="제품 예시 그림" xmlns="http://www.w3.org/2000/svg">
@@ -1025,6 +1033,12 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           </div>
         </div>
       </div>
+    </section>
+    <section class="sh-sec">
+      <h4>슬라이드 사진 (여러 장)</h4>
+      <p class="hint">손님 화면 그림에서 좌우로 넘겨 볼 사진을 여러 장 넣어요. 첫 장은 위에서 넣은 「이 모델 전체」 사진이고, 여기 사진이 그 뒤에 이어져요(최대 20장). 파일 여러 개를 한 번에 고를 수 있어요.</p>
+      <div class="mp-list" id="mpList"></div>
+      <div class="ph-btns"><label class="btn"><input type="file" id="mpFile" accept="image/*" multiple hidden>사진 여러 장 넣기</label></div>
     </section>
 
         </div>
@@ -1271,7 +1285,7 @@ function loadPhotos(){
 }
 function makeThumbs(){
   if(thumbBusy)return;
-  var todo=[];PHOTO.forEach(function(u,k){if(/^(model|code):/.test(k)&&(!THUMB.has(k)||THUMB_SRC[k]!==PHOTO_AT[k]))todo.push(k)});
+  var todo=[];PHOTO.forEach(function(u,k){if(/^(model|code|mp):/.test(k)&&(!THUMB.has(k)||THUMB_SRC[k]!==PHOTO_AT[k]))todo.push(k)});
   if(!todo.length)return;
   thumbBusy=true;
   (function next(){
@@ -1298,11 +1312,15 @@ function modelPhotoId(){return 'model:'+cur.gid+':'+cur.key}
 function photoFor(v){return PHOTO.get('code:'+v.code)||PHOTO.get(modelPhotoId())||null}
 /* 사진 넘기기: 이 모델의 사진(모델 사진 + 옵션별 사진)을 화살표로 훑어봐요. 고른 규격·색상·가격은 바뀌지 않아요.
    옵션(규격·색상)을 새로 고르면 다시 그 옵션의 사진으로 돌아와요. */
+/* 슬라이드 사진: 제품 하나에 여러 장(SET.mph[oid]=[번호…], 사진은 IndexedDB 'mp:'+oid+':'+번호). 첫 장은 「이 모델 전체」 사진이에요 */
+function mphIds(oid){var d=SET.mph&&SET.mph[oid];return Array.isArray(d)?d:[]}
+function mphPhotoId(oid,id){return 'mp:'+oid+':'+id}
 var GAL={oid:'',vi:-1,idx:-1};
 function galList(){
   var out=[],seen={};
   function add(u){if(u&&!seen[u]){seen[u]=1;out.push(u)}}
   add(PHOTO.get(modelPhotoId()));
+  mphIds(cur.oid).forEach(function(id){add(PHOTO.get(mphPhotoId(cur.oid,id)))});
   cur.variants.forEach(function(v){add(PHOTO.get('code:'+v.code))});
   return out;
 }
@@ -1310,6 +1328,14 @@ function galPhoto(v,list){
   if(GAL.oid!==cur.oid||GAL.vi!==vi)GAL={oid:'',vi:-1,idx:-1}; // 옵션을 새로 골랐거나 다른 제품이면 처음 상태
   if(GAL.idx>=0&&list[GAL.idx])return list[GAL.idx];
   return photoFor(v);
+}
+function galDots(gl,gi){
+  var box=$('gdots'),cnt=$('gcnt'),show=gl.length>1;
+  box.hidden=cnt.hidden=!show;
+  if(!show){box.textContent='';return}
+  cnt.textContent=(gi<0?1:gi+1)+' / '+gl.length;
+  if(box.children.length!==gl.length){box.textContent='';gl.forEach(function(u,j){var b=el('button',{type:'button',role:'tab','aria-label':(j+1)+'번째 사진'});b.addEventListener('click',function(){GAL={oid:cur.oid,vi:vi,idx:j};render()});box.appendChild(b)})}
+  Array.prototype.forEach.call(box.children,function(b,j){b.setAttribute('aria-selected',String(j===gi))});
 }
 function stepPhoto(d){
   var list=galList();if(list.length<2)return;
@@ -1338,7 +1364,7 @@ var SET_KEY=NS+'settings',CART_KEY=NS+'cart';
 var DEFAULT_SET={
   storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
   branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
-  menus:null,moved:{},merge:{},names:{},descs:{},details:{},deleted:[],vadd:[],vedit:{},flow:true,
+  menus:null,moved:{},merge:{},names:{},descs:{},details:{},mph:{},deleted:[],vadd:[],vedit:{},flow:true,
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -1709,7 +1735,8 @@ function render(){
   $('sDisc').textContent=won(pv.pay)+' 원';
   $('sDiscNote').textContent='지금 할인 기준 '+pct(dRate)+' (장바구니에서 바꿔요)';
   $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
-  var gi=gl.indexOf(ph); // 사진 화살표: 사진이 2장 이상일 때만 보여요(옵션은 그대로)
+  var gi=gl.indexOf(ph); // 사진 화살표·점·번호: 사진이 2장 이상일 때만 보여요(옵션은 그대로)
+  galDots(gl,gi);
   $('prev').disabled=gi<=0;$('next').disabled=gi<0||gi>=gl.length-1;
   $('prev').hidden=$('next').hidden=gl.length<2;
   Array.prototype.forEach.call($('types').children,function(b){
@@ -2723,7 +2750,7 @@ function importPhotos(file){
     if(!d||!Array.isArray(d.photos))throw 0;
     d.photos.forEach(function(p){
       if(!p||!/^data:image\//.test(p.data))return;
-      if(d.kind==='pos-photos-v2'&&/^(code|model|detail):/.test(p.id)){out.push({id:p.id,blob:dataToBlob(p.data),at:p.at||Date.now()});return}
+      if(d.kind==='pos-photos-v2'&&/^(code|model|detail|mp):/.test(p.id)){out.push({id:p.id,blob:dataToBlob(p.data),at:p.at||Date.now()});return}
       if(d.kind!=='pos-photos')return;
       // 예전 POS 백업: code(품목) · model(모델명) · kw(이름에 든 글자)
       var K=String(p.key||'').toUpperCase();
@@ -3519,6 +3546,15 @@ $('qm').addEventListener('click',function(){if(qty>1){qty--;render()}});
 $('qp').addEventListener('click',function(){if(qty<99){qty++;render()}});
 $('prev').addEventListener('click',function(){stepPhoto(-1)});
 $('next').addEventListener('click',function(){stepPhoto(1)});
+(function(){ // 손가락·마우스로 밀어서 넘기기, 키보드 ← →
+  var st=document.querySelector('.stage'),x0=null;
+  st.addEventListener('touchstart',function(e){x0=e.touches[0].clientX},{passive:true});
+  st.addEventListener('touchend',function(e){if(x0==null)return;var dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)stepPhoto(dx<0?1:-1)},{passive:true});
+  document.addEventListener('keydown',function(e){
+    if(VIEW!=='detail'||!cur||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.target.isContentEditable||e.ctrlKey||e.metaKey||e.altKey)return;
+    if(e.key==='ArrowRight'){stepPhoto(1)}else if(e.key==='ArrowLeft'){stepPhoto(-1)}
+  });
+})();
 $('q').addEventListener('keydown',function(e){
   if(e.key==='Enter'){e.preventDefault();search()}
   else if(e.key==='Escape'){$('sres').hidden=true}
@@ -3549,7 +3585,44 @@ function renderPhotoPart(){
     ?'지금 고른 품목('+(opt?opt+' · ':'')+v.code+')에만 사진이 들어가요.'
     :'「'+cur.name+'」의 모든 규격·색상('+cur.variants.length+'개)에 같은 사진이 들어가요.';
   $('phDel').disabled=!u;
+  renderMpList();
 }
+function renderMpList(){
+  var box=$('mpList');if(!box||!cur)return;box.textContent='';
+  var ids=mphIds(cur.oid);
+  if(!ids.length){box.appendChild(el('p',{class:'hint',style:'margin:0'},'아직 슬라이드 사진이 없어요.'));return}
+  ids.forEach(function(id,i){
+    var u=PHOTO.get(mphPhotoId(cur.oid,id)),c=el('div',{class:'mp-c','data-mp':id});
+    if(u){var im=el('img',{alt:(i+1)+'번째 슬라이드 사진'});im.src=THUMB.get(mphPhotoId(cur.oid,id))||u;c.appendChild(im)}else c.appendChild(el('span',{class:'hint'},'사진 없음'));
+    var d=el('div');d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'l','aria-label':'앞으로'},'←'));d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'r','aria-label':'뒤로'},'→'));d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'x',style:'color:var(--err)','aria-label':'지우기'},'×'));
+    c.appendChild(d);box.appendChild(c);
+  });
+}
+$('mpList').addEventListener('click',function(e){
+  var b=e.target.closest('[data-mpa]');if(!b||!cur)return;touch();
+  var oid=cur.oid,id=b.closest('[data-mp]').getAttribute('data-mp'),a=b.getAttribute('data-mpa'),ids=mphIds(oid).slice(),i=ids.indexOf(id);if(i<0)return;
+  SET.mph=SET.mph||{};
+  if(a==='x'){
+    ids.splice(i,1);if(ids.length)SET.mph[oid]=ids;else delete SET.mph[oid];saveSet();
+    phTx('readwrite',function(st){st.delete('th:'+mphPhotoId(oid,id));return st.delete(mphPhotoId(oid,id))}).then(loadPhotos).then(function(){renderPhotoPart();render();toast('사진을 뺐어요')});return;
+  }
+  if(a==='l'&&i>0)ids.splice(i-1,0,ids.splice(i,1)[0]);else if(a==='r'&&i<ids.length-1)ids.splice(i+1,0,ids.splice(i,1)[0]);else return;
+  SET.mph[oid]=ids;saveSet();renderMpList();render();
+});
+$('mpFile').addEventListener('change',function(){
+  var fs=Array.prototype.slice.call(this.files||[]).filter(function(f){return /^image\//.test(f.type)});this.value=''; // 값을 비우면 목록도 비워지니 먼저 복사해요
+  if(!fs.length||!cur)return;touch();
+  var oid=cur.oid,have=mphIds(oid).length;
+  if(have+fs.length>20){fs=fs.slice(0,Math.max(0,20-have));toast('슬라이드 사진은 20장까지예요');if(!fs.length)return}
+  toast('사진 '+fs.length+'장을 넣는 중이에요…');
+  var made=[],chain=Promise.resolve();
+  fs.forEach(function(f){chain=chain.then(function(){return shrink(f)}).then(function(blob){
+    var id=dbNewId();return phTx('readwrite',function(st){return st.put({id:mphPhotoId(oid,id),blob:blob,at:Date.now()})}).then(function(){made.push(id)});
+  })});
+  chain.then(function(){SET.mph=SET.mph||{};SET.mph[oid]=mphIds(oid).concat(made);saveSet();return loadPhotos()}).then(function(){
+    if(cur&&cur.oid===oid){renderPhotoPart();render()}if(VIEW==='admin')admRefresh();setInfo();toast('사진 '+made.length+'장을 넣었어요');
+  }).catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+});
 function renderPriceTable(){
   var body=$('ptBody');body.textContent='';
   cur.variants.forEach(function(v){
@@ -3797,7 +3870,7 @@ $('mgrPane').addEventListener('click',function(e){
   else if(b.hasAttribute('data-unpromo')){b.getAttribute('data-unpromo').split(',').forEach(function(c){delete SET.itemRates[c]});setChanged('모델 할인율을 뺐어요')}
   else if(b.hasAttribute('data-resetset')){
     if(!confirm('할인·결제 설정, 숨긴 상품, 모델별 할인율, 매장 이름을 처음 상태로 되돌릴까요?'))return;
-    var keep={menus:SET.menus,moved:SET.moved,merge:SET.merge,names:SET.names,descs:SET.descs,details:SET.details,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
+    var keep={menus:SET.menus,moved:SET.moved,merge:SET.merge,names:SET.names,descs:SET.descs,details:SET.details,mph:SET.mph,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
     SET=Object.assign(clone(DEFAULT_SET),keep);giftRefresh();applyStoreName();setChanged('설정을 초기화했어요');fillModels();renderModel();
   }else return;
   renderMgrPane();
