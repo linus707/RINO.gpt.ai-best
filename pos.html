@@ -325,6 +325,9 @@ a.pd-ln:hover{background:var(--sub)}
 .stage .gdots button{width:9px;height:9px;padding:0;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .stage .gdots button[aria-selected="true"]{background:#fff;width:22px;border-radius:5px}
 .stage .gcnt{position:absolute;right:14px;top:14px;z-index:3;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:700}
+.mp-drop{display:grid;gap:4px;place-items:center;margin-top:10px;padding:22px 16px;border:2px dashed #bbb;border-radius:var(--r-lg,14px);background:#fafafa;cursor:pointer;font-weight:800;font-size:15px;text-align:center}
+.mp-drop small{font-weight:400;font-size:12px;color:var(--tx3)}.mp-drop:hover,.mp-drop.on{border-color:#2189ff;background:#f1f7ff}
+.mp-c{position:relative}.mp-top{position:absolute;left:4px;top:4px;padding:1px 7px;border-radius:10px;background:#000;color:#fff;font-size:11px;font-weight:700}
 .mp-list{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .mp-c{width:104px;display:grid;gap:4px}.mp-c img{width:104px;height:78px;object-fit:cover;border-radius:6px;display:block;background:#eee}.mp-c div{display:flex;gap:2px}.mp-c .btn{height:24px;padding:0 6px;font-size:11px}
 .stage .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -1018,7 +1021,14 @@ select.pin{height:36px;font-weight:700;font-size:14px}
         </div>
         <div data-apane="photo" hidden>
     <section class="sh-sec">
-      <h4>사진</h4>
+      <h4>제품 사진 (여러 장 · 슬라이드)</h4>
+      <p class="hint">손님 화면 그림에서 좌우로 넘겨 볼 사진을 여러 장 넣어요. 맨 앞 사진이 대표(첫 화면) 사진이에요. 사진은 ← → 로 순서를 바꾸고 × 로 지워요.</p>
+      <div class="mp-list" id="mpList"></div>
+      <label class="mp-drop" id="mpDrop"><input type="file" id="mpFile" accept="image/*" multiple hidden>＋ 사진 여러 장 넣기<small>눌러서 고르거나, 이 칸에 끌어다 놓거나, Ctrl+V로 붙여넣어요 · 최대 20장</small></label>
+    </section>
+    <details class="sh-sec" id="optPhotoSec">
+      <summary style="cursor:pointer;font-weight:800;font-size:16px;padding:4px 0">옵션(규격·색상)마다 다른 사진 넣기 (선택)</summary>
+      <p class="hint" style="margin:6px 0 0">특정 규격이나 색상을 골랐을 때 그 사진으로 보여 주고 싶을 때만 써요. 대부분은 위 「제품 사진」만으로 충분해요.</p>
       <div class="srow"><label for="admVar">옵션<small>「고른 품목만」으로 넣을 때 쓸 옵션이에요</small></label><select class="pin" id="admVar" style="width:240px;text-align:left"></select></div>
       <div class="ph-row">
         <div class="ph-prev" id="phPrev"></div>
@@ -1034,13 +1044,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           </div>
         </div>
       </div>
-    </section>
-    <section class="sh-sec">
-      <h4>슬라이드 사진 (여러 장)</h4>
-      <p class="hint">손님 화면 그림에서 좌우로 넘겨 볼 사진을 여러 장 넣어요. 첫 장은 위에서 넣은 「이 모델 전체」 사진이고, 여기 사진이 그 뒤에 이어져요(최대 20장). 파일 여러 개를 한 번에 고를 수 있어요.</p>
-      <div class="mp-list" id="mpList"></div>
-      <div class="ph-btns"><label class="btn"><input type="file" id="mpFile" accept="image/*" multiple hidden>사진 여러 장 넣기</label></div>
-    </section>
+    </details>
 
         </div>
         <div data-apane="detail" hidden>
@@ -1310,18 +1314,27 @@ function makeThumbs(){
   })();
 }
 function modelPhotoId(){return 'model:'+cur.gid+':'+cur.key}
-function photoFor(v){return PHOTO.get('code:'+v.code)||PHOTO.get(modelPhotoId())||null}
+function photoFor(v){var sl=cur?photoSlots():[];return PHOTO.get('code:'+v.code)||(sl[0]&&sl[0].url)||PHOTO.get(modelPhotoId())||null}
 /* 사진 넘기기: 이 모델의 사진(모델 사진 + 옵션별 사진)을 화살표로 훑어봐요. 고른 규격·색상·가격은 바뀌지 않아요.
    옵션(규격·색상)을 새로 고르면 다시 그 옵션의 사진으로 돌아와요. */
 /* 슬라이드 사진: 제품 하나에 여러 장(SET.mph[oid]=[번호…], 사진은 IndexedDB 'mp:'+oid+':'+번호). 첫 장은 「이 모델 전체」 사진이에요 */
 function mphIds(oid){var d=SET.mph&&SET.mph[oid];return Array.isArray(d)?d:[]}
 function mphPhotoId(oid,id){return 'mp:'+oid+':'+id}
+/* 제품 사진 한 줄 목록: 순서(SET.mph[oid])에 「@m」(예전 「이 모델 전체」 사진)과 슬라이드 사진 번호가 섞여 있어요. 순서에 없는 「@m」은 맨 앞에 둬요 */
+function photoOrder(){
+  var ord=mphIds(cur.oid).slice(),mid=modelPhotoId();
+  if(PHOTO.has(mid)&&ord.indexOf('@m')<0)ord.unshift('@m');
+  return ord.filter(function(id){return id==='@m'?PHOTO.has(mid):PHOTO.has(mphPhotoId(cur.oid,id))});
+}
+function photoSlots(){
+  var mid=modelPhotoId();
+  return photoOrder().map(function(id){var dbid=id==='@m'?mid:mphPhotoId(cur.oid,id);return {id:id,dbid:dbid,url:PHOTO.get(dbid)}});
+}
 var GAL={oid:'',vi:-1,idx:-1};
 function galList(){
   var out=[],seen={};
   function add(u){if(u&&!seen[u]){seen[u]=1;out.push(u)}}
-  add(PHOTO.get(modelPhotoId()));
-  mphIds(cur.oid).forEach(function(id){add(PHOTO.get(mphPhotoId(cur.oid,id)))});
+  photoSlots().forEach(function(sl){add(sl.url)});
   cur.variants.forEach(function(v){add(PHOTO.get('code:'+v.code))});
   return out;
 }
@@ -3414,7 +3427,9 @@ function artFor(gid){
   ART[gid]='<svg viewBox="50 0 540 300" aria-hidden="true">'+(g?g.innerHTML:'')+'</svg>';
   return ART[gid];
 }
-function modelThumb(m){var k='model:'+m.gid+':'+m.key,u=THUMB.get(k)||PHOTO.get(k);if(!u)m.variants.some(function(v){var c='code:'+v.code;u=THUMB.get(c)||PHOTO.get(c);return !!u});return u||null}
+function modelThumb(m){var k='model:'+m.gid+':'+m.key,u=THUMB.get(k)||PHOTO.get(k);
+  if(!u){var mp=(SET.mph&&SET.mph[m.oid])||[];for(var i=0;i<mp.length&&!u;i++){if(mp[i]==='@m')continue;var q='mp:'+m.oid+':'+mp[i];u=THUMB.get(q)||PHOTO.get(q)}}
+  if(!u)m.variants.some(function(v){var c='code:'+v.code;u=THUMB.get(c)||PHOTO.get(c);return !!u});return u||null}
 function minPrice(m){return m.variants.reduce(function(a,v){return Math.min(a,v.price)},Infinity)}
 function seriesList(box){
   var c={};visibleModels(box).forEach(function(m){c[m.series]=(c[m.series]||0)+1});
@@ -3590,39 +3605,57 @@ function renderPhotoPart(){
 }
 function renderMpList(){
   var box=$('mpList');if(!box||!cur)return;box.textContent='';
-  var ids=mphIds(cur.oid);
-  if(!ids.length){box.appendChild(el('p',{class:'hint',style:'margin:0'},'아직 슬라이드 사진이 없어요.'));return}
-  ids.forEach(function(id,i){
-    var u=PHOTO.get(mphPhotoId(cur.oid,id)),c=el('div',{class:'mp-c','data-mp':id});
-    if(u){var im=el('img',{alt:(i+1)+'번째 슬라이드 사진'});im.src=THUMB.get(mphPhotoId(cur.oid,id))||u;c.appendChild(im)}else c.appendChild(el('span',{class:'hint'},'사진 없음'));
+  var slots=photoSlots();
+  if(!slots.length){box.appendChild(el('p',{class:'hint',style:'margin:0'},'아직 사진이 없어요. 아래 버튼으로 여러 장을 한 번에 넣어 보세요.'));return}
+  slots.forEach(function(sl,i){
+    var c=el('div',{class:'mp-c','data-mp':sl.id});
+    var im=el('img',{alt:(i+1)+'번째 사진'});im.src=THUMB.get(sl.dbid)||sl.url;c.appendChild(im);
+    if(i===0)c.appendChild(el('span',{class:'mp-top'},'대표'));
     var d=el('div');d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'l','aria-label':'앞으로'},'←'));d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'r','aria-label':'뒤로'},'→'));d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'x',style:'color:var(--err)','aria-label':'지우기'},'×'));
     c.appendChild(d);box.appendChild(c);
   });
 }
 $('mpList').addEventListener('click',function(e){
   var b=e.target.closest('[data-mpa]');if(!b||!cur)return;touch();
-  var oid=cur.oid,id=b.closest('[data-mp]').getAttribute('data-mp'),a=b.getAttribute('data-mpa'),ids=mphIds(oid).slice(),i=ids.indexOf(id);if(i<0)return;
+  var oid=cur.oid,id=b.closest('[data-mp]').getAttribute('data-mp'),a=b.getAttribute('data-mpa'),ord=photoOrder(),i=ord.indexOf(id);if(i<0)return;
   SET.mph=SET.mph||{};
   if(a==='x'){
-    ids.splice(i,1);if(ids.length)SET.mph[oid]=ids;else delete SET.mph[oid];saveSet();
-    phTx('readwrite',function(st){st.delete('th:'+mphPhotoId(oid,id));return st.delete(mphPhotoId(oid,id))}).then(loadPhotos).then(function(){renderPhotoPart();render();toast('사진을 뺐어요')});return;
+    var dbid=id==='@m'?modelPhotoId():mphPhotoId(oid,id);
+    ord.splice(i,1);if(ord.length)SET.mph[oid]=ord;else delete SET.mph[oid];saveSet();
+    phTx('readwrite',function(st){st.delete('th:'+dbid);return st.delete(dbid)}).then(loadPhotos).then(function(){renderPhotoPart();render();if(VIEW==='admin')admRefresh();setInfo();toast('사진을 뺐어요')});return;
   }
-  if(a==='l'&&i>0)ids.splice(i-1,0,ids.splice(i,1)[0]);else if(a==='r'&&i<ids.length-1)ids.splice(i+1,0,ids.splice(i,1)[0]);else return;
-  SET.mph[oid]=ids;saveSet();renderMpList();render();
+  if(a==='l'&&i>0)ord.splice(i-1,0,ord.splice(i,1)[0]);else if(a==='r'&&i<ord.length-1)ord.splice(i+1,0,ord.splice(i,1)[0]);else return;
+  SET.mph[oid]=ord;saveSet();renderMpList();GAL={oid:'',vi:-1,idx:-1};render();
 });
-$('mpFile').addEventListener('change',function(){
-  var fs=Array.prototype.slice.call(this.files||[]).filter(function(f){return /^image\//.test(f.type)});this.value=''; // 값을 비우면 목록도 비워지니 먼저 복사해요
-  if(!fs.length||!cur)return;touch();
-  var oid=cur.oid,have=mphIds(oid).length;
-  if(have+fs.length>20){fs=fs.slice(0,Math.max(0,20-have));toast('슬라이드 사진은 20장까지예요');if(!fs.length)return}
+function mpAddFiles(files){
+  var fs=Array.prototype.filter.call(files||[],function(f){return /^image\//.test(f.type)});
+  if(!fs.length||!cur){return}
+  var oid=cur.oid,ord0=photoOrder(),have=ord0.length;
+  if(have+fs.length>20){fs=fs.slice(0,Math.max(0,20-have));toast('사진은 20장까지예요');if(!fs.length)return}
   toast('사진 '+fs.length+'장을 넣는 중이에요…');
   var made=[],chain=Promise.resolve();
   fs.forEach(function(f){chain=chain.then(function(){return shrink(f)}).then(function(blob){
     var id=dbNewId();return phTx('readwrite',function(st){return st.put({id:mphPhotoId(oid,id),blob:blob,at:Date.now()})}).then(function(){made.push(id)});
   })});
-  chain.then(function(){SET.mph=SET.mph||{};SET.mph[oid]=mphIds(oid).concat(made);saveSet();return loadPhotos()}).then(function(){
-    if(cur&&cur.oid===oid){renderPhotoPart();render()}if(VIEW==='admin')admRefresh();setInfo();toast('사진 '+made.length+'장을 넣었어요');
+  chain.then(function(){SET.mph=SET.mph||{};SET.mph[oid]=ord0.concat(made);saveSet();return loadPhotos()}).then(function(){
+    if(cur&&cur.oid===oid){renderPhotoPart();GAL={oid:'',vi:-1,idx:-1};render()}if(VIEW==='admin')admRefresh();setInfo();toast('사진 '+made.length+'장을 넣었어요');
   }).catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+}
+$('mpFile').addEventListener('change',function(){
+  var fs=Array.prototype.slice.call(this.files||[]);this.value=''; // 값을 비우면 목록도 비워지니 먼저 복사해요
+  touch();mpAddFiles(fs);
+});
+['mpDrop','mpList'].forEach(function(id){
+  var z=$(id);
+  z.addEventListener('dragover',function(e){if(e.dataTransfer&&Array.prototype.some.call(e.dataTransfer.types||[],function(t){return t==='Files'})){e.preventDefault();$('mpDrop').classList.add('on')}});
+  z.addEventListener('dragleave',function(){$('mpDrop').classList.remove('on')});
+  z.addEventListener('drop',function(e){var fs=e.dataTransfer&&e.dataTransfer.files;$('mpDrop').classList.remove('on');if(!fs||!fs.length)return;e.preventDefault();touch();mpAddFiles(fs)});
+});
+document.addEventListener('paste',function(e){ // 글 입력칸이 아닌 곳에서 사진을 붙여넣으면 제품 사진으로 들어가요
+  if(VIEW!=='admin'||!cur||ADM.tool)return;
+  var t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable||(t.closest&&t.closest('#dbList'))))return;
+  var imgs=Array.prototype.filter.call((e.clipboardData&&e.clipboardData.files)||[],function(f){return /^image\//.test(f.type)});if(!imgs.length)return;
+  e.preventDefault();touch();mpAddFiles(imgs);
 });
 function renderPriceTable(){
   var body=$('ptBody');body.textContent='';
