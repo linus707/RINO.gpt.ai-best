@@ -325,6 +325,8 @@ a.pd-ln:hover{background:var(--sub)}
 .stage .gdots button{width:9px;height:9px;padding:0;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .stage .gdots button[aria-selected="true"]{background:#fff;width:22px;border-radius:5px}
 .stage .gcnt{position:absolute;right:14px;top:14px;z-index:3;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:700}
+.v-h{cursor:grab;color:var(--tx3);font-size:18px;padding:0 4px;user-select:none}
+.pt-mv{display:inline-flex;flex-direction:column;margin-right:8px;vertical-align:middle}.pt-mv button{height:13px;line-height:13px;padding:0 5px;font-size:9px;color:var(--tx3);background:none}.pt-mv button:hover{color:#000}
 .mseg{display:flex;gap:6px;margin:6px 0 2px;flex-wrap:wrap}.mseg button{height:32px;padding:0 12px;border-radius:var(--r-full);box-shadow:var(--ring);background:#fff;font-size:13px;font-weight:700}.mseg button[aria-checked="true"]{background:#000;color:#fff;box-shadow:none}
 .mp-drop{display:grid;gap:4px;place-items:center;margin-top:10px;padding:22px 16px;border:2px dashed #bbb;border-radius:var(--r-lg,14px);background:#fafafa;cursor:pointer;font-weight:800;font-size:15px;text-align:center}
 .mp-drop small{font-weight:400;font-size:12px;color:var(--tx3)}.mp-drop:hover,.mp-drop.on{border-color:#2189ff;background:#f1f7ff}
@@ -1380,7 +1382,7 @@ var SET_KEY=NS+'settings',CART_KEY=NS+'cart';
 var DEFAULT_SET={
   storeName:'ACE BED',mode:'seq',modeV:2,prodDefault:0,groupRates:{},itemRates:{},
   branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
-  menus:null,moved:{},merge:{},names:{},descs:{},details:{},mph:{},deleted:[],vadd:[],vedit:{},flow:true,
+  menus:null,moved:{},merge:{},names:{},descs:{},details:{},mph:{},vorder:{},deleted:[],vadd:[],vedit:{},flow:true,
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -1579,8 +1581,15 @@ function finishGroup(g,map,custom){
   box.models=Object.keys(map).map(function(k){
     var tord=[];map[k].vs.forEach(function(v){var t=v.type||'';if(tord.indexOf(t)<0)tord.push(t)});
     var vs=map[k].vs.sort(function(a,b){return tord.indexOf(a.type||'')-tord.indexOf(b.type||'')||sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size)||a.price-b.price||a.color.localeCompare(b.color,'ko')});
-    var sizes=[];vs.forEach(function(v){if(sizes.indexOf(v.size)<0)sizes.push(v.size)});
     var oid=map[k].oid||g.id+'|'+k,nm=SET.names&&SET.names[oid],ds=SET.descs&&SET.descs[oid];
+    /* 내가 정한 옵션 순서(SET.vorder[oid]=[상품코드…]): 정한 것이 먼저, 나머지는 기본 순서로 뒤에 */
+    var vo=SET.vorder&&SET.vorder[oid];
+    if(Array.isArray(vo)&&vo.length){
+      var pos={};vo.forEach(function(c,i){pos[c]=i});
+      vs=vs.map(function(v,i){return [v,i]}).sort(function(a,b){var pa=pos[a[0].code],pb=pos[b[0].code];if(pa==null&&pb==null)return a[1]-b[1];if(pa==null)return 1;if(pb==null)return -1;return pa-pb}).map(function(x){return x[0]});
+      tord=[];vs.forEach(function(v){var t=v.type||'';if(tord.indexOf(t)<0)tord.push(t)});
+    }
+    var sizes=[];vs.forEach(function(v){if(sizes.indexOf(v.size)<0)sizes.push(v.size)});
     return {key:k,oid:oid,gid:g.id,name:nm||(custom?k:clean(k)),series:seriesOf(nm||k),desc:ds!=null?ds:(map[k].desc||''),variants:vs,sizes:sizes,types:tord.filter(Boolean).length?tord:[],main:map[k].main,ord:map[k].ord==null?1e7:map[k].ord,mine:!!map[k].mine};
   }).sort(custom||g.custom?function(a,b){return a.ord-b.ord||a.name.localeCompare(b.name,'ko')}:function(a,b){return (b.main-a.main)||a.ord-b.ord||a.name.localeCompare(b.name,'ko')});
   box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m;m.variants.forEach(function(v){CODE[v.code]={m:m,v:v,gid:g.id}})});
@@ -3668,6 +3677,7 @@ function renderPriceTable(){
   var body=$('ptBody');body.textContent='';
   cur.variants.forEach(function(v){
     var tr=el('tr',{'data-code':v.code}),td=el('td');
+    var mv=el('span',{class:'pt-mv'});mv.appendChild(el('button',{type:'button','data-ptmv':'-1','aria-label':'위로'},'▲'));mv.appendChild(el('button',{type:'button','data-ptmv':'1','aria-label':'아래로'},'▼'));td.appendChild(mv);
     td.appendChild(document.createTextNode(optOf(v)||'기본'));
     td.appendChild(el('small',{},v.code));
     tr.appendChild(td);
@@ -3686,6 +3696,8 @@ function renderVarMgr(){
   var box=$('vList');if(!box||!cur)return;box.textContent='';
   cur.variants.forEach(function(v){
     var row=el('div',{class:'adj','data-vcode':v.code,style:'flex-wrap:wrap;gap:6px;margin-bottom:6px'});
+    var hd=el('span',{class:'v-h',draggable:'true','data-vh':'1',title:'끌어서 순서 바꾸기'},'⠿');row.appendChild(hd);
+    row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'up','aria-label':'위로'},'↑'));row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'down','aria-label':'아래로'},'↓'));
     var sz=el('input',{class:'pin',maxlength:'12',list:'vSizes','aria-label':'규격',style:'width:110px;text-align:left'});sz.value=v.size||'';
     var ty=el('input',{class:'pin',maxlength:'12','aria-label':'타입',placeholder:'타입(E·N·T…)',style:'width:110px;text-align:left'});ty.value=v.type||'';
     var co=el('input',{class:'pin',maxlength:'20','aria-label':'색상·옵션',placeholder:'색상·옵션',style:'width:130px;text-align:left'});co.value=v.color||'';
@@ -3697,6 +3709,7 @@ function renderVarMgr(){
     var del=el('button',{class:'btn outl sm',type:'button','data-vact':'del',style:'color:#e5252a'},'삭제');row.appendChild(del);
     box.appendChild(row);
   });
+  if(SET.vorder&&SET.vorder[cur.oid]){var rb=el('div',{class:'adj','data-vreset':'1',style:'margin:2px 0 6px'});rb.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'vreset'},'↺ 기본 순서로 되돌리기'));box.appendChild(rb)}
   Object.keys(SET.vedit||{}).forEach(function(c){
     var x=SET.vedit[c];if(!x||!x.del||x.oid!==cur.oid)return;
     var r=el('div',{class:'adj','data-vcode':c,style:'gap:6px;margin-bottom:6px;opacity:.75'});
@@ -3706,6 +3719,25 @@ function renderVarMgr(){
   });
 }
 function varAfter(msg){saveSet();touch();rebuildAll(true);toast(msg)}
+/* 옵션 순서 바꾸기: 상품코드 순서를 저장해요. 가격 표·옵션 관리·손님 화면(규격·타입·색상 목록)이 모두 이 순서를 따라요 */
+function varMove(code,d,to){
+  if(!cur)return;
+  if(document.querySelector('#ptBody tr.chg'))$('ptSave').click(); // 고치던 가격이 있으면 먼저 저장해요
+  var codes=cur.variants.map(function(v){return v.code}),i=codes.indexOf(code);if(i<0)return;
+  var j=to!=null?to:i+d;if(j<0||j>=codes.length||j===i)return;
+  codes.splice(j,0,codes.splice(i,1)[0]);
+  SET.vorder=SET.vorder||{};SET.vorder[cur.oid]=codes;varAfter('옵션 순서를 바꿨어요');
+}
+(function(){ // 끌어서 순서 바꾸기(⠿)
+  var drag=null;
+  $('vList').addEventListener('dragstart',function(e){var h=e.target.closest&&e.target.closest('[data-vh]');if(!h)return;drag=h.closest('[data-vcode]').getAttribute('data-vcode');try{e.dataTransfer.setData('text/plain','opt');e.dataTransfer.effectAllowed='move'}catch(x){}});
+  $('vList').addEventListener('dragend',function(){drag=null});
+  $('vList').addEventListener('dragover',function(e){if(drag)e.preventDefault()});
+  $('vList').addEventListener('drop',function(e){
+    if(!drag)return;e.preventDefault();var r=e.target.closest('[data-vcode]');if(!r||!cur)return;
+    var to=cur.variants.map(function(v){return v.code}).indexOf(r.getAttribute('data-vcode'));if(to>=0)varMove(drag,0,to);drag=null;
+  });
+})();
 $('vSec').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b||!cur)return;
   if(b.id==='vAdd'){
@@ -3718,9 +3750,11 @@ $('vSec').addEventListener('click',function(e){
     $('vNewSize').value='';$('vNewType').value='';$('vNewColor').value='';$('vNewPrice').value='';
     varAfter('「'+[type,size,color].filter(Boolean).join(' ')+'」 옵션을 더했어요');return;
   }
+  if(b.getAttribute('data-vact')==='vreset'){if(SET.vorder)delete SET.vorder[cur.oid];varAfter('기본 순서로 되돌렸어요');return}
   var row=b.closest('[data-vcode]');if(!row)return;
   var code=row.getAttribute('data-vcode'),v=cur.variants.filter(function(x){return x.code===code})[0],act=b.getAttribute('data-vact');
   if(act==='restore'){if(SET.vedit)delete SET.vedit[code];varAfter('옵션을 되살렸어요');return}
+  if(act==='up'||act==='down'){varMove(code,act==='up'?-1:1);return}
   if(!v)return;
   if(act==='edit'){
     var ins=row.querySelectorAll('input'),ns=ins[0].value.trim().toUpperCase(),nt=ins[1].value.trim().toUpperCase(),nc=ins[2].value.trim();
@@ -3911,7 +3945,7 @@ $('mgrPane').addEventListener('click',function(e){
   else if(b.hasAttribute('data-unpromo')){b.getAttribute('data-unpromo').split(',').forEach(function(c){delete SET.itemRates[c]});setChanged('모델 할인율을 뺐어요')}
   else if(b.hasAttribute('data-resetset')){
     if(!confirm('할인·결제 설정, 숨긴 상품, 모델별 할인율, 매장 이름을 처음 상태로 되돌릴까요?'))return;
-    var keep={menus:SET.menus,moved:SET.moved,merge:SET.merge,names:SET.names,descs:SET.descs,details:SET.details,mph:SET.mph,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
+    var keep={menus:SET.menus,moved:SET.moved,merge:SET.merge,names:SET.names,descs:SET.descs,details:SET.details,mph:SET.mph,vorder:SET.vorder,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
     SET=Object.assign(clone(DEFAULT_SET),keep);giftRefresh();applyStoreName();setChanged('설정을 초기화했어요');fillModels();renderModel();
   }else return;
   renderMgrPane();
@@ -4025,6 +4059,7 @@ $('phDel').addEventListener('click',function(){
   if(!PHOTO.has(id)||!confirm('이 사진을 뺄까요?'))return;
   phTx('readwrite',function(st){st.delete('th:'+id);return st.delete(id)}).then(loadPhotos).then(function(){renderPhotoPart();render();setInfo();if(VIEW==='admin')admRefresh();toast('사진을 뺐어요')}).catch(function(){toast('사진을 빼지 못했어요')});
 });
+$('ptBody').addEventListener('click',function(e){var b=e.target.closest('[data-ptmv]');if(!b)return;touch();varMove(b.closest('tr').getAttribute('data-code'),+b.getAttribute('data-ptmv'))});
 $('adjApply').addEventListener('click',function(){
   var p=parseFloat(String($('adjPct').value).replace(',','.'));
   if(!isFinite(p)||p<=-100||p>500){$('adjPct').setAttribute('aria-invalid','true');toast('-99 ~ 500 사이 숫자를 적어 주세요');return}
