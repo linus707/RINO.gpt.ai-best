@@ -135,10 +135,15 @@ body.test .cstrip{background:#fff6dc}
 .pd-i{margin:28px 0 0}
 .pd-i img{display:block;width:100%;height:auto;border-radius:var(--r-lg,16px);background:var(--sub)}
 .pd-i figcaption{max-width:680px;margin:8px auto 0;font-size:13px;line-height:19px;color:var(--tx3);text-align:center}
-.pd-s{max-width:720px;margin:48px auto 0;font-size:26px;line-height:35px;letter-spacing:-.5px;overflow-wrap:anywhere}
-.pd-t{max-width:720px;margin:18px auto 0;font-size:17px;line-height:30px;color:var(--tx);overflow-wrap:anywhere}
+.pd-s{max-width:720px;margin:48px auto 0;font-size:var(--fs,26px);line-height:35px;letter-spacing:-.5px;overflow-wrap:anywhere}
+.pd-t{max-width:720px;margin:18px auto 0;font-size:var(--fs,17px);line-height:1.75;color:var(--tx);overflow-wrap:anywhere}
 .pd-t p{margin:0 0 14px;white-space:pre-line}.pd-t p:last-child{margin-bottom:0}
-.pd-t.c{text-align:center}
+.pd-t mark{background:linear-gradient(transparent 55%,#ffe066 55%);color:inherit;padding:0 1px}
+.pd-t strong{font-weight:800}
+.db-fmt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.db-fmt select{height:32px;border-radius:var(--r-full);padding:0 8px;font-size:13px;background:#fff;box-shadow:var(--ring);max-width:170px}
+.db-fmt .btn{height:32px;padding:0 12px;font-size:13px}
+.db-fmt .btn[aria-pressed="true"]{background:#000;color:#fff}
 .pd-hr{max-width:720px;margin:44px auto;border:0;border-top:1px solid var(--hair)}
 .db-list{display:grid;gap:12px}
 .db-blk{padding:12px;border-radius:var(--r-sm);box-shadow:var(--ring);background:#fff;display:grid;gap:8px}
@@ -577,7 +582,7 @@ body.test .cstrip{background:#fff6dc}
 .adm-pvbox{margin-top:10px;max-height:calc(100vh - 160px);overflow:auto;border-radius:var(--r-lg);box-shadow:var(--ring);padding:24px 20px}
 .adm-pvbox .pd-h{font-size:22px;line-height:30px}.adm-pvbox .pd-lead{font-size:15px;line-height:24px}
 .adm-pvbox .pd-b{margin-top:32px}.adm-pvbox .pd-b h3{margin-top:16px;font-size:19px;line-height:26px}.adm-pvbox .pd-b p{font-size:14px;line-height:22px}
-.adm-pvbox .pd-s{margin-top:24px;font-size:18px;line-height:25px}.adm-pvbox .pd-t{font-size:14px;line-height:23px;margin-top:12px}.adm-pvbox .pd-i{margin-top:16px}
+.adm-pvbox .pd-s{margin-top:24px;font-size:calc(var(--fs,26px)*.7);line-height:1.35}.adm-pvbox .pd-t{font-size:calc(var(--fs,17px)*.84);margin-top:12px}.adm-pvbox .pd-i{margin-top:16px}
 .adm-pvbox .pd-empty{margin:24px 0 0;text-align:center;font-size:13px;color:var(--tx3)}
 .pl-steps{margin:0;padding-left:20px;font-size:14px;line-height:24px}
 .admgo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px;padding:16px 18px;border-radius:var(--r-lg);background:#eef5ff}
@@ -686,8 +691,8 @@ select.pin{height:36px;font-weight:700;font-size:14px}
   .pdet .pd-h{font-size:24px;line-height:32px}
   .pd-b{margin-top:40px}
   .pd-b h3{font-size:21px;line-height:29px}
-  .pd-s{font-size:21px;line-height:29px;margin-top:36px}
-  .pd-t{font-size:16px;line-height:28px}
+  .pd-s{font-size:calc(var(--fs,26px)*.8);line-height:1.35;margin-top:36px}
+  .pd-t{font-size:calc(var(--fs,17px)*.94)}
   .pd-spec tbody th{width:96px}
   .db-row{grid-template-columns:72px minmax(0,1fr)}.db-im{width:72px;height:72px}
   .stage{height:300px}
@@ -2015,13 +2020,35 @@ function menuOptions(sel,withGift){return GROUPS.filter(function(g){return withG
 function detailOf(oid){var d=SET.details&&SET.details[oid];return Array.isArray(d)?d:[]}
 function detailPhotoId(oid,id){return 'detail:'+oid+':'+id}
 /* 블록 종류(k): (없음)=예전 칸[사진+제목+내용] · img=사진 · h=소제목 · txt=글 · hr=구분선. 블로그·스마트스토어 상세페이지처럼 사진과 글을 길게 섞어 쌓아요. */
-function pTexts(x){return String(x).split(/\n{2,}/).map(function(t){return t.trim()}).filter(Boolean).map(function(t){return '<p>'+esc(t)+'</p>'}).join('')}
+/* 글 꾸미기: 블록 단위(글꼴·크기·굵게·색·정렬) + 글 안에서 **굵게** · ==형광펜== 표시. 저장하는 값은 짧은 이름뿐이라 화면에는 아래 표에 있는 것만 써요. */
+var FONTS={'':{n:'기본 (고딕)'},
+  ng:{n:'나눔고딕',css:"'Nanum Gothic'",pkg:'nanum-gothic'},nm:{n:'나눔명조',css:"'Nanum Myeongjo'",pkg:'nanum-myeongjo'},
+  gb:{n:'고운바탕 (명조)',css:"'Gowun Batang'",pkg:'gowun-batang'},gd:{n:'고운돋움',css:"'Gowun Dodum'",pkg:'gowun-dodum'},
+  pen:{n:'나눔펜글씨 (손글씨)',css:"'Nanum Pen Script'",pkg:'nanum-pen-script'},jua:{n:'주아 (둥근 제목체)',css:"'Jua'",pkg:'jua'},bh:{n:'블랙한산스 (굵은 제목체)',css:"'Black Han Sans'",pkg:'black-han-sans'}};
+var FSIZES={s:['작게',14,20],m:['보통',17,26],l:['크게',22,34],x:['아주 크게',30,44]}; // [이름, 글 px, 소제목 px]
+var FCOLORS={'':['기본 (검정)',''],g:['회색','#6b6b6b'],r:['빨강','#d92d20'],o:['주황','#e8590c'],n:['초록','#2f9e44'],b:['파랑','#1c6ef2'],p:['보라','#7048e8']};
+var FONT_LOADED={};
+function ensureFont(k){
+  var f=FONTS[k];if(!f||!f.pkg||FONT_LOADED[k])return;FONT_LOADED[k]=1;
+  var l=document.createElement('link');l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/npm/@fontsource/'+f.pkg+'/index.css';document.head.appendChild(l); // 쓰는 글꼴만, 쓸 때 한 번 받아요
+}
+function fmtStyle(b,kind){
+  var st=[],f=FONTS[b.f];
+  if(f&&f.css){ensureFont(b.f);st.push('font-family:'+f.css+',"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif')}
+  var z=FSIZES[b.z];if(z&&b.z!=='m')st.push('--fs:'+(kind==='h'?z[2]:z[1])+'px');
+  if(b.b)st.push('font-weight:800');
+  var c=FCOLORS[b.c];if(c&&c[1])st.push('color:'+c[1]);
+  if(b.a==='c'||b.a==='r')st.push('text-align:'+(b.a==='c'?'center':'right'));
+  return st.length?' style="'+esc(st.join(';'))+'"':'';
+}
+function inlineFmt(t){return esc(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/==(.+?)==/g,'<mark>$1</mark>')}
+function pTexts(x){return String(x).split(/\n{2,}/).map(function(t){return t.trim()}).filter(Boolean).map(function(t){return '<p>'+inlineFmt(t)+'</p>'}).join('')}
 function blocksHTML(oid,blocks,title){
   return blocks.map(function(b){
     var u=PHOTO.get(detailPhotoId(oid,b.id)),t=String(b.t||'').trim(),x=String(b.x||'').trim(),k=b.k||'';
     if(k==='hr')return '<hr class="pd-hr">';
-    if(k==='h')return t?'<h3 class="pd-s">'+esc(t)+'</h3>':'';
-    if(k==='txt')return x?'<div class="pd-t'+(b.a==='c'?' c':'')+'">'+pTexts(x)+'</div>':'';
+    if(k==='h')return t?'<h3 class="pd-s"'+fmtStyle(b,'h')+'>'+esc(t)+'</h3>':'';
+    if(k==='txt')return x?'<div class="pd-t"'+fmtStyle(b,'t')+'>'+pTexts(x)+'</div>':'';
     if(k==='img')return u?'<figure class="pd-i"><img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy" decoding="async">'+(t?'<figcaption>'+esc(t)+'</figcaption>':'')+'</figure>':'';
     if(!u&&!t&&!x)return '';
     return '<figure class="pd-b">'+(u?'<img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy" decoding="async">':'')+(t?'<h3>'+esc(t)+'</h3>':'')+(x?'<p>'+esc(x)+'</p>':'')+'</figure>';
@@ -2059,6 +2086,14 @@ var DB_KINDS={img:'사진',txt:'글',h:'소제목',hr:'구분선'};
 function dbAddBar(idx){
   return '<div class="db-add" data-dbi="'+idx+'"><span>여기에 추가</span><button type="button" class="btn outl" data-dbadd="img">＋ 사진</button><button type="button" class="btn outl" data-dbadd="txt">＋ 글</button><button type="button" class="btn outl" data-dbadd="h">＋ 소제목</button><button type="button" class="btn outl" data-dbadd="hr">＋ 구분선</button></div>';
 }
+function dbSel(i,key,opts,cur0,label){return '<select data-dbf="'+key+'" data-i="'+i+'" aria-label="'+label+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===(cur0||'')?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>'}
+function dbFmtBar(i,b,kind){
+  var fo=Object.keys(FONTS).map(function(k){return [k,FONTS[k].n]}),so=Object.keys(FSIZES).map(function(k){return [k,FSIZES[k][0]]}),co=Object.keys(FCOLORS).map(function(k){return [k,FCOLORS[k][0]]});
+  var ao=[['','왼쪽'],['c','가운데'],['r','오른쪽']];
+  return '<div class="db-fmt">'+dbSel(i,'f',fo,b.f,'글꼴')+dbSel(i,'z',so.map(function(o){return o[0]==='m'?['','보통']:o}),b.z==='m'?'':b.z,'글자 크기')+dbSel(i,'c',co,b.c,'글자 색')+dbSel(i,'a',ao,b.a,'정렬')
+    +'<button class="btn outl" type="button" data-dbtg="b" data-i="'+i+'" aria-pressed="'+(b.b?'true':'false')+'"><b>B</b> 굵게</button>'
+    +(kind==='t'?'<button class="btn outl" type="button" data-dbw="**" data-i="'+i+'" title="선택한 글을 굵게(**글**)"><b>가</b> 선택 굵게</button><button class="btn outl" type="button" data-dbw="==" data-i="'+i+'" title="선택한 글에 형광펜(==글==)"><mark style="background:#ffe066">가</mark> 형광펜</button>':'')+'</div>';
+}
 function dbCtl(i){
   return '<div class="db-b"><button class="btn outl" type="button" data-dba="up"'+(i?'':' disabled')+' aria-label="위로">↑</button><button class="btn outl" type="button" data-dba="down"'+(i<DB_EDIT.length-1?'':' disabled')+' aria-label="아래로">↓</button><button class="btn outl" type="button" data-dba="del" style="color:var(--err);border-color:var(--err)">지우기</button></div>';
 }
@@ -2068,9 +2103,9 @@ function renderDetailEdit(){
   $('dbList').innerHTML=(DB_EDIT.length?DB_EDIT.map(function(b,i){
     var u=PHOTO.get(detailPhotoId(oid,b.id)),k=b.k||'',kind=k||'mix',head='<div class="db-top"><b>'+(i+1)+'. '+(k?DB_KINDS[k]:'칸(사진+제목+내용)')+'</b>'+dbCtl(i)+'</div>',body='';
     if(k==='hr')body='<hr class="pd-hr" style="margin:6px 0">';
-    else if(k==='h')body='<input class="pin" data-dbt="'+i+'" maxlength="80" placeholder="소제목 (예: 이런 분께 추천해요)" value="'+esc(b.t||'')+'" aria-label="소제목">';
+    else if(k==='h')body='<input class="pin" data-dbt="'+i+'" maxlength="80" placeholder="소제목 (예: 이런 분께 추천해요)" value="'+esc(b.t||'')+'" aria-label="소제목">'+dbFmtBar(i,b,'h');
     else if(k==='txt')body='<textarea class="pin" data-dbx="'+i+'" rows="8" maxlength="5000" placeholder="글을 길게 써요. 줄바꿈은 그대로, 빈 줄을 넣으면 문단이 나뉘어요" aria-label="글">'+esc(b.x||'')+'</textarea>'
-      +'<div class="db-b"><label class="db-al"><input type="checkbox" data-dbc="'+i+'"'+(b.a==='c'?' checked':'')+'> 가운데 정렬</label></div>';
+      +dbFmtBar(i,b,'t')+'<p class="hint" style="margin:0">글 안에서 **굵게**, ==형광펜== 으로 일부만 꾸밀 수 있어요. 글자를 드래그해서 아래 「선택 굵게」「형광펜」을 눌러도 돼요.</p>';
     else if(k==='img')body='<div class="db-big">'+(u?'<img src="'+esc(u)+'" alt="">':'<span>사진 없음</span>')+'</div>'
       +'<input class="pin" data-dbt="'+i+'" maxlength="80" placeholder="사진 설명(선택)" value="'+esc(b.t||'')+'" aria-label="사진 설명">'
       +'<div class="db-b"><button class="btn outl" type="button" data-dba="photo">'+(u?'사진 바꾸기':'사진 넣기')+'</button></div>';
@@ -2082,15 +2117,27 @@ function renderDetailEdit(){
   renderDetailPreview();
 }
 function openDetailEdit(){if(!cur)return;if(DB_OID!==cur.oid){DB_OID=cur.oid;DB_EDIT=clone(detailOf(cur.oid))}renderDetailEdit()}
-function dbSig(list){return JSON.stringify(list.map(function(b){return [b.id,b.k||'',b.a||'',String(b.t||'').trim(),String(b.x||'').trim()]}))}
+function dbSig(list){return JSON.stringify(list.map(function(b){return [b.id,b.k||'',b.a||'',b.f||'',b.z||'',b.c||'',b.b?1:0,String(b.t||'').trim(),String(b.x||'').trim()]}))}
 function detailDirty(){return !!cur&&DB_OID===cur.oid&&dbSig(DB_EDIT)!==dbSig(detailOf(cur.oid))}
 $('dbList').addEventListener('input',function(e){
   var t=e.target,i=t.getAttribute('data-dbt')||t.getAttribute('data-dbx');if(i==null)return;
   DB_EDIT[+i][t.hasAttribute('data-dbt')?'t':'x']=t.value;renderDetailPreview();
 });
 $('dbList').addEventListener('change',function(e){
-  var t=e.target,i=t.getAttribute('data-dbc');if(i==null)return;
-  if(t.checked)DB_EDIT[+i].a='c';else delete DB_EDIT[+i].a;renderDetailPreview();
+  var t=e.target,key=t.getAttribute&&t.getAttribute('data-dbf');if(!key)return;
+  var blk=DB_EDIT[+t.getAttribute('data-i')];if(!blk)return;
+  if(t.value)blk[key]=t.value;else delete blk[key];
+  if(key==='f')ensureFont(blk.f);
+  renderDetailPreview();
+});
+$('dbList').addEventListener('click',function(e){
+  var tg=e.target.closest('[data-dbtg]');
+  if(tg){touch();var blk=DB_EDIT[+tg.getAttribute('data-i')];if(!blk)return;if(blk.b)delete blk.b;else blk.b=1;tg.setAttribute('aria-pressed',String(!!blk.b));renderDetailPreview();return}
+  var w=e.target.closest('[data-dbw]');
+  if(w){touch();var i=+w.getAttribute('data-i'),ta=$('dbList').querySelector('textarea[data-dbx="'+i+'"]'),m=w.getAttribute('data-dbw');if(!ta)return;
+    var a0=ta.selectionStart,b0=ta.selectionEnd,v=ta.value;
+    if(a0===b0){toast('먼저 꾸밀 글자를 드래그로 골라 주세요');return}
+    ta.value=v.slice(0,a0)+m+v.slice(a0,b0)+m+v.slice(b0);DB_EDIT[i].x=ta.value;ta.focus();ta.setSelectionRange(a0+m.length,b0+m.length);renderDetailPreview()}
 });
 function dbInsert(kind,idx){
   if(kind==='img'){DB_PICK=null;DB_PICKIDX=idx;$('dbFile').click();return}
@@ -2153,7 +2200,7 @@ $('dbList').addEventListener('paste',function(e){
 });
 $('dbSave').addEventListener('click',function(){
   if(!cur)return;touch();
-  var oid=cur.oid,keep={},list=DB_EDIT.map(function(b){var o={id:b.id,t:String(b.t||'').trim(),x:String(b.x||'').replace(/\r/g,'').trim()};if(b.k)o.k=b.k;if(b.a)o.a=b.a;return o})
+  var oid=cur.oid,keep={},list=DB_EDIT.map(function(b){var o={id:b.id,t:String(b.t||'').trim(),x:String(b.x||'').replace(/\r/g,'').trim()};if(b.k)o.k=b.k;['a','f','z','c'].forEach(function(f){if(b[f])o[f]=b[f]});if(b.b)o.b=1;return o})
     .filter(function(b){return b.k==='hr'||b.t||b.x||PHOTO.has(detailPhotoId(oid,b.id))});
   list.forEach(function(b){keep[detailPhotoId(oid,b.id)]=1});
   SET.details=SET.details||{};
