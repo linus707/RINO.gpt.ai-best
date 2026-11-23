@@ -111,7 +111,8 @@ body.test .cstrip{background:#fff6dc}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:32px;align-items:start;padding:12px var(--space-lg) var(--space-3xl);max-width:1440px;margin:0 auto}
 .gal{min-width:0;grid-area:gal}
 .main{grid-template-areas:"gal opts" "det opts"}
-.main>.opts{grid-area:opts;position:sticky;top:78px;align-self:start;max-height:calc(100vh - 90px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.main>.opts{grid-area:opts;position:sticky;top:78px;align-self:start;max-height:calc(100vh - 90px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
+.main>.opts::-webkit-scrollbar{display:none}
 /* 상세페이지: 그림 아래 사진·글 블록 + 옵션별 가격 */
 .pdet{grid-area:det;min-width:0;margin-top:40px;padding-top:40px;border-top:1px solid var(--hair)}
 .pdet .pd-k{font-size:14px;font-weight:700;color:var(--tx2);text-align:center}
@@ -328,8 +329,8 @@ a.pd-ln:hover{background:var(--sub)}
 .mp-c{width:104px;display:grid;gap:4px}.mp-c img{width:104px;height:78px;object-fit:cover;border-radius:6px;display:block;background:#eee}.mp-c div{display:flex;gap:2px}.mp-c .btn{height:24px;padding:0 6px;font-size:11px}
 .stage .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .stage .shade{display:none;position:absolute;left:0;right:0;top:0;height:110px;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
-.stage.has-photo .art,.stage.has-photo .ghost{display:none}
-.stage.has-photo .shade{display:block}
+.stage.has-photo .art,.stage.has-photo .ghost,.stage.has-photo .gt{display:none}
+.stage.has-photo .shade{display:none}
 
 /* 설정창 */
 .modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px}
