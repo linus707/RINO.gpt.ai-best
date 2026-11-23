@@ -888,15 +888,17 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     </div>
 
     <section class="sh-sec" id="vSec">
-      <h4>사이즈·옵션 관리</h4>
-      <p class="hint">이 모델의 사이즈(규격)·색상을 바꾸거나 빼고, 새 사이즈를 더해요. 바꾼 내용은 이 기기에 저장돼요. 가격은 위 표에서 고쳐요.</p>
+      <h4>사이즈·타입·색상 관리</h4>
+      <p class="hint">이 모델의 사이즈(규격)·타입·색상을 따로따로 바꾸거나 빼고, 새 옵션을 더해요. 타입은 화면에 「E타입」처럼 색상 앞에 붙어요. 바꾼 내용은 이 기기에 저장돼요. 가격은 위 표에서 고쳐요.</p>
       <div id="vList"></div>
       <div class="adj" style="flex-wrap:wrap;gap:6px;margin-top:8px">
         <input class="pin" id="vNewSize" list="vSizes" maxlength="12" placeholder="규격 (SS·Q·K…)" style="width:110px;text-align:left" aria-label="추가할 규격">
         <datalist id="vSizes"><option value="S"><option value="SS"><option value="DS"><option value="DD"><option value="Q"><option value="LQ"><option value="K"><option value="K3"><option value="LK"></datalist>
+        <input class="pin" id="vNewType" maxlength="12" list="vTypes" placeholder="타입 (E·N·T…)" style="width:110px;text-align:left" aria-label="추가할 타입">
+        <datalist id="vTypes"><option value="E"><option value="N"><option value="T"><option value="A"><option value="C"></datalist>
         <input class="pin" id="vNewColor" maxlength="20" placeholder="색상·옵션(선택)" style="width:130px;text-align:left" aria-label="추가할 색상·옵션">
         <input class="pin num" id="vNewPrice" inputmode="numeric" placeholder="정상가" style="width:110px" aria-label="추가할 정상가"><span class="u">원</span>
-        <button class="btn sm" type="button" id="vAdd">＋ 사이즈 추가</button>
+        <button class="btn sm" type="button" id="vAdd">＋ 옵션 추가</button>
       </div>
     </section>
 
@@ -1335,19 +1337,19 @@ function applyEdits(maps){
     var gid=maps[c.group]?c.group:firstMenuId(),key=String(c.name).trim();
     var ov=PRICES[c.code],price=ov>0?ov:Math.round(+c.price);
     var e=maps[gid][key]=maps[gid][key]||{vs:[],main:true,ord:5e6+k,oid:gid+'|'+key};
-    e.mine=true;e.vs.push({size:String(c.size||'').toUpperCase(),color:c.color||'',price:price,base:Math.round(+c.price),code:c.code,rate:null,kw:''});
+    e.mine=true;e.vs.push({size:String(c.size||'').toUpperCase(),color:c.color||'',type:c.type!=null?String(c.type):undefined,price:price,base:Math.round(+c.price),code:c.code,rate:null,kw:''});
   });
   /* 사이즈(옵션) 추가·변경·삭제: SET.vadd(추가) → SET.vedit(코드별 삭제·규격·색상 변경) 순서로 반영 */
   (SET.vadd||[]).forEach(function(a){
     var gid=String(a.oid).split('|')[0],key=String(a.oid).slice(gid.length+1),e=maps[gid]&&maps[gid][key];
     if(!e||!a.code)return;
-    var ov=PRICES[a.code];e.vs.push({size:String(a.size||'').toUpperCase(),color:a.color||'',price:ov>0?ov:Math.round(+a.price),base:Math.round(+a.price),code:a.code,rate:null,kw:''});
+    var ov=PRICES[a.code];e.vs.push({size:String(a.size||'').toUpperCase(),color:a.color||'',type:a.type!=null?String(a.type):undefined,price:ov>0?ov:Math.round(+a.price),base:Math.round(+a.price),code:a.code,rate:null,kw:''});
   });
   var ve=SET.vedit||{};
   Object.keys(maps).forEach(function(gid){Object.keys(maps[gid]).forEach(function(k){
     var e=maps[gid][k];
     e.vs=e.vs.filter(function(v){return !(ve[v.code]&&ve[v.code].del)});
-    e.vs.forEach(function(v){var x=ve[v.code];if(x&&!x.del){if(x.size!=null)v.size=String(x.size).toUpperCase();if(x.color!=null)v.color=x.color}});
+    e.vs.forEach(function(v){var x=ve[v.code];if(x&&!x.del){if(x.size!=null)v.size=String(x.size).toUpperCase();if(x.color!=null)v.color=x.color;if(x.type!=null)v.type=String(x.type)}});
     if(!e.vs.length)delete maps[gid][k];
   })});
   var mv=SET.moved||{};
@@ -1358,6 +1360,14 @@ function applyEdits(maps){
   var del={};(SET.deleted||[]).forEach(function(d){del[d.id]=1});
   Object.keys(maps).forEach(function(gid){Object.keys(maps[gid]).forEach(function(k){if(del[maps[gid][k].oid])delete maps[gid][k]})});
   mergeTypes(maps);
+  composeTypes(maps);
+}
+/* 옵션 이름 = 타입 + 색상: 타입이 있으면 색상 칸 앞에 「E타입」을 붙여 화면에 보여요(편집용 원래 색상은 v.cname) */
+function typeLabel(t){return String(t).replace(/타입$/,'')+'타입'}
+function composeTypes(maps){
+  Object.keys(maps).forEach(function(gid){Object.keys(maps[gid]).forEach(function(k){
+    maps[gid][k].vs.forEach(function(v){v.cname=v.color||'';v.type=v.type||'';if(v.type)v.color=typeLabel(v.type)+(v.cname?' '+v.cname:'')});
+  })});
 }
 /* 프레임 타입 통폐합: BMA1171-E · BMA1171-N 처럼 이름 끝 「-알파벳」만 다른 프레임은 한 모델(BMA1171)로 묶고,
    타입은 옵션(색상 칸) 앞에 「E타입」「N타입」으로 붙여요. 옮기기·삭제를 먼저 반영한 뒤에 묶어서 지운 제품은 다시 살아나지 않아요.
@@ -1367,15 +1377,15 @@ function mergeTypes(maps){
   var RE=/^(.*?[A-Za-z0-9])-([A-Z])(\s+(?:NEW|N))?(\s*\(.*\))?(\s+NEW)?$/,groups={};
   Object.keys(fm).forEach(function(k){
     var m=k.match(RE);if(!m||fm[k].mine)return;
-    var b=m[1]+(m[4]||'')+(m[5]||'');(groups[b]=groups[b]||[]).push({k:k,t:m[2]+'타입'+(m[3]||''),e:fm[k]});
+    var b=m[1]+(m[4]||'')+(m[5]||'');(groups[b]=groups[b]||[]).push({k:k,t:m[2],tail:(m[3]||'').trim(),e:fm[k]});
   });
   Object.keys(groups).forEach(function(b){
-    var g=groups[b],types={};g.forEach(function(x){types[x.t]=1});
+    var g=groups[b],types={};g.forEach(function(x){types[x.t+'|'+x.tail]=1});
     if(Object.keys(types).length<2)return;
-    g.sort(function(a,c){return a.t<c.t?-1:a.t>c.t?1:0});
+    g.sort(function(a,c){var A=a.t+a.tail,C=c.t+c.tail;return A<C?-1:A>C?1:0});
     var first=g[0].e,tgt=fm[b]&&!fm[b].mine?fm[b]:{vs:[],main:false,oid:first.oid};
     g.forEach(function(x){
-      x.e.vs.forEach(function(v){v.color=x.t+(v.color?' '+v.color:'');tgt.vs.push(v)});
+      x.e.vs.forEach(function(v){if(v.type==null)v.type=x.t;if(x.tail)v.color=x.tail+(v.color?' '+v.color:'');tgt.vs.push(v)});
       tgt.main=tgt.main||x.e.main;if(x.e.ord!=null)tgt.ord=tgt.ord==null?x.e.ord:Math.min(tgt.ord,x.e.ord);
       if(x.e.desc&&!tgt.desc)tgt.desc=x.e.desc;
       delete fm[x.k];
@@ -3127,10 +3137,11 @@ function renderVarMgr(){
   cur.variants.forEach(function(v){
     var row=el('div',{class:'adj','data-vcode':v.code,style:'flex-wrap:wrap;gap:6px;margin-bottom:6px'});
     var sz=el('input',{class:'pin',maxlength:'12',list:'vSizes','aria-label':'규격',style:'width:110px;text-align:left'});sz.value=v.size||'';
-    var co=el('input',{class:'pin',maxlength:'20','aria-label':'색상·옵션',placeholder:'색상·옵션',style:'width:130px;text-align:left'});co.value=v.color||'';
+    var ty=el('input',{class:'pin',maxlength:'12','aria-label':'타입',placeholder:'타입(E·N·T…)',style:'width:110px;text-align:left'});ty.value=v.type||'';
+    var co=el('input',{class:'pin',maxlength:'20','aria-label':'색상·옵션',placeholder:'색상·옵션',style:'width:130px;text-align:left'});co.value=v.cname!=null?v.cname:(v.color||'');
     var chg=!!(SET.vedit&&SET.vedit[v.code]),add=(SET.vadd||[]).some(function(a){return a.code===v.code});
     var lb=el('span',{class:'u'},sizeLabel(v.size||'')+(add?' · 추가한 옵션':chg?' · 바꿈':''));
-    row.appendChild(sz);row.appendChild(co);row.appendChild(lb);
+    row.appendChild(sz);row.appendChild(ty);row.appendChild(co);row.appendChild(lb);
     row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'edit'},'변경'));
     if(chg)row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'undo'},'↺ 원래대로'));
     var del=el('button',{class:'btn outl sm',type:'button','data-vact':'del',style:'color:#e5252a'},'삭제');row.appendChild(del);
@@ -3148,29 +3159,29 @@ function varAfter(msg){saveSet();touch();rebuildAll(true);toast(msg)}
 $('vSec').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b||!cur)return;
   if(b.id==='vAdd'){
-    var size=$('vNewSize').value.trim().toUpperCase(),color=$('vNewColor').value.trim(),price=numOf($('vNewPrice').value);
-    if(!size&&!color){toast('규격이나 색상 중 하나는 적어 주세요');return}
+    var size=$('vNewSize').value.trim().toUpperCase(),type=$('vNewType').value.trim().toUpperCase(),color=$('vNewColor').value.trim(),price=numOf($('vNewPrice').value);
+    if(!size&&!type&&!color){toast('규격·타입·색상 중 하나는 적어 주세요');return}
     if(!(price>0)){$('vNewPrice').setAttribute('aria-invalid','true');toast('정상가를 적어 주세요');return}
-    if(cur.variants.some(function(v){return (v.size||'')===size&&(v.color||'')===color})){toast('같은 규격·색상이 이미 있어요');return}
+    if(cur.variants.some(function(v){return (v.size||'')===size&&(v.type||'')===type&&(v.cname||'')===color})){toast('같은 규격·타입·색상이 이미 있어요');return}
     var code='V'+Date.now().toString(36).toUpperCase();
-    SET.vadd=SET.vadd||[];SET.vadd.push({oid:cur.oid,code:code,size:size,color:color,price:price});
-    $('vNewSize').value='';$('vNewColor').value='';$('vNewPrice').value='';
-    varAfter('「'+(size||color)+'」 옵션을 더했어요');return;
+    SET.vadd=SET.vadd||[];SET.vadd.push({oid:cur.oid,code:code,size:size,type:type,color:color,price:price});
+    $('vNewSize').value='';$('vNewType').value='';$('vNewColor').value='';$('vNewPrice').value='';
+    varAfter('「'+[size,type&&typeLabel(type),color].filter(Boolean).join(' ')+'」 옵션을 더했어요');return;
   }
   var row=b.closest('[data-vcode]');if(!row)return;
   var code=row.getAttribute('data-vcode'),v=cur.variants.filter(function(x){return x.code===code})[0],act=b.getAttribute('data-vact');
   if(act==='restore'){if(SET.vedit)delete SET.vedit[code];varAfter('옵션을 되살렸어요');return}
   if(!v)return;
   if(act==='edit'){
-    var ns=row.querySelectorAll('input')[0].value.trim().toUpperCase(),nc=row.querySelectorAll('input')[1].value.trim();
-    if(!ns&&!nc){toast('규격이나 색상 중 하나는 있어야 해요');return}
-    if(cur.variants.some(function(x){return x.code!==code&&(x.size||'')===ns&&(x.color||'')===nc})){toast('같은 규격·색상이 이미 있어요');return}
+    var ins=row.querySelectorAll('input'),ns=ins[0].value.trim().toUpperCase(),nt=ins[1].value.trim().toUpperCase(),nc=ins[2].value.trim();
+    if(!ns&&!nt&&!nc){toast('규격·타입·색상 중 하나는 있어야 해요');return}
+    if(cur.variants.some(function(x){return x.code!==code&&(x.size||'')===ns&&(x.type||'')===nt&&(x.cname||'')===nc})){toast('같은 규격·타입·색상이 이미 있어요');return}
     var ad=(SET.vadd||[]).filter(function(a){return a.code===code})[0],cl=customList(),ci=cl.filter(function(c){return c.code===code})[0];
-    if(ad){ad.size=ns;ad.color=nc}else if(ci){ci.size=ns;ci.color=nc;saveCustom(cl)}
-    else{SET.vedit=SET.vedit||{};SET.vedit[code]=Object.assign(SET.vedit[code]||{},{size:ns,color:nc})}
+    if(ad){ad.size=ns;ad.type=nt;ad.color=nc}else if(ci){ci.size=ns;ci.type=nt;ci.color=nc;saveCustom(cl)}
+    else{SET.vedit=SET.vedit||{};SET.vedit[code]=Object.assign(SET.vedit[code]||{},{size:ns,type:nt,color:nc})}
     varAfter('옵션을 바꿨어요');
   }else if(act==='undo'){
-    if(SET.vedit)delete SET.vedit[code];varAfter('원래 규격·색상으로 되돌렸어요');
+    if(SET.vedit)delete SET.vedit[code];varAfter('원래 규격·타입·색상으로 되돌렸어요');
   }else if(act==='del'){
     if(cur.variants.length<=1){toast('마지막 옵션이에요. 제품을 지우려면 「이 제품 삭제」를 써 주세요');return}
     if(!confirm('「'+([v.size,v.color].filter(Boolean).join(' · ')||'기본')+'」 옵션을 삭제할까요?'))return;
