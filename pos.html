@@ -12,7 +12,10 @@
 <meta name="theme-color" content="#ffffff">
 <title>매장 POS · ACE BED</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<!-- 글꼴은 화면을 막지 않고 뒤늦게 입혀요(인터넷이 느려도 POS가 바로 떠요). 못 받으면 맑은 고딕·시스템 글꼴을 써요 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <style>
 /* 매장 POS — 왼쪽 갤러리 + 오른쪽 옵션 + 주문 요약. (2026-11-17 기존 POS를 이 화면으로 바꿈)
    규칙: 흰 바탕·검정 글자 / 결정은 검정 알약 버튼 / 고른 칸만 파란 안쪽 링 / 그림자 대신 1px 안쪽 테두리 */
@@ -108,7 +111,8 @@ body.test .cstrip{background:#fff6dc}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:32px;align-items:start;padding:12px var(--space-lg) var(--space-3xl);max-width:1440px;margin:0 auto}
 .gal{min-width:0;grid-area:gal}
 .main{grid-template-areas:"gal opts" "det opts"}
-.main>.opts{grid-area:opts;position:sticky;top:78px;align-self:start;max-height:calc(100vh - 90px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.main>.opts{grid-area:opts;position:sticky;top:78px;align-self:start;max-height:calc(100vh - 90px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
+.main>.opts::-webkit-scrollbar{display:none}
 /* 상세페이지: 그림 아래 사진·글 블록 + 옵션별 가격 */
 .pdet{grid-area:det;min-width:0;margin-top:40px;padding-top:40px;border-top:1px solid var(--hair)}
 .pdet .pd-k{font-size:14px;font-weight:700;color:var(--tx2);text-align:center}
@@ -129,7 +133,70 @@ body.test .cstrip{background:#fff6dc}
 .pd-spec .num{font-variant-numeric:tabular-nums}
 .pd-spec table+table{margin-top:24px}
 /* 설정 › 상세 설명 블록 편집 */
+.pd-i{margin:28px 0 0}
+.pd-i img{display:block;width:100%;height:auto;border-radius:var(--r-lg,16px);background:var(--sub)}
+.pd-i figcaption{max-width:680px;margin:8px auto 0;font-size:13px;line-height:19px;color:var(--tx3);text-align:center}
+.pd-s{max-width:720px;margin:48px auto 0;font-size:var(--fs,26px);line-height:35px;letter-spacing:-.5px;overflow-wrap:anywhere}
+.pd-t{max-width:720px;margin:18px auto 0;font-size:var(--fs,17px);line-height:1.75;color:var(--tx);overflow-wrap:anywhere}
+.pd-t p{margin:0 0 14px;white-space:pre-line}.pd-t p:last-child{margin-bottom:0}
+.pd-t mark,.pd-q mark,.pd-l mark,.pd-tbl mark,.pd-s mark{background:linear-gradient(transparent 55%,#ffe066 55%);color:inherit;padding:0 1px}
+.pd-t strong{font-weight:800}
+.db-fmt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.db-fmt select{height:32px;border-radius:var(--r-full);padding:0 8px;font-size:13px;background:#fff;box-shadow:var(--ring);max-width:170px}
+.db-fmt .btn{height:32px;padding:0 12px;font-size:13px}
+.db-fmt .btn[aria-pressed="true"]{background:#000;color:#fff}
+.pd-hr{max-width:720px;margin:44px auto;border:0;border-top:1px solid var(--hair)}
 .db-list{display:grid;gap:12px}
+.db-blk{padding:12px;border-radius:var(--r-sm);box-shadow:var(--ring);background:#fff;display:grid;gap:8px}
+.db-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.db-top b{font-size:13px;color:var(--tx2)}
+.db-blk .pin{width:100%;text-align:left;height:auto;padding:8px 10px;line-height:1.5}
+.db-blk textarea.pin{resize:vertical;font:inherit;font-size:14px;min-height:140px}
+.db-big{border-radius:var(--r-sm);background:var(--sub);display:grid;place-items:center;overflow:hidden;min-height:120px;color:var(--tx3);font-size:13px}
+.db-big img{display:block;width:100%;max-height:340px;object-fit:contain;background:#f4f4f4}
+.db-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;padding:2px 0;opacity:.55}
+.db-add:hover,.db-add:focus-within{opacity:1}
+.db-add span{font-size:12px;color:var(--tx3)}
+.db-add .btn{height:28px;padding:0 10px;font-size:12px}
+.db-al{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2)}
+.pd-q{max-width:720px;margin:28px auto 0;font-size:var(--fs,17px);line-height:1.75}
+.pd-q p{margin:0 0 10px;white-space:pre-line}.pd-q p:last-of-type{margin-bottom:0}
+.pd-q cite{display:block;margin-top:10px;font-size:.85em;font-style:normal;color:var(--tx3)}
+.pd-q.q1{padding:4px 0 4px 18px;border-left:4px solid #000}
+.pd-q.q2{padding:34px 20px 8px;text-align:center;position:relative}.pd-q.q2::before{content:"\201C";position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-size:56px;line-height:1;color:var(--tx3)}
+.pd-q.q3{padding:18px 22px;background:var(--sub);border-radius:var(--r-lg,16px)}
+.pd-q.q4{padding:18px 8px;text-align:center;border-top:1px solid #000;border-bottom:1px solid #000}
+.pd-l{max-width:720px;margin:18px auto 0;padding:0 0 0 1.4em;font-size:var(--fs,17px);line-height:1.75;overflow-wrap:anywhere}
+.pd-l li{margin:4px 0;white-space:pre-line}.pd-l.lc{list-style:none;padding-left:0}.pd-l.lc li::before{content:"\2713";margin-right:8px;font-weight:800}
+.pd-tw{max-width:720px;margin:22px auto 0;overflow-x:auto}
+.pd-tbl{width:100%;border-collapse:collapse;font-size:var(--fs,15px)}
+.pd-tbl td,.pd-tbl th{padding:11px 12px;border:1px solid var(--line,#ddd);text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.pd-tbl th{background:var(--sub);font-weight:800}
+.pd-g{margin:28px 0 0;display:grid;gap:8px}
+.pd-g img{display:block;width:100%;height:auto;border-radius:var(--r-sm,10px);background:var(--sub)}
+.pd-g.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.pd-g.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pd-g.g2 img,.pd-g.g3 img,.pd-g.gc img{aspect-ratio:1;object-fit:cover}
+.pd-g.gc{grid-template-columns:repeat(3,minmax(0,1fr))}.pd-g.gc img:first-child{grid-column:1/-1;aspect-ratio:16/9}
+.pd-g.gs{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;-webkit-overflow-scrolling:touch}.pd-g.gs img{flex:0 0 86%;scroll-snap-align:center}
+.pd-g.g1{grid-template-columns:1fr}
+.pd-ln,.pd-pl{display:grid;gap:3px;max-width:720px;margin:22px auto 0;padding:16px 18px;border-radius:var(--r-lg,14px);box-shadow:var(--ring);text-decoration:none;color:inherit;background:#fff}
+.pd-ln b,.pd-pl b{font-size:16px;line-height:23px}.pd-ln span,.pd-pl span{font-size:14px;color:var(--tx2)}.pd-ln em{font-style:normal;font-size:12px;color:var(--tx3)}
+.pd-pl a{font-size:13px;font-weight:700;color:#1c6ef2;margin-top:4px}
+a.pd-ln:hover{background:var(--sub)}
+.pd-cd{max-width:720px;margin:22px auto 0;padding:14px 16px;background:#f5f5f5;border-radius:var(--r-sm,10px);font:13px/1.6 ui-monospace,Consolas,monospace;overflow-x:auto;white-space:pre}
+.pd-hr.h-d{border-top-style:dashed}.pd-hr.h-t{border-top-width:3px}.pd-hr.h-w{border-top:3px double var(--hair)}
+.pd-hr.h-s{max-width:80px}.pd-hr.h-o{border:0;text-align:center;height:auto;margin:36px auto}.pd-hr.h-o::before{content:"\00B7  \00B7  \00B7";letter-spacing:12px;font-size:22px;color:var(--tx3)}
+.pd-t a,.pd-q a,.pd-l a,.pd-tbl a,.pd-s a{color:#1c6ef2;text-decoration:underline}
+.db-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}.db-tools .btn{height:32px;padding:0 12px;font-size:13px}.db-tools select{height:32px;border-radius:var(--r-full);padding:0 8px;font-size:13px;background:#fff;box-shadow:var(--ring)}
+.db-top .db-h{cursor:grab;color:var(--tx3);font-size:18px;line-height:1;padding:2px 6px}
+.db-fmt{align-items:center}.db-lb{font-size:12px;font-weight:700;color:var(--tx3);min-width:64px}
+.db-clr{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--tx2)}.db-clr input[type=color]{width:28px;height:28px;padding:0;border:0;background:none;cursor:pointer}.db-clr .btn{height:24px!important;padding:0 8px!important;font-size:11px!important}
+.db-mono{font-family:ui-monospace,Consolas,monospace!important}
+.db-tw{overflow-x:auto}.db-tbl{border-collapse:collapse;width:100%}.db-tbl td{padding:2px}.db-tbl .pin{width:100%;min-width:90px;height:34px}
+.db-th{display:flex;flex-wrap:wrap;gap:8px}.db-tc{width:104px;display:grid;gap:4px}.db-tc img{width:104px;height:78px;object-fit:cover;border-radius:6px;display:block}.db-tc div{display:flex;gap:2px}.db-tc .btn{height:24px;padding:0 6px;font-size:11px}
+.db-add.open{opacity:1}
+@media (max-width:760px){.pd-g.g3,.pd-g.gc{grid-template-columns:repeat(2,minmax(0,1fr))}.pd-g.gc img:first-child{grid-column:1/-1}}
+
 .db-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:12px;border-radius:var(--r-sm);box-shadow:var(--ring);background:#fff}
 .db-im{width:96px;height:96px;border-radius:var(--r-sm);background:var(--sub);display:grid;place-items:center;overflow:hidden;color:var(--tx3);font-size:12px;text-align:center}
 .db-im img{width:100%;height:100%;object-fit:cover;display:block}
@@ -253,10 +320,21 @@ body.test .cstrip{background:#fff6dc}
 .gear:hover svg{stroke:#fff}
 
 /* 갤러리 사진 */
+.stage .gdots{position:absolute;left:0;right:0;bottom:14px;z-index:3;display:flex;justify-content:center;gap:7px}
+.stage.has-desc .gdots{bottom:104px}
+.stage .gdots button{width:9px;height:9px;padding:0;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.stage .gdots button[aria-selected="true"]{background:#fff;width:22px;border-radius:5px}
+.stage .gcnt{position:absolute;right:14px;top:14px;z-index:3;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:700}
+.mseg{display:flex;gap:6px;margin:6px 0 2px;flex-wrap:wrap}.mseg button{height:32px;padding:0 12px;border-radius:var(--r-full);box-shadow:var(--ring);background:#fff;font-size:13px;font-weight:700}.mseg button[aria-checked="true"]{background:#000;color:#fff;box-shadow:none}
+.mp-drop{display:grid;gap:4px;place-items:center;margin-top:10px;padding:22px 16px;border:2px dashed #bbb;border-radius:var(--r-lg,14px);background:#fafafa;cursor:pointer;font-weight:800;font-size:15px;text-align:center}
+.mp-drop small{font-weight:400;font-size:12px;color:var(--tx3)}.mp-drop:hover,.mp-drop.on{border-color:#2189ff;background:#f1f7ff}
+.mp-c{position:relative}.mp-top{position:absolute;left:4px;top:4px;padding:1px 7px;border-radius:10px;background:#000;color:#fff;font-size:11px;font-weight:700}
+.mp-list{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.mp-c{width:104px;display:grid;gap:4px}.mp-c img{width:104px;height:78px;object-fit:cover;border-radius:6px;display:block;background:#eee}.mp-c div{display:flex;gap:2px}.mp-c .btn{height:24px;padding:0 6px;font-size:11px}
 .stage .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .stage .shade{display:none;position:absolute;left:0;right:0;top:0;height:110px;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
-.stage.has-photo .art,.stage.has-photo .ghost{display:none}
-.stage.has-photo .shade{display:block}
+.stage.has-photo .art,.stage.has-photo .ghost,.stage.has-photo .gt{display:none}
+.stage.has-photo .shade{display:none}
 
 /* 설정창 */
 .modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px}
@@ -490,14 +568,14 @@ body.test .cstrip{background:#fff6dc}
 .box small{display:block;font-size:12px;color:var(--tx3);font-weight:400}
 
 /* 제품 설정 화면 */
-.adm{max-width:1440px;margin:0 auto;padding:24px var(--space-lg) var(--space-3xl)}
+.adm{max-width:1920px;margin:0 auto;padding:24px var(--space-lg) var(--space-3xl)}
 .adm-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:20px;border-bottom:1px solid var(--line)}
 .adm-top h1{margin:2px 0 0;font-size:32px;line-height:40px;letter-spacing:-.64px}
 .adm-k{margin:0;font-size:13px;font-weight:700;color:var(--tx2)}
 .adm-sub{margin:6px 0 0;font-size:14px;color:var(--tx2)}
 .adm-acts{display:flex;gap:8px;flex-wrap:wrap}
 .adm-acts .btn[aria-pressed="true"]{background:#000;color:#fff}
-.adm-body{display:grid;grid-template-columns:320px minmax(0,1fr);gap:32px;align-items:start;margin-top:24px}
+.adm-body{display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;align-items:start;margin-top:24px}
 .adm-side{position:sticky;top:78px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 100px)}
 .adm-q{height:44px;padding:0 16px;border:0;outline-offset:2px;border-radius:var(--r-full);background:var(--sub);font-size:15px;width:100%}
 .adm-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -537,13 +615,24 @@ body.test .cstrip{background:#fff6dc}
 .adm-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .adm-badges span{height:24px;padding:0 10px;display:inline-flex;align-items:center;border-radius:var(--r-full);background:var(--sub);font-size:12px;font-weight:700;color:var(--tx2)}
 .adm-badges span.on{background:#e7f1ff;color:#1366d6}
-.adm-tabs{margin-top:20px}
+.adm-tabs{margin-top:14px}
+.adm-panes{display:block}
+@media (min-width:1280px){
+  .adm-main{padding:18px 22px 24px}
+  .adm-tabs{position:sticky;top:0;z-index:6;background:#fff;margin-top:0;padding-top:6px}
+  .adm-panes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 24px;align-items:start;margin-top:12px}
+  .adm-panes>[data-apane]{border-radius:var(--r-lg);box-shadow:var(--ring);padding:2px 20px 16px;min-width:0;scroll-margin-top:64px}
+  .adm-panes>[data-apane="photo"],.adm-panes>[data-apane="detail"]{grid-column:1/-1}
+  .adm-panes .sh-sec{margin-top:14px}
+  .adm-panes .srow{padding:8px 0}
+}
 .adm .ph-prev{width:220px;height:220px}
 .adm-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
 .adm-pv{position:sticky;top:90px;margin-top:var(--space-lg)}
 .adm-pvbox{margin-top:10px;max-height:calc(100vh - 160px);overflow:auto;border-radius:var(--r-lg);box-shadow:var(--ring);padding:24px 20px}
 .adm-pvbox .pd-h{font-size:22px;line-height:30px}.adm-pvbox .pd-lead{font-size:15px;line-height:24px}
 .adm-pvbox .pd-b{margin-top:32px}.adm-pvbox .pd-b h3{margin-top:16px;font-size:19px;line-height:26px}.adm-pvbox .pd-b p{font-size:14px;line-height:22px}
+.adm-pvbox .pd-s{margin-top:24px;font-size:calc(var(--fs,26px)*.7);line-height:1.35}.adm-pvbox .pd-t{font-size:calc(var(--fs,17px)*.84);margin-top:12px}.adm-pvbox .pd-i{margin-top:16px}
 .adm-pvbox .pd-empty{margin:24px 0 0;text-align:center;font-size:13px;color:var(--tx3)}
 .pl-steps{margin:0;padding-left:20px;font-size:14px;line-height:24px}
 .admgo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px;padding:16px 18px;border-radius:var(--r-lg);background:#eef5ff}
@@ -652,6 +741,8 @@ select.pin{height:36px;font-weight:700;font-size:14px}
   .pdet .pd-h{font-size:24px;line-height:32px}
   .pd-b{margin-top:40px}
   .pd-b h3{font-size:21px;line-height:29px}
+  .pd-s{font-size:calc(var(--fs,26px)*.8);line-height:1.35;margin-top:36px}
+  .pd-t{font-size:calc(var(--fs,17px)*.94)}
   .pd-spec tbody th{width:96px}
   .db-row{grid-template-columns:72px minmax(0,1fr)}.db-im{width:72px;height:72px}
   .stage{height:300px}
@@ -723,6 +814,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <div class="stage">
         <div class="ghost" id="ghost" aria-hidden="true"></div>
         <img class="photo" id="photo" alt="" hidden>
+        <div class="gcnt" id="gcnt" hidden></div><div class="gdots" id="gdots" hidden role="tablist" aria-label="사진 번호"></div>
         <div class="shade" aria-hidden="true"></div>
         <div class="gt"><b id="stTitle"></b><span id="stSize"></span></div>
         <svg class="art" viewBox="0 0 620 300" role="img" aria-label="제품 예시 그림" xmlns="http://www.w3.org/2000/svg">
@@ -768,8 +860,8 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           </g>
         </svg>
         <p class="desc" id="stDesc" hidden></p>
-        <button class="arw l" type="button" id="prev" aria-label="이전 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
-        <button class="arw r" type="button" id="next" aria-label="다음 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
+        <button class="arw l" type="button" id="prev" aria-label="이전 사진"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
+        <button class="arw r" type="button" id="next" aria-label="다음 사진"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
       </div>
       <p class="note" id="photoNote">그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.</p>
     </section>
@@ -860,6 +952,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           <button type="button" role="tab" data-atab="photo" aria-selected="false">사진</button>
           <button type="button" role="tab" data-atab="detail" aria-selected="false">상세페이지</button>
         </div>
+        <div class="adm-panes" id="admPanes">
         <div data-apane="info">
     <section class="sh-sec">
       <h4>제품 정보</h4>
@@ -869,14 +962,14 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <div class="sh-foot"><button class="btn outl" type="button" id="pmDel" style="color:var(--err);border-color:var(--err)">이 제품 삭제</button><button class="btn" type="button" id="pmSave">제품 정보 저장</button></div>
     </section>
 
-    <section class="sh-sec" id="mergeSec">
-      <h4>다른 제품에 합치기 (타입으로 묶기)</h4>
+    <details class="sh-sec" id="mergeSec">
+      <summary style="cursor:pointer;font-weight:800;font-size:16px;padding:4px 0">다른 제품에 합치기 (타입으로 묶기)</summary>
       <p class="hint">예) BARONT-N을 BARONT 안에 합치면, 손님 화면에서 BARONT 하나를 열고 안에서 「타입」(T·N)을 골라요. 상품코드·가격·사진은 그대로예요.</p>
       <div class="srow"><label for="mgTo">합칠 제품 이름<small>이 제품이 들어갈 제품이에요. 목록에 없는 이름이면 새로 만들어요(예: BARONT)</small></label><input class="pin" id="mgTo" list="mgList" style="width:200px;text-align:left" maxlength="40" autocomplete="off"><datalist id="mgList"></datalist></div>
       <div class="srow"><label for="mgType">이 제품의 타입 이름<small>예) N, T, T (LED일체형)</small></label><input class="pin" id="mgType" style="width:200px;text-align:left" maxlength="30" autocomplete="off"></div>
       <div class="sh-foot"><button class="btn" type="button" id="mgGo">합치기</button></div>
       <ul class="mlist" id="mgDone"></ul>
-    </section>
+    </details>
 
     <section class="sh-sec">
       <h4>보이기</h4>
@@ -902,15 +995,17 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     </div>
 
     <section class="sh-sec" id="vSec">
-      <h4>사이즈·옵션 관리</h4>
-      <p class="hint">이 모델의 사이즈(규격)·색상을 바꾸거나 빼고, 새 사이즈를 더해요. 바꾼 내용은 이 기기에 저장돼요. 가격은 위 표에서 고쳐요.</p>
+      <h4>사이즈·타입·색상 관리</h4>
+      <p class="hint">이 모델의 사이즈(규격)·타입·색상을 따로따로 바꾸거나 빼고, 새 옵션을 더해요. 타입은 손님 화면에서 「타입」 칸으로 따로 골라요. 바꾼 내용은 이 기기에 저장돼요. 가격은 위 표에서 고쳐요.</p>
       <div id="vList"></div>
       <div class="adj" style="flex-wrap:wrap;gap:6px;margin-top:8px">
         <input class="pin" id="vNewSize" list="vSizes" maxlength="12" placeholder="규격 (SS·Q·K…)" style="width:110px;text-align:left" aria-label="추가할 규격">
         <datalist id="vSizes"><option value="S"><option value="SS"><option value="DS"><option value="DD"><option value="Q"><option value="LQ"><option value="K"><option value="K3"><option value="LK"></datalist>
+        <input class="pin" id="vNewType" maxlength="12" list="vTypes" placeholder="타입 (E·N·T…)" style="width:110px;text-align:left" aria-label="추가할 타입">
+        <datalist id="vTypes"><option value="E"><option value="N"><option value="T"><option value="A"><option value="C"></datalist>
         <input class="pin" id="vNewColor" maxlength="20" placeholder="색상·옵션(선택)" style="width:130px;text-align:left" aria-label="추가할 색상·옵션">
         <input class="pin num" id="vNewPrice" inputmode="numeric" placeholder="정상가" style="width:110px" aria-label="추가할 정상가"><span class="u">원</span>
-        <button class="btn sm" type="button" id="vAdd">＋ 사이즈 추가</button>
+        <button class="btn sm" type="button" id="vAdd">＋ 옵션 추가</button>
       </div>
     </section>
 
@@ -927,7 +1022,14 @@ select.pin{height:36px;font-weight:700;font-size:14px}
         </div>
         <div data-apane="photo" hidden>
     <section class="sh-sec">
-      <h4>사진</h4>
+      <h4>제품 사진 (여러 장 · 슬라이드)</h4>
+      <p class="hint">손님 화면 그림에서 좌우로 넘겨 볼 사진을 여러 장 넣어요. 맨 앞 사진이 대표(첫 화면) 사진이에요. 사진은 ← → 로 순서를 바꾸고 × 로 지워요.</p>
+      <div class="mp-list" id="mpList"></div>
+      <label class="mp-drop" id="mpDrop"><input type="file" id="mpFile" accept="image/*" multiple hidden>＋ 사진 여러 장 넣기<small>눌러서 고르거나, 이 칸에 끌어다 놓거나, Ctrl+V로 붙여넣어요 · 최대 20장</small></label>
+    </section>
+    <details class="sh-sec" id="optPhotoSec">
+      <summary style="cursor:pointer;font-weight:800;font-size:16px;padding:4px 0">옵션(규격·색상)마다 다른 사진 넣기 (선택)</summary>
+      <p class="hint" style="margin:6px 0 0">특정 규격이나 색상을 골랐을 때 그 사진으로 보여 주고 싶을 때만 써요. 대부분은 위 「제품 사진」만으로 충분해요.</p>
       <div class="srow"><label for="admVar">옵션<small>「고른 품목만」으로 넣을 때 쓸 옵션이에요</small></label><select class="pin" id="admVar" style="width:240px;text-align:left"></select></div>
       <div class="ph-row">
         <div class="ph-prev" id="phPrev"></div>
@@ -943,23 +1045,26 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           </div>
         </div>
       </div>
-    </section>
+    </details>
 
         </div>
         <div data-apane="detail" hidden>
           <div class="adm-split">
             <div>
     <section class="sh-sec">
-      <h4>상세페이지 칸</h4>
-      <p class="hint" style="margin:0 0 10px">상세페이지처럼 사진과 글을 한 칸씩 쌓아요. 칸마다 사진·제목·내용은 있는 것만 보여요. 아래 「옵션별 가격」 표는 자동으로 붙어요.</p>
+      <h4>상세페이지 (사진·글 블록)</h4>
+      <p class="hint" style="margin:0 0 10px">블로그·스마트스토어처럼 사진과 글을 길게 번갈아 쌓아요(사진 · 글 · 소제목 · 구분선). 아래 「옵션별 가격」 표는 자동으로 붙어요.</p>
+      <div class="db-tools"><button class="btn outl" type="button" id="dbUndo" disabled>↶ 되돌리기</button><button class="btn outl" type="button" id="dbRedo" disabled>↷ 다시 실행</button>
+        <label class="db-al">사진 여러 장 넣을 때 <select id="dbLay" aria-label="사진 배치"><option value="1">한 장씩 (세로)</option><option value="2">2열</option><option value="3">3열</option><option value="s">슬라이드(가로 넘김)</option><option value="c">콜라주(첫 장 크게)</option></select></label></div>
       <div class="db-list" id="dbList"></div>
-      <input type="file" id="dbFile" accept="image/*" hidden>
-      <div class="sh-foot"><button class="btn outl" type="button" id="dbAdd">+ 칸 더하기</button><button class="btn" type="button" id="dbSave">상세 설명 저장</button></div>
+      <input type="file" id="dbFile" accept="image/*" multiple hidden>
+      <div class="sh-foot"><button class="btn outl" type="button" id="dbAdd">+ 글 블록 더하기</button><button class="btn" type="button" id="dbSave">상세 설명 저장</button></div>
     </section>
 
             </div>
             <div class="adm-pv"><p class="adm-k">미리보기 (저장 전 내용)</p><div class="adm-pvbox" id="dbPrev"></div></div>
           </div>
+        </div>
         </div>
       </div>
       <div id="admMgrPane" hidden>
@@ -1022,6 +1127,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
     <div id="cartOpts">
       <section class="dsec">
         <div class="dsec-h"><h4>할인 <small id="modeTag"></small></h4><button class="lnk" type="button" id="cartSet">할인 설정 열기</button></div>
+        <div class="mseg" id="modeSeg" role="radiogroup" aria-label="할인 계산 방식"><button type="button" role="radio" data-qmode="seq">순차 (할인에 할인)</button><button type="button" role="radio" data-qmode="sum">합산 (율을 더해서)</button></div>
         <div class="dcells" id="dcells"></div>
         <p class="hint">이 주문에만 적용돼요. 기본값은 제품 설정 › 할인·결제에서 정해요.</p>
       </section>
@@ -1169,14 +1275,90 @@ function savePrices(){try{localStorage.setItem(PRICE_KEY,JSON.stringify(PRICES))
 var PRICES=loadPrices(),PHOTO=new Map(); // PHOTO: id → 화면용 주소(blob:)
 function phDB(){return new Promise(function(ok,no){var r=indexedDB.open(TEST?'buy-photos-test':'buy-photos',1);r.onupgradeneeded=function(){r.result.createObjectStore('p',{keyPath:'id'})};r.onsuccess=function(){ok(r.result)};r.onerror=function(){no(r.error)}})}
 function phTx(mode,fn){return phDB().then(function(db){return new Promise(function(ok,no){var t=db.transaction('p',mode),req=fn(t.objectStore('p'));t.oncomplete=function(){ok(req&&req.result)};t.onerror=function(){no(t.error)}})})}
+/* 작은 사진(목록·카드용): 큰 사진(1600px)을 목록에서 그대로 쓰면 저사양 PC가 느려져서, 긴 쪽 480px 복사본을 같은 저장소에 「th:」 이름으로 따로 둬요.
+   복사본은 사진을 넣을 때·처음 불러올 때 조용히 만들고, 백업·사진 수에는 세지 않아요. */
+var THUMB=new Map(),PHOTO_AT={},THUMB_SRC={},thumbBusy=false;
 function loadPhotos(){
   return phTx('readonly',function(st){return st.getAll()}).then(function(rows){
     PHOTO.forEach(function(u){URL.revokeObjectURL(u)});PHOTO.clear();
-    (rows||[]).forEach(function(r){if(r&&r.blob)PHOTO.set(r.id,URL.createObjectURL(r.blob))});
+    THUMB.forEach(function(u){URL.revokeObjectURL(u)});THUMB.clear();PHOTO_AT={};THUMB_SRC={};
+    (rows||[]).forEach(function(r){
+      if(!r||!r.blob)return;
+      if(String(r.id).indexOf('th:')===0){var k=r.id.slice(3);THUMB.set(k,URL.createObjectURL(r.blob));THUMB_SRC[k]=r.src||0}
+      else{PHOTO.set(r.id,URL.createObjectURL(r.blob));PHOTO_AT[r.id]=r.at||0}
+    });
+    setTimeout(makeThumbs,1200);
   }).catch(function(){});
 }
+function makeThumbs(){
+  if(thumbBusy)return;
+  var todo=[];PHOTO.forEach(function(u,k){if(/^(model|code|mp):/.test(k)&&(!THUMB.has(k)||THUMB_SRC[k]!==PHOTO_AT[k]))todo.push(k)});
+  if(!todo.length)return;
+  thumbBusy=true;
+  (function next(){
+    var k=todo.shift();
+    if(!k||!PHOTO.has(k)){thumbBusy=false;return}
+    var img=new Image();
+    img.onload=function(){
+      var sc=Math.min(1,480/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.naturalWidth*sc));c.height=Math.max(1,Math.round(img.naturalHeight*sc));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      c.toBlob(function(b){
+        if(!b){setTimeout(next,200);return}
+        var at=PHOTO_AT[k]||0;
+        phTx('readwrite',function(st){return st.put({id:'th:'+k,blob:b,at:Date.now(),src:at})}).then(function(){
+          if(THUMB.has(k))URL.revokeObjectURL(THUMB.get(k));THUMB.set(k,URL.createObjectURL(b));THUMB_SRC[k]=at;
+        }).catch(function(){}).then(function(){setTimeout(next,250)}); // 한 장씩, 틈틈이(상담 중에 버벅이지 않게)
+      },'image/jpeg',.8);
+    };
+    img.onerror=function(){setTimeout(next,250)};
+    img.src=PHOTO.get(k);
+  })();
+}
 function modelPhotoId(){return 'model:'+cur.gid+':'+cur.key}
-function photoFor(v){return PHOTO.get('code:'+v.code)||PHOTO.get(modelPhotoId())||null}
+function photoFor(v){var sl=cur?photoSlots():[];return PHOTO.get('code:'+v.code)||(sl[0]&&sl[0].url)||PHOTO.get(modelPhotoId())||null}
+/* 사진 넘기기: 이 모델의 사진(모델 사진 + 옵션별 사진)을 화살표로 훑어봐요. 고른 규격·색상·가격은 바뀌지 않아요.
+   옵션(규격·색상)을 새로 고르면 다시 그 옵션의 사진으로 돌아와요. */
+/* 슬라이드 사진: 제품 하나에 여러 장(SET.mph[oid]=[번호…], 사진은 IndexedDB 'mp:'+oid+':'+번호). 첫 장은 「이 모델 전체」 사진이에요 */
+function mphIds(oid){var d=SET.mph&&SET.mph[oid];return Array.isArray(d)?d:[]}
+function mphPhotoId(oid,id){return 'mp:'+oid+':'+id}
+/* 제품 사진 한 줄 목록: 순서(SET.mph[oid])에 「@m」(예전 「이 모델 전체」 사진)과 슬라이드 사진 번호가 섞여 있어요. 순서에 없는 「@m」은 맨 앞에 둬요 */
+function photoOrder(){
+  var ord=mphIds(cur.oid).slice(),mid=modelPhotoId();
+  if(PHOTO.has(mid)&&ord.indexOf('@m')<0)ord.unshift('@m');
+  return ord.filter(function(id){return id==='@m'?PHOTO.has(mid):PHOTO.has(mphPhotoId(cur.oid,id))});
+}
+function photoSlots(){
+  var mid=modelPhotoId();
+  return photoOrder().map(function(id){var dbid=id==='@m'?mid:mphPhotoId(cur.oid,id);return {id:id,dbid:dbid,url:PHOTO.get(dbid)}});
+}
+var GAL={oid:'',vi:-1,idx:-1};
+function galList(){
+  var out=[],seen={};
+  function add(u){if(u&&!seen[u]){seen[u]=1;out.push(u)}}
+  photoSlots().forEach(function(sl){add(sl.url)});
+  cur.variants.forEach(function(v){add(PHOTO.get('code:'+v.code))});
+  return out;
+}
+function galPhoto(v,list){
+  if(GAL.oid!==cur.oid||GAL.vi!==vi)GAL={oid:'',vi:-1,idx:-1}; // 옵션을 새로 골랐거나 다른 제품이면 처음 상태
+  if(GAL.idx>=0&&list[GAL.idx])return list[GAL.idx];
+  return photoFor(v);
+}
+function galDots(gl,gi){
+  var box=$('gdots'),cnt=$('gcnt'),show=gl.length>1;
+  box.hidden=cnt.hidden=!show;
+  if(!show){box.textContent='';return}
+  cnt.textContent=(gi<0?1:gi+1)+' / '+gl.length;
+  if(box.children.length!==gl.length){box.textContent='';gl.forEach(function(u,j){var b=el('button',{type:'button',role:'tab','aria-label':(j+1)+'번째 사진'});b.addEventListener('click',function(){GAL={oid:cur.oid,vi:vi,idx:j};render()});box.appendChild(b)})}
+  Array.prototype.forEach.call(box.children,function(b,j){b.setAttribute('aria-selected',String(j===gi))});
+}
+function stepPhoto(d){
+  var list=galList();if(list.length<2)return;
+  var v=cur.variants[vi],i=GAL.oid===cur.oid&&GAL.vi===vi&&GAL.idx>=0?GAL.idx:list.indexOf(photoFor(v));
+  if(i<0)i=0;i+=d;if(i<0||i>=list.length)return;
+  GAL={oid:cur.oid,vi:vi,idx:i};render();
+}
 // 사진을 긴 쪽 1600px JPEG로 줄여 저장해요(휴대폰 사진은 커서 그대로 두면 저장 공간이 금방 차요)
 function shrink(file){
   return new Promise(function(ok,no){
@@ -1196,9 +1378,9 @@ function shrink(file){
    mode: sum = 제품+지점+매니저 율을 더해 한 번에 / seq = 앞 할인 뒤 남은 금액에 다음 할인 */
 var SET_KEY=NS+'settings',CART_KEY=NS+'cart';
 var DEFAULT_SET={
-  storeName:'ACE BED',mode:'sum',prodDefault:0,groupRates:{},itemRates:{},
+  storeName:'ACE BED',mode:'seq',modeV:2,prodDefault:0,groupRates:{},itemRates:{},
   branchRate:0,branchDefaultOn:true,managerRate:0,instRate:0,rounding:1,hidden:[],gifts:[],aliases:{},
-  menus:null,moved:{},merge:{},names:{},descs:{},details:{},deleted:[],vadd:[],vedit:{},flow:true,
+  menus:null,moved:{},merge:{},names:{},descs:{},details:{},mph:{},deleted:[],vadd:[],vedit:{},flow:true,
   paybacks:[{id:'naver',name:'네이버페이',rate:0,cap:0,on:true},{id:'ontong',name:'온통대전',rate:0,cap:0,on:true},{id:'lotte',name:'롯데카드',rate:0,cap:0,on:true}]
 };
 var clone=function(o){return JSON.parse(JSON.stringify(o))};
@@ -1208,6 +1390,7 @@ function loadSet(){
   var s=clone(DEFAULT_SET),o={};
   try{o=JSON.parse(localStorage.getItem(SET_KEY)||'{}')||{}}catch(e){}
   Object.keys(s).forEach(function(k){if(o[k]!=null)s[k]=o[k]});
+  if(o.modeV!==2){s.mode='seq';s.modeV=2} // 2026-11: 할인은 「할인에 할인」(순차)이 기본이에요. 합산이 필요하면 장바구니 할인 줄에서 바꿔요
   s.paybacks=DEFAULT_SET.paybacks.map(function(d){return Object.assign({},d,(o.paybacks||[]).filter(function(p){return p.id===d.id})[0]||{})});
   return s;
 }
@@ -1262,6 +1445,7 @@ function qOrder(q){return Object.assign(newCart(),clone(q.o))}
 var INST=[0,2,3,6,10,12,24,36];
 
 /* 계산 순서: ① 품목마다 제품·지점·매니저 할인 → ② 합계 → ③ 끝자리 절사(또는 직접 입력한 금액) → ④ 페이백 → ⑤ 할부 */
+function dlbl(k,c){var sq=SET.mode==='seq';return k==='B'?'지점 할인 '+pct(c.br)+(sq?' (남은 금액의 '+pct(c.br)+')':''):'매니저 할인 '+pct(c.mr)+(sq?' (남은 금액의 '+pct(c.mr)+')':'')}
 function calc(o){
   var br=clampRate(o.br),mr=clampRate(o.mr);
   var rows=o.lines.map(function(l){
@@ -1328,19 +1512,19 @@ function applyEdits(maps){
     var gid=maps[c.group]?c.group:firstMenuId(),key=String(c.name).trim();
     var ov=PRICES[c.code],price=ov>0?ov:Math.round(+c.price);
     var e=maps[gid][key]=maps[gid][key]||{vs:[],main:true,ord:5e6+k,oid:gid+'|'+key};
-    e.mine=true;e.vs.push({size:String(c.size||'').toUpperCase(),color:c.color||'',price:price,base:Math.round(+c.price),code:c.code,rate:null,kw:''});
+    e.mine=true;e.vs.push({size:String(c.size||'').toUpperCase(),color:c.color||'',type:c.type!=null?String(c.type):undefined,_ts:c.type!=null?1:undefined,price:price,base:Math.round(+c.price),code:c.code,rate:null,kw:''});
   });
   /* 사이즈(옵션) 추가·변경·삭제: SET.vadd(추가) → SET.vedit(코드별 삭제·규격·색상 변경) 순서로 반영 */
   (SET.vadd||[]).forEach(function(a){
     var gid=String(a.oid).split('|')[0],key=String(a.oid).slice(gid.length+1),e=maps[gid]&&maps[gid][key];
     if(!e||!a.code)return;
-    var ov=PRICES[a.code];e.vs.push({size:String(a.size||'').toUpperCase(),color:a.color||'',price:ov>0?ov:Math.round(+a.price),base:Math.round(+a.price),code:a.code,rate:null,kw:''});
+    var ov=PRICES[a.code];e.vs.push({size:String(a.size||'').toUpperCase(),color:a.color||'',type:a.type!=null?String(a.type):undefined,_ts:a.type!=null?1:undefined,price:ov>0?ov:Math.round(+a.price),base:Math.round(+a.price),code:a.code,rate:null,kw:''});
   });
   var ve=SET.vedit||{};
   Object.keys(maps).forEach(function(gid){Object.keys(maps[gid]).forEach(function(k){
     var e=maps[gid][k];
     e.vs=e.vs.filter(function(v){return !(ve[v.code]&&ve[v.code].del)});
-    e.vs.forEach(function(v){var x=ve[v.code];if(x&&!x.del){if(x.size!=null)v.size=String(x.size).toUpperCase();if(x.color!=null)v.color=x.color}});
+    e.vs.forEach(function(v){var x=ve[v.code];if(x&&!x.del){if(x.size!=null)v.size=String(x.size).toUpperCase();if(x.color!=null)v.color=x.color;if(x.type!=null){v.type=String(x.type);v._ts=1}}});
     if(!e.vs.length)delete maps[gid][k];
   })});
   var mv=SET.moved||{};
@@ -1364,6 +1548,31 @@ function applyEdits(maps){
   });
   var del={};(SET.deleted||[]).forEach(function(d){del[d.id]=1});
   Object.keys(maps).forEach(function(gid){Object.keys(maps[gid]).forEach(function(k){if(del[maps[gid][k].oid])delete maps[gid][k]})});
+  mergeTypes(maps);
+}
+/* 프레임 타입 통폐합: BMA1171-E · BMA1171-N 처럼 이름 끝 「-알파벳」만 다른 프레임은 한 모델(BMA1171)로 묶고,
+   타입은 옵션(색상 칸) 앞에 「E타입」「N타입」으로 붙여요. 옮기기·삭제를 먼저 반영한 뒤에 묶어서 지운 제품은 다시 살아나지 않아요.
+   묶인 모델은 첫 타입의 oid를 이어받아 그 제품에 올려 둔 사진·설명이 그대로 남아요. */
+function mergeTypes(maps){
+  var fm=maps.frame;if(!fm)return;
+  var RE=/^(.*?[A-Za-z0-9])-([A-Z])(\s+(?:NEW|N))?(\s*\(.*\))?(\s+NEW)?$/,groups={};
+  Object.keys(fm).forEach(function(k){
+    var m=k.match(RE);if(!m||fm[k].mine)return;
+    var b=m[1]+(m[4]||'')+(m[5]||'');(groups[b]=groups[b]||[]).push({k:k,t:m[2],tail:(m[3]||'').trim(),e:fm[k]});
+  });
+  Object.keys(groups).forEach(function(b){
+    var g=groups[b],types={};g.forEach(function(x){types[x.t+'|'+x.tail]=1});
+    if(Object.keys(types).length<2)return;
+    g.sort(function(a,c){var A=a.t+a.tail,C=c.t+c.tail;return A<C?-1:A>C?1:0});
+    var first=g[0].e,tgt=fm[b]&&!fm[b].mine?fm[b]:{vs:[],main:false,oid:first.oid};
+    g.forEach(function(x){
+      x.e.vs.forEach(function(v){if(!v.type&&!v._ts)v.type=x.t+(x.tail?' '+x.tail:'');tgt.vs.push(v)});
+      tgt.main=tgt.main||x.e.main;if(x.e.ord!=null)tgt.ord=tgt.ord==null?x.e.ord:Math.min(tgt.ord,x.e.ord);
+      if(x.e.desc&&!tgt.desc)tgt.desc=x.e.desc;
+      delete fm[x.k];
+    });
+    fm[b]=tgt;
+  });
 }
 function finishGroup(g,map,custom){
   var box=G[g.id];
@@ -1516,7 +1725,7 @@ function render(){
   $('title').textContent=title;$('sTitle').textContent=title;$('stTitle').textContent=title;
   $('code').textContent=v.code;$('sCode').textContent=v.code;
   $('ghost').textContent=cur.series.slice(0,6);
-  var ph=photoFor(v),pimg=$('photo');
+  var gl=galList(),ph=galPhoto(v,gl),pimg=$('photo');
   if(ph){if(pimg.getAttribute('src')!==ph)pimg.src=ph;pimg.alt=title+' 사진';pimg.hidden=false}else{pimg.hidden=true;pimg.removeAttribute('src')}
   pimg.parentNode.classList.toggle('has-photo',!!ph);
   $('photoNote').textContent=ph?'매장에서 넣은 사진이에요.':'그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.';
@@ -1544,9 +1753,10 @@ function render(){
   $('sDisc').textContent=won(pv.pay)+' 원';
   $('sDiscNote').textContent='지금 할인 기준 '+pct(dRate)+' (장바구니에서 바꿔요)';
   $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
-  var tsz=typeSizes(curType()),sidx=tsz.indexOf(v.size);
-  $('prev').disabled=sidx<=0;$('next').disabled=sidx>=tsz.length-1;
-  $('prev').hidden=$('next').hidden=tsz.length<2; // 고를 규격이 하나뿐이면 화살표를 숨겨요
+  var gi=gl.indexOf(ph); // 사진 화살표·점·번호: 사진이 2장 이상일 때만 보여요(옵션은 그대로)
+  galDots(gl,gi);
+  $('prev').disabled=gi<=0;$('next').disabled=gi<0||gi>=gl.length-1;
+  $('prev').hidden=$('next').hidden=gl.length<2;
   Array.prototype.forEach.call($('types').children,function(b){
     var t=b.getAttribute('data-t'),min=cur.variants.filter(function(x){return (x.type||'')===t}).reduce(function(a,x){return Math.min(a,x.price)},Infinity);
     b.setAttribute('aria-checked',String(t===curType()));b.querySelector('em').textContent=won(min)+'원~';
@@ -1894,11 +2104,78 @@ function menuOptions(sel,withGift){return GROUPS.filter(function(g){return withG
    SET.details[oid] = [{id, t:제목, x:내용}] · 칸 사진은 IndexedDB 'detail:'+oid+':'+id (사진 백업에 함께 들어가요) */
 function detailOf(oid){var d=SET.details&&SET.details[oid];return Array.isArray(d)?d:[]}
 function detailPhotoId(oid,id){return 'detail:'+oid+':'+id}
+/* 블록 종류(k): (없음)=예전 칸[사진+제목+내용] · img=사진 · gal=사진 묶음 · h=소제목 · txt=글 · q=인용구 · ul=목록 · tb=표 · hr=구분선 · ln=링크 카드 · vd=영상 링크 · pl=장소 · cd=코드
+   블로그·스마트스토어 상세페이지처럼 사진과 글을 길게 섞어 쌓아요. 글 꾸미기는 블록 전체(글꼴·크기·줄간격·정렬·굵게·기울임·밑줄·취소선·색·배경색)와
+   글 안의 일부(**굵게** ^^기울임^^ __밑줄__ ~~취소선~~ ==형광펜== [[c#색,bg#색,z크기|글]] [글](https://링크))로 해요.
+   저장하는 값은 짧은 이름·검사한 색·숫자뿐이라 화면에는 아래 표에 있는 것만 써요(임의 CSS·스크립트 불가). */
+var FONTS={'':{n:'기본 (고딕)'},
+  ng:{n:'나눔고딕',css:"'Nanum Gothic'",pkg:'nanum-gothic'},nm:{n:'나눔명조',css:"'Nanum Myeongjo'",pkg:'nanum-myeongjo'},
+  gb:{n:'고운바탕 (명조)',css:"'Gowun Batang'",pkg:'gowun-batang'},gd:{n:'고운돋움',css:"'Gowun Dodum'",pkg:'gowun-dodum'},
+  pen:{n:'나눔펜글씨 (손글씨)',css:"'Nanum Pen Script'",pkg:'nanum-pen-script'},jua:{n:'주아 (둥근 제목체)',css:"'Jua'",pkg:'jua'},bh:{n:'블랙한산스 (굵은 제목체)',css:"'Black Han Sans'",pkg:'black-han-sans'}};
+var FZ=[12,13,14,15,16,17,18,19,20,22,24,26,28,32,36,40,48,56]; // 글자 크기(px)
+var FSIZES={s:['작게',14,20],m:['보통',17,26],l:['크게',22,34],x:['아주 크게',30,44]}; // 예전 저장값(s·m·l·x)도 읽어요
+var FCOLORS={g:['회색','#6b6b6b'],r:['빨강','#d92d20'],o:['주황','#e8590c'],n:['초록','#2f9e44'],b:['파랑','#1c6ef2'],p:['보라','#7048e8']};
+var LHS=[['','줄간격 기본'],['1.4','좁게 1.4'],['1.75','보통 1.75'],['2','넓게 2.0'],['2.4','아주 넓게 2.4']];
+var ALIGNS=[['','왼쪽'],['c','가운데'],['r','오른쪽'],['j','양쪽']];
+var HRS={l:'선',d:'점선',t:'굵은 선',o:'점 ···',s:'짧은 선',w:'이중선'};
+var QSTYLES={1:'왼쪽 막대',2:'큰따옴표',3:'회색 상자',4:'위아래 선'};
+var LSTYLES={b:'글머리 점',n:'번호',c:'체크'};
+var LAYS={1:'한 장씩 (세로)',2:'2열',3:'3열',s:'슬라이드(가로 넘김)',c:'콜라주(첫 장 크게)'};
+var FONT_LOADED={};
+function ensureFont(k){
+  var f=FONTS[k];if(!f||!f.pkg||FONT_LOADED[k])return;FONT_LOADED[k]=1;
+  var l=document.createElement('link');l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/npm/@fontsource/'+f.pkg+'/index.css';document.head.appendChild(l); // 쓰는 글꼴만, 쓸 때 한 번 받아요
+}
+function okColor(c){c=String(c||'');return /^#[0-9a-fA-F]{6}$/.test(c)?c:(FCOLORS[c]?FCOLORS[c][1]:'')}
+function okUrl(u){u=String(u||'').trim();return /^https?:\/\/[^\s<>"']{3,}$/i.test(u)?u:''}
+function fmtStyle(b,kind){
+  var st=[],f=FONTS[b.f];
+  if(f&&f.css){ensureFont(b.f);st.push('font-family:'+f.css+',"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif')}
+  var px=0;if(FSIZES[b.z]){if(b.z!=='m')px=kind==='h'?FSIZES[b.z][2]:FSIZES[b.z][1]}else if(/^\d{2}$/.test(String(b.z||''))&&+b.z>=10&&+b.z<=80)px=+b.z;
+  if(px)st.push('--fs:'+px+'px');
+  if(b.b)st.push('font-weight:800');if(b.it)st.push('font-style:italic');
+  var dec=[];if(b.un)dec.push('underline');if(b.sk)dec.push('line-through');if(dec.length)st.push('text-decoration:'+dec.join(' '));
+  var c=okColor(b.c);if(c)st.push('color:'+c);var bg=okColor(b.bg);if(bg)st.push('background-color:'+bg+';padding:2px 6px;border-radius:4px');
+  if(/^(1\.4|1\.75|2|2\.4)$/.test(String(b.lh||'')))st.push('line-height:'+b.lh);
+  var al={c:'center',r:'right',j:'justify'}[b.a];if(al)st.push('text-align:'+al);
+  return st.length?' style="'+esc(st.join(';'))+'"':'';
+}
+function inlineFmt(raw){
+  var t=esc(raw);
+  t=t.replace(/\[([^\[\]]+?)\]\((https?:\/\/[^\s)]+)\)/g,function(m,a,u){return '<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+a+'</a>'});
+  t=t.replace(/\[\[([^\]|]+)\|([\s\S]+?)\]\]/g,function(m,o,x){
+    var st=[];o.split(',').forEach(function(p){p=p.trim();var q;
+      if((q=p.match(/^c(#[0-9a-fA-F]{6}|[a-z])$/))){var c=okColor(q[1]);if(c)st.push('color:'+c)}
+      else if((q=p.match(/^bg(#[0-9a-fA-F]{6})$/)))st.push('background:'+q[1]);
+      else if((q=p.match(/^z(\d{2})$/))&&+q[1]>=10&&+q[1]<=80)st.push('font-size:'+q[1]+'px');
+    });
+    return st.length?'<span style="'+st.join(';')+'">'+x+'</span>':x;
+  });
+  return t.replace(/\*\*([\s\S]+?)\*\*/g,'<strong>$1</strong>').replace(/\^\^([\s\S]+?)\^\^/g,'<em>$1</em>').replace(/__([\s\S]+?)__/g,'<u>$1</u>').replace(/~~([\s\S]+?)~~/g,'<s>$1</s>').replace(/==([\s\S]+?)==/g,'<mark>$1</mark>');
+}
+function pTexts(x){return String(x).split(/\n{2,}/).map(function(t){return t.trim()}).filter(Boolean).map(function(t){return '<p>'+inlineFmt(t)+'</p>'}).join('')}
+function hostOf(u){try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return ''}}
 function blocksHTML(oid,blocks,title){
   return blocks.map(function(b){
-    var u=PHOTO.get(detailPhotoId(oid,b.id)),t=String(b.t||'').trim(),x=String(b.x||'').trim();
+    var u=PHOTO.get(detailPhotoId(oid,b.id)),t=String(b.t||'').trim(),x=String(b.x||'').trim(),k=b.k||'',fs=fmtStyle(b,k==='h'?'h':'t');
+    if(k==='hr')return '<hr class="pd-hr h-'+(HRS[b.hs]?b.hs:'l')+'">';
+    if(k==='h')return t?'<h3 class="pd-s"'+fs+'>'+inlineFmt(t)+'</h3>':'';
+    if(k==='txt')return x?'<div class="pd-t"'+fs+'>'+pTexts(x)+'</div>':'';
+    if(k==='q')return x?'<blockquote class="pd-q q'+(QSTYLES[b.qs]?b.qs:1)+'"'+fs+'>'+pTexts(x)+(t?'<cite>'+esc(t)+'</cite>':'')+'</blockquote>':'';
+    if(k==='ul'){var items=x.split('\n').map(function(v){return v.trim()}).filter(Boolean);if(!items.length)return '';var ls=LSTYLES[b.ls]?b.ls:'b';
+      return '<'+(ls==='n'?'ol':'ul')+' class="pd-l l'+ls+'"'+fs+'>'+items.map(function(v){return '<li>'+inlineFmt(v)+'</li>'}).join('')+'</'+(ls==='n'?'ol':'ul')+'>'}
+    if(k==='tb'){var rows=Array.isArray(b.rows)?b.rows.slice(0,30):[];if(!rows.some(function(r){return Array.isArray(r)&&r.some(function(c){return String(c||'').trim()})}))return '';
+      return '<div class="pd-tw"><table class="pd-tbl"'+fs+'>'+rows.map(function(r,i){var tag=b.th&&i===0?'th':'td';return '<tr>'+(Array.isArray(r)?r.slice(0,10):[]).map(function(c){return '<'+tag+'>'+inlineFmt(String(c||''))+'</'+tag+'>'}).join('')+'</tr>'}).join('')+'</table></div>'}
+    if(k==='gal'){var ps=(Array.isArray(b.p)?b.p:[]).map(function(id){return PHOTO.get(detailPhotoId(oid,id))}).filter(Boolean);if(!ps.length)return '';
+      return '<div class="pd-g g'+(LAYS[b.lay]?b.lay:'2')+'">'+ps.map(function(src){return '<img src="'+esc(src)+'" alt="'+esc(title)+'" loading="lazy" decoding="async">'}).join('')+'</div>'}
+    if(k==='ln'||k==='vd'){var url=okUrl(b.url);if(!url&&!t)return '';var inner='<b>'+(k==='vd'?'▶ ':'')+esc(t||url)+'</b>'+(x?'<span>'+esc(x)+'</span>':'')+(url?'<em>'+esc(hostOf(url))+(k==='vd'?' · 영상 보기':'')+'</em>':'');
+      return url?'<a class="pd-ln" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+inner+'</a>':'<div class="pd-ln">'+inner+'</div>'}
+    if(k==='pl'){if(!t)return '';var mq=encodeURIComponent(t+' '+x).slice(0,300);
+      return '<div class="pd-pl"><b>📍 '+esc(t)+'</b>'+(x?'<span>'+esc(x)+'</span>':'')+'<a href="https://map.naver.com/p/search/'+mq+'" target="_blank" rel="noopener noreferrer">네이버 지도에서 보기</a></div>'}
+    if(k==='cd')return x?'<pre class="pd-cd">'+esc(String(b.x||'').replace(/\r/g,'').replace(/\s+$/,''))+'</pre>':'';
+    if(k==='img')return u?'<figure class="pd-i"><img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy" decoding="async">'+(t?'<figcaption>'+esc(t)+'</figcaption>':'')+'</figure>':'';
     if(!u&&!t&&!x)return '';
-    return '<figure class="pd-b">'+(u?'<img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy">':'')+(t?'<h3>'+esc(t)+'</h3>':'')+(x?'<p>'+esc(x)+'</p>':'')+'</figure>';
+    return '<figure class="pd-b">'+(u?'<img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy" decoding="async">':'')+(t?'<h3>'+esc(t)+'</h3>':'')+(x?'<p>'+esc(x)+'</p>':'')+'</figure>';
   }).join('');
 }
 function renderDetailPreview(){
@@ -1926,62 +2203,234 @@ function renderDetail(v){
     +cur.variants.map(function(w){var o=optOf(w)||'기본';return '<tr'+(w===v?' aria-current="true" style="font-weight:700"':'')+'><td>'+esc(o)+'</td><td class="num">'+esc(String(w.code).indexOf('M:')===0?'-':w.code)+'</td><td class="r num">'+won(w.price)+'원</td></tr>'}).join('')
     +'</tbody></table>';
 }
-// 설정: 칸 편집(저장 전까지는 DB_EDIT에만)
-var DB_EDIT=[],DB_PICK=null,DB_OID=null; // DB_OID: 편집 중인 모델(설정을 닫으면 비워요)
+// 설정: 블록 편집(저장 전까지는 DB_EDIT에만)
+var DB_EDIT=[],DB_PICK=null,DB_PICKIDX=-1,DB_GAL=-1,DB_OID=null,DB_LAYOUT='1',DB_DRAG=null; // DB_OID: 편집 중인 모델(설정을 닫으면 비워요)
+var DB_HIST=[],DB_HI=-1,DB_HT=0; // 되돌리기·다시 실행(최근 60단계)
 function dbNewId(){return 'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+var DB_KINDS={img:'사진',gal:'사진 묶음',txt:'글',h:'소제목',q:'인용구',ul:'목록',tb:'표',hr:'구분선',ln:'링크 카드',vd:'영상 링크',pl:'장소',cd:'코드'};
+var DB_MENU=[['img','＋ 사진'],['txt','＋ 글'],['h','＋ 소제목'],['q','＋ 인용구'],['ul','＋ 목록'],['tb','＋ 표'],['hr','＋ 구분선'],['ln','＋ 링크 카드'],['vd','＋ 영상 링크'],['pl','＋ 장소'],['cd','＋ 코드']];
+var DB_FLAGS=['b','it','un','sk','th'],DB_STRS=['f','z','c','bg','lh','a','qs','ls','hs','lay','url'];
+function dbClean(b){ // 저장하는 모양(허용한 값만)
+  var o={id:String(b.id)};
+  if(b.k)o.k=String(b.k);
+  o.t=String(b.t==null?'':b.t).trim();o.x=String(b.x==null?'':b.x).replace(/\r/g,'').trim();
+  DB_STRS.forEach(function(f){if(b[f]!=null&&b[f]!=='')o[f]=String(b[f])});
+  DB_FLAGS.forEach(function(f){if(b[f])o[f]=1});
+  if(Array.isArray(b.p))o.p=b.p.map(String);
+  if(Array.isArray(b.rows))o.rows=b.rows.slice(0,30).map(function(r){return (Array.isArray(r)?r:[]).slice(0,10).map(function(c){return String(c==null?'':c)})});
+  if(o.c&&!okColor(o.c))delete o.c;if(o.bg&&!okColor(o.bg))delete o.bg;
+  if(o.url&&!okUrl(o.url))delete o.url; // http(s) 주소만 저장해요
+  return o;
+}
+function dbSig(list){return JSON.stringify(list.map(dbClean))}
+function detailDirty(){return !!cur&&DB_OID===cur.oid&&dbSig(DB_EDIT)!==dbSig(detailOf(cur.oid))}
+function dbPush(){
+  var snap=JSON.stringify(DB_EDIT);if(DB_HIST[DB_HI]===snap)return;
+  DB_HIST=DB_HIST.slice(0,DB_HI+1);DB_HIST.push(snap);if(DB_HIST.length>60)DB_HIST.shift();DB_HI=DB_HIST.length-1;dbUndoBtns();
+}
+function dbUndoBtns(){var u=$('dbUndo'),r=$('dbRedo');if(u)u.disabled=DB_HI<=0;if(r)r.disabled=DB_HI>=DB_HIST.length-1}
+function dbGo(d){var n=DB_HI+d;if(n<0||n>=DB_HIST.length)return;DB_HI=n;DB_EDIT=JSON.parse(DB_HIST[n]);renderDetailEdit();dbUndoBtns()}
+function dbSel(i,key,opts,val,label){return '<select data-dbf="'+key+'" data-i="'+i+'" aria-label="'+label+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(String(o[0])===String(val||'')?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>'}
+function dbFmtBar(i,b,kind){
+  var fo=Object.keys(FONTS).map(function(k){return [k,FONTS[k].n]}),so=[['','글자 크기 기본']].concat(FZ.map(function(n){return [String(n),n+'px']}));
+  var z=FSIZES[b.z]?(b.z==='m'?'':String(kind==='h'?FSIZES[b.z][2]:FSIZES[b.z][1])):b.z;
+  var tg=function(k,label,title){return '<button class="btn outl" type="button" data-dbtg="'+k+'" data-i="'+i+'" title="'+title+'" aria-pressed="'+(b[k]?'true':'false')+'">'+label+'</button>'};
+  var col=function(k,label){var v=okColor(b[k]);return '<label class="db-clr" title="'+label+'">'+label+'<input type="color" data-dbf="'+k+'" data-i="'+i+'" value="'+(v||(k==='c'?'#000000':'#ffe066'))+'">'+(v?'<button type="button" class="btn outl" data-dbrs="'+k+'" data-i="'+i+'">해제</button>':'')+'</label>'};
+  var row1='<div class="db-fmt"><span class="db-lb">블록 전체</span>'+dbSel(i,'f',fo,b.f,'글꼴')+dbSel(i,'z',so,z,'글자 크기')+dbSel(i,'lh',LHS,b.lh,'줄간격')+dbSel(i,'a',ALIGNS,b.a,'정렬')
+    +tg('b','<b>B</b>','굵게')+tg('it','<i>I</i>','기울임')+tg('un','<u>U</u>','밑줄')+tg('sk','<s>S</s>','취소선')+col('c','글자색')+col('bg','배경색')+'</div>';
+  var szo=[['','선택 크기']].concat(FZ.map(function(n){return [String(n),n+'px']}));
+  var row2='<div class="db-fmt"><span class="db-lb">선택한 글만</span>'
+    +'<button class="btn outl" type="button" data-dbw="**" data-i="'+i+'" title="굵게"><b>B</b></button><button class="btn outl" type="button" data-dbw="^^" data-i="'+i+'" title="기울임"><i>I</i></button><button class="btn outl" type="button" data-dbw="__" data-i="'+i+'" title="밑줄"><u>U</u></button><button class="btn outl" type="button" data-dbw="~~" data-i="'+i+'" title="취소선"><s>S</s></button>'
+    +'<button class="btn outl" type="button" data-dbw="==" data-i="'+i+'" title="형광펜"><mark style="background:#ffe066">형광</mark></button>'
+    +'<label class="db-clr">글자색<input type="color" data-dbic="c" data-i="'+i+'" value="#d92d20"></label><label class="db-clr">배경<input type="color" data-dbic="bg" data-i="'+i+'" value="#ffe066"></label>'
+    +'<select data-dbis="z" data-i="'+i+'" aria-label="선택한 글 크기">'+szo.map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>'}).join('')+'</select>'
+    +'<button class="btn outl" type="button" data-dblk="1" data-i="'+i+'">🔗 링크</button><button class="btn outl" type="button" data-dbcl="1" data-i="'+i+'">꾸밈 지우기</button></div>';
+  return row1+row2;
+}
+function dbCtl(i,k){
+  var photo=(k==='img'||k==='gal'||!k);
+  return '<div class="db-b"><button class="btn outl" type="button" data-dba="up"'+(i?'':' disabled')+' aria-label="위로">↑</button><button class="btn outl" type="button" data-dba="down"'+(i<DB_EDIT.length-1?'':' disabled')+' aria-label="아래로">↓</button>'
+    +(photo?'':'<button class="btn outl" type="button" data-dba="dup">복제</button>')
+    +'<button class="btn outl" type="button" data-dba="del" style="color:var(--err);border-color:var(--err)">지우기</button></div>';
+}
+function dbAddBar(idx){return '<div class="db-add" data-dbi="'+idx+'"><button type="button" class="btn outl" data-dbopen="1">＋ 여기에 블록 추가</button></div>'}
+function dbMenuHTML(){return '<span>추가할 블록</span>'+DB_MENU.map(function(m){return '<button type="button" class="btn outl" data-dbadd="'+m[0]+'">'+m[1]+'</button>'}).join('')}
+function dbIn(i,key,ph,val,max,label){return '<input class="pin" data-dbk="'+key+'" data-i="'+i+'" maxlength="'+(max||200)+'" placeholder="'+esc(ph)+'" value="'+esc(val||'')+'" aria-label="'+label+'">'}
+function dbBody(b,i,u){
+  var k=b.k||'';
+  if(k==='hr')return '<div class="db-fmt">'+dbSel(i,'hs',Object.keys(HRS).map(function(h){return [h,HRS[h]]}),b.hs||'l','구분선 모양')+'</div><hr class="pd-hr h-'+(HRS[b.hs]?b.hs:'l')+'" style="margin:8px auto">';
+  if(k==='h')return '<input class="pin" data-dbt="'+i+'" maxlength="100" placeholder="소제목 (예: 이런 분께 추천해요)" value="'+esc(b.t||'')+'" aria-label="소제목">'+dbFmtBar(i,b,'h');
+  if(k==='txt')return '<textarea class="pin" data-dbx="'+i+'" rows="8" maxlength="8000" placeholder="글을 길게 써요. 줄바꿈은 그대로, 빈 줄을 넣으면 문단이 나뉘어요" aria-label="글">'+esc(b.x||'')+'</textarea>'+dbFmtBar(i,b,'t');
+  if(k==='q')return '<div class="db-fmt">'+dbSel(i,'qs',Object.keys(QSTYLES).map(function(q){return [q,QSTYLES[q]]}),b.qs||'1','인용구 모양')+'</div><textarea class="pin" data-dbx="'+i+'" rows="4" maxlength="3000" placeholder="인용할 글" aria-label="인용구">'+esc(b.x||'')+'</textarea>'+dbIn(i,'t','출처(선택, 예: — 고객 후기)',b.t,100,'출처')+dbFmtBar(i,b,'t');
+  if(k==='ul')return '<div class="db-fmt">'+dbSel(i,'ls',Object.keys(LSTYLES).map(function(q){return [q,LSTYLES[q]]}),b.ls||'b','목록 모양')+'</div><textarea class="pin" data-dbx="'+i+'" rows="6" maxlength="4000" placeholder="한 줄에 하나씩 적어요" aria-label="목록">'+esc(b.x||'')+'</textarea>'+dbFmtBar(i,b,'t');
+  if(k==='cd')return '<textarea class="pin db-mono" data-dbx="'+i+'" rows="6" maxlength="4000" placeholder="코드·표시할 그대로의 글" aria-label="코드">'+esc(b.x||'')+'</textarea>';
+  if(k==='ln'||k==='vd')return dbIn(i,'t',k==='vd'?'영상 제목':'링크 제목',b.t,100,'제목')+dbIn(i,'url','https://… (주소)',b.url,500,'주소')+dbIn(i,'x','설명(선택)',b.x,200,'설명')+'<p class="hint" style="margin:0">'+(k==='vd'?'영상은 화면 안에서 재생하지 않고 눌러서 새 창으로 열어요(보안상).':'눌러서 새 창으로 열어요. http(s) 주소만 쓸 수 있어요.')+'</p>';
+  if(k==='pl')return dbIn(i,'t','장소 이름 (예: 에이스침대 정림동점)',b.t,100,'장소 이름')+dbIn(i,'x','주소',b.x,200,'주소')+'<p class="hint" style="margin:0">「네이버 지도에서 보기」 링크가 자동으로 붙어요.</p>';
+  if(k==='tb'){var rows=Array.isArray(b.rows)&&b.rows.length?b.rows:[['',''],['','']];
+    return '<div class="db-tw"><table class="db-tbl">'+rows.map(function(r,ri){return '<tr>'+r.map(function(c,ci){return '<td><input class="pin" data-dbc="'+ri+','+ci+'" data-i="'+i+'" maxlength="200" value="'+esc(c)+'" aria-label="'+(ri+1)+'행 '+(ci+1)+'열"></td>'}).join('')+'</tr>'}).join('')+'</table></div>'
+      +'<div class="db-b"><button class="btn outl" type="button" data-dbt2="addr" data-i="'+i+'">＋ 행</button><button class="btn outl" type="button" data-dbt2="addc" data-i="'+i+'">＋ 열</button><button class="btn outl" type="button" data-dbt2="delr" data-i="'+i+'">－ 마지막 행</button><button class="btn outl" type="button" data-dbt2="delc" data-i="'+i+'">－ 마지막 열</button>'
+      +'<label class="db-al"><input type="checkbox" data-dbtg="th" data-i="'+i+'"'+(b.th?' checked':'')+'> 첫 줄은 제목</label></div>'+dbFmtBar(i,b,'t').split('<div class="db-fmt"><span class="db-lb">선택한 글만</span>')[0];}
+  if(k==='gal')return '<div class="db-fmt">'+dbSel(i,'lay',Object.keys(LAYS).map(function(l){return [l,LAYS[l]]}),b.lay||'2','사진 배치')+'<button class="btn outl" type="button" data-dbgal="add" data-i="'+i+'">＋ 사진 더 넣기</button></div>'
+    +'<div class="db-th">'+(b.p||[]).map(function(pid,pi){var pu=PHOTO.get(detailPhotoId(cur.oid,pid));return '<div class="db-tc">'+(pu?'<img src="'+esc(pu)+'" alt="">':'<span>없음</span>')+'<div><button type="button" class="btn outl" data-dbgal="l" data-i="'+i+'" data-pi="'+pi+'" aria-label="앞으로">←</button><button type="button" class="btn outl" data-dbgal="r" data-i="'+i+'" data-pi="'+pi+'" aria-label="뒤로">→</button><button type="button" class="btn outl" data-dbgal="x" data-i="'+i+'" data-pi="'+pi+'" style="color:var(--err)">×</button></div></div>'}).join('')+'</div>';
+  if(k==='img')return '<div class="db-big">'+(u?'<img src="'+esc(u)+'" alt="">':'<span>사진 없음</span>')+'</div>'+dbIn(i,'t','사진 설명(선택)',b.t,100,'사진 설명')+'<div class="db-b"><button class="btn outl" type="button" data-dba="photo">'+(u?'사진 바꾸기':'사진 넣기')+'</button></div>';
+  return '<div class="db-row" style="padding:0;box-shadow:none"><div class="db-im">'+(u?'<img src="'+esc(u)+'" alt="">':'사진 없음')+'</div>'
+    +'<div class="db-f"><input class="pin" data-dbt="'+i+'" maxlength="60" placeholder="제목" value="'+esc(b.t||'')+'" aria-label="제목"><textarea class="pin" data-dbx="'+i+'" rows="3" maxlength="1000" placeholder="내용" aria-label="내용">'+esc(b.x||'')+'</textarea>'
+    +'<div class="db-b"><button class="btn outl" type="button" data-dba="photo">'+(u?'사진 바꾸기':'사진 넣기')+'</button>'+(u?'<button class="btn outl" type="button" data-dba="unphoto">사진 빼기</button>':'')+'</div></div></div>';
+}
 function renderDetailEdit(){
   if(!cur)return;
   var oid=cur.oid;
-  $('dbList').innerHTML=DB_EDIT.length?DB_EDIT.map(function(b,i){
-    var u=PHOTO.get(detailPhotoId(oid,b.id));
-    return '<div class="db-row" data-db="'+i+'"><div class="db-im">'+(u?'<img src="'+esc(u)+'" alt="">':'사진 없음')+'</div>'
-      +'<div class="db-f"><input class="pin" data-dbt="'+i+'" maxlength="60" placeholder="제목 (예: 7존 독립 스프링)" value="'+esc(b.t||'')+'" aria-label="'+(i+1)+'번째 칸 제목">'
-      +'<textarea class="pin" data-dbx="'+i+'" rows="3" maxlength="1000" placeholder="내용 (줄바꿈 그대로 보여요)" aria-label="'+(i+1)+'번째 칸 내용">'+esc(b.x||'')+'</textarea>'
-      +'<div class="db-b"><button class="btn outl" type="button" data-dba="photo">'+(u?'사진 바꾸기':'사진 넣기')+'</button>'
-      +(u?'<button class="btn outl" type="button" data-dba="unphoto">사진 빼기</button>':'')
-      +'<button class="btn outl" type="button" data-dba="up"'+(i?'':' disabled')+' aria-label="위로">↑</button><button class="btn outl" type="button" data-dba="down"'+(i<DB_EDIT.length-1?'':' disabled')+' aria-label="아래로">↓</button>'
-      +'<button class="btn outl" type="button" data-dba="del" style="color:var(--err);border-color:var(--err)">칸 지우기</button></div></div></div>';
-  }).join(''):'<p class="hint" style="margin:0">아직 칸이 없어요. 「+ 칸 더하기」로 시작해요.</p>';
-  renderDetailPreview();
+  $('dbList').innerHTML=(DB_EDIT.length?DB_EDIT.map(function(b,i){
+    var u=PHOTO.get(detailPhotoId(oid,b.id)),k=b.k||'';
+    return '<div class="db-blk" data-db="'+i+'"><div class="db-top"><span class="db-h" draggable="true" data-dbh="'+i+'" title="끌어서 순서 바꾸기">⠿</span><b>'+(i+1)+'. '+(k?DB_KINDS[k]||k:'칸(사진+제목+내용)')+'</b>'+dbCtl(i,k)+'</div>'+dbBody(b,i,u)+'</div>'+dbAddBar(i+1);
+  }).join(''):dbAddBar(0)+'<p class="hint" style="margin:8px 0 0">블로그·스마트스토어처럼 사진과 글을 번갈아 쌓아요. 위 버튼으로 시작해요. 사진은 여러 장을 한 번에 고르거나, 끌어다 놓거나, 붙여넣어도 돼요.</p>');
+  renderDetailPreview();dbUndoBtns();
 }
-function openDetailEdit(){if(!cur)return;if(DB_OID!==cur.oid){DB_OID=cur.oid;DB_EDIT=clone(detailOf(cur.oid))}renderDetailEdit()}
-function detailDirty(){return !!cur&&DB_OID===cur.oid&&JSON.stringify(DB_EDIT.map(function(b){return [b.id,String(b.t||'').trim(),String(b.x||'').trim()]}))!==JSON.stringify(detailOf(cur.oid).map(function(b){return [b.id,b.t,b.x]}))}
+function dbNormalize(){ // 예전 저장값(s·m·l·x, 가운데 정렬 'c')을 새 값으로
+  DB_EDIT.forEach(function(b){if(FSIZES[b.z]){if(b.z==='m')delete b.z;else b.z=String(b.k==='h'?FSIZES[b.z][2]:FSIZES[b.z][1])}});
+}
+function openDetailEdit(){if(!cur)return;if(DB_OID!==cur.oid){DB_OID=cur.oid;DB_EDIT=clone(detailOf(cur.oid));dbNormalize();DB_HIST=[JSON.stringify(DB_EDIT)];DB_HI=0}renderDetailEdit()}
+function dbTA(i,b){return $('dbList').querySelector('[data-db="'+i+'"] '+((b.k==='h')?'input[data-dbt]':'textarea[data-dbx]'))}
 $('dbList').addEventListener('input',function(e){
-  var t=e.target,i=t.getAttribute('data-dbt')||t.getAttribute('data-dbx');if(i==null)return;
-  DB_EDIT[+i][t.hasAttribute('data-dbt')?'t':'x']=t.value;renderDetailPreview();
+  var t=e.target,i=t.getAttribute('data-i');
+  if(t.hasAttribute('data-dbt')||t.hasAttribute('data-dbx')){var j=+(t.getAttribute('data-dbt')||t.getAttribute('data-dbx'));DB_EDIT[j][t.hasAttribute('data-dbt')?'t':'x']=t.value}
+  else if(t.hasAttribute('data-dbk')&&i!=null){DB_EDIT[+i][t.getAttribute('data-dbk')]=t.value}
+  else if(t.hasAttribute('data-dbc')){var rc=t.getAttribute('data-dbc').split(',');var rows=DB_EDIT[+i].rows;if(rows&&rows[+rc[0]])rows[+rc[0]][+rc[1]]=t.value}
+  else return;
+  renderDetailPreview();clearTimeout(DB_HT);DB_HT=setTimeout(dbPush,700);
 });
+$('dbList').addEventListener('change',function(e){
+  var t=e.target,i=t.getAttribute&&t.getAttribute('data-i');if(i==null)return;var blk=DB_EDIT[+i];if(!blk)return;
+  var key=t.getAttribute('data-dbf');
+  if(key){if(t.value)blk[key]=t.value;else delete blk[key];if(key==='f')ensureFont(blk.f);dbPush();if(key==='c'||key==='bg')renderDetailEdit();else renderDetailPreview();return}
+  if(t.getAttribute('data-dbtg')==='th'){if(t.checked)blk.th=1;else delete blk.th;dbPush();renderDetailPreview();return}
+  var ic=t.getAttribute('data-dbic');
+  if(ic){wrapSel(+i,function(s){return '[['+(ic==='c'?'c':'bg')+t.value+'|'+s+']]'})}
+  var is=t.getAttribute('data-dbis');
+  if(is&&t.value){wrapSel(+i,function(s){return '[[z'+t.value+'|'+s+']]'});t.value=''}
+});
+function wrapSel(i,fn){
+  var b=DB_EDIT[i],ta=dbTA(i,b);if(!ta)return;var a0=ta.selectionStart,b0=ta.selectionEnd,v=ta.value;
+  if(a0===b0){toast('먼저 꾸밀 글자를 드래그로 골라 주세요');return}
+  var sel=v.slice(a0,b0),out=fn(sel);ta.value=v.slice(0,a0)+out+v.slice(b0);
+  if(b.k==='h')b.t=ta.value;else b.x=ta.value;
+  ta.focus();ta.setSelectionRange(a0,a0+out.length);renderDetailPreview();dbPush();
+}
+function dbInsert(kind,idx){
+  if(kind==='img'){DB_PICK=null;DB_GAL=-1;DB_PICKIDX=idx;$('dbFile').click();return}
+  var b={id:dbNewId(),k:kind,t:'',x:''};
+  if(kind==='tb')b.rows=[['',''],['','']];
+  var at=idx<0?DB_EDIT.length:idx;DB_EDIT.splice(at,0,b);dbPush();renderDetailEdit();
+  var f=$('dbList').querySelector('[data-db="'+at+'"] textarea,[data-db="'+at+'"] input.pin');if(f)f.focus();
+}
 $('dbList').addEventListener('click',function(e){
+  var op=e.target.closest('[data-dbopen]');
+  if(op){touch();var bar=op.parentNode;bar.classList.add('open');bar.innerHTML=dbMenuHTML();return}
+  var ad=e.target.closest('[data-dbadd]');
+  if(ad){touch();dbInsert(ad.getAttribute('data-dbadd'),+ad.parentNode.getAttribute('data-dbi'));return}
+  var tg=e.target.closest('button[data-dbtg]');
+  if(tg){touch();var blk=DB_EDIT[+tg.getAttribute('data-i')],k=tg.getAttribute('data-dbtg');if(!blk)return;if(blk[k])delete blk[k];else blk[k]=1;tg.setAttribute('aria-pressed',String(!!blk[k]));dbPush();renderDetailPreview();return}
+  var rs=e.target.closest('[data-dbrs]');
+  if(rs){touch();var bb=DB_EDIT[+rs.getAttribute('data-i')];delete bb[rs.getAttribute('data-dbrs')];dbPush();renderDetailEdit();return}
+  var w=e.target.closest('[data-dbw]');
+  if(w){touch();var m=w.getAttribute('data-dbw');wrapSel(+w.getAttribute('data-i'),function(s){return m+s+m});return}
+  var lk=e.target.closest('[data-dblk]');
+  if(lk){touch();var i2=+lk.getAttribute('data-i'),ta=dbTA(i2,DB_EDIT[i2]);if(!ta)return;if(ta.selectionStart===ta.selectionEnd){toast('링크로 만들 글자를 먼저 드래그로 골라 주세요');return}
+    var url=prompt('이동할 주소(https://… )를 적어 주세요');url=url&&url.trim();if(!url)return;if(!okUrl(url)){toast('http:// 또는 https:// 로 시작하는 주소만 쓸 수 있어요');return}
+    wrapSel(i2,function(s){return '['+s.replace(/[\[\]]/g,'')+']('+url+')'});return}
+  var cl=e.target.closest('[data-dbcl]');
+  if(cl){touch();wrapSel(+cl.getAttribute('data-i'),function(s){return s.replace(/\[\[[^\]|]+\|([\s\S]+?)\]\]/g,'$1').replace(/\[([^\[\]]+?)\]\(https?:\/\/[^\s)]+\)/g,'$1').replace(/\*\*|\^\^|__|~~|==/g,'')});return}
+  var t2=e.target.closest('[data-dbt2]');
+  if(t2){touch();var tb=DB_EDIT[+t2.getAttribute('data-i')],a2=t2.getAttribute('data-dbt2');tb.rows=Array.isArray(tb.rows)&&tb.rows.length?tb.rows:[['',''],['','']];var cols=tb.rows[0].length;
+    if(a2==='addr'&&tb.rows.length<30)tb.rows.push(new Array(cols).fill(''));
+    else if(a2==='addc'&&cols<10)tb.rows.forEach(function(r){r.push('')});
+    else if(a2==='delr'&&tb.rows.length>1)tb.rows.pop();
+    else if(a2==='delc'&&cols>1)tb.rows.forEach(function(r){r.pop()});
+    dbPush();renderDetailEdit();return}
+  var g=e.target.closest('[data-dbgal]');
+  if(g){touch();var gb=DB_EDIT[+g.getAttribute('data-i')],ga=g.getAttribute('data-dbgal'),pi=+g.getAttribute('data-pi');
+    if(ga==='add'){DB_PICK=null;DB_GAL=+g.getAttribute('data-i');$('dbFile').click();return}
+    if(ga==='x')gb.p.splice(pi,1);else if(ga==='l'&&pi>0)gb.p.splice(pi-1,0,gb.p.splice(pi,1)[0]);else if(ga==='r'&&pi<gb.p.length-1)gb.p.splice(pi+1,0,gb.p.splice(pi,1)[0]);
+    dbPush();renderDetailEdit();return}
   var b=e.target.closest('[data-dba]');if(!b)return;touch();
-  var i=+b.closest('[data-db]').getAttribute('data-db'),a=b.getAttribute('data-dba'),blk=DB_EDIT[i];
-  if(a==='photo'){DB_PICK=blk.id;$('dbFile').click();return}
-  if(a==='unphoto'){var pid=detailPhotoId(cur.oid,blk.id);phTx('readwrite',function(st){return st.delete(pid)}).then(loadPhotos).then(function(){renderDetailEdit();render();toast('사진을 뺐어요')});return}
+  var i=+b.closest('[data-db]').getAttribute('data-db'),a=b.getAttribute('data-dba'),blk2=DB_EDIT[i];
+  if(a==='photo'){DB_PICK=blk2.id;DB_PICKIDX=-1;DB_GAL=-1;$('dbFile').click();return}
+  if(a==='unphoto'){var pid=detailPhotoId(cur.oid,blk2.id);phTx('readwrite',function(st){return st.delete(pid)}).then(loadPhotos).then(function(){renderDetailEdit();render();toast('사진을 뺐어요')});return}
   if(a==='up'&&i>0)DB_EDIT.splice(i-1,0,DB_EDIT.splice(i,1)[0]);
   else if(a==='down'&&i<DB_EDIT.length-1)DB_EDIT.splice(i+1,0,DB_EDIT.splice(i,1)[0]);
-  else if(a==='del'){if((blk.t||blk.x||PHOTO.has(detailPhotoId(cur.oid,blk.id)))&&!confirm('이 칸을 지울까요? (「상세 설명 저장」을 눌러야 반영돼요)'))return;DB_EDIT.splice(i,1)}
-  renderDetailEdit();
+  else if(a==='dup'){var cp=clone(blk2);cp.id=dbNewId();DB_EDIT.splice(i+1,0,cp)}
+  else if(a==='del'){if((blk2.t||blk2.x||(blk2.p&&blk2.p.length)||PHOTO.has(detailPhotoId(cur.oid,blk2.id)))&&!confirm('이 블록을 지울까요? (「상세 설명 저장」을 눌러야 반영돼요)'))return;DB_EDIT.splice(i,1)}
+  dbPush();renderDetailEdit();
 });
-$('dbAdd').addEventListener('click',function(){touch();DB_EDIT.push({id:dbNewId(),t:'',x:''});renderDetailEdit();var r=$('dbList').querySelectorAll('[data-dbt]');if(r.length)r[r.length-1].focus()});
+/* 끌어서 순서 바꾸기(⠿ 손잡이) */
+$('dbList').addEventListener('dragstart',function(e){var h=e.target.closest&&e.target.closest('[data-dbh]');if(!h)return;DB_DRAG=+h.getAttribute('data-dbh');try{e.dataTransfer.setData('text/plain','blk');e.dataTransfer.effectAllowed='move'}catch(x){}});
+$('dbList').addEventListener('dragend',function(){DB_DRAG=null});
+$('dbAdd').addEventListener('click',function(){touch();dbInsert('txt',-1)});
+$('dbUndo').addEventListener('click',function(){dbGo(-1)});
+$('dbRedo').addEventListener('click',function(){dbGo(1)});
+$('dbLay').addEventListener('change',function(){DB_LAYOUT=this.value});
+/* 사진: 여러 장을 한 번에(고르기·끌어다 놓기·붙여넣기). 배치가 「한 장씩」이면 사진마다 블록이 하나씩, 아니면 사진 묶음 블록 하나가 생겨요 */
+function dbAddPhotos(files,idx,galIdx){
+  files=Array.prototype.filter.call(files||[],function(f){return /^image\//.test(f.type)});
+  if(!files.length||!cur){return}
+  var oid=cur.oid,at=idx<0?DB_EDIT.length:idx,made=[];
+  toast('사진 '+files.length+'장을 넣는 중이에요…');
+  var chain=Promise.resolve();
+  files.forEach(function(f){chain=chain.then(function(){return shrink(f)}).then(function(blob){
+    var id=dbNewId();return phTx('readwrite',function(st){return st.put({id:detailPhotoId(oid,id),blob:blob,at:Date.now()})}).then(function(){made.push(id)});
+  })});
+  chain.then(loadPhotos).then(function(){
+    if(!cur||cur.oid!==oid)return;
+    if(galIdx>=0&&DB_EDIT[galIdx]&&DB_EDIT[galIdx].k==='gal')DB_EDIT[galIdx].p=(DB_EDIT[galIdx].p||[]).concat(made);
+    else if(DB_LAYOUT!=='1'&&made.length>1)DB_EDIT.splice(at,0,{id:dbNewId(),k:'gal',lay:DB_LAYOUT,p:made,t:'',x:''});
+    else Array.prototype.splice.apply(DB_EDIT,[at,0].concat(made.map(function(id){return {id:id,k:'img',t:'',x:''}})));
+    dbPush();renderDetailEdit();
+    toast('사진 '+made.length+'장을 넣었어요. 「상세 설명 저장」을 눌러 마무리해요');
+  }).catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+}
 $('dbFile').addEventListener('change',function(){
-  var f=this.files&&this.files[0];this.value='';
-  if(!f||!DB_PICK||!cur)return;
-  if(!/^image\//.test(f.type)){toast('사진 파일을 골라 주세요');return}
-  var id=detailPhotoId(cur.oid,DB_PICK);
-  shrink(f).then(function(blob){return phTx('readwrite',function(st){return st.put({id:id,blob:blob,at:Date.now()})})})
-    .then(loadPhotos).then(function(){renderDetailEdit();toast('사진을 넣었어요. 「상세 설명 저장」을 눌러 마무리해요')})
-    .catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+  var fs=Array.prototype.slice.call(this.files||[]);this.value=''; // 값을 비우면 목록도 비워지니 먼저 복사해요
+  if(!fs.length||!cur)return;
+  if(DB_PICK){ // 한 블록의 사진 바꾸기
+    var f=fs[0];if(!/^image\//.test(f.type)){toast('사진 파일을 골라 주세요');return}
+    var id=detailPhotoId(cur.oid,DB_PICK);
+    shrink(f).then(function(blob){return phTx('readwrite',function(st){return st.put({id:id,blob:blob,at:Date.now()})})})
+      .then(loadPhotos).then(function(){renderDetailEdit();toast('사진을 넣었어요. 「상세 설명 저장」을 눌러 마무리해요')})
+      .catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+    return;
+  }
+  var gi=DB_GAL;DB_GAL=-1;dbAddPhotos(fs,DB_PICKIDX,gi);
+});
+$('dbList').addEventListener('dragover',function(e){if(DB_DRAG!=null||(e.dataTransfer&&Array.prototype.some.call(e.dataTransfer.types||[],function(t){return t==='Files'})))e.preventDefault()});
+$('dbList').addEventListener('drop',function(e){
+  var blk=e.target.closest&&e.target.closest('[data-db]');
+  if(DB_DRAG!=null){e.preventDefault();var to=blk?+blk.getAttribute('data-db'):DB_EDIT.length-1,from=DB_DRAG;DB_DRAG=null;if(from!==to&&DB_EDIT[from]){DB_EDIT.splice(to,0,DB_EDIT.splice(from,1)[0]);dbPush();renderDetailEdit()}return}
+  var fs=e.dataTransfer&&e.dataTransfer.files;if(!fs||!fs.length)return;e.preventDefault();touch();
+  dbAddPhotos(fs,blk?+blk.getAttribute('data-db')+1:-1,-1);
+});
+$('dbList').addEventListener('paste',function(e){
+  var items=e.clipboardData&&e.clipboardData.files;if(!items||!items.length)return;
+  var imgs=Array.prototype.filter.call(items,function(f){return /^image\//.test(f.type)});if(!imgs.length)return;
+  e.preventDefault();touch();var blk=e.target.closest&&e.target.closest('[data-db]');dbAddPhotos(imgs,blk?+blk.getAttribute('data-db')+1:-1,-1);
 });
 $('dbSave').addEventListener('click',function(){
   if(!cur)return;touch();
-  var oid=cur.oid,keep={},list=DB_EDIT.map(function(b){return {id:b.id,t:String(b.t||'').trim(),x:String(b.x||'').replace(/\r/g,'').trim()}})
-    .filter(function(b){return b.t||b.x||PHOTO.has(detailPhotoId(oid,b.id))});
-  list.forEach(function(b){keep[detailPhotoId(oid,b.id)]=1});
+  var oid=cur.oid,keep={},list=DB_EDIT.map(dbClean).filter(function(b){
+    var k=b.k||'';
+    if(k==='hr')return true;
+    if(k==='gal')return b.p&&b.p.some(function(id){return PHOTO.has(detailPhotoId(oid,id))});
+    if(k==='tb')return (b.rows||[]).some(function(r){return r.some(function(c){return c.trim()})});
+    if(k==='ln'||k==='vd')return !!(b.url||b.t);
+    return b.t||b.x||PHOTO.has(detailPhotoId(oid,b.id));
+  });
+  list.forEach(function(b){keep[detailPhotoId(oid,b.id)]=1;(b.p||[]).forEach(function(id){keep[detailPhotoId(oid,id)]=1})});
   SET.details=SET.details||{};
   if(list.length)SET.details[oid]=list;else delete SET.details[oid];
   saveSet();
-  // 지운 칸의 사진은 함께 지워요
+  // 지운 블록의 사진은 함께 지워요
   var pre='detail:'+oid+':',gone=[];PHOTO.forEach(function(u,k){if(k.indexOf(pre)===0&&!keep[k])gone.push(k)});
   (gone.length?phTx('readwrite',function(st){var r;gone.forEach(function(k){r=st.delete(k)});return r}).then(loadPhotos):Promise.resolve()).then(function(){
-    DB_EDIT=clone(list);renderDetailEdit();render();if(VIEW==='admin')admRefresh();toast(list.length?'상세 설명을 저장했어요 ('+list.length+'칸)':'상세 설명을 비웠어요');
+    DB_EDIT=clone(list);dbNormalize();DB_HIST=[JSON.stringify(DB_EDIT)];DB_HI=0;renderDetailEdit();render();if(VIEW==='admin')admRefresh();toast(list.length?'상세 설명을 저장했어요 ('+list.length+'개 블록)':'상세 설명을 비웠어요');
   });
 });
 
@@ -2005,7 +2454,7 @@ function admModels(){
 function admItem(m){
   var th=modelThumb(m),x=admFlags(m),min=minPrice(m);
   return '<li><button type="button" data-aoid="'+esc(m.oid)+'"'+(cur&&!ADM.tool&&cur.oid===m.oid?' aria-current="true"':'')+(ADM.sel.indexOf(m.oid)>=0?' aria-selected="true"':'')+'>'
-    +'<span class="ti">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy">':esc((m.series||m.name).slice(0,3)))+'</span>'
+    +'<span class="ti">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy" decoding="async">':esc((m.series||m.name).slice(0,3)))+'</span>'
     +'<span><b>'+esc(m.name)+'</b><small>'+esc((G[m.gid]?G[m.gid].def.name:'')+' · '+m.variants.length+'개 옵션 · '+won(min)+'원~')+'</small>'
     +'<small><i'+(x.photo?' class="on"':'')+'>사진</i><i'+(x.detail?' class="on"':'')+'>상세'+(x.detail?' '+x.detail:'')+'</i>'+(x.price?'<i class="on">가격</i>':'')+(x.hidden?'<i>숨김</i>':'')+(x.mine?'<i>매장</i>':'')+'</small></span></button></li>';
 }
@@ -2031,11 +2480,17 @@ function admHead(){
 function admVarOptions(){
   $('admVar').innerHTML=cur.variants.map(function(v,i){return '<option value="'+i+'"'+(i===vi?' selected':'')+'>'+esc((optOf(v)||'기본')+' · '+v.code)+'</option>'}).join('');
 }
-function admShowTab(t){
+/* 넓은 화면(1280px 이상)에서는 네 칸(기본 정보·가격·사진·상세)을 한 화면에 같이 보여 주고, 위 탭은 그 칸으로 바로 가는 버튼이에요.
+   좁은 화면에서는 예전처럼 탭으로 한 칸씩 봐요. */
+function admWide(){return window.matchMedia&&matchMedia('(min-width:1280px)').matches}
+function admShowTab(t,jump){
   ADM.tab=t;
   Array.prototype.forEach.call(document.querySelectorAll('[data-atab]'),function(b){b.setAttribute('aria-selected',String(b.getAttribute('data-atab')===t))});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-apane]'),function(p){p.hidden=p.getAttribute('data-apane')!==t});
+  var wide=admWide();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-apane]'),function(p){p.hidden=wide?false:p.getAttribute('data-apane')!==t});
+  if(wide&&jump){var pn=document.querySelector('[data-apane="'+t+'"]');if(pn&&pn.scrollIntoView)pn.scrollIntoView({behavior:'smooth',block:'start'})}
 }
+window.addEventListener('resize',function(){if(VIEW==='admin')admShowTab(ADM.tab)});
 function admFill(){
   if(!cur)return;
   $('adjPct').value='';
@@ -2204,7 +2659,7 @@ $('admMenus').addEventListener('click',function(e){var b=e.target.closest('[data
 $('admQ').addEventListener('input',function(){ADM.q=this.value;admRenderList(false)});
 $('admFilter').addEventListener('change',function(){ADM.f=this.value;admRenderList(false)});
 $('admMore').addEventListener('click',function(){admRenderList(true)});
-Array.prototype.forEach.call(document.querySelectorAll('[data-atab]'),function(b){b.addEventListener('click',function(){touch();admShowTab(b.getAttribute('data-atab'))})});
+Array.prototype.forEach.call(document.querySelectorAll('[data-atab]'),function(b){b.addEventListener('click',function(){touch();admShowTab(b.getAttribute('data-atab'),true)})});
 $('admVar').addEventListener('change',function(){vi=+this.value;phScope='code';renderPhotoPart();render()});
 
 // 제품 설정 › 기본 정보: 이름·메뉴·삭제
@@ -2299,7 +2754,7 @@ function dataToBlob(u){var h=String(u).split(','),mime=(h[0].match(/^data:([^;,]
 function downloadBlob(name,blob){var u=URL.createObjectURL(blob),a=el('a',{href:u,download:name});document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},2000)}
 function exportPhotos(){
   phTx('readonly',function(st){return st.getAll()}).then(function(rows){
-    rows=(rows||[]).filter(function(r){return r&&r.blob});
+    rows=(rows||[]).filter(function(r){return r&&r.blob&&String(r.id).indexOf('th:')!==0});
     if(!rows.length){toast('저장된 사진이 없어요');return}
     return Promise.all(rows.map(function(r){return blobToData(r.blob).then(function(d){return {id:r.id,at:r.at||0,data:d}})})).then(function(out){
       downloadBlob('pos-photos_'+localDate()+'.json',new Blob([JSON.stringify({kind:'pos-photos-v2',at:new Date().toISOString(),photos:out})],{type:'application/json'}));
@@ -2313,7 +2768,7 @@ function importPhotos(file){
     if(!d||!Array.isArray(d.photos))throw 0;
     d.photos.forEach(function(p){
       if(!p||!/^data:image\//.test(p.data))return;
-      if(d.kind==='pos-photos-v2'&&/^(code|model|detail):/.test(p.id)){out.push({id:p.id,blob:dataToBlob(p.data),at:p.at||Date.now()});return}
+      if(d.kind==='pos-photos-v2'&&/^(code|model|detail|mp):/.test(p.id)){out.push({id:p.id,blob:dataToBlob(p.data),at:p.at||Date.now()});return}
       if(d.kind!=='pos-photos')return;
       // 예전 POS 백업: code(품목) · model(모델명) · kw(이름에 든 글자)
       var K=String(p.key||'').toUpperCase();
@@ -2472,7 +2927,7 @@ function renderCart(){
       +thumbHTML(l)
       +'<span class="n">'+esc(l.name)+'</span>'
       +'<span class="p num">'+(l.gift?'<del>'+won(l.price*l.qty)+'</del><em class="gtag">사은품</em> 0원':(r.sale<r.base?'<del>'+won(r.base)+'</del>':'')+won(r.sale)+'원')+'</span>'
-      +'<span class="s">'+esc([l.opt,l.code].filter(Boolean).join(' · '))+' · 개당 '+won(l.price)+'원'+(parts.length?' · <em>할인 '+pct(r.eff)+' ('+parts.join(' + ')+')</em>':'')+'</span>'
+      +'<span class="s">'+esc([l.opt,l.code].filter(Boolean).join(' · '))+' · 개당 '+won(l.price)+'원'+(parts.length?' · <em>할인 '+pct(r.eff)+' ('+parts.join(SET.mode==='seq'?' → ':' + ')+')</em>':'')+'</span>'
       +'<div class="c"><button class="q" type="button" data-act="minus" aria-label="수량 줄이기">−</button><b class="num">'+l.qty+'</b><button class="q" type="button" data-act="plus" aria-label="수량 늘리기">+</button><span class="sp"></span>'
       +(l.gift?'':'<button class="chip'+(l.rate!=null?' on':'')+'" type="button" data-act="disc">'+(l.rate!=null?'이 품목 '+pct(l.rate):'품목 할인')+'</button>')
       +'<button class="chip del" type="button" data-act="del">삭제</button></div>'
@@ -2480,7 +2935,8 @@ function renderCart(){
       +'</li>';
   }).join('');
   $('cartOpts').hidden=empty;$('cartCopy').disabled=empty;$('cartClear').disabled=empty;$('cartCust').disabled=empty&&!QS.list.length;
-  $('modeTag').textContent=SET.mode==='seq'?'순차 적용(앞 할인 뒤 금액에 다음 할인)':'합산 적용(율을 더해 한 번에)';
+  $('modeTag').textContent=SET.mode==='seq'?'제품 → 지점 → 매니저 순서로, 앞 할인 뒤 남은 금액에 다음 할인':'제품+지점+매니저 율을 더해 한 번에';
+  Array.prototype.forEach.call($('modeSeg').children,function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-qmode')===(SET.mode==='seq'?'seq':'sum')))});
   $('dcells').innerHTML=cellHTML('prod','제품',c)+cellHTML('br','지점',c)+cellHTML('mr','매니저',c);
   $('instChips').innerHTML=INST.map(function(m){
     var x=m?calc(Object.assign({},CART,{months:m})):c;
@@ -2495,8 +2951,9 @@ function renderCart(){
   if(!empty){
     T.push(['정상가 합계',won(c.base)+'원','sub']);
     if(c.dP)T.push(['제품 할인','-'+won(c.dP)+'원','minus sub']);
-    if(c.dB)T.push(['지점 할인 '+pct(c.br),'-'+won(c.dB)+'원','minus sub']);
-    if(c.dM)T.push(['매니저 할인 '+pct(c.mr),'-'+won(c.dM)+'원','minus sub']);
+    if(c.dB)T.push([dlbl('B',c),'-'+won(c.dB)+'원','minus sub']);
+    if(c.dM)T.push([dlbl('M',c),'-'+won(c.dM)+'원','minus sub']);
+    if(c.base&&(c.dP||c.dB||c.dM)){var tot=c.dP+c.dB+c.dM;T.push([(SET.mode==='seq'?'합계 할인율 (순차 적용 결과)':'합계 할인율'),pct(Math.round(tot/c.base*1000)/10),'sub'])}
     if(c.round)T.push(['끝자리 절사',won(c.round)+'원','minus sub']);
     if(c.adjust)T.push(['금액 조정(직접 입력)',(c.adjust>0?'+':'')+won(c.adjust)+'원','minus sub']);
     T.push(['결제 금액 · '+c.qty+'개',won(c.pay)+'원','big']);
@@ -2694,6 +3151,7 @@ $('cview').addEventListener('click',function(e){
 });
 addEventListener('afterprint',function(){document.body.classList.remove('cvp')});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('cview').hidden){e.stopImmediatePropagation();closeCust()}},true);
+$('modeSeg').addEventListener('click',function(e){var b=e.target.closest('[data-qmode]');if(!b)return;SET.mode=b.getAttribute('data-qmode');saveSet();changed()});
 $('cartSet').addEventListener('click',function(){requireUnlock(function(){openAdmin(VIEW==='detail'&&cur?cur.gid:'',VIEW==='detail'&&cur?cur.name:'',true);admShowDisc()})});
 
 
@@ -2811,8 +3269,8 @@ function openPay(){
     +'<p class="sh-sub">실제 결제는 매장 카드 단말기·간편결제에서 해요. 이 화면은 금액 확인과 판매 기록용이에요.'+(QS.active?' 지금 보는 '+QS.active+'안으로 기록해요.':'')+'</p>'
     +'<dl class="paysum"><dt>정상가 합계 · '+c.qty+'개</dt><dd class="num">'+won(c.base)+'원</dd>'
     +(c.dP?'<dt>제품 할인</dt><dd class="num minus">-'+won(c.dP)+'원</dd>':'')
-    +(c.dB?'<dt>지점 할인 '+pct(c.br)+'</dt><dd class="num minus">-'+won(c.dB)+'원</dd>':'')
-    +(c.dM?'<dt>매니저 할인 '+pct(c.mr)+'</dt><dd class="num minus">-'+won(c.dM)+'원</dd>':'')
+    +(c.dB?'<dt>'+dlbl('B',c)+'</dt><dd class="num minus">-'+won(c.dB)+'원</dd>':'')
+    +(c.dM?'<dt>'+dlbl('M',c)+'</dt><dd class="num minus">-'+won(c.dM)+'원</dd>':'')
     +(c.round?'<dt>끝자리 절사</dt><dd class="num minus">'+won(c.round)+'원</dd>':'')
     +(c.adjust?'<dt>금액 조정(직접 입력)</dt><dd class="num minus">'+(c.adjust>0?'+':'')+won(c.adjust)+'원</dd>':'')
     +'<dt class="big">결제 금액</dt><dd class="big num">'+won(c.pay)+'원</dd>'
@@ -2976,7 +3434,9 @@ function artFor(gid){
   ART[gid]='<svg viewBox="50 0 540 300" aria-hidden="true">'+(g?g.innerHTML:'')+'</svg>';
   return ART[gid];
 }
-function modelThumb(m){var u=PHOTO.get('model:'+m.gid+':'+m.key);if(!u)m.variants.some(function(v){u=PHOTO.get('code:'+v.code);return !!u});return u||null}
+function modelThumb(m){var k='model:'+m.gid+':'+m.key,u=THUMB.get(k)||PHOTO.get(k);
+  if(!u){var mp=(SET.mph&&SET.mph[m.oid])||[];for(var i=0;i<mp.length&&!u;i++){if(mp[i]==='@m')continue;var q='mp:'+m.oid+':'+mp[i];u=THUMB.get(q)||PHOTO.get(q)}}
+  if(!u)m.variants.some(function(v){var c='code:'+v.code;u=THUMB.get(c)||PHOTO.get(c);return !!u});return u||null}
 function minPrice(m){return m.variants.reduce(function(a,v){return Math.min(a,v.price)},Infinity)}
 function seriesList(box){
   var c={};visibleModels(box).forEach(function(m){c[m.series]=(c[m.series]||0)+1});
@@ -2990,7 +3450,7 @@ function cardHTML(m,gid){
   var sizes=m.sizes.filter(Boolean);
   return '<button type="button" class="pcard" data-open="'+esc(m.key)+'" data-gid="'+m.gid+'">'
     +'<span class="tag">'+(gift?'사은품':isHidden(m.gid,m)?'숨김':'')+'</span>'
-    +'<span class="im">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy">':artFor(m.gid))+'</span>'
+    +'<span class="im">'+(th?'<img src="'+esc(th)+'" alt="" loading="lazy" decoding="async">':artFor(m.gid))+'</span>'
     +'<span class="nm">'+esc(m.name+(m.gid==='matt'?' 매트리스':''))+'</span>'
     +(m.desc?'<span class="ds">'+esc(m.desc)+'</span>':'')
     +'<span class="cd num">'+esc(v0.code)+(m.variants.length>1?' 외 '+(m.variants.length-1)+'개 옵션':'')+'</span>'
@@ -3107,8 +3567,17 @@ $('menu').addEventListener('click',function(e){var b=e.target.closest('[data-g]'
 Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'),function(b){b.addEventListener('click',copy)});
 $('qm').addEventListener('click',function(){if(qty>1){qty--;render()}});
 $('qp').addEventListener('click',function(){if(qty<99){qty++;render()}});
-$('prev').addEventListener('click',function(){stepSize(-1)});
-$('next').addEventListener('click',function(){stepSize(1)});
+$('prev').addEventListener('click',function(){stepPhoto(-1)});
+$('next').addEventListener('click',function(){stepPhoto(1)});
+(function(){ // 손가락·마우스로 밀어서 넘기기, 키보드 ← →
+  var st=document.querySelector('.stage'),x0=null;
+  st.addEventListener('touchstart',function(e){x0=e.touches[0].clientX},{passive:true});
+  st.addEventListener('touchend',function(e){if(x0==null)return;var dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)stepPhoto(dx<0?1:-1)},{passive:true});
+  document.addEventListener('keydown',function(e){
+    if(VIEW!=='detail'||!cur||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.target.isContentEditable||e.ctrlKey||e.metaKey||e.altKey)return;
+    if(e.key==='ArrowRight'){stepPhoto(1)}else if(e.key==='ArrowLeft'){stepPhoto(-1)}
+  });
+})();
 $('q').addEventListener('keydown',function(e){
   if(e.key==='Enter'){e.preventDefault();search()}
   else if(e.key==='Escape'){$('sres').hidden=true}
@@ -3139,7 +3608,62 @@ function renderPhotoPart(){
     ?'지금 고른 품목('+(opt?opt+' · ':'')+v.code+')에만 사진이 들어가요.'
     :'「'+cur.name+'」의 모든 규격·색상('+cur.variants.length+'개)에 같은 사진이 들어가요.';
   $('phDel').disabled=!u;
+  renderMpList();
 }
+function renderMpList(){
+  var box=$('mpList');if(!box||!cur)return;box.textContent='';
+  var slots=photoSlots();
+  if(!slots.length){box.appendChild(el('p',{class:'hint',style:'margin:0'},'아직 사진이 없어요. 아래 버튼으로 여러 장을 한 번에 넣어 보세요.'));return}
+  slots.forEach(function(sl,i){
+    var c=el('div',{class:'mp-c','data-mp':sl.id});
+    var im=el('img',{alt:(i+1)+'번째 사진'});im.src=THUMB.get(sl.dbid)||sl.url;c.appendChild(im);
+    if(i===0)c.appendChild(el('span',{class:'mp-top'},'대표'));
+    var d=el('div');d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'l','aria-label':'앞으로'},'←'));d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'r','aria-label':'뒤로'},'→'));d.appendChild(el('button',{type:'button',class:'btn outl','data-mpa':'x',style:'color:var(--err)','aria-label':'지우기'},'×'));
+    c.appendChild(d);box.appendChild(c);
+  });
+}
+$('mpList').addEventListener('click',function(e){
+  var b=e.target.closest('[data-mpa]');if(!b||!cur)return;touch();
+  var oid=cur.oid,id=b.closest('[data-mp]').getAttribute('data-mp'),a=b.getAttribute('data-mpa'),ord=photoOrder(),i=ord.indexOf(id);if(i<0)return;
+  SET.mph=SET.mph||{};
+  if(a==='x'){
+    var dbid=id==='@m'?modelPhotoId():mphPhotoId(oid,id);
+    ord.splice(i,1);if(ord.length)SET.mph[oid]=ord;else delete SET.mph[oid];saveSet();
+    phTx('readwrite',function(st){st.delete('th:'+dbid);return st.delete(dbid)}).then(loadPhotos).then(function(){renderPhotoPart();render();if(VIEW==='admin')admRefresh();setInfo();toast('사진을 뺐어요')});return;
+  }
+  if(a==='l'&&i>0)ord.splice(i-1,0,ord.splice(i,1)[0]);else if(a==='r'&&i<ord.length-1)ord.splice(i+1,0,ord.splice(i,1)[0]);else return;
+  SET.mph[oid]=ord;saveSet();renderMpList();GAL={oid:'',vi:-1,idx:-1};render();
+});
+function mpAddFiles(files){
+  var fs=Array.prototype.filter.call(files||[],function(f){return /^image\//.test(f.type)});
+  if(!fs.length||!cur){return}
+  var oid=cur.oid,ord0=photoOrder(),have=ord0.length;
+  if(have+fs.length>20){fs=fs.slice(0,Math.max(0,20-have));toast('사진은 20장까지예요');if(!fs.length)return}
+  toast('사진 '+fs.length+'장을 넣는 중이에요…');
+  var made=[],chain=Promise.resolve();
+  fs.forEach(function(f){chain=chain.then(function(){return shrink(f)}).then(function(blob){
+    var id=dbNewId();return phTx('readwrite',function(st){return st.put({id:mphPhotoId(oid,id),blob:blob,at:Date.now()})}).then(function(){made.push(id)});
+  })});
+  chain.then(function(){SET.mph=SET.mph||{};SET.mph[oid]=ord0.concat(made);saveSet();return loadPhotos()}).then(function(){
+    if(cur&&cur.oid===oid){renderPhotoPart();GAL={oid:'',vi:-1,idx:-1};render()}if(VIEW==='admin')admRefresh();setInfo();toast('사진 '+made.length+'장을 넣었어요');
+  }).catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+}
+$('mpFile').addEventListener('change',function(){
+  var fs=Array.prototype.slice.call(this.files||[]);this.value=''; // 값을 비우면 목록도 비워지니 먼저 복사해요
+  touch();mpAddFiles(fs);
+});
+['mpDrop','mpList'].forEach(function(id){
+  var z=$(id);
+  z.addEventListener('dragover',function(e){if(e.dataTransfer&&Array.prototype.some.call(e.dataTransfer.types||[],function(t){return t==='Files'})){e.preventDefault();$('mpDrop').classList.add('on')}});
+  z.addEventListener('dragleave',function(){$('mpDrop').classList.remove('on')});
+  z.addEventListener('drop',function(e){var fs=e.dataTransfer&&e.dataTransfer.files;$('mpDrop').classList.remove('on');if(!fs||!fs.length)return;e.preventDefault();touch();mpAddFiles(fs)});
+});
+document.addEventListener('paste',function(e){ // 글 입력칸이 아닌 곳에서 사진을 붙여넣으면 제품 사진으로 들어가요
+  if(VIEW!=='admin'||!cur||ADM.tool)return;
+  var t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable||(t.closest&&t.closest('#dbList'))))return;
+  var imgs=Array.prototype.filter.call((e.clipboardData&&e.clipboardData.files)||[],function(f){return /^image\//.test(f.type)});if(!imgs.length)return;
+  e.preventDefault();touch();mpAddFiles(imgs);
+});
 function renderPriceTable(){
   var body=$('ptBody');body.textContent='';
   cur.variants.forEach(function(v){
@@ -3163,10 +3687,11 @@ function renderVarMgr(){
   cur.variants.forEach(function(v){
     var row=el('div',{class:'adj','data-vcode':v.code,style:'flex-wrap:wrap;gap:6px;margin-bottom:6px'});
     var sz=el('input',{class:'pin',maxlength:'12',list:'vSizes','aria-label':'규격',style:'width:110px;text-align:left'});sz.value=v.size||'';
+    var ty=el('input',{class:'pin',maxlength:'12','aria-label':'타입',placeholder:'타입(E·N·T…)',style:'width:110px;text-align:left'});ty.value=v.type||'';
     var co=el('input',{class:'pin',maxlength:'20','aria-label':'색상·옵션',placeholder:'색상·옵션',style:'width:130px;text-align:left'});co.value=v.color||'';
     var chg=!!(SET.vedit&&SET.vedit[v.code]),add=(SET.vadd||[]).some(function(a){return a.code===v.code});
     var lb=el('span',{class:'u'},sizeLabel(v.size||'')+(add?' · 추가한 옵션':chg?' · 바꿈':''));
-    row.appendChild(sz);row.appendChild(co);row.appendChild(lb);
+    row.appendChild(sz);row.appendChild(ty);row.appendChild(co);row.appendChild(lb);
     row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'edit'},'변경'));
     if(chg)row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'undo'},'↺ 원래대로'));
     var del=el('button',{class:'btn outl sm',type:'button','data-vact':'del',style:'color:#e5252a'},'삭제');row.appendChild(del);
@@ -3184,29 +3709,29 @@ function varAfter(msg){saveSet();touch();rebuildAll(true);toast(msg)}
 $('vSec').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b||!cur)return;
   if(b.id==='vAdd'){
-    var size=$('vNewSize').value.trim().toUpperCase(),color=$('vNewColor').value.trim(),price=numOf($('vNewPrice').value);
-    if(!size&&!color){toast('규격이나 색상 중 하나는 적어 주세요');return}
+    var size=$('vNewSize').value.trim().toUpperCase(),type=$('vNewType').value.trim().toUpperCase(),color=$('vNewColor').value.trim(),price=numOf($('vNewPrice').value);
+    if(!size&&!type&&!color){toast('규격·타입·색상 중 하나는 적어 주세요');return}
     if(!(price>0)){$('vNewPrice').setAttribute('aria-invalid','true');toast('정상가를 적어 주세요');return}
-    if(cur.variants.some(function(v){return (v.size||'')===size&&(v.color||'')===color})){toast('같은 규격·색상이 이미 있어요');return}
+    if(cur.variants.some(function(v){return (v.size||'')===size&&(v.type||'')===type&&(v.color||'')===color})){toast('같은 규격·타입·색상이 이미 있어요');return}
     var code='V'+Date.now().toString(36).toUpperCase();
-    SET.vadd=SET.vadd||[];SET.vadd.push({oid:cur.oid,code:code,size:size,color:color,price:price});
-    $('vNewSize').value='';$('vNewColor').value='';$('vNewPrice').value='';
-    varAfter('「'+(size||color)+'」 옵션을 더했어요');return;
+    SET.vadd=SET.vadd||[];SET.vadd.push({oid:cur.oid,code:code,size:size,type:type,color:color,price:price});
+    $('vNewSize').value='';$('vNewType').value='';$('vNewColor').value='';$('vNewPrice').value='';
+    varAfter('「'+[type,size,color].filter(Boolean).join(' ')+'」 옵션을 더했어요');return;
   }
   var row=b.closest('[data-vcode]');if(!row)return;
   var code=row.getAttribute('data-vcode'),v=cur.variants.filter(function(x){return x.code===code})[0],act=b.getAttribute('data-vact');
   if(act==='restore'){if(SET.vedit)delete SET.vedit[code];varAfter('옵션을 되살렸어요');return}
   if(!v)return;
   if(act==='edit'){
-    var ns=row.querySelectorAll('input')[0].value.trim().toUpperCase(),nc=row.querySelectorAll('input')[1].value.trim();
-    if(!ns&&!nc){toast('규격이나 색상 중 하나는 있어야 해요');return}
-    if(cur.variants.some(function(x){return x.code!==code&&(x.size||'')===ns&&(x.color||'')===nc})){toast('같은 규격·색상이 이미 있어요');return}
+    var ins=row.querySelectorAll('input'),ns=ins[0].value.trim().toUpperCase(),nt=ins[1].value.trim().toUpperCase(),nc=ins[2].value.trim();
+    if(!ns&&!nt&&!nc){toast('규격·타입·색상 중 하나는 있어야 해요');return}
+    if(cur.variants.some(function(x){return x.code!==code&&(x.size||'')===ns&&(x.type||'')===nt&&(x.color||'')===nc})){toast('같은 규격·타입·색상이 이미 있어요');return}
     var ad=(SET.vadd||[]).filter(function(a){return a.code===code})[0],cl=customList(),ci=cl.filter(function(c){return c.code===code})[0];
-    if(ad){ad.size=ns;ad.color=nc}else if(ci){ci.size=ns;ci.color=nc;saveCustom(cl)}
-    else{SET.vedit=SET.vedit||{};SET.vedit[code]=Object.assign(SET.vedit[code]||{},{size:ns,color:nc})}
+    if(ad){ad.size=ns;ad.type=nt;ad.color=nc}else if(ci){ci.size=ns;ci.type=nt;ci.color=nc;saveCustom(cl)}
+    else{SET.vedit=SET.vedit||{};SET.vedit[code]=Object.assign(SET.vedit[code]||{},{size:ns,type:nt,color:nc})}
     varAfter('옵션을 바꿨어요');
   }else if(act==='undo'){
-    if(SET.vedit)delete SET.vedit[code];varAfter('원래 규격·색상으로 되돌렸어요');
+    if(SET.vedit)delete SET.vedit[code];varAfter('원래 규격·타입·색상으로 되돌렸어요');
   }else if(act==='del'){
     if(cur.variants.length<=1){toast('마지막 옵션이에요. 제품을 지우려면 「이 제품 삭제」를 써 주세요');return}
     if(!confirm('「'+([v.size,v.color].filter(Boolean).join(' · ')||'기본')+'」 옵션을 삭제할까요?'))return;
@@ -3386,7 +3911,7 @@ $('mgrPane').addEventListener('click',function(e){
   else if(b.hasAttribute('data-unpromo')){b.getAttribute('data-unpromo').split(',').forEach(function(c){delete SET.itemRates[c]});setChanged('모델 할인율을 뺐어요')}
   else if(b.hasAttribute('data-resetset')){
     if(!confirm('할인·결제 설정, 숨긴 상품, 모델별 할인율, 매장 이름을 처음 상태로 되돌릴까요?'))return;
-    var keep={menus:SET.menus,moved:SET.moved,merge:SET.merge,names:SET.names,descs:SET.descs,details:SET.details,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
+    var keep={menus:SET.menus,moved:SET.moved,merge:SET.merge,names:SET.names,descs:SET.descs,details:SET.details,mph:SET.mph,deleted:SET.deleted,vadd:SET.vadd,vedit:SET.vedit,flow:SET.flow,aliases:SET.aliases};
     SET=Object.assign(clone(DEFAULT_SET),keep);giftRefresh();applyStoreName();setChanged('설정을 초기화했어요');fillModels();renderModel();
   }else return;
   renderMgrPane();
@@ -3498,7 +4023,7 @@ $('phFile').addEventListener('change',function(){
 $('phDel').addEventListener('click',function(){
   var id=phScope==='code'?'code:'+cur.variants[vi].code:modelPhotoId();
   if(!PHOTO.has(id)||!confirm('이 사진을 뺄까요?'))return;
-  phTx('readwrite',function(st){return st.delete(id)}).then(loadPhotos).then(function(){renderPhotoPart();render();setInfo();if(VIEW==='admin')admRefresh();toast('사진을 뺐어요')}).catch(function(){toast('사진을 빼지 못했어요')});
+  phTx('readwrite',function(st){st.delete('th:'+id);return st.delete(id)}).then(loadPhotos).then(function(){renderPhotoPart();render();setInfo();if(VIEW==='admin')admRefresh();toast('사진을 뺐어요')}).catch(function(){toast('사진을 빼지 못했어요')});
 });
 $('adjApply').addEventListener('click',function(){
   var p=parseFloat(String($('adjPct').value).replace(',','.'));
