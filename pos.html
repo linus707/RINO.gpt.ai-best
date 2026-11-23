@@ -768,8 +768,8 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           </g>
         </svg>
         <p class="desc" id="stDesc" hidden></p>
-        <button class="arw l" type="button" id="prev" aria-label="이전 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
-        <button class="arw r" type="button" id="next" aria-label="다음 규격"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
+        <button class="arw l" type="button" id="prev" aria-label="이전 사진"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
+        <button class="arw r" type="button" id="next" aria-label="다음 사진"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
       </div>
       <p class="note" id="photoNote">그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.</p>
     </section>
@@ -1163,6 +1163,27 @@ function loadPhotos(){
 }
 function modelPhotoId(){return 'model:'+cur.gid+':'+cur.key}
 function photoFor(v){return PHOTO.get('code:'+v.code)||PHOTO.get(modelPhotoId())||null}
+/* 사진 넘기기: 이 모델의 사진(모델 사진 + 옵션별 사진)을 화살표로 훑어봐요. 고른 규격·색상·가격은 바뀌지 않아요.
+   옵션(규격·색상)을 새로 고르면 다시 그 옵션의 사진으로 돌아와요. */
+var GAL={oid:'',vi:-1,idx:-1};
+function galList(){
+  var out=[],seen={};
+  function add(u){if(u&&!seen[u]){seen[u]=1;out.push(u)}}
+  add(PHOTO.get(modelPhotoId()));
+  cur.variants.forEach(function(v){add(PHOTO.get('code:'+v.code))});
+  return out;
+}
+function galPhoto(v,list){
+  if(GAL.oid!==cur.oid||GAL.vi!==vi)GAL={oid:'',vi:-1,idx:-1}; // 옵션을 새로 골랐거나 다른 제품이면 처음 상태
+  if(GAL.idx>=0&&list[GAL.idx])return list[GAL.idx];
+  return photoFor(v);
+}
+function stepPhoto(d){
+  var list=galList();if(list.length<2)return;
+  var v=cur.variants[vi],i=GAL.oid===cur.oid&&GAL.vi===vi&&GAL.idx>=0?GAL.idx:list.indexOf(photoFor(v));
+  if(i<0)i=0;i+=d;if(i<0||i>=list.length)return;
+  GAL={oid:cur.oid,vi:vi,idx:i};render();
+}
 // 사진을 긴 쪽 1600px JPEG로 줄여 저장해요(휴대폰 사진은 커서 그대로 두면 저장 공간이 금방 차요)
 function shrink(file){
   return new Promise(function(ok,no){
@@ -1489,7 +1510,7 @@ function render(){
   $('title').textContent=title;$('sTitle').textContent=title;$('stTitle').textContent=title;
   $('code').textContent=v.code;$('sCode').textContent=v.code;
   $('ghost').textContent=cur.series.slice(0,6);
-  var ph=photoFor(v),pimg=$('photo');
+  var gl=galList(),ph=galPhoto(v,gl),pimg=$('photo');
   if(ph){if(pimg.getAttribute('src')!==ph)pimg.src=ph;pimg.alt=title+' 사진';pimg.hidden=false}else{pimg.hidden=true;pimg.removeAttribute('src')}
   pimg.parentNode.classList.toggle('has-photo',!!ph);
   $('photoNote').textContent=ph?'매장에서 넣은 사진이에요.':'그림은 이해를 돕기 위한 예시예요. 실제 제품의 모양·색과는 달라요.';
@@ -1517,9 +1538,9 @@ function render(){
   $('sDisc').textContent=won(pv.pay)+' 원';
   $('sDiscNote').textContent='지금 할인 기준 '+pct(dRate)+' (장바구니에서 바꿔요)';
   $('qv').textContent=qty;$('qm').disabled=qty<=1;$('qp').disabled=qty>=99;
-  var sidx=cur.sizes.indexOf(v.size);
-  $('prev').disabled=sidx<=0;$('next').disabled=sidx>=cur.sizes.length-1;
-  $('prev').hidden=$('next').hidden=cur.sizes.length<2; // 고를 규격이 하나뿐이면 화살표를 숨겨요
+  var gi=gl.indexOf(ph); // 사진 화살표: 사진이 2장 이상일 때만 보여요(옵션은 그대로)
+  $('prev').disabled=gi<=0;$('next').disabled=gi<0||gi>=gl.length-1;
+  $('prev').hidden=$('next').hidden=gl.length<2;
   Array.prototype.forEach.call($('sizes').children,function(b){
     var sz=b.getAttribute('data-s'),list=ofSize(sz),hit=list.filter(function(x){return x.color===v.color})[0];
     var min=list.reduce(function(a,x){return Math.min(a,x.price)},Infinity);
@@ -3050,8 +3071,8 @@ $('menu').addEventListener('click',function(e){var b=e.target.closest('[data-g]'
 Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'),function(b){b.addEventListener('click',copy)});
 $('qm').addEventListener('click',function(){if(qty>1){qty--;render()}});
 $('qp').addEventListener('click',function(){if(qty<99){qty++;render()}});
-$('prev').addEventListener('click',function(){stepSize(-1)});
-$('next').addEventListener('click',function(){stepSize(1)});
+$('prev').addEventListener('click',function(){stepPhoto(-1)});
+$('next').addEventListener('click',function(){stepPhoto(1)});
 $('q').addEventListener('keydown',function(e){
   if(e.key==='Enter'){e.preventDefault();search()}
   else if(e.key==='Escape'){$('sres').hidden=true}
