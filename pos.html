@@ -132,7 +132,27 @@ body.test .cstrip{background:#fff6dc}
 .pd-spec .num{font-variant-numeric:tabular-nums}
 .pd-spec table+table{margin-top:24px}
 /* 설정 › 상세 설명 블록 편집 */
+.pd-i{margin:28px 0 0}
+.pd-i img{display:block;width:100%;height:auto;border-radius:var(--r-lg,16px);background:var(--sub)}
+.pd-i figcaption{max-width:680px;margin:8px auto 0;font-size:13px;line-height:19px;color:var(--tx3);text-align:center}
+.pd-s{max-width:720px;margin:48px auto 0;font-size:26px;line-height:35px;letter-spacing:-.5px;overflow-wrap:anywhere}
+.pd-t{max-width:720px;margin:18px auto 0;font-size:17px;line-height:30px;color:var(--tx);overflow-wrap:anywhere}
+.pd-t p{margin:0 0 14px;white-space:pre-line}.pd-t p:last-child{margin-bottom:0}
+.pd-t.c{text-align:center}
+.pd-hr{max-width:720px;margin:44px auto;border:0;border-top:1px solid var(--hair)}
 .db-list{display:grid;gap:12px}
+.db-blk{padding:12px;border-radius:var(--r-sm);box-shadow:var(--ring);background:#fff;display:grid;gap:8px}
+.db-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.db-top b{font-size:13px;color:var(--tx2)}
+.db-blk .pin{width:100%;text-align:left;height:auto;padding:8px 10px;line-height:1.5}
+.db-blk textarea.pin{resize:vertical;font:inherit;font-size:14px;min-height:140px}
+.db-big{border-radius:var(--r-sm);background:var(--sub);display:grid;place-items:center;overflow:hidden;min-height:120px;color:var(--tx3);font-size:13px}
+.db-big img{display:block;width:100%;max-height:340px;object-fit:contain;background:#f4f4f4}
+.db-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;padding:2px 0;opacity:.55}
+.db-add:hover,.db-add:focus-within{opacity:1}
+.db-add span{font-size:12px;color:var(--tx3)}
+.db-add .btn{height:28px;padding:0 10px;font-size:12px}
+.db-al{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2)}
 .db-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:12px;border-radius:var(--r-sm);box-shadow:var(--ring);background:#fff}
 .db-im{width:96px;height:96px;border-radius:var(--r-sm);background:var(--sub);display:grid;place-items:center;overflow:hidden;color:var(--tx3);font-size:12px;text-align:center}
 .db-im img{width:100%;height:100%;object-fit:cover;display:block}
@@ -557,6 +577,7 @@ body.test .cstrip{background:#fff6dc}
 .adm-pvbox{margin-top:10px;max-height:calc(100vh - 160px);overflow:auto;border-radius:var(--r-lg);box-shadow:var(--ring);padding:24px 20px}
 .adm-pvbox .pd-h{font-size:22px;line-height:30px}.adm-pvbox .pd-lead{font-size:15px;line-height:24px}
 .adm-pvbox .pd-b{margin-top:32px}.adm-pvbox .pd-b h3{margin-top:16px;font-size:19px;line-height:26px}.adm-pvbox .pd-b p{font-size:14px;line-height:22px}
+.adm-pvbox .pd-s{margin-top:24px;font-size:18px;line-height:25px}.adm-pvbox .pd-t{font-size:14px;line-height:23px;margin-top:12px}.adm-pvbox .pd-i{margin-top:16px}
 .adm-pvbox .pd-empty{margin:24px 0 0;text-align:center;font-size:13px;color:var(--tx3)}
 .pl-steps{margin:0;padding-left:20px;font-size:14px;line-height:24px}
 .admgo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px;padding:16px 18px;border-radius:var(--r-lg);background:#eef5ff}
@@ -665,6 +686,8 @@ select.pin{height:36px;font-weight:700;font-size:14px}
   .pdet .pd-h{font-size:24px;line-height:32px}
   .pd-b{margin-top:40px}
   .pd-b h3{font-size:21px;line-height:29px}
+  .pd-s{font-size:21px;line-height:29px;margin-top:36px}
+  .pd-t{font-size:16px;line-height:28px}
   .pd-spec tbody th{width:96px}
   .db-row{grid-template-columns:72px minmax(0,1fr)}.db-im{width:72px;height:72px}
   .stage{height:300px}
@@ -966,11 +989,11 @@ select.pin{height:36px;font-weight:700;font-size:14px}
           <div class="adm-split">
             <div>
     <section class="sh-sec">
-      <h4>상세페이지 칸</h4>
-      <p class="hint" style="margin:0 0 10px">상세페이지처럼 사진과 글을 한 칸씩 쌓아요. 칸마다 사진·제목·내용은 있는 것만 보여요. 아래 「옵션별 가격」 표는 자동으로 붙어요.</p>
+      <h4>상세페이지 (사진·글 블록)</h4>
+      <p class="hint" style="margin:0 0 10px">블로그·스마트스토어처럼 사진과 글을 길게 번갈아 쌓아요(사진 · 글 · 소제목 · 구분선). 아래 「옵션별 가격」 표는 자동으로 붙어요.</p>
       <div class="db-list" id="dbList"></div>
-      <input type="file" id="dbFile" accept="image/*" hidden>
-      <div class="sh-foot"><button class="btn outl" type="button" id="dbAdd">+ 칸 더하기</button><button class="btn" type="button" id="dbSave">상세 설명 저장</button></div>
+      <input type="file" id="dbFile" accept="image/*" multiple hidden>
+      <div class="sh-foot"><button class="btn outl" type="button" id="dbAdd">+ 글 블록 더하기</button><button class="btn" type="button" id="dbSave">상세 설명 저장</button></div>
     </section>
 
             </div>
@@ -1991,11 +2014,17 @@ function menuOptions(sel,withGift){return GROUPS.filter(function(g){return withG
    SET.details[oid] = [{id, t:제목, x:내용}] · 칸 사진은 IndexedDB 'detail:'+oid+':'+id (사진 백업에 함께 들어가요) */
 function detailOf(oid){var d=SET.details&&SET.details[oid];return Array.isArray(d)?d:[]}
 function detailPhotoId(oid,id){return 'detail:'+oid+':'+id}
+/* 블록 종류(k): (없음)=예전 칸[사진+제목+내용] · img=사진 · h=소제목 · txt=글 · hr=구분선. 블로그·스마트스토어 상세페이지처럼 사진과 글을 길게 섞어 쌓아요. */
+function pTexts(x){return String(x).split(/\n{2,}/).map(function(t){return t.trim()}).filter(Boolean).map(function(t){return '<p>'+esc(t)+'</p>'}).join('')}
 function blocksHTML(oid,blocks,title){
   return blocks.map(function(b){
-    var u=PHOTO.get(detailPhotoId(oid,b.id)),t=String(b.t||'').trim(),x=String(b.x||'').trim();
+    var u=PHOTO.get(detailPhotoId(oid,b.id)),t=String(b.t||'').trim(),x=String(b.x||'').trim(),k=b.k||'';
+    if(k==='hr')return '<hr class="pd-hr">';
+    if(k==='h')return t?'<h3 class="pd-s">'+esc(t)+'</h3>':'';
+    if(k==='txt')return x?'<div class="pd-t'+(b.a==='c'?' c':'')+'">'+pTexts(x)+'</div>':'';
+    if(k==='img')return u?'<figure class="pd-i"><img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy" decoding="async">'+(t?'<figcaption>'+esc(t)+'</figcaption>':'')+'</figure>':'';
     if(!u&&!t&&!x)return '';
-    return '<figure class="pd-b">'+(u?'<img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy">':'')+(t?'<h3>'+esc(t)+'</h3>':'')+(x?'<p>'+esc(x)+'</p>':'')+'</figure>';
+    return '<figure class="pd-b">'+(u?'<img src="'+esc(u)+'" alt="'+esc(t||title)+'" loading="lazy" decoding="async">':'')+(t?'<h3>'+esc(t)+'</h3>':'')+(x?'<p>'+esc(x)+'</p>':'')+'</figure>';
   }).join('');
 }
 function renderDetailPreview(){
@@ -2023,62 +2052,117 @@ function renderDetail(v){
     +cur.variants.map(function(w){var o=optOf(w)||'기본';return '<tr'+(w===v?' aria-current="true" style="font-weight:700"':'')+'><td>'+esc(o)+'</td><td class="num">'+esc(String(w.code).indexOf('M:')===0?'-':w.code)+'</td><td class="r num">'+won(w.price)+'원</td></tr>'}).join('')
     +'</tbody></table>';
 }
-// 설정: 칸 편집(저장 전까지는 DB_EDIT에만)
-var DB_EDIT=[],DB_PICK=null,DB_OID=null; // DB_OID: 편집 중인 모델(설정을 닫으면 비워요)
+// 설정: 블록 편집(저장 전까지는 DB_EDIT에만)
+var DB_EDIT=[],DB_PICK=null,DB_PICKIDX=-1,DB_OID=null; // DB_OID: 편집 중인 모델(설정을 닫으면 비워요)
 function dbNewId(){return 'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+var DB_KINDS={img:'사진',txt:'글',h:'소제목',hr:'구분선'};
+function dbAddBar(idx){
+  return '<div class="db-add" data-dbi="'+idx+'"><span>여기에 추가</span><button type="button" class="btn outl" data-dbadd="img">＋ 사진</button><button type="button" class="btn outl" data-dbadd="txt">＋ 글</button><button type="button" class="btn outl" data-dbadd="h">＋ 소제목</button><button type="button" class="btn outl" data-dbadd="hr">＋ 구분선</button></div>';
+}
+function dbCtl(i){
+  return '<div class="db-b"><button class="btn outl" type="button" data-dba="up"'+(i?'':' disabled')+' aria-label="위로">↑</button><button class="btn outl" type="button" data-dba="down"'+(i<DB_EDIT.length-1?'':' disabled')+' aria-label="아래로">↓</button><button class="btn outl" type="button" data-dba="del" style="color:var(--err);border-color:var(--err)">지우기</button></div>';
+}
 function renderDetailEdit(){
   if(!cur)return;
   var oid=cur.oid;
-  $('dbList').innerHTML=DB_EDIT.length?DB_EDIT.map(function(b,i){
-    var u=PHOTO.get(detailPhotoId(oid,b.id));
-    return '<div class="db-row" data-db="'+i+'"><div class="db-im">'+(u?'<img src="'+esc(u)+'" alt="">':'사진 없음')+'</div>'
-      +'<div class="db-f"><input class="pin" data-dbt="'+i+'" maxlength="60" placeholder="제목 (예: 7존 독립 스프링)" value="'+esc(b.t||'')+'" aria-label="'+(i+1)+'번째 칸 제목">'
-      +'<textarea class="pin" data-dbx="'+i+'" rows="3" maxlength="1000" placeholder="내용 (줄바꿈 그대로 보여요)" aria-label="'+(i+1)+'번째 칸 내용">'+esc(b.x||'')+'</textarea>'
-      +'<div class="db-b"><button class="btn outl" type="button" data-dba="photo">'+(u?'사진 바꾸기':'사진 넣기')+'</button>'
-      +(u?'<button class="btn outl" type="button" data-dba="unphoto">사진 빼기</button>':'')
-      +'<button class="btn outl" type="button" data-dba="up"'+(i?'':' disabled')+' aria-label="위로">↑</button><button class="btn outl" type="button" data-dba="down"'+(i<DB_EDIT.length-1?'':' disabled')+' aria-label="아래로">↓</button>'
-      +'<button class="btn outl" type="button" data-dba="del" style="color:var(--err);border-color:var(--err)">칸 지우기</button></div></div></div>';
-  }).join(''):'<p class="hint" style="margin:0">아직 칸이 없어요. 「+ 칸 더하기」로 시작해요.</p>';
+  $('dbList').innerHTML=(DB_EDIT.length?DB_EDIT.map(function(b,i){
+    var u=PHOTO.get(detailPhotoId(oid,b.id)),k=b.k||'',kind=k||'mix',head='<div class="db-top"><b>'+(i+1)+'. '+(k?DB_KINDS[k]:'칸(사진+제목+내용)')+'</b>'+dbCtl(i)+'</div>',body='';
+    if(k==='hr')body='<hr class="pd-hr" style="margin:6px 0">';
+    else if(k==='h')body='<input class="pin" data-dbt="'+i+'" maxlength="80" placeholder="소제목 (예: 이런 분께 추천해요)" value="'+esc(b.t||'')+'" aria-label="소제목">';
+    else if(k==='txt')body='<textarea class="pin" data-dbx="'+i+'" rows="8" maxlength="5000" placeholder="글을 길게 써요. 줄바꿈은 그대로, 빈 줄을 넣으면 문단이 나뉘어요" aria-label="글">'+esc(b.x||'')+'</textarea>'
+      +'<div class="db-b"><label class="db-al"><input type="checkbox" data-dbc="'+i+'"'+(b.a==='c'?' checked':'')+'> 가운데 정렬</label></div>';
+    else if(k==='img')body='<div class="db-big">'+(u?'<img src="'+esc(u)+'" alt="">':'<span>사진 없음</span>')+'</div>'
+      +'<input class="pin" data-dbt="'+i+'" maxlength="80" placeholder="사진 설명(선택)" value="'+esc(b.t||'')+'" aria-label="사진 설명">'
+      +'<div class="db-b"><button class="btn outl" type="button" data-dba="photo">'+(u?'사진 바꾸기':'사진 넣기')+'</button></div>';
+    else body='<div class="db-row" style="padding:0;box-shadow:none"><div class="db-im">'+(u?'<img src="'+esc(u)+'" alt="">':'사진 없음')+'</div>'
+      +'<div class="db-f"><input class="pin" data-dbt="'+i+'" maxlength="60" placeholder="제목" value="'+esc(b.t||'')+'" aria-label="제목"><textarea class="pin" data-dbx="'+i+'" rows="3" maxlength="1000" placeholder="내용" aria-label="내용">'+esc(b.x||'')+'</textarea>'
+      +'<div class="db-b"><button class="btn outl" type="button" data-dba="photo">'+(u?'사진 바꾸기':'사진 넣기')+'</button>'+(u?'<button class="btn outl" type="button" data-dba="unphoto">사진 빼기</button>':'')+'</div></div></div>';
+    return '<div class="db-blk" data-db="'+i+'">'+head+body+'</div>'+dbAddBar(i+1);
+  }).join(''):dbAddBar(0)+'<p class="hint" style="margin:8px 0 0">블로그·스마트스토어처럼 사진과 글을 번갈아 쌓아요. 위 버튼으로 시작해요. 사진은 여러 장을 한 번에 고르거나, 끌어다 놓거나, 붙여넣어도 돼요.</p>');
   renderDetailPreview();
 }
 function openDetailEdit(){if(!cur)return;if(DB_OID!==cur.oid){DB_OID=cur.oid;DB_EDIT=clone(detailOf(cur.oid))}renderDetailEdit()}
-function detailDirty(){return !!cur&&DB_OID===cur.oid&&JSON.stringify(DB_EDIT.map(function(b){return [b.id,String(b.t||'').trim(),String(b.x||'').trim()]}))!==JSON.stringify(detailOf(cur.oid).map(function(b){return [b.id,b.t,b.x]}))}
+function dbSig(list){return JSON.stringify(list.map(function(b){return [b.id,b.k||'',b.a||'',String(b.t||'').trim(),String(b.x||'').trim()]}))}
+function detailDirty(){return !!cur&&DB_OID===cur.oid&&dbSig(DB_EDIT)!==dbSig(detailOf(cur.oid))}
 $('dbList').addEventListener('input',function(e){
   var t=e.target,i=t.getAttribute('data-dbt')||t.getAttribute('data-dbx');if(i==null)return;
   DB_EDIT[+i][t.hasAttribute('data-dbt')?'t':'x']=t.value;renderDetailPreview();
 });
+$('dbList').addEventListener('change',function(e){
+  var t=e.target,i=t.getAttribute('data-dbc');if(i==null)return;
+  if(t.checked)DB_EDIT[+i].a='c';else delete DB_EDIT[+i].a;renderDetailPreview();
+});
+function dbInsert(kind,idx){
+  if(kind==='img'){DB_PICK=null;DB_PICKIDX=idx;$('dbFile').click();return}
+  var b={id:dbNewId(),k:kind,t:'',x:''};
+  DB_EDIT.splice(idx<0?DB_EDIT.length:idx,0,b);renderDetailEdit();
+  var sel=kind==='txt'?'[data-dbx]':kind==='h'?'[data-dbt]':null,at=DB_EDIT.indexOf(b);
+  if(sel){var f=$('dbList').querySelector('[data-db="'+at+'"] '+sel);if(f)f.focus()}
+}
 $('dbList').addEventListener('click',function(e){
+  var ad=e.target.closest('[data-dbadd]');
+  if(ad){touch();dbInsert(ad.getAttribute('data-dbadd'),+ad.parentNode.getAttribute('data-dbi'));return}
   var b=e.target.closest('[data-dba]');if(!b)return;touch();
   var i=+b.closest('[data-db]').getAttribute('data-db'),a=b.getAttribute('data-dba'),blk=DB_EDIT[i];
-  if(a==='photo'){DB_PICK=blk.id;$('dbFile').click();return}
+  if(a==='photo'){DB_PICK=blk.id;DB_PICKIDX=-1;$('dbFile').click();return}
   if(a==='unphoto'){var pid=detailPhotoId(cur.oid,blk.id);phTx('readwrite',function(st){return st.delete(pid)}).then(loadPhotos).then(function(){renderDetailEdit();render();toast('사진을 뺐어요')});return}
   if(a==='up'&&i>0)DB_EDIT.splice(i-1,0,DB_EDIT.splice(i,1)[0]);
   else if(a==='down'&&i<DB_EDIT.length-1)DB_EDIT.splice(i+1,0,DB_EDIT.splice(i,1)[0]);
-  else if(a==='del'){if((blk.t||blk.x||PHOTO.has(detailPhotoId(cur.oid,blk.id)))&&!confirm('이 칸을 지울까요? (「상세 설명 저장」을 눌러야 반영돼요)'))return;DB_EDIT.splice(i,1)}
+  else if(a==='del'){if((blk.t||blk.x||PHOTO.has(detailPhotoId(cur.oid,blk.id)))&&!confirm('이 블록을 지울까요? (「상세 설명 저장」을 눌러야 반영돼요)'))return;DB_EDIT.splice(i,1)}
   renderDetailEdit();
 });
-$('dbAdd').addEventListener('click',function(){touch();DB_EDIT.push({id:dbNewId(),t:'',x:''});renderDetailEdit();var r=$('dbList').querySelectorAll('[data-dbt]');if(r.length)r[r.length-1].focus()});
+$('dbAdd').addEventListener('click',function(){touch();dbInsert('txt',-1)});
+/* 사진: 여러 장을 한 번에(고르기·끌어다 놓기·붙여넣기) — 사진마다 사진 블록이 하나씩 생겨요 */
+function dbAddPhotos(files,idx){
+  files=Array.prototype.filter.call(files||[],function(f){return /^image\//.test(f.type)});
+  if(!files.length||!cur){return}
+  var oid=cur.oid,at=idx<0?DB_EDIT.length:idx,made=[];
+  toast('사진 '+files.length+'장을 넣는 중이에요…');
+  var chain=Promise.resolve();
+  files.forEach(function(f){chain=chain.then(function(){return shrink(f)}).then(function(blob){
+    var id=dbNewId();return phTx('readwrite',function(st){return st.put({id:detailPhotoId(oid,id),blob:blob,at:Date.now()})}).then(function(){made.push({id:id,k:'img',t:'',x:''})});
+  })});
+  chain.then(loadPhotos).then(function(){
+    if(!cur||cur.oid!==oid)return;
+    Array.prototype.splice.apply(DB_EDIT,[at,0].concat(made));renderDetailEdit();
+    toast('사진 '+made.length+'장을 넣었어요. 「상세 설명 저장」을 눌러 마무리해요');
+  }).catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+}
 $('dbFile').addEventListener('change',function(){
-  var f=this.files&&this.files[0];this.value='';
-  if(!f||!DB_PICK||!cur)return;
-  if(!/^image\//.test(f.type)){toast('사진 파일을 골라 주세요');return}
-  var id=detailPhotoId(cur.oid,DB_PICK);
-  shrink(f).then(function(blob){return phTx('readwrite',function(st){return st.put({id:id,blob:blob,at:Date.now()})})})
-    .then(loadPhotos).then(function(){renderDetailEdit();toast('사진을 넣었어요. 「상세 설명 저장」을 눌러 마무리해요')})
-    .catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+  var fs=Array.prototype.slice.call(this.files||[]);this.value=''; // 값을 비우면 목록도 비워지니 먼저 복사해요
+  if(!fs.length||!cur)return;
+  if(DB_PICK){ // 한 블록의 사진 바꾸기
+    var f=fs[0];if(!/^image\//.test(f.type)){toast('사진 파일을 골라 주세요');return}
+    var id=detailPhotoId(cur.oid,DB_PICK);
+    shrink(f).then(function(blob){return phTx('readwrite',function(st){return st.put({id:id,blob:blob,at:Date.now()})})})
+      .then(loadPhotos).then(function(){renderDetailEdit();toast('사진을 넣었어요. 「상세 설명 저장」을 눌러 마무리해요')})
+      .catch(function(){toast('사진을 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요')});
+    return;
+  }
+  dbAddPhotos(fs,DB_PICKIDX);
+});
+$('dbList').addEventListener('dragover',function(e){if(e.dataTransfer&&Array.prototype.some.call(e.dataTransfer.types||[],function(t){return t==='Files'}))e.preventDefault()});
+$('dbList').addEventListener('drop',function(e){
+  var fs=e.dataTransfer&&e.dataTransfer.files;if(!fs||!fs.length)return;e.preventDefault();touch();
+  var blk=e.target.closest&&e.target.closest('[data-db]');dbAddPhotos(fs,blk?+blk.getAttribute('data-db')+1:-1);
+});
+$('dbList').addEventListener('paste',function(e){
+  var items=e.clipboardData&&e.clipboardData.files;if(!items||!items.length)return;
+  var imgs=Array.prototype.filter.call(items,function(f){return /^image\//.test(f.type)});if(!imgs.length)return;
+  e.preventDefault();touch();var blk=e.target.closest&&e.target.closest('[data-db]');dbAddPhotos(imgs,blk?+blk.getAttribute('data-db')+1:-1);
 });
 $('dbSave').addEventListener('click',function(){
   if(!cur)return;touch();
-  var oid=cur.oid,keep={},list=DB_EDIT.map(function(b){return {id:b.id,t:String(b.t||'').trim(),x:String(b.x||'').replace(/\r/g,'').trim()}})
-    .filter(function(b){return b.t||b.x||PHOTO.has(detailPhotoId(oid,b.id))});
+  var oid=cur.oid,keep={},list=DB_EDIT.map(function(b){var o={id:b.id,t:String(b.t||'').trim(),x:String(b.x||'').replace(/\r/g,'').trim()};if(b.k)o.k=b.k;if(b.a)o.a=b.a;return o})
+    .filter(function(b){return b.k==='hr'||b.t||b.x||PHOTO.has(detailPhotoId(oid,b.id))});
   list.forEach(function(b){keep[detailPhotoId(oid,b.id)]=1});
   SET.details=SET.details||{};
   if(list.length)SET.details[oid]=list;else delete SET.details[oid];
   saveSet();
-  // 지운 칸의 사진은 함께 지워요
+  // 지운 블록의 사진은 함께 지워요
   var pre='detail:'+oid+':',gone=[];PHOTO.forEach(function(u,k){if(k.indexOf(pre)===0&&!keep[k])gone.push(k)});
   (gone.length?phTx('readwrite',function(st){var r;gone.forEach(function(k){r=st.delete(k)});return r}).then(loadPhotos):Promise.resolve()).then(function(){
-    DB_EDIT=clone(list);renderDetailEdit();render();if(VIEW==='admin')admRefresh();toast(list.length?'상세 설명을 저장했어요 ('+list.length+'칸)':'상세 설명을 비웠어요');
+    DB_EDIT=clone(list);renderDetailEdit();render();if(VIEW==='admin')admRefresh();toast(list.length?'상세 설명을 저장했어요 ('+list.length+'개 블록)':'상세 설명을 비웠어요');
   });
 });
 
