@@ -1317,7 +1317,16 @@ function makeThumbs(){
     img.src=PHOTO.get(k);
   })();
 }
-function modelPhotoId(){return 'model:'+cur.gid+':'+cur.key}
+/* 모델 사진 이름: 지금 이름 + (타입을 묶거나 합치거나 메뉴를 옮기기 전) 예전 이름으로 올려 둔 사진도 이어서 찾아요 */
+function modelPhotoIdsOf(m){
+  var gids=[m.gid],og=String(m.oid).split('|')[0];if(og!==m.gid)gids.push(og);
+  var keys=[m.key].concat(m.alt||[]),out=[];
+  gids.forEach(function(g){keys.forEach(function(k){var id='model:'+g+':'+k;if(out.indexOf(id)<0)out.push(id)})});
+  return out;
+}
+function modelPhotoId(){var ids=modelPhotoIdsOf(cur);for(var i=0;i<ids.length;i++)if(PHOTO.has(ids[i]))return ids[i];return ids[0]}
+function legacyPhotoIds(){var main=modelPhotoId();return modelPhotoIdsOf(cur).filter(function(id){return id!==main&&PHOTO.has(id)})}
+function slotDbId(id){if(id==='@m')return modelPhotoId();var m=String(id).match(/^@L(\d+)$/);return m?legacyPhotoIds()[+m[1]-1]:mphPhotoId(cur.oid,id)}
 function photoFor(v){var sl=cur?photoSlots():[];return PHOTO.get('code:'+v.code)||(sl[0]&&sl[0].url)||PHOTO.get(modelPhotoId())||null}
 /* 사진 넘기기: 이 모델의 사진(모델 사진 + 옵션별 사진)을 화살표로 훑어봐요. 고른 규격·색상·가격은 바뀌지 않아요.
    옵션(규격·색상)을 새로 고르면 다시 그 옵션의 사진으로 돌아와요. */
@@ -1326,13 +1335,13 @@ function mphIds(oid){var d=SET.mph&&SET.mph[oid];return Array.isArray(d)?d:[]}
 function mphPhotoId(oid,id){return 'mp:'+oid+':'+id}
 /* 제품 사진 한 줄 목록: 순서(SET.mph[oid])에 「@m」(예전 「이 모델 전체」 사진)과 슬라이드 사진 번호가 섞여 있어요. 순서에 없는 「@m」은 맨 앞에 둬요 */
 function photoOrder(){
-  var ord=mphIds(cur.oid).slice(),mid=modelPhotoId();
+  var ord=mphIds(cur.oid).slice(),mid=modelPhotoId(),leg=legacyPhotoIds();
   if(PHOTO.has(mid)&&ord.indexOf('@m')<0)ord.unshift('@m');
-  return ord.filter(function(id){return id==='@m'?PHOTO.has(mid):PHOTO.has(mphPhotoId(cur.oid,id))});
+  leg.forEach(function(id,i){if(ord.indexOf('@L'+(i+1))<0)ord.push('@L'+(i+1))});
+  return ord.filter(function(id){var d=slotDbId(id);return !!(d&&PHOTO.has(d))});
 }
 function photoSlots(){
-  var mid=modelPhotoId();
-  return photoOrder().map(function(id){var dbid=id==='@m'?mid:mphPhotoId(cur.oid,id);return {id:id,dbid:dbid,url:PHOTO.get(dbid)}});
+  return photoOrder().map(function(id){var dbid=slotDbId(id);return {id:id,dbid:dbid,url:PHOTO.get(dbid)}});
 }
 var GAL={oid:'',vi:-1,idx:-1};
 function galList(){
@@ -1545,6 +1554,7 @@ function applyEdits(maps){
     var t=maps[gk][to];
     if(!t){t=maps[gk][to]={vs:[],main:e.main,ord:e.ord,oid:gk+'|'+to};if(e.mine)t.mine=true}
     t.vs=t.vs.concat(e.vs);t.main=t.main||e.main;
+    t.alt=(t.alt||[]).concat([key],e.alt||[]); // 합치기 전 이름: 그 이름으로 올려 둔 사진도 계속 보여요
     if(e.ord!=null)t.ord=t.ord==null?e.ord:Math.min(t.ord,e.ord);
     delete maps[gk][key];
   });
@@ -1569,7 +1579,7 @@ function mergeTypes(maps){
     var first=g[0].e,tgt=fm[b]&&!fm[b].mine?fm[b]:{vs:[],main:false,oid:first.oid};
     g.forEach(function(x){
       x.e.vs.forEach(function(v){if(!v.type&&!v._ts)v.type=x.t+(x.tail?' '+x.tail:'');tgt.vs.push(v)});
-      tgt.main=tgt.main||x.e.main;if(x.e.ord!=null)tgt.ord=tgt.ord==null?x.e.ord:Math.min(tgt.ord,x.e.ord);
+      tgt.alt=(tgt.alt||[]).concat([x.k],x.e.alt||[]);tgt.main=tgt.main||x.e.main;if(x.e.ord!=null)tgt.ord=tgt.ord==null?x.e.ord:Math.min(tgt.ord,x.e.ord);
       if(x.e.desc&&!tgt.desc)tgt.desc=x.e.desc;
       delete fm[x.k];
     });
@@ -1590,7 +1600,7 @@ function finishGroup(g,map,custom){
       tord=[];vs.forEach(function(v){var t=v.type||'';if(tord.indexOf(t)<0)tord.push(t)});
     }
     var sizes=[];vs.forEach(function(v){if(sizes.indexOf(v.size)<0)sizes.push(v.size)});
-    return {key:k,oid:oid,gid:g.id,name:nm||(custom?k:clean(k)),series:seriesOf(nm||k),desc:ds!=null?ds:(map[k].desc||''),variants:vs,sizes:sizes,types:tord.filter(Boolean).length?tord:[],main:map[k].main,ord:map[k].ord==null?1e7:map[k].ord,mine:!!map[k].mine};
+    return {key:k,oid:oid,gid:g.id,name:nm||(custom?k:clean(k)),series:seriesOf(nm||k),desc:ds!=null?ds:(map[k].desc||''),variants:vs,sizes:sizes,types:tord.filter(Boolean).length?tord:[],alt:map[k].alt||[],main:map[k].main,ord:map[k].ord==null?1e7:map[k].ord,mine:!!map[k].mine};
   }).sort(custom||g.custom?function(a,b){return a.ord-b.ord||a.name.localeCompare(b.name,'ko')}:function(a,b){return (b.main-a.main)||a.ord-b.ord||a.name.localeCompare(b.name,'ko')});
   box.models.forEach(function(m){if(!box.byName[m.name])box.byName[m.name]=m;m.variants.forEach(function(v){CODE[v.code]={m:m,v:v,gid:g.id}})});
   box.own=box.models.slice();
@@ -2753,6 +2763,7 @@ function renderProdPane(){
     +'<section class="sh-sec"><h4>매장에서 만든 제품 ('+list.length+')</h4><ul class="mlist">'+(list.map(function(c){return '<li><span>'+esc(c.name)+'<small>'+esc([gname[c.group]||'',c.size,c.color,won(c.price)+'원',c.code].filter(Boolean).join(' · '))+'</small></span><button class="btn outl sm" type="button" data-pedit="'+esc(c.code)+'">고치기</button><button class="btn outl sm" type="button" data-pdel="'+esc(c.code)+'" style="color:var(--err);border-color:var(--err)">지우기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>이름·메뉴를 바꾼 제품 ('+named.length+')</h4><ul class="mlist">'+(named.map(function(k){var o=k.slice(k.indexOf('|')+1);return '<li><span>'+esc(SET.names[k]||o)+'<small>가격표 이름 '+esc(o)+(SET.moved[k]?' · '+esc(gname[k.split('|')[0]]||'')+' → '+esc(gname[SET.moved[k]]||''):'')+'</small></span><button class="btn outl sm" type="button" data-prev="'+esc(k)+'">되돌리기</button></li>'}).join('')||'<li class="none">없어요. 제품을 고른 뒤 「기본 정보」에서 바꿔요.</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>삭제한 제품 ('+SET.deleted.filter(function(d){return !d.gone}).length+')</h4><ul class="mlist">'+(SET.deleted.map(function(d,i){if(d.gone)return '';return '<li><span>'+esc(d.name)+'<small>'+esc(gname[d.id.split('|')[0]]||'')+'</small></span><button class="btn outl sm" type="button" data-pundel="'+i+'">되살리기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul>'+(SET.deleted.some(function(d){return !d.gone})?'<div class="sh-foot"><button class="btn outl" type="button" data-prpurge="1" style="color:#e5252a">삭제 목록 비우기 (되살리기 불가)</button></div>':'')+'</section>'
+    +'<section class="sh-sec"><h4>연결 안 된 사진 점검</h4><p class="hint">저장해 둔 사진인데 화면에 안 보일 때 눌러 보세요. 제품 이름이 바뀌어(타입 묶기·합치기·가격표 교체 등) 연결이 끊긴 사진을 찾아서, 가까운 제품에 다시 이어 줘요(사진 파일은 그대로 두고 연결 이름만 옮겨요).</p><div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-pp="orph">사진 점검하기</button></div><ul class="mlist" id="orphList"></ul></section>'
     +'<section class="sh-sec"><h4>사진 백업</h4><p class="hint">사진은 이 기기에만 저장돼요. 다른 태블릿으로 옮기거나 기기를 바꿀 때 백업 파일을 내보내 그 기기에서 불러와요. 예전 POS의 사진 백업 파일도 불러올 수 있어요. 지금 사진 '+PHOTO.size+'장.</p>'
     +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-pp="phexp">백업 내보내기</button><label class="btn outl" style="cursor:pointer"><input type="file" id="phImp" accept="application/json,.json" hidden>백업 불러오기</label></div></section>'
     +'<section class="sh-sec"><h4>테스트 모드</h4><div class="srow"><span class="lb">테스트 모드'+(TEST?' (켜짐)':'')+'<small>연습·교육용이에요. 켜면 장바구니·견적·상담·판매 기록·가격 수정·사진을 실제와 따로 저장하고, 위쪽에 노란 「테스트 모드」 표시가 떠요. 처음 켤 때 지금 설정·가격표를 복사해 가요.</small></span><button class="tg" type="button" data-pp="test" aria-pressed="'+TEST+'" aria-label="테스트 모드"></button></div>'
@@ -2761,6 +2772,42 @@ function renderProdPane(){
 function blobToData(b){return new Promise(function(ok,no){var r=new FileReader();r.onload=function(){ok(r.result)};r.onerror=no;r.readAsDataURL(b)})}
 function dataToBlob(u){var h=String(u).split(','),mime=(h[0].match(/^data:([^;,]+)/)||[])[1]||'image/jpeg',bin=atob(h[1]||''),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:mime})}
 function downloadBlob(name,blob){var u=URL.createObjectURL(blob),a=el('a',{href:u,download:name});document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},2000)}
+/* 연결 안 된 사진 점검: 지금 제품 어디에도 이어지지 않는 모델·품목 사진을 찾아 가까운 제품을 제안해요 */
+function normKey(k){return String(k).toUpperCase().replace(/\s+/g,'').replace(/-[A-Z](NEW|N)?(\(.*\))?$/,'').replace(/\(.*\)$/,'')}
+function orphanScan(){
+  var known={},byNorm={};
+  GROUPS.forEach(function(g){(G[g.id]&&G[g.id].own||[]).forEach(function(m){
+    modelPhotoIdsOf(m).forEach(function(id){known[id]=1});
+    var k=g.id+'|'+normKey(m.key);(byNorm[k]=byNorm[k]||[]).push(m);
+    (m.alt||[]).forEach(function(a){var k2=g.id+'|'+normKey(a);(byNorm[k2]=byNorm[k2]||[]).push(m)});
+  })});
+  var out=[];
+  PHOTO.forEach(function(u,id){
+    var m=/^model:([^:]+):(.+)$/.exec(id);
+    if(m){if(known[id])return;var cands=byNorm[m[1]+'|'+normKey(m[2])]||[];out.push({id:id,name:m[2],gid:m[1],target:cands[0]||null});return}
+    var c=/^code:(.+)$/.exec(id);if(c&&!CODE[c[1]])out.push({id:id,name:c[1]+' (품목코드)',gid:'',target:null});
+  });
+  return out;
+}
+function checkOrphans(){
+  var list=orphanScan(),box=$('orphList');if(!box)return;
+  if(!list.length){box.innerHTML='<li class="none">연결 안 된 사진이 없어요. 모든 사진이 제품에 이어져 있어요.</li>';return}
+  box.innerHTML=list.map(function(o){
+    return '<li><span>'+esc(o.name)+'<small>'+(o.target?'→ 「'+esc(o.target.name)+'」에 연결할 수 있어요':'이어질 제품을 못 찾았어요')+' · '+esc(o.id)+'</small></span>'
+      +(o.target?'<button class="btn outl sm" type="button" data-orlink="'+esc(o.id)+'" data-ormodel="'+esc(o.target.oid)+'">연결</button>':'')+'</li>';
+  }).join('');
+}
+function linkOrphan(id,oid){
+  var tgt=null;GROUPS.forEach(function(g){(G[g.id].own||[]).forEach(function(m){if(m.oid===oid)tgt=m})});
+  if(!tgt||!PHOTO.has(id))return;
+  var to='model:'+tgt.gid+':'+tgt.key,nid=dbNewId(),asSlide=PHOTO.has(to); // 이미 대표 사진이 있으면 슬라이드 사진으로 더해요
+  phTx('readonly',function(st){return st.get(id)}).then(function(row){if(!row||!row.blob)throw 0;return row.blob}).then(function(blob){ // 보안 설정상 blob 주소를 fetch하지 않고 저장소에서 바로 읽어요
+    return phTx('readwrite',function(st){st.delete('th:'+id);st.delete(id);return st.put({id:asSlide?'mp:'+tgt.oid+':'+nid:to,blob:blob,at:Date.now()})}); // 이름만 옮겨요(사진은 그대로)
+  }).then(function(){
+    if(asSlide){SET.mph=SET.mph||{};SET.mph[tgt.oid]=(SET.mph[tgt.oid]||[]).concat([nid]);saveSet()}
+    return loadPhotos();
+  }).then(function(){renderProdPane();checkOrphans();admRefresh();if(cur)render();toast('사진을 「'+tgt.name+'」에 연결했어요')}).catch(function(){toast('연결하지 못했어요')});
+}
 function exportPhotos(){
   phTx('readonly',function(st){return st.getAll()}).then(function(rows){
     rows=(rows||[]).filter(function(r){return r&&r.blob&&String(r.id).indexOf('th:')!==0});
@@ -2807,6 +2854,8 @@ $('prodPane').addEventListener('click',function(e){
     var was=!!PEDIT;PEDIT=null;rebuildAll(true);renderProdPane();toast(was?'고친 내용을 저장했어요':'「'+name+'」을(를) 만들었어요 · '+(G[gid]?G[gid].def.name:'')+' 메뉴에서 볼 수 있어요');
   }else if(a==='cancel'){PEDIT=null;renderProdPane()}
   else if(a==='phexp')exportPhotos();
+  else if(a==='orph')checkOrphans();
+  else if(b.hasAttribute('data-orlink')){linkOrphan(b.getAttribute('data-orlink'),b.getAttribute('data-ormodel'))}
   else if(a==='test'){
     if(!confirm(TEST?'테스트 모드를 끌까요? 실제 기록 화면으로 돌아가요(테스트 기록은 남아 있어요).':'테스트 모드를 켤까요?\n연습용으로 기록이 실제와 따로 저장돼요.'))return;
     try{if(TEST)localStorage.removeItem('buy.testmode');else localStorage.setItem('buy.testmode','1')}catch(x){}
@@ -3443,7 +3492,7 @@ function artFor(gid){
   ART[gid]='<svg viewBox="50 0 540 300" aria-hidden="true">'+(g?g.innerHTML:'')+'</svg>';
   return ART[gid];
 }
-function modelThumb(m){var k='model:'+m.gid+':'+m.key,u=THUMB.get(k)||PHOTO.get(k);
+function modelThumb(m){var u=null;modelPhotoIdsOf(m).some(function(k){u=THUMB.get(k)||PHOTO.get(k);return !!u});
   if(!u){var mp=(SET.mph&&SET.mph[m.oid])||[];for(var i=0;i<mp.length&&!u;i++){if(mp[i]==='@m')continue;var q='mp:'+m.oid+':'+mp[i];u=THUMB.get(q)||PHOTO.get(q)}}
   if(!u)m.variants.some(function(v){var c='code:'+v.code;u=THUMB.get(c)||PHOTO.get(c);return !!u});return u||null}
 function minPrice(m){return m.variants.reduce(function(a,v){return Math.min(a,v.price)},Infinity)}
@@ -3636,7 +3685,7 @@ $('mpList').addEventListener('click',function(e){
   var oid=cur.oid,id=b.closest('[data-mp]').getAttribute('data-mp'),a=b.getAttribute('data-mpa'),ord=photoOrder(),i=ord.indexOf(id);if(i<0)return;
   SET.mph=SET.mph||{};
   if(a==='x'){
-    var dbid=id==='@m'?modelPhotoId():mphPhotoId(oid,id);
+    var dbid=slotDbId(id);
     ord.splice(i,1);if(ord.length)SET.mph[oid]=ord;else delete SET.mph[oid];saveSet();
     phTx('readwrite',function(st){st.delete('th:'+dbid);return st.delete(dbid)}).then(loadPhotos).then(function(){renderPhotoPart();render();if(VIEW==='admin')admRefresh();setInfo();toast('사진을 뺐어요')});return;
   }
