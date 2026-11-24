@@ -4279,6 +4279,7 @@ function cloudGetManifest(){
     return r.json().then(function(j){var d={};try{d=JSON.parse(b64utf8(j.content))}catch(e){}d.photos=d.photos||{};return {data:d,sha:j.sha}});
   });
 }
+function cloudList(){return ghFetch('/contents/'+encodeURI(CLOUD.dir)+'?ref='+CLOUD.br).then(function(r){return r.ok?r.json():[]}).then(function(a){return Array.isArray(a)?a:[]}).catch(function(){return []})}
 function cloudEnsureBranch(){
   var c=cloudCfg();
   return ghFetch('/git/ref/heads/'+CLOUD.br).then(function(r){
@@ -4317,22 +4318,29 @@ function cloudPush(){
   var qp=Object.keys((m.q||{}).put||{}),qd=Object.keys((m.q||{}).del||{});
   if(!qp.length&&!qd.length&&!m.setDirty)return Promise.resolve();
   CL.busy=true;cloudStatus('올리는 중…');
-  var done={put:{},del:{}},man;
-  return cloudEnsureBranch().then(cloudGetManifest).then(function(mf){
+  var done={put:{},del:{}},man,trash=[],listed=[];
+  return cloudEnsureBranch().then(function(){return cloudList()}).then(function(l){listed=l;return cloudGetManifest()}).then(function(mf){
     man=mf.data;man.photos=man.photos||{};var chain=Promise.resolve(),n=0;
     qp.forEach(function(id){chain=chain.then(function(){return phTx('readonly',function(st){return st.get(id)},true)}).then(function(row){
       if(!row||!row.blob){done.put[id]=1;return}
       var old=man.photos[id],f='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+'.jpg';
       return blobToData(row.blob).then(function(d){return cloudPutFile(CLOUD.dir+'/'+f,d.split(',')[1],null,'POS 사진')}).then(function(res){
         man.photos[id]={f:f,at:row.at||0,s:res.content.sha};done.put[id]=1;n++;cloudStatus('올리는 중… '+n+'/'+qp.length);
-        if(old&&old.f&&old.s)return cloudDelFile(CLOUD.dir+'/'+old.f,old.s,'POS 옛 사진 정리').catch(function(){});
+        if(old&&old.f&&old.s)trash.push({f:old.f,s:old.s}); // 목록을 저장한 뒤에 지워요(먼저 지우면 목록이 지운 파일을 가리켜 404가 나요)
       });
     })});
-    qd.forEach(function(id){chain=chain.then(function(){var old=man.photos[id];delete man.photos[id];done.del[id]=1;if(old&&old.f&&old.s)return cloudDelFile(CLOUD.dir+'/'+old.f,old.s,'POS 사진 삭제').catch(function(){})})});
+    qd.forEach(function(id){chain=chain.then(function(){var old=man.photos[id];delete man.photos[id];done.del[id]=1;if(old&&old.f&&old.s)trash.push({f:old.f,s:old.s})})});
     return chain.then(function(){
       if(m.setDirty)man.cfg=cloudCfgSnapshot();
       man.at=Date.now();
       return cloudPutFile(CLOUD.dir+'/index.json',utf8b64(JSON.stringify(man)),mf.sha,'POS 사진·설정 목록');
+    }).then(function(){
+      var keep={'index.json':1};Object.keys(man.photos).forEach(function(id){keep[man.photos[id].f]=1});
+      var t={};trash.forEach(function(x){t[x.f]=1});
+      listed.forEach(function(e){if(e&&e.type==='file'&&!keep[e.name]&&!t[e.name]&&/^p[\w]+\.jpg$/.test(e.name))trash.push({f:e.name,s:e.sha})}); // 예전에 올리다 실패해 남은 파일
+      var c2=Promise.resolve(),k=0;
+      trash.slice(0,400).forEach(function(x){c2=c2.then(function(){return cloudDelFile(CLOUD.dir+'/'+x.f,x.s,'POS 안 쓰는 사진 정리').then(function(){k++}).catch(function(){})})});
+      return c2; // 정리는 실패해도 괜찮아요
     });
   }).then(function(){
     var mm=cloudMeta();mm.q=mm.q||{put:{},del:{}};
@@ -4356,7 +4364,7 @@ function cloudPull(manual){
   if(!c.repo||!(c.rt||c.wt)){if(manual)cloudStatus('저장소·토큰이 없어요');return Promise.resolve()}
   if(CL.busy)return Promise.resolve();
   CL.busy=true;if(manual)cloudStatus('확인 중…');
-  var changed=false;
+  var changed=false,miss=0;
   return cloudGetManifest().then(function(mf){
     var man=mf.data,m=cloudMeta(),pend=(m.q&&m.q.put)||{};
     if(man.cfg&&(man.cfg.at||0)>(m.cfgAt||0)&&!m.setDirty){cloudApplyCfg(man.cfg);m=cloudMeta();m.cfgAt=man.cfg.at;cloudMetaSave(m);changed=true}
@@ -4365,7 +4373,8 @@ function cloudPull(manual){
     var chain=Promise.resolve(),n=0;
     need.forEach(function(id){chain=chain.then(function(){
       var e=man.photos[id];
-      return ghFetch('/contents/'+encodeURI(CLOUD.dir+'/'+e.f)+'?ref='+CLOUD.br,{headers:{Accept:'application/vnd.github.raw+json'}}).then(function(r){if(!r.ok)throw new Error('사진을 받지 못했어요 ('+r.status+')');return r.blob()}).then(function(blob){
+      return ghFetch('/contents/'+encodeURI(CLOUD.dir+'/'+e.f)+'?ref='+CLOUD.br,{headers:{Accept:'application/vnd.github.raw+json'}}).then(function(r){if(r.status===404){miss++;return null}if(!r.ok)throw new Error('사진을 받지 못했어요 ('+r.status+')');return r.blob()}).then(function(blob){
+        if(!blob)return;
         return phTx('readwrite',function(st){return st.put({id:id,blob:new Blob([blob],{type:'image/jpeg'}),at:e.at||0})},true);
       }).then(function(){n++;changed=true;if(manual||need.length>3)cloudStatus('받는 중… '+n+'/'+need.length)});
     })});
@@ -4375,7 +4384,7 @@ function cloudPull(manual){
       return changed?loadPhotos():null;
     }).then(function(){
       if(changed){try{if(SRC)rebuildAll(true);if(VIEW==='admin')admRefresh();if(cur&&VIEW==='detail')render()}catch(e){}}
-      cloudStatus((manual||changed)?('동기화 완료 · 클라우드 사진 '+Object.keys(man.photos||{}).length+'장'+(n?' (새로 받음 '+n+')':'')):'');
+      cloudStatus(miss?('일부만 받았어요 · 클라우드에 없는 사진 '+miss+'장 (사진을 관리하는 PC에서 「이 기기의 사진·설정 전부 올리기」를 다시 눌러 주세요)'):(manual||changed)?('동기화 완료 · 클라우드 사진 '+Object.keys(man.photos||{}).length+'장'+(n?' (새로 받음 '+n+')':'')):'');
     });
   }).catch(function(e){cloudStatus('동기화 실패: '+(e&&e.message||e))}).then(function(){CL.busy=false});
 }
