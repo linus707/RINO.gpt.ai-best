@@ -11,6 +11,7 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff">
 <title>매장 POS · ACE BED</title>
+<meta name="pos-build" content="__BUILD__">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <!-- 글꼴은 화면을 막지 않고 뒤늦게 입혀요(인터넷이 느려도 POS가 바로 떠요). 못 받으면 맑은 고딕·시스템 글꼴을 써요 -->
@@ -3655,7 +3656,24 @@ document.addEventListener('click',function(e){if(!e.target.closest('.find'))$('s
 var phScope='model',lastFocus=null;
 var numOf=function(s){var n=Number(String(s).replace(/[^\d]/g,''));return String(s).replace(/[\s,원]/g,'')===''?NaN:n};
 function editCount(){return Object.keys(PRICES).length}
-function setInfo(){$('setInfo').textContent='지금 바꾼 가격 '+editCount()+'개 · 사진 '+PHOTO.size+'장.'}
+/* 새 버전 알림: 배포 때 이 페이지에 버전 번호(pos-build)가 찍혀요. 열어 둔 화면이 옛 버전이면(브라우저가 10분간 저장해 둠) 「새 버전이 있어요」 띠를 보여 줘요 */
+var BUILD=((document.querySelector('meta[name="pos-build"]')||{}).content||'').trim();
+function updBanner(nb){
+  if($('updBar'))return;
+  var d=el('div',{id:'updBar',role:'status',style:'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;display:flex;gap:10px;align-items:center;padding:10px 16px;border-radius:999px;background:#000;color:#fff;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.3)'},'');
+  d.appendChild(el('span',{},'새 버전이 있어요 ('+nb+')'));
+  var b=el('button',{type:'button',style:'height:30px;padding:0 14px;border-radius:999px;background:#fff;color:#000;font-weight:800'},'지금 새로고침');
+  b.addEventListener('click',function(){location.reload()});d.appendChild(b);document.body.appendChild(d);
+}
+function checkUpdate(){
+  if(!BUILD||BUILD==='__BUILD__'||!window.fetch)return;
+  fetch(location.pathname,{cache:'reload'}).then(function(r){return r.text()}).then(function(t){
+    var m=/name="pos-build" content="([0-9a-f]{7})"/.exec(t);if(m&&m[1]!==BUILD)updBanner(m[1]);
+  }).catch(function(){});
+}
+setTimeout(checkUpdate,4000);setInterval(checkUpdate,15*60*1000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)checkUpdate()});
+function setInfo(){$('setInfo').textContent='지금 바꾼 가격 '+editCount()+'개 · 사진 '+PHOTO.size+'장.'+(BUILD&&BUILD!=='__BUILD__'?' · 화면 버전 '+BUILD:'')}
 function renderPhotoPart(){
   var v=cur.variants[vi],id=phScope==='code'?'code:'+v.code:modelPhotoId(),u=PHOTO.get(id),box=$('phPrev');
   box.textContent='';

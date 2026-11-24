@@ -26,6 +26,8 @@ jobs:
           cp -r fonts _site/fonts
           if [ -f ads.txt ]; then cp ads.txt _site/; fi
           cp index.html price.html buy.html pos.html translate.html japanese.html japanese.webmanifest japanese-icon.svg japanese-icon-*.png prices.json store-prices.json pos-price-template.xlsx pos-price-store.xlsx offline.html sw.js manifest.webmanifest icon.svg icon-*.png CNAME _site/
+      - name: Stamp build id into POS
+        run: sed -i "s/__BUILD__/${GITHUB_SHA::7}/" _site/pos.html
       - name: Put login server address into the site
         run: node scripts/inject-auth.mjs _site/index.html
         env:
