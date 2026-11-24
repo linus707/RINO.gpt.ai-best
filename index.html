@@ -14,7 +14,7 @@ document.addEventListener("securitypolicyviolation",function(e){if(e.effectiveDi
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -49,7 +49,7 @@ button{cursor:pointer;-webkit-appearance:none;appearance:none}
 #bgph .bgimg svg{width:100%;height:100%;display:block}
 #bgph .bgdim{position:absolute;inset:0;transition:background .3s}
 #bgph.show .bgdim:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,0) 32%,rgba(0,0,0,.18))}
-#posbox{display:none;position:fixed;z-index:3;background:var(--bg,#f2f2f7)}#posbox iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+#posbox{display:none;position:fixed;z-index:3;overflow:hidden;background:var(--bg,#f2f2f7)}#posbox iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 body.posmode .fab{display:none!important}
 .posbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px}.posbar h1{margin:0;font-size:24px}.posbar a{font-size:14px;font-weight:600;color:var(--accent);text-decoration:none}
 main{position:relative;z-index:1;padding:calc(14px + env(safe-area-inset-top)) 16px 120px;max-width:1040px;margin:0 auto}
@@ -313,6 +313,99 @@ body.out #bgph,body.out header{display:none!important}
 .auth h1,.auth .lead{word-break:keep-all}
 @media(max-width:480px){.auth{margin:28px 14px;padding:34px 22px 28px}.auth h1{font-size:23px}}
 .docimg{max-width:100%;border-radius:12px;margin:8px 0;display:block;background:#f4efe9;min-height:40px}
+/* ===== 삼성닷컴 느낌(밝은 화면): 흰 바탕·검정 글씨·넓은 여백·굵은 제목·알약 버튼·밑줄 탭 =====
+   삼성의 로고·사진·글꼴 파일은 쓰지 않고 디자인 느낌(색·여백·모서리·버튼 모양)만 따라 했어요. 어두운 화면은 그대로예요 */
+:root[data-theme=light]{--accent:#000;--g:#000;--g-soft:#f4f4f4;--bg:#fff;--tx:#000;--mut:#666;--sep:#e5e5e5;--fill:#f4f4f4;--fill2:#f8f8f8;
+ --mat:#fff;--mat-nav:rgba(255,255,255,.96);--mat-side:#fff;--mat-sheet:#fff;--shadow:none;--make:#000}
+:root[data-theme=light] body{letter-spacing:-.02em}
+:root[data-theme=light] #bgph .bgdim{background:#fff!important}
+:root[data-theme=light] .glass,:root[data-theme=light] .card,:root[data-theme=light] .form,:root[data-theme=light] .doc,:root[data-theme=light] .tile,:root[data-theme=light] .lock,:root[data-theme=light] .stat,:root[data-theme=light] .chathead,:root[data-theme=light] .composer,:root[data-theme=light] .chatlist,:root[data-theme=light] header.x,:root[data-theme=light] #tabbar{-webkit-backdrop-filter:none;backdrop-filter:none}
+:root[data-theme=light] h1{font-size:40px;font-weight:800;letter-spacing:-.04em;margin:28px 2px 6px}
+:root[data-theme=light] .sub,:root[data-theme=light] .m.sub{font-size:15px;margin-bottom:20px}
+:root[data-theme=light] .card{background:#f7f7f7;border-radius:24px;margin:20px 0;box-shadow:none}
+:root[data-theme=light] .card h3{font-size:20px;font-weight:700;padding:20px 22px 8px;letter-spacing:-.03em}
+:root[data-theme=light] .card .body{padding:0 22px 20px}
+:root[data-theme=light] .item{border-bottom:1px solid #e5e5e5}
+:root[data-theme=light] .stat{background:#f7f7f7;border-radius:20px;padding:18px 20px;box-shadow:none}
+:root[data-theme=light] .stat b{font-weight:800;letter-spacing:-.04em}
+:root[data-theme=light] .stat.hl{background:#000;color:#fff}
+:root[data-theme=light] .tile{background:#f7f7f7;border-radius:20px;padding:18px 20px}
+:root[data-theme=light] .form{background:#f7f7f7;border-radius:20px;padding:18px}
+:root[data-theme=light] .btn{background:#000;color:#fff;border-radius:999px;padding:13px 26px;font-weight:700;letter-spacing:-.02em}
+:root[data-theme=light] .btn:hover{background:#222}
+:root[data-theme=light] .btn.ghost{background:#fff;color:#000;box-shadow:inset 0 0 0 1.5px #000}
+:root[data-theme=light] .btn.ghost:hover{background:#f4f4f4}
+:root[data-theme=light] input,:root[data-theme=light] select,:root[data-theme=light] textarea{background:#fff;box-shadow:inset 0 0 0 1px #d0d0d0;border-radius:12px;padding:13px 14px}
+:root[data-theme=light] input:focus,:root[data-theme=light] select:focus,:root[data-theme=light] textarea:focus{box-shadow:inset 0 0 0 2px #000}
+:root[data-theme=light] input[type=checkbox]{border-color:#999}
+:root[data-theme=light] .tabs{background:transparent;border-radius:0;padding:0;gap:22px;border-bottom:1px solid #e5e5e5;margin:18px 0}
+:root[data-theme=light] .tabs button{flex:none;padding:12px 2px;border-radius:0;font-size:16px;font-weight:500;color:#666;border-bottom:3px solid transparent;margin-bottom:-1px}
+:root[data-theme=light] .tabs button.on{background:transparent;color:#000;font-weight:700;box-shadow:none;border-bottom-color:#000}
+:root[data-theme=light] .chips button{background:#fff;box-shadow:inset 0 0 0 1px #d0d0d0;color:#000;padding:8px 16px}
+:root[data-theme=light] .chips button.on{background:#000;color:#fff;box-shadow:none}
+:root[data-theme=light] .navbtn{border-radius:12px;padding:11px 12px;font-size:15px}
+:root[data-theme=light] .navbtn svg{color:#000}
+:root[data-theme=light] .navbtn:hover{background:#f4f4f4}
+:root[data-theme=light] .navbtn.on{background:#f4f4f4;color:#000;font-weight:800}
+:root[data-theme=light] .pill[style*="--fill"]{color:#000}
+:root[data-theme=light] .fab{background:#000;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+:root[data-theme=light] header.x{background:rgba(255,255,255,.96);border-bottom:1px solid #e5e5e5}
+:root[data-theme=light] #tabbar{background:#fff;border-top:1px solid #e5e5e5}
+:root[data-theme=light] #posbox{background:#fff}
+@media(min-width:900px){:root[data-theme=light] body:not(.out) #drawer nav{background:#fff;border-right:1px solid #e5e5e5}}
+:root[data-theme=light] #bgph{display:none!important}
+:root[data-theme=light] body.photo-on .setsec,:root[data-theme=light] body.photo-on .hero,:root[data-theme=light] body.photo-on main>h1,:root[data-theme=light] body.photo-on main>.sub,:root[data-theme=light] body.photo-on .dhead,:root[data-theme=light] body.photo-on .dhead .m,:root[data-theme=light] header.x,:root[data-theme=light] header.x *{color:#000;text-shadow:none}
+:root[data-theme=light] .fab svg,:root[data-theme=light] .fab svg *{color:#fff;stroke:#fff}
+:root[data-theme=light] .posbar h1{font-size:28px;margin:6px 0}
+:root[data-theme=light] .posbar a{color:#000;text-decoration:underline}
+@media(prefers-color-scheme:light){
+/* ===== 삼성닷컴 느낌(밝은 화면): 흰 바탕·검정 글씨·넓은 여백·굵은 제목·알약 버튼·밑줄 탭 =====
+   삼성의 로고·사진·글꼴 파일은 쓰지 않고 디자인 느낌(색·여백·모서리·버튼 모양)만 따라 했어요. 어두운 화면은 그대로예요 */
+:root:not([data-theme=dark]){--accent:#000;--g:#000;--g-soft:#f4f4f4;--bg:#fff;--tx:#000;--mut:#666;--sep:#e5e5e5;--fill:#f4f4f4;--fill2:#f8f8f8;
+ --mat:#fff;--mat-nav:rgba(255,255,255,.96);--mat-side:#fff;--mat-sheet:#fff;--shadow:none;--make:#000}
+:root:not([data-theme=dark]) body{letter-spacing:-.02em}
+:root:not([data-theme=dark]) #bgph .bgdim{background:#fff!important}
+:root:not([data-theme=dark]) .glass,:root:not([data-theme=dark]) .card,:root:not([data-theme=dark]) .form,:root:not([data-theme=dark]) .doc,:root:not([data-theme=dark]) .tile,:root:not([data-theme=dark]) .lock,:root:not([data-theme=dark]) .stat,:root:not([data-theme=dark]) .chathead,:root:not([data-theme=dark]) .composer,:root:not([data-theme=dark]) .chatlist,:root:not([data-theme=dark]) header.x,:root:not([data-theme=dark]) #tabbar{-webkit-backdrop-filter:none;backdrop-filter:none}
+:root:not([data-theme=dark]) h1{font-size:40px;font-weight:800;letter-spacing:-.04em;margin:28px 2px 6px}
+:root:not([data-theme=dark]) .sub,:root:not([data-theme=dark]) .m.sub{font-size:15px;margin-bottom:20px}
+:root:not([data-theme=dark]) .card{background:#f7f7f7;border-radius:24px;margin:20px 0;box-shadow:none}
+:root:not([data-theme=dark]) .card h3{font-size:20px;font-weight:700;padding:20px 22px 8px;letter-spacing:-.03em}
+:root:not([data-theme=dark]) .card .body{padding:0 22px 20px}
+:root:not([data-theme=dark]) .item{border-bottom:1px solid #e5e5e5}
+:root:not([data-theme=dark]) .stat{background:#f7f7f7;border-radius:20px;padding:18px 20px;box-shadow:none}
+:root:not([data-theme=dark]) .stat b{font-weight:800;letter-spacing:-.04em}
+:root:not([data-theme=dark]) .stat.hl{background:#000;color:#fff}
+:root:not([data-theme=dark]) .tile{background:#f7f7f7;border-radius:20px;padding:18px 20px}
+:root:not([data-theme=dark]) .form{background:#f7f7f7;border-radius:20px;padding:18px}
+:root:not([data-theme=dark]) .btn{background:#000;color:#fff;border-radius:999px;padding:13px 26px;font-weight:700;letter-spacing:-.02em}
+:root:not([data-theme=dark]) .btn:hover{background:#222}
+:root:not([data-theme=dark]) .btn.ghost{background:#fff;color:#000;box-shadow:inset 0 0 0 1.5px #000}
+:root:not([data-theme=dark]) .btn.ghost:hover{background:#f4f4f4}
+:root:not([data-theme=dark]) input,:root:not([data-theme=dark]) select,:root:not([data-theme=dark]) textarea{background:#fff;box-shadow:inset 0 0 0 1px #d0d0d0;border-radius:12px;padding:13px 14px}
+:root:not([data-theme=dark]) input:focus,:root:not([data-theme=dark]) select:focus,:root:not([data-theme=dark]) textarea:focus{box-shadow:inset 0 0 0 2px #000}
+:root:not([data-theme=dark]) input[type=checkbox]{border-color:#999}
+:root:not([data-theme=dark]) .tabs{background:transparent;border-radius:0;padding:0;gap:22px;border-bottom:1px solid #e5e5e5;margin:18px 0}
+:root:not([data-theme=dark]) .tabs button{flex:none;padding:12px 2px;border-radius:0;font-size:16px;font-weight:500;color:#666;border-bottom:3px solid transparent;margin-bottom:-1px}
+:root:not([data-theme=dark]) .tabs button.on{background:transparent;color:#000;font-weight:700;box-shadow:none;border-bottom-color:#000}
+:root:not([data-theme=dark]) .chips button{background:#fff;box-shadow:inset 0 0 0 1px #d0d0d0;color:#000;padding:8px 16px}
+:root:not([data-theme=dark]) .chips button.on{background:#000;color:#fff;box-shadow:none}
+:root:not([data-theme=dark]) .navbtn{border-radius:12px;padding:11px 12px;font-size:15px}
+:root:not([data-theme=dark]) .navbtn svg{color:#000}
+:root:not([data-theme=dark]) .navbtn:hover{background:#f4f4f4}
+:root:not([data-theme=dark]) .navbtn.on{background:#f4f4f4;color:#000;font-weight:800}
+:root:not([data-theme=dark]) .pill[style*="--fill"]{color:#000}
+:root:not([data-theme=dark]) .fab{background:#000;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+:root:not([data-theme=dark]) header.x{background:rgba(255,255,255,.96);border-bottom:1px solid #e5e5e5}
+:root:not([data-theme=dark]) #tabbar{background:#fff;border-top:1px solid #e5e5e5}
+:root:not([data-theme=dark]) #posbox{background:#fff}
+@media(min-width:900px){:root:not([data-theme=dark]) body:not(.out) #drawer nav{background:#fff;border-right:1px solid #e5e5e5}}
+:root:not([data-theme=dark]) #bgph{display:none!important}
+:root:not([data-theme=dark]) body.photo-on .setsec,:root:not([data-theme=dark]) body.photo-on .hero,:root:not([data-theme=dark]) body.photo-on main>h1,:root:not([data-theme=dark]) body.photo-on main>.sub,:root:not([data-theme=dark]) body.photo-on .dhead,:root:not([data-theme=dark]) body.photo-on .dhead .m,:root:not([data-theme=dark]) header.x,:root:not([data-theme=dark]) header.x *{color:#000;text-shadow:none}
+:root:not([data-theme=dark]) .fab svg,:root:not([data-theme=dark]) .fab svg *{color:#fff;stroke:#fff}
+:root:not([data-theme=dark]) .posbar h1{font-size:28px;margin:6px 0}
+:root:not([data-theme=dark]) .posbar a{color:#000;text-decoration:underline}
+}
+
 </style>
 </head>
 <body>
@@ -2950,6 +3043,10 @@ function posFit(){
   const top=bar?bar.getBoundingClientRect().bottom+4:0,l=app.getBoundingClientRect().left;
   const tbH=tb&&getComputedStyle(tb).display!=="none"?tb.getBoundingClientRect().height:0;
   Object.assign(box.style,{display:"block",top:Math.max(0,top)+"px",left:Math.max(0,l)+"px",right:"0",bottom:tbH+"px"});
+  /* 패드처럼 중간 크기 화면에서는 POS를 1280 너비로 그려 놓고 화면에 맞게 줄여서, 목록과 설정이 스크롤 없이 한눈에 들어오게 해요(폰은 그대로) */
+  const f=box.firstChild,bw=box.clientWidth,bh=box.clientHeight,DW=1280;
+  if(f){if(bw>=700&&bw<DW){const k=bw/DW;Object.assign(f.style,{width:DW+"px",height:Math.ceil(bh/k)+"px",transform:"scale("+k+")",transformOrigin:"0 0"})}
+    else Object.assign(f.style,{width:"100%",height:"100%",transform:"none"})}
 }
 window.addEventListener("resize",()=>{try{posFit()}catch{}});
 views.inventory=()=>{
