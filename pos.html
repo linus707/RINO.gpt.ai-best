@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- 방화벽(콘텐츠 보안 정책): 아래에 적힌 주소로만 연결·불러오기를 허용해요. 새 외부 서비스를 붙이면 여기에 주소를 추가해야 해요 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://api.github.com; frame-src 'none'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="no-referrer">
 <script>/* 방화벽: 다른 사이트가 이 화면을 몰래 끼워 넣어 클릭을 가로채지 못하게 해요(클릭재킹 방지). 같은 사이트 안에서 끼우는 것은 괜찮아요 */
 (function(){try{if(top!==self&&top.location.origin!==location.origin)throw 0}catch(e){document.documentElement.style.display="none";try{top.location=self.location.href}catch(_){}}})();</script>
@@ -1274,10 +1274,10 @@ var G={},CODE={},group=null,cur=null,vi=0,qty=1,months=0,meta={};
    한 품목에 둘 다 있으면 '품목' 사진이 먼저예요 */
 var PRICE_KEY=NS+'prices';
 function loadPrices(){try{var o=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');return o&&typeof o==='object'?o:{}}catch(e){return {}}}
-function savePrices(){try{localStorage.setItem(PRICE_KEY,JSON.stringify(PRICES));return true}catch(e){return false}}
+function savePrices(){try{localStorage.setItem(PRICE_KEY,JSON.stringify(PRICES));cloudSetDirty();return true}catch(e){return false}}
 var PRICES=loadPrices(),PHOTO=new Map(); // PHOTO: id → 화면용 주소(blob:)
 function phDB(){return new Promise(function(ok,no){var r=indexedDB.open(TEST?'buy-photos-test':'buy-photos',1);r.onupgradeneeded=function(){r.result.createObjectStore('p',{keyPath:'id'})};r.onsuccess=function(){ok(r.result)};r.onerror=function(){no(r.error)}})}
-function phTx(mode,fn){return phDB().then(function(db){return new Promise(function(ok,no){var t=db.transaction('p',mode),req=fn(t.objectStore('p'));t.oncomplete=function(){ok(req&&req.result)};t.onerror=function(){no(t.error)}})})}
+function phTx(mode,fn,raw){return phDB().then(function(db){return new Promise(function(ok,no){var t=db.transaction('p',mode),st=t.objectStore('p'),req=fn(mode==='readwrite'&&!raw?cloudWrap(st):st);t.oncomplete=function(){ok(req&&req.result)};t.onerror=function(){no(t.error)}})})}
 /* 작은 사진(목록·카드용): 큰 사진(1600px)을 목록에서 그대로 쓰면 저사양 PC가 느려져서, 긴 쪽 480px 복사본을 같은 저장소에 「th:」 이름으로 따로 둬요.
    복사본은 사진을 넣을 때·처음 불러올 때 조용히 만들고, 백업·사진 수에는 세지 않아요. */
 var THUMB=new Map(),PHOTO_AT={},THUMB_SRC={},thumbBusy=false;
@@ -1406,7 +1406,7 @@ function loadSet(){
   s.paybacks=DEFAULT_SET.paybacks.map(function(d){return Object.assign({},d,(o.paybacks||[]).filter(function(p){return p.id===d.id})[0]||{})});
   return s;
 }
-function saveSet(){try{localStorage.setItem(SET_KEY,JSON.stringify(SET))}catch(e){toast('설정을 저장하지 못했어요')}}
+function saveSet(){try{localStorage.setItem(SET_KEY,JSON.stringify(SET));cloudSetDirty()}catch(e){toast('설정을 저장하지 못했어요')}}
 var SET=loadSet();
 /* 메뉴(설정 › 메뉴): 순서·이름·숨김·새 메뉴. 새 메뉴에는 매장이 만든 제품과 「메뉴 옮기기」한 제품이 들어가요 */
 function menuGroups(){
@@ -1516,7 +1516,7 @@ function build(data){
 }
 /* 매장이 만든 제품(NS+'custom') → 옮기기(SET.moved) → 삭제(SET.deleted) 순서로 반영해요. 이름 바꾸기는 finishGroup에서 */
 function customList(){try{var c=JSON.parse(localStorage.getItem(NS+'custom')||'[]');return Array.isArray(c)?c:[]}catch(e){return []}}
-function saveCustom(list){try{localStorage.setItem(NS+'custom',JSON.stringify(list));return true}catch(e){toast('저장하지 못했어요');return false}}
+function saveCustom(list){try{localStorage.setItem(NS+'custom',JSON.stringify(list));cloudSetDirty();return true}catch(e){toast('저장하지 못했어요');return false}}
 function applyEdits(maps){
   GROUPS.forEach(function(g){maps[g.id]=maps[g.id]||{}});
   customList().forEach(function(c,k){
@@ -2764,6 +2764,10 @@ function renderProdPane(){
     +'<section class="sh-sec"><h4>매장에서 만든 제품 ('+list.length+')</h4><ul class="mlist">'+(list.map(function(c){return '<li><span>'+esc(c.name)+'<small>'+esc([gname[c.group]||'',c.size,c.color,won(c.price)+'원',c.code].filter(Boolean).join(' · '))+'</small></span><button class="btn outl sm" type="button" data-pedit="'+esc(c.code)+'">고치기</button><button class="btn outl sm" type="button" data-pdel="'+esc(c.code)+'" style="color:var(--err);border-color:var(--err)">지우기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>이름·메뉴를 바꾼 제품 ('+named.length+')</h4><ul class="mlist">'+(named.map(function(k){var o=k.slice(k.indexOf('|')+1);return '<li><span>'+esc(SET.names[k]||o)+'<small>가격표 이름 '+esc(o)+(SET.moved[k]?' · '+esc(gname[k.split('|')[0]]||'')+' → '+esc(gname[SET.moved[k]]||''):'')+'</small></span><button class="btn outl sm" type="button" data-prev="'+esc(k)+'">되돌리기</button></li>'}).join('')||'<li class="none">없어요. 제품을 고른 뒤 「기본 정보」에서 바꿔요.</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>삭제한 제품 ('+SET.deleted.filter(function(d){return !d.gone}).length+')</h4><ul class="mlist">'+(SET.deleted.map(function(d,i){if(d.gone)return '';return '<li><span>'+esc(d.name)+'<small>'+esc(gname[d.id.split('|')[0]]||'')+'</small></span><button class="btn outl sm" type="button" data-pundel="'+i+'">되살리기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul>'+(SET.deleted.some(function(d){return !d.gone})?'<div class="sh-foot"><button class="btn outl" type="button" data-prpurge="1" style="color:#e5252a">삭제 목록 비우기 (되살리기 불가)</button></div>':'')+'</section>'
+    +'<section class="sh-sec"><h4>사진·제품 설정 클라우드 동기화 (모든 기기에서 보기)</h4><p class="hint">사진은 기기마다 따로 저장돼서 PC에서 넣은 사진이 아이패드에는 안 보여요. 회사 저장소(비공개)에 올려 두면 모든 기기가 열 때 자동으로 받아 가요. 보통 <b>사진을 관리하는 매장 PC 한 대만</b> 「이 기기에서 올리기」를 켜고, 나머지 기기는 보기만 해요. 올라가는 것: 사진, 상세페이지, 슬라이드 순서, 옵션 순서·이름·설명, 가격 수정, 메뉴 설정 (할인·결제·상담 기록은 안 올라가요).</p>'
+    +'<div class="srow"><span class="lb">이 기기에서 올리기<small>켜면 이 기기에서 바꾸는 사진·제품 설정이 클라우드에 올라가요. 보기만 하는 기기는 꺼 두세요(켜 있는 기기의 설정이 다른 기기를 덮어써요).</small></span><button class="tg" type="button" data-pp="cloudup" aria-pressed="'+!!cloudMeta().up+'" aria-label="이 기기에서 올리기"></button></div>'
+    +'<p class="hint" id="cloudInfo">'+esc(cloudInfoText())+'</p>'
+    +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn" type="button" data-pp="cloudsync">지금 동기화</button><button class="btn outl" type="button" data-pp="cloudall">이 기기의 사진·설정 전부 올리기</button></div></section>'
     +'<section class="sh-sec"><h4>연결 안 된 사진 점검</h4><p class="hint">저장해 둔 사진인데 화면에 안 보일 때 눌러 보세요. 제품 이름이 바뀌어(타입 묶기·합치기·가격표 교체 등) 연결이 끊긴 사진을 찾아서, 가까운 제품에 다시 이어 줘요(사진 파일은 그대로 두고 연결 이름만 옮겨요).</p><div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-pp="orph">사진 점검하기</button></div><ul class="mlist" id="orphList"></ul></section>'
     +'<section class="sh-sec"><h4>사진 백업</h4><p class="hint">사진은 이 기기에만 저장돼요. 다른 태블릿으로 옮기거나 기기를 바꿀 때 백업 파일을 내보내 그 기기에서 불러와요. 예전 POS의 사진 백업 파일도 불러올 수 있어요. 지금 사진 '+PHOTO.size+'장.</p>'
     +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-pp="phexp">백업 내보내기</button><label class="btn outl" style="cursor:pointer"><input type="file" id="phImp" accept="application/json,.json" hidden>백업 불러오기</label></div></section>'
@@ -2856,6 +2860,9 @@ $('prodPane').addEventListener('click',function(e){
   }else if(a==='cancel'){PEDIT=null;renderProdPane()}
   else if(a==='phexp')exportPhotos();
   else if(a==='orph')checkOrphans();
+  else if(a==='cloudup'){var cm=cloudMeta(),cf=cloudCfg();if(!cm.up&&!cf.wt){toast('올리려면 앱 설정의 「지시함 연결」에 쓰기 토큰을 먼저 저장해 주세요');return}cm.up=!cm.up;cloudMetaSave(cm);b.setAttribute('aria-pressed',String(!!cm.up));cloudStatus(cm.up?'이 기기에서 올리도록 켰어요. 「전부 올리기」로 지금 있는 사진을 올려요':'보기 전용으로 바꿨어요')}
+  else if(a==='cloudsync'){var cm2=cloudMeta();(cm2.up?cloudPush().then(function(){return cloudPull(true)}):cloudPull(true))}
+  else if(a==='cloudall'){if(!cloudMeta().up){toast('먼저 「이 기기에서 올리기」를 켜 주세요');return}if(confirm('이 기기의 사진 '+PHOTO.size+'장과 제품 설정을 모두 클라우드에 올려요. 다른 기기의 같은 설정은 이 기기 것으로 바뀌어요. 계속할까요?'))cloudAll()}
   else if(b.hasAttribute('data-orlink')){linkOrphan(b.getAttribute('data-orlink'),b.getAttribute('data-ormodel'))}
   else if(a==='test'){
     if(!confirm(TEST?'테스트 모드를 끌까요? 실제 기록 화면으로 돌아가요(테스트 기록은 남아 있어요).':'테스트 모드를 켤까요?\n연습용으로 기록이 실제와 따로 저장돼요.'))return;
@@ -4230,6 +4237,157 @@ addEventListener('afterprint',function(){document.body.classList.remove('prq')})
 function orderAsCalc(o){
   return {rows:o.lines.map(function(l){return {l:l,base:l.gift?0:l.price*l.qty,sale:l.gift?0:(l.sale!=null?l.sale:l.price*l.qty)}}),base:o.base,dP:o.dP,dB:o.dB,dM:o.dM,round:o.round,adjust:o.adjust,pay:o.pay,months:o.months,monthly:o.monthly,interest:o.interest,pbs:o.pbs||[],pb:o.pb,net:o.net};
 }
+/* ───── 사진·제품 설정 클라우드 동기화 ─────
+   사진은 기기(브라우저)마다 따로 저장돼서, PC에서 넣은 사진이 아이패드에는 없어요. 그래서 회사 저장소(비공개)의 「pos-photos」 가지에 사진과 제품 설정을 올려 두고
+   모든 기기가 받아 가요. 저장소 주소·토큰은 워크스페이스 앱 설정(이 기기에 저장된 값)을 그대로 읽어 써요(새로 입력할 것 없음).
+   · 올리는 기기(보통 매장 PC 한 대): 설정에서 「이 기기에서 올리기」를 켜면 사진·상세페이지·옵션 순서·이름·가격 수정을 올려요(쓰기 토큰 필요).
+   · 보기만 하는 기기: 켜 두기만 하면 열 때마다 새로 올라온 것을 자동으로 받아요(읽기 토큰 필요). 올라온 제품 설정으로 이 기기의 같은 설정을 덮어써요.
+   올리는 것: 사진(모델·품목·슬라이드·상세) + 제품 설정(상세페이지 블록, 슬라이드 순서, 설명, 이름, 옮긴 메뉴, 합치기, 삭제, 옵션 추가·변경·순서, 숨김·사은품, 메뉴, 별칭, 가격 수정, 매장 제품).
+   할인율·결제·상담 기록은 올리지 않아요. */
+var CLOUD={dir:'프로젝트/POS사진',br:'pos-photos'};
+var CL={busy:false,t:0,msg:'',applying:false};
+var CL_KEYS=['details','mph','descs','names','moved','merge','deleted','vadd','vedit','vorder','hidden','gifts','aliases','menus'];
+function cloudCfg(){
+  var c={};try{c=JSON.parse(localStorage.getItem('rino-cfg')||'{}')||{}}catch(e){}
+  var repo=String(c.repo||'').trim();
+  return {repo:/^[\w.-]+\/[\w.-]+$/.test(repo)?repo:'',rt:c.repoToken||'',wt:c.repoWToken||'',base:String(c.repoBranch||'work').trim()||'work'};
+}
+function cloudMeta(){try{return JSON.parse(localStorage.getItem(NS+'cloudph')||'{}')||{}}catch(e){return {}}}
+function cloudMetaSave(m){try{localStorage.setItem(NS+'cloudph',JSON.stringify(m))}catch(e){}}
+function cloudOn(){var m=cloudMeta(),c=cloudCfg();return !!(m.up&&c.repo&&c.wt)}
+function cloudStatus(msg){
+  CL.msg=msg||'';var m=cloudMeta();if(msg&&!/중…$/.test(msg)){m.last=Date.now();m.lastMsg=msg;cloudMetaSave(m)}
+  var e=document.getElementById('cloudInfo');if(e)e.textContent=cloudInfoText();
+}
+function cloudInfoText(){
+  var c=cloudCfg(),m=cloudMeta(),q=m.q||{},pend=Object.keys(q.put||{}).length+Object.keys(q.del||{}).length+(m.setDirty?1:0);
+  if(!c.repo)return '아직 연결 전이에요. 이 기기의 앱 설정(Linus Company 작업 폴더 불러오기)에 저장소 주소(예: linus707/SOLAMEN)와 읽기 토큰을 저장하면 받아 와요. 올리는 기기는 「지시함 연결」의 쓰기 토큰도 필요해요.';
+  var s='저장소 '+c.repo+' · '+(c.rt||c.wt?'받기 가능':'읽기 토큰 없음')+' · '+(c.wt?'올리기 가능':'쓰기 토큰 없음')+' · 이 기기 사진 '+PHOTO.size+'장'+(m.up?' · 이 기기에서 올리는 중(대기 '+pend+')':' · 보기 전용');
+  if(CL.msg)s+=' · '+CL.msg;else if(m.lastMsg)s+=' · 마지막: '+m.lastMsg+' ('+new Date(m.last||0).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+')';
+  return s;
+}
+function ghFetch(path,init,write){
+  var c=cloudCfg(),tok=write?c.wt:(c.rt||c.wt);
+  return fetch('https://api.github.com/repos/'+c.repo+path,Object.assign({},init||{},{headers:Object.assign({Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},(init&&init.headers)||{})}));
+}
+function utf8b64(t){return btoa(unescape(encodeURIComponent(t)))}
+function b64utf8(b){return decodeURIComponent(escape(atob(String(b||'').replace(/\s/g,''))))}
+function cloudGetManifest(){
+  return ghFetch('/contents/'+encodeURI(CLOUD.dir)+'/index.json?ref='+CLOUD.br).then(function(r){
+    if(r.status===404)return {data:{v:1,photos:{}},sha:null};
+    if(!r.ok)throw new Error('GitHub '+r.status+(r.status===401||r.status===403?' (토큰 권한을 확인해 주세요)':''));
+    return r.json().then(function(j){var d={};try{d=JSON.parse(b64utf8(j.content))}catch(e){}d.photos=d.photos||{};return {data:d,sha:j.sha}});
+  });
+}
+function cloudEnsureBranch(){
+  var c=cloudCfg();
+  return ghFetch('/git/ref/heads/'+CLOUD.br).then(function(r){
+    if(r.ok)return;
+    if(r.status!==404)throw new Error('GitHub '+r.status);
+    return ghFetch('/git/ref/heads/'+encodeURIComponent(c.base)).then(function(b){if(!b.ok)throw new Error('기준 가지('+c.base+')를 찾지 못했어요');return b.json()}).then(function(j){
+      return ghFetch('/git/refs',{method:'POST',body:JSON.stringify({ref:'refs/heads/'+CLOUD.br,sha:j.object.sha})},true).then(function(x){if(!x.ok&&x.status!==422)throw new Error('가지를 만들지 못했어요 ('+x.status+')')});
+    });
+  });
+}
+function cloudPutFile(path,b64,sha,msg){
+  var body={message:msg,content:b64,branch:CLOUD.br};if(sha)body.sha=sha;
+  return ghFetch('/contents/'+encodeURI(path),{method:'PUT',body:JSON.stringify(body)},true).then(function(r){if(!r.ok)throw new Error('올리지 못했어요 ('+r.status+')');return r.json()});
+}
+function cloudDelFile(path,sha,msg){return ghFetch('/contents/'+encodeURI(path),{method:'DELETE',body:JSON.stringify({message:msg,sha:sha,branch:CLOUD.br})},true)}
+function cloudCfgSnapshot(){var s={};CL_KEYS.forEach(function(k){if(SET[k]!==undefined)s[k]=SET[k]});return {at:Date.now(),set:s,prices:PRICES,custom:customList()}}
+function cloudNote(kind,id){
+  if(kind==='clear')return;
+  if(!/^(model|code|mp|detail):/.test(String(id||'')))return;
+  var m=cloudMeta();m.q=m.q||{put:{},del:{}};m.q.put=m.q.put||{};m.q.del=m.q.del||{};
+  if(kind==='put'){m.q.put[id]=1;delete m.q.del[id]}else{m.q.del[id]=1;delete m.q.put[id]}
+  cloudMetaSave(m);cloudSchedule();
+}
+function cloudSetDirty(){if(CL.applying)return;var m=cloudMeta();if(!m.up)return;m.setDirty=1;cloudMetaSave(m);cloudSchedule()}
+function cloudSchedule(){clearTimeout(CL.t);CL.t=setTimeout(cloudPush,4000)}
+function cloudWrap(st){ // 사진을 넣거나 지울 때 어떤 사진인지 적어 둬요(올리는 기기에서만)
+  if(!cloudOn())return st;
+  return {put:function(rec){if(rec&&rec.id!=null)cloudNote('put',rec.id);return st.put.apply(st,arguments)},
+    delete:function(k){cloudNote('del',k);return st.delete.apply(st,arguments)},
+    clear:function(){cloudNote('clear');return st.clear.apply(st,arguments)},
+    get:function(){return st.get.apply(st,arguments)},getAll:function(){return st.getAll.apply(st,arguments)},count:function(){return st.count.apply(st,arguments)}};
+}
+function cloudPush(){
+  var c=cloudCfg(),m=cloudMeta();
+  if(CL.busy||!m.up||!c.repo||!c.wt)return Promise.resolve();
+  var qp=Object.keys((m.q||{}).put||{}),qd=Object.keys((m.q||{}).del||{});
+  if(!qp.length&&!qd.length&&!m.setDirty)return Promise.resolve();
+  CL.busy=true;cloudStatus('올리는 중…');
+  var done={put:{},del:{}},man;
+  return cloudEnsureBranch().then(cloudGetManifest).then(function(mf){
+    man=mf.data;man.photos=man.photos||{};var chain=Promise.resolve(),n=0;
+    qp.forEach(function(id){chain=chain.then(function(){return phTx('readonly',function(st){return st.get(id)},true)}).then(function(row){
+      if(!row||!row.blob){done.put[id]=1;return}
+      var old=man.photos[id],f='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+'.jpg';
+      return blobToData(row.blob).then(function(d){return cloudPutFile(CLOUD.dir+'/'+f,d.split(',')[1],null,'POS 사진')}).then(function(res){
+        man.photos[id]={f:f,at:row.at||0,s:res.content.sha};done.put[id]=1;n++;cloudStatus('올리는 중… '+n+'/'+qp.length);
+        if(old&&old.f&&old.s)return cloudDelFile(CLOUD.dir+'/'+old.f,old.s,'POS 옛 사진 정리').catch(function(){});
+      });
+    })});
+    qd.forEach(function(id){chain=chain.then(function(){var old=man.photos[id];delete man.photos[id];done.del[id]=1;if(old&&old.f&&old.s)return cloudDelFile(CLOUD.dir+'/'+old.f,old.s,'POS 사진 삭제').catch(function(){})})});
+    return chain.then(function(){
+      if(m.setDirty)man.cfg=cloudCfgSnapshot();
+      man.at=Date.now();
+      return cloudPutFile(CLOUD.dir+'/index.json',utf8b64(JSON.stringify(man)),mf.sha,'POS 사진·설정 목록');
+    });
+  }).then(function(){
+    var mm=cloudMeta();mm.q=mm.q||{put:{},del:{}};
+    Object.keys(done.put).forEach(function(id){delete mm.q.put[id]});Object.keys(done.del).forEach(function(id){delete mm.q.del[id]});
+    if(m.setDirty){mm.setDirty=0;mm.cfgAt=man.cfg&&man.cfg.at||mm.cfgAt}
+    mm.synced=mm.synced||{};Object.keys(man.photos).forEach(function(id){mm.synced[id]=man.photos[id].at||0});Object.keys(done.del).forEach(function(id){delete mm.synced[id]});
+    cloudMetaSave(mm);cloudStatus('올리기 완료 · 클라우드 사진 '+Object.keys(man.photos).length+'장');
+  }).catch(function(e){cloudStatus('올리기 실패: '+(e&&e.message||e));if(/409|422/.test(String(e&&e.message)))cloudSchedule()}).then(function(){CL.busy=false});
+}
+function cloudApplyCfg(cfg){
+  CL.applying=true;
+  try{
+    Object.keys(cfg.set||{}).forEach(function(k){if(CL_KEYS.indexOf(k)>=0)SET[k]=cfg.set[k]});
+    PRICES=cfg.prices&&typeof cfg.prices==='object'?cfg.prices:{};savePrices();
+    saveCustom(Array.isArray(cfg.custom)?cfg.custom:[]);saveSet();
+  }finally{CL.applying=false}
+  if(SRC)rebuildAll(true);
+}
+function cloudPull(manual){
+  var c=cloudCfg();
+  if(!c.repo||!(c.rt||c.wt)){if(manual)cloudStatus('저장소·토큰이 없어요');return Promise.resolve()}
+  if(CL.busy)return Promise.resolve();
+  CL.busy=true;if(manual)cloudStatus('확인 중…');
+  var changed=false;
+  return cloudGetManifest().then(function(mf){
+    var man=mf.data,m=cloudMeta(),pend=(m.q&&m.q.put)||{};
+    if(man.cfg&&(man.cfg.at||0)>(m.cfgAt||0)&&!m.setDirty){cloudApplyCfg(man.cfg);m=cloudMeta();m.cfgAt=man.cfg.at;cloudMetaSave(m);changed=true}
+    var need=Object.keys(man.photos||{}).filter(function(id){var e=man.photos[id];return !pend[id]&&(!PHOTO.has(id)||(PHOTO_AT[id]||0)!==(e.at||0))});
+    var gone=Object.keys(m.synced||{}).filter(function(id){return !(man.photos||{})[id]&&!pend[id]&&PHOTO.has(id)});
+    var chain=Promise.resolve(),n=0;
+    need.forEach(function(id){chain=chain.then(function(){
+      var e=man.photos[id];
+      return ghFetch('/contents/'+encodeURI(CLOUD.dir+'/'+e.f)+'?ref='+CLOUD.br,{headers:{Accept:'application/vnd.github.raw+json'}}).then(function(r){if(!r.ok)throw new Error('사진을 받지 못했어요 ('+r.status+')');return r.blob()}).then(function(blob){
+        return phTx('readwrite',function(st){return st.put({id:id,blob:new Blob([blob],{type:'image/jpeg'}),at:e.at||0})},true);
+      }).then(function(){n++;changed=true;if(manual||need.length>3)cloudStatus('받는 중… '+n+'/'+need.length)});
+    })});
+    gone.forEach(function(id){chain=chain.then(function(){return phTx('readwrite',function(st){st.delete('th:'+id);return st.delete(id)},true)}).then(function(){changed=true})});
+    return chain.then(function(){
+      var mm=cloudMeta();mm.synced={};Object.keys(man.photos||{}).forEach(function(id){mm.synced[id]=man.photos[id].at||0});cloudMetaSave(mm);
+      return changed?loadPhotos():null;
+    }).then(function(){
+      if(changed){try{if(SRC)rebuildAll(true);if(VIEW==='admin')admRefresh();if(cur&&VIEW==='detail')render()}catch(e){}}
+      cloudStatus((manual||changed)?('동기화 완료 · 클라우드 사진 '+Object.keys(man.photos||{}).length+'장'+(n?' (새로 받음 '+n+')':'')):'');
+    });
+  }).catch(function(e){cloudStatus('동기화 실패: '+(e&&e.message||e))}).then(function(){CL.busy=false});
+}
+function cloudAll(){ // 이 기기의 사진·설정을 전부 올릴 목록에 넣어요
+  var m=cloudMeta();m.q=m.q||{put:{},del:{}};m.q.put=m.q.put||{};
+  PHOTO.forEach(function(u,id){if(/^(model|code|mp|detail):/.test(id))m.q.put[id]=1});
+  m.setDirty=1;cloudMetaSave(m);cloudSchedule();cloudStatus('올릴 목록을 만들었어요 · 곧 올려요');
+}
+setTimeout(function(){cloudPull(false)},3500);
+setInterval(function(){cloudPull(false)},10*60*1000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)cloudPull(false)});
+
 var getJSON=function(u){return fetch(u).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})};
 Promise.all([
   PSRC==='custom'?Promise.resolve(null):PSRC==='store'?getJSON('store-prices.json').catch(function(){PSRC='builtin';return getJSON('prices.json')}):getJSON('prices.json'),
