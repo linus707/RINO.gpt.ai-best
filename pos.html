@@ -3760,29 +3760,44 @@ $('mpList').addEventListener('click',function(e){
   box.addEventListener('pointercancel',function(e){end(e,false)});
   box.addEventListener('dragstart',function(e){e.preventDefault()});
 })();
+
+/* 오류 표시줄: 이 화면에서 자바스크립트 오류가 나면 아래에 작게 보여요(원인 파악용, 누르면 닫혀요) */
+(function(){
+  function show(msg){
+    try{var b=document.getElementById('errBar');if(!b){b=document.createElement('div');b.id='errBar';b.setAttribute('role','alert');
+      b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:2147483000;background:#b42318;color:#fff;font:12px/1.4 -apple-system,sans-serif;padding:8px 12px;border-radius:10px;opacity:.95';
+      b.addEventListener('click',function(){b.remove()});document.body.appendChild(b)}
+      b.textContent='⚠ 오류: '+String(msg).slice(0,220)+' (누르면 닫혀요)';
+      localStorage.setItem(NS+'lasterr',JSON.stringify({t:Date.now(),m:String(msg).slice(0,300)}));
+    }catch(e){}
+  }
+  window.addEventListener('error',function(e){if(e&&e.message&&!/ResizeObserver|Script error\.?$/.test(e.message))show(e.message+(e.lineno?' @'+e.lineno:''))});
+  window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;show((r&&(r.message||r.name))||String(r))});
+})();
 function clipImages(e){ // 붙여넣기에서 사진 꺼내기(사파리는 files가 비고 items에만 들어 있을 때가 있어요)
   var cd=e.clipboardData,out=[];if(!cd)return out;
   Array.prototype.forEach.call(cd.files||[],function(f){if(/^image\//.test(f.type))out.push(f)});
   if(!out.length)Array.prototype.forEach.call(cd.items||[],function(it){if(it.kind==='file'&&/^image\//.test(it.type)){var f=it.getAsFile();if(f)out.push(f)}});
   return out;
 }
+var PH_BUSY=0;
 function mpAddFiles(files){
   var fs=Array.prototype.filter.call(files||[],function(f){return /^image\//.test(f.type)});
   if(!fs.length||!cur){return}
   var oid=cur.oid,ord0=photoOrder(),have=ord0.length;
   if(have+fs.length>20){fs=fs.slice(0,Math.max(0,20-have));toast('사진은 20장까지예요');if(!fs.length)return}
   toast('사진 '+fs.length+'장을 넣는 중이에요…');
-  var made=[],chain=Promise.resolve();
+  var made=[],chain=Promise.resolve();PH_BUSY++;
   var fails=[];
   fs.forEach(function(f){chain=chain.then(function(){return shrink(f)}).then(function(blob){
     var id=dbNewId();return phTx('readwrite',function(st){return st.put({id:mphPhotoId(oid,id),blob:blob,at:Date.now()})}).then(function(){made.push(id)});
   }).catch(function(err){fails.push(err)})}); // 한 장이 안 돼도 나머지는 계속 넣어요
-  chain.then(function(){if(made.length){SET.mph=SET.mph||{};SET.mph[oid]=ord0.concat(made);saveSet();return loadPhotos()}}).then(function(){
+  chain.then(function(){if(made.length){SET.mph=SET.mph||{};SET.mph[oid]=ord0.concat(made);saveSet();return loadPhotos()}}).then(function(){PH_BUSY=Math.max(0,PH_BUSY-1);
     if(cur&&cur.oid===oid){renderPhotoPart();GAL={oid:'',vi:-1,idx:-1};render()}if(VIEW==='admin')admRefresh();setInfo();
     if(!fails.length){toast('사진 '+made.length+'장을 넣었어요');return}
     var er=fails[0]||{},why=er.name==='QuotaExceededError'?'저장 공간이 가득 찼어요(브라우저 저장소 용량)':(er.message||er.name||'알 수 없는 오류');
     toast((made.length?'사진 '+made.length+'장을 넣었고 ':'')+fails.length+'장은 넣지 못했어요: '+why);
-  }).catch(function(err){toast('사진을 저장하지 못했어요: '+((err&&(err.name==='QuotaExceededError'?'저장 공간이 가득 찼어요':err.message||err.name))||'알 수 없는 오류'))});
+  }).catch(function(err){PH_BUSY=Math.max(0,PH_BUSY-1);toast('사진을 저장하지 못했어요: '+((err&&(err.name==='QuotaExceededError'?'저장 공간이 가득 찼어요':err.message||err.name))||'알 수 없는 오류'))});
 }
 $('mpFile').addEventListener('change',function(){
   var fs=Array.prototype.slice.call(this.files||[]);this.value=''; // 값을 비우면 목록도 비워지니 먼저 복사해요
@@ -4455,7 +4470,7 @@ function cloudApplyCfg(cfg){
 function cloudPull(manual){
   var c=cloudCfg();
   if(!c.repo||!(c.rt||c.wt)){if(manual)cloudStatus('저장소·토큰이 없어요');return Promise.resolve()}
-  if(CL.busy)return Promise.resolve();
+  if(CL.busy||(PH_BUSY&&!manual))return Promise.resolve(); // 사진을 넣는 중이면 잠시 쉬어요
   CL.busy=true;if(manual)cloudStatus('확인 중…');
   var changed=false,miss=0;
   return cloudGetManifest().then(function(mf){
