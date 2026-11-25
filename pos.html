@@ -1002,6 +1002,13 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <h4>사이즈·타입·색상 관리</h4>
       <p class="hint">이 모델의 사이즈(규격)·타입·색상을 따로따로 바꾸거나 빼고, 새 옵션을 더해요. 타입은 손님 화면에서 「타입」 칸으로 따로 골라요. 바꾼 내용은 이 기기에 저장돼요. 가격은 위 표에서 고쳐요.</p>
       <div id="vList"></div>
+      <div class="vq" style="margin-top:10px">
+        <b>⚡ 빠른 입력 (여러 개를 한 번에)</b>
+        <p class="hint" style="margin:4px 0 6px">규격·색상·가격을 편하게 적으면 자동으로 나눠서 옵션을 만들어요. 한 줄에 하나씩 적어요. 색상은 쉼표(,)로 여러 개, 규격은 슬래시(/)로 여러 개를 적을 수 있어요.<br>예) <code>DS 화이트, 블루, 그레이 175000</code> · <code>Q/K 그레이 195,000원</code> · <code>SS 화이트 150000, 블랙 160000</code> · <code>Q 17.5만</code></p>
+        <textarea id="vQuick" rows="3" class="pin" style="width:100%;text-align:left;height:auto" placeholder="DS 화이트, 블루, 그레이 175000" aria-label="옵션 빠른 입력"></textarea>
+        <div id="vQPrev" class="hint" style="margin:6px 0"></div>
+        <button class="btn sm" type="button" id="vQAdd">입력한 옵션 모두 추가</button>
+      </div>
       <div class="adj" style="flex-wrap:wrap;gap:6px;margin-top:8px">
         <input class="pin" id="vNewSize" list="vSizes" maxlength="12" placeholder="규격 (SS·Q·K…)" style="width:110px;text-align:left" aria-label="추가할 규격">
         <datalist id="vSizes"><option value="S"><option value="SS"><option value="DS"><option value="DD"><option value="Q"><option value="LQ"><option value="K"><option value="K3"><option value="LK"></datalist>
@@ -3858,6 +3865,7 @@ function renderVarMgr(){
     row.appendChild(sz);row.appendChild(ty);row.appendChild(co);row.appendChild(lb);
     row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'edit'},'변경'));
     if(chg)row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'undo'},'↺ 원래대로'));
+    if(/[,，\/、]/.test(v.color||''))row.appendChild(el('button',{class:'btn outl sm',type:'button','data-vact':'split',title:'쉼표·슬래시로 묶인 색상을 옵션 하나씩으로 나눠요'},'색상별로 나누기'));
     var del=el('button',{class:'btn outl sm',type:'button','data-vact':'del',style:'color:#e5252a'},'삭제');row.appendChild(del);
     box.appendChild(row);
   });
@@ -3890,6 +3898,79 @@ function varMove(code,d,to){
     var to=cur.variants.map(function(v){return v.code}).indexOf(r.getAttribute('data-vcode'));if(to>=0)varMove(drag,0,to);drag=null;
   });
 })();
+
+/* 옵션 빠른 입력: 한 줄에 「규격 색상… 가격」을 적으면 규격 × 색상으로 나눠 옵션을 만들어요 */
+var Q_SIZES={SS:'SS',S:'S',DS:'DS',D:'D',DD:'DD',Q:'Q',LQ:'LQ',K:'K',K3:'K3',LK:'LK',SK:'SK','싱글':'S','슈퍼싱글':'SS','더블':'DD','퀸':'Q','라지퀸':'LQ','킹':'K','라지킹':'LK'};
+var Q_RANK=['SS','S','DS','D','DD','Q','LQ','K','K3','SK','LK'];
+function qPrice(w){ // 가격 낱말이면 숫자(원), 아니면 0
+  var m=String(w).replace(/원$/,'').match(/^(\d+(?:\.\d+)?)만$/);if(m)return Math.round(parseFloat(m[1])*10000);
+  w=String(w).replace(/원$/,'');
+  if(/^\d{1,3}(,\d{3})+$/.test(w)||/^\d{4,9}$/.test(w))return +w.replace(/,/g,'');
+  return 0;
+}
+function parseQuick(text){
+  var items=[],lines=String(text||'').split(/\n+/).map(function(l){return l.trim()}).filter(Boolean);
+  lines.forEach(function(line){
+    line=line.replace(/(\d),(?=\d{3}(?!\d))/g,'$1'); // 195,000 같은 가격의 쉼표는 구분 쉼표가 아니에요
+    var segs=line.split(/[,，、;；]+/).map(function(x){return x.trim()}).filter(Boolean),last=0;
+    segs.forEach(function(sg){sg.split(/\s+/).forEach(function(w){var pr=qPrice(w);if(pr)last=pr})});
+    var ctx=[];
+    segs.forEach(function(sg){
+      var own=0,sizes=[],colors=[],type='';
+      sg.split('/').forEach(function(g){
+        var cw=[];
+        g.trim().split(/\s+/).filter(Boolean).forEach(function(w){
+          var pr=qPrice(w);if(pr){own=pr;return}
+          var up=w.toUpperCase(),tm=w.match(/^타입[:：]?([A-Za-z])$|^([A-Za-z])타입$|^\(([ENTACent])\)$/);
+          if(tm){type=(tm[1]||tm[2]||tm[3]).toUpperCase();return}
+          if(Q_SIZES[up]||Q_SIZES[w]){var z=Q_SIZES[up]||Q_SIZES[w];if(sizes.indexOf(z)<0)sizes.push(z);return}
+          cw.push(w);
+        });
+        if(cw.length)colors.push(cw.join(' '));
+      });
+      if(sizes.length)ctx=sizes;
+      var sz=sizes.length?sizes:(ctx.length?ctx:['']),pr2=own||last;
+      if(!colors.length&&!sizes.length&&!type)return;
+      (colors.length?colors:['']).forEach(function(c){sz.forEach(function(z){items.push({size:z,type:type,color:c,price:pr2})})});
+    });
+  });
+  return items;
+}
+function quickPlan(){ // 입력을 해석해서 추가할 것·건너뛸 것으로 나눠요
+  var items=parseQuick($('vQuick').value),have={};
+  (cur?cur.variants:[]).forEach(function(v){have[(v.size||'')+'|'+(v.type||'')+'|'+(v.color||'')]=1});
+  var add=[],skip=[],nop=[];
+  items.forEach(function(it){var k=it.size+'|'+it.type+'|'+it.color;
+    if(!(it.price>0)){nop.push(it);return}
+    if(have[k]){skip.push(it);return}have[k]=1;add.push(it)});
+  return {add:add,skip:skip,nop:nop,total:items.length};
+}
+function qLabel(it){return [it.type,it.size,it.color].filter(Boolean).join(' · ')||'기본'}
+function renderQuickPreview(){
+  var box=$('vQPrev');if(!box)return;box.textContent='';
+  if(!$('vQuick').value.trim())return;
+  var pl=quickPlan();
+  if(!pl.total){box.textContent='규격이나 색상을 찾지 못했어요. 예) DS 화이트, 블루 175000';return}
+  if(pl.add.length){box.appendChild(el('b',{},'추가될 옵션 '+pl.add.length+'개'));
+    var ul=el('ul',{style:'margin:4px 0 0 16px;padding:0'});pl.add.forEach(function(it){ul.appendChild(el('li',{},qLabel(it)+' — '+won(it.price)+'원'))});box.appendChild(ul)}
+  if(pl.skip.length)box.appendChild(el('div',{},'이미 있어서 건너뛰어요: '+pl.skip.map(qLabel).join(', ')));
+  if(pl.nop.length)box.appendChild(el('div',{style:'color:var(--err)'},'가격을 못 찾았어요: '+pl.nop.map(qLabel).join(', ')+' (줄 끝에 가격을 적어 주세요)'));
+}
+$('vQuick').addEventListener('input',renderQuickPreview);
+$('vQAdd').addEventListener('click',function(){
+  if(!cur)return;touch();var pl=quickPlan();
+  if(!pl.add.length){toast(pl.total?(pl.nop.length?'가격을 찾지 못한 옵션이 있어요. 줄 끝에 가격을 적어 주세요':'모두 이미 있는 옵션이에요'):'추가할 옵션을 찾지 못했어요');return}
+  SET.vadd=SET.vadd||[];var base=Date.now(),newCodes=[];
+  pl.add.forEach(function(it,i){var code='V'+(base+i).toString(36).toUpperCase();newCodes.push({code:code,size:it.size});
+    SET.vadd.push({oid:cur.oid,code:code,size:it.size,type:it.type,color:it.color,price:it.price})});
+  /* 보기 쉽게: 규격 순서(SS→S→DS→DD→Q→K…)로 정리해요(같은 규격 안에서는 적은 순서 그대로) */
+  var all=cur.variants.map(function(v){return {code:v.code,size:v.size||''}}).concat(newCodes);
+  var rk=function(z){var i=Q_RANK.indexOf(String(z).toUpperCase());return i<0?99:i};
+  all=all.map(function(x,i){return {x:x,i:i}}).sort(function(a,b){return rk(a.x.size)-rk(b.x.size)||a.i-b.i}).map(function(o){return o.x.code});
+  SET.vorder=SET.vorder||{};SET.vorder[cur.oid]=all;
+  $('vQuick').value='';$('vQPrev').textContent='';
+  varAfter('옵션 '+pl.add.length+'개를 더하고 규격 순서로 정리했어요');
+});
 $('vSec').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b||!cur)return;
   if(b.id==='vAdd'){
@@ -3918,6 +3999,17 @@ $('vSec').addEventListener('click',function(e){
     varAfter('옵션을 바꿨어요');
   }else if(act==='undo'){
     if(SET.vedit)delete SET.vedit[code];varAfter('원래 규격·타입·색상으로 되돌렸어요');
+  }else if(act==='split'){
+    var cols=String(v.color||'').split(/[,，\/、]+/).map(function(x){return x.trim()}).filter(Boolean);
+    if(cols.length<2){toast('나눌 색상이 없어요');return}
+    var ad2=(SET.vadd||[]).filter(function(a){return a.code===code})[0],cl2=customList(),ci2=cl2.filter(function(c){return c.code===code})[0];
+    if(ad2){ad2.color=cols[0]}else if(ci2){ci2.color=cols[0];saveCustom(cl2)}
+    else{SET.vedit=SET.vedit||{};SET.vedit[code]=Object.assign(SET.vedit[code]||{},{size:v.size||'',type:v.type||'',color:cols[0]})}
+    SET.vadd=SET.vadd||[];var b0=Date.now(),made2=0;
+    cols.slice(1).forEach(function(c,i){
+      if(cur.variants.some(function(x){return (x.size||'')===(v.size||'')&&(x.type||'')===(v.type||'')&&(x.color||'')===c}))return;
+      SET.vadd.push({oid:cur.oid,code:'V'+(b0+i).toString(36).toUpperCase(),size:v.size||'',type:v.type||'',color:c,price:v.base});made2++});
+    varAfter('색상 '+cols.length+'개로 나눴어요(가격은 모두 같게 시작해요. 아래 가격 표에서 색상별로 고쳐 주세요)');
   }else if(act==='del'){
     if(cur.variants.length<=1){toast('마지막 옵션이에요. 제품을 지우려면 「이 제품 삭제」를 써 주세요');return}
     if(!confirm('「'+([v.size,v.color].filter(Boolean).join(' · ')||'기본')+'」 옵션을 삭제할까요?'))return;
