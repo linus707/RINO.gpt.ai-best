@@ -3055,7 +3055,7 @@ function posFit(){
   const box=$("#posbox");if(!box)return;
   const on=page==="pos"&&!!me();document.body.classList.toggle("posmode",on);
   if(!on){box.style.display="none";return}
-  if(!box.firstChild){const f=document.createElement("iframe");f.src="pos.html";f.title="매장 POS";f.setAttribute("allow","fullscreen");box.appendChild(f)}
+  if(!box.firstChild){const f=document.createElement("iframe");f.src="pos.html";f.title="매장 POS";f.setAttribute("allow","fullscreen; clipboard-read; clipboard-write");box.appendChild(f)}
   const bar=$("#posbar"),app=$("#app"),tb=$("#tabbar");
   const top=bar?bar.getBoundingClientRect().bottom+4:0,l=app.getBoundingClientRect().left;
   const tbH=tb&&getComputedStyle(tb).display!=="none"?tb.getBoundingClientRect().height:0;

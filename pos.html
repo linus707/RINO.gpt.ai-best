@@ -1029,6 +1029,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
       <p class="hint">손님 화면 그림에서 좌우로 넘겨 볼 사진을 여러 장 넣어요. 맨 앞 사진이 대표(첫 화면) 사진이에요. 사진은 ← → 로 순서를 바꾸고 × 로 지워요.</p>
       <div class="mp-list" id="mpList"></div>
       <label class="mp-drop" id="mpDrop"><input type="file" id="mpFile" accept="image/*" multiple hidden>＋ 사진 여러 장 넣기<small>눌러서 고르거나, 이 칸에 끌어다 놓거나, Ctrl+V로 붙여넣어요 · 최대 20장</small></label>
+      <button class="btn outl sm" type="button" id="mpPaste" style="margin:6px 0 2px">📋 복사한 사진 붙여넣기 (아이패드·폰)</button>
     </section>
     <details class="sh-sec" id="optPhotoSec">
       <summary style="cursor:pointer;font-weight:800;font-size:16px;padding:4px 0">옵션(규격·색상)마다 다른 사진 넣기 (선택)</summary>
@@ -2429,8 +2430,7 @@ $('dbList').addEventListener('drop',function(e){
   dbAddPhotos(fs,blk?+blk.getAttribute('data-db')+1:-1,-1);
 });
 $('dbList').addEventListener('paste',function(e){
-  var items=e.clipboardData&&e.clipboardData.files;if(!items||!items.length)return;
-  var imgs=Array.prototype.filter.call(items,function(f){return /^image\//.test(f.type)});if(!imgs.length)return;
+  var imgs=clipImages(e);if(!imgs.length)return;
   e.preventDefault();touch();var blk=e.target.closest&&e.target.closest('[data-db]');dbAddPhotos(imgs,blk?+blk.getAttribute('data-db')+1:-1,-1);
 });
 $('dbSave').addEventListener('click',function(){
@@ -3716,6 +3716,12 @@ $('mpList').addEventListener('click',function(e){
   if(a==='l'&&i>0)ord.splice(i-1,0,ord.splice(i,1)[0]);else if(a==='r'&&i<ord.length-1)ord.splice(i+1,0,ord.splice(i,1)[0]);else return;
   SET.mph[oid]=ord;saveSet();renderMpList();GAL={oid:'',vi:-1,idx:-1};render();
 });
+function clipImages(e){ // 붙여넣기에서 사진 꺼내기(사파리는 files가 비고 items에만 들어 있을 때가 있어요)
+  var cd=e.clipboardData,out=[];if(!cd)return out;
+  Array.prototype.forEach.call(cd.files||[],function(f){if(/^image\//.test(f.type))out.push(f)});
+  if(!out.length)Array.prototype.forEach.call(cd.items||[],function(it){if(it.kind==='file'&&/^image\//.test(it.type)){var f=it.getAsFile();if(f)out.push(f)}});
+  return out;
+}
 function mpAddFiles(files){
   var fs=Array.prototype.filter.call(files||[],function(f){return /^image\//.test(f.type)});
   if(!fs.length||!cur){return}
@@ -3734,6 +3740,16 @@ $('mpFile').addEventListener('change',function(){
   var fs=Array.prototype.slice.call(this.files||[]);this.value=''; // 값을 비우면 목록도 비워지니 먼저 복사해요
   touch();mpAddFiles(fs);
 });
+$('mpPaste').addEventListener('click',function(){ // 단축키가 안 먹는 기기용: 버튼으로 클립보드의 사진을 읽어요
+  touch();
+  if(!cur){toast('먼저 제품을 골라 주세요');return}
+  if(!navigator.clipboard||!navigator.clipboard.read){toast('이 브라우저는 버튼 붙여넣기를 지원하지 않아요. 「사진 여러 장 넣기」로 골라 주세요');return}
+  navigator.clipboard.read().then(function(items){
+    var jobs=[];items.forEach(function(it){var t=(it.types||[]).filter(function(x){return /^image\//.test(x)})[0];if(t)jobs.push(it.getType(t).then(function(b){return new File([b],'paste.'+(t.split('/')[1]||'png'),{type:t})}))});
+    if(!jobs.length){toast('복사된 사진이 없어요. 사진을 길게 눌러 「복사」한 뒤 다시 눌러 주세요');return}
+    return Promise.all(jobs).then(function(fs){mpAddFiles(fs)});
+  }).catch(function(){toast('클립보드를 읽지 못했어요. 「붙여넣기 허용」을 눌러 주세요')});
+});
 ['mpDrop','mpList'].forEach(function(id){
   var z=$(id);
   z.addEventListener('dragover',function(e){if(e.dataTransfer&&Array.prototype.some.call(e.dataTransfer.types||[],function(t){return t==='Files'})){e.preventDefault();$('mpDrop').classList.add('on')}});
@@ -3743,7 +3759,7 @@ $('mpFile').addEventListener('change',function(){
 document.addEventListener('paste',function(e){ // 글 입력칸이 아닌 곳에서 사진을 붙여넣으면 제품 사진으로 들어가요
   if(VIEW!=='admin'||!cur||ADM.tool)return;
   var t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable||(t.closest&&t.closest('#dbList'))))return;
-  var imgs=Array.prototype.filter.call((e.clipboardData&&e.clipboardData.files)||[],function(f){return /^image\//.test(f.type)});if(!imgs.length)return;
+  var imgs=clipImages(e);if(!imgs.length)return;
   e.preventDefault();touch();mpAddFiles(imgs);
 });
 function renderPriceTable(){
