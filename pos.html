@@ -333,6 +333,7 @@ a.pd-ln:hover{background:var(--sub)}
 .mp-drop small{font-weight:400;font-size:12px;color:var(--tx3)}.mp-drop:hover,.mp-drop.on{border-color:#2189ff;background:#f1f7ff}
 .mp-c{position:relative}.mp-top{position:absolute;left:4px;top:4px;padding:1px 7px;border-radius:10px;background:#000;color:#fff;font-size:11px;font-weight:700}
 .mp-list{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.mp-c img{cursor:grab;touch-action:none;-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none}.mp-c.drag{opacity:.35}.mp-ins{width:4px;height:78px;flex:none;border-radius:2px;background:#000}.mp-ghost{position:fixed;z-index:99999;pointer-events:none;width:104px;height:78px;object-fit:cover;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:.92;transform:translate(-50%,-50%) scale(1.06)}
 .mp-c{width:104px;display:grid;gap:4px}.mp-c img{width:104px;height:78px;object-fit:cover;border-radius:6px;display:block;background:#eee}.mp-c div{display:flex;gap:2px}.mp-c .btn{height:24px;padding:0 6px;font-size:11px}
 .stage .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .stage .shade{display:none;position:absolute;left:0;right:0;top:0;height:110px;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0))}
@@ -1026,7 +1027,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
         <div data-apane="photo" hidden>
     <section class="sh-sec">
       <h4>제품 사진 (여러 장 · 슬라이드)</h4>
-      <p class="hint">손님 화면 그림에서 좌우로 넘겨 볼 사진을 여러 장 넣어요. 맨 앞 사진이 대표(첫 화면) 사진이에요. 사진은 ← → 로 순서를 바꾸고 × 로 지워요.</p>
+      <p class="hint">손님 화면 그림에서 좌우로 넘겨 볼 사진을 여러 장 넣어요. 맨 앞 사진이 대표(첫 화면) 사진이에요. 사진은 끌어서(길게 눌러 끌어도 돼요) 또는 ← → 로 순서를 바꾸고 × 로 지워요.</p>
       <div class="mp-list" id="mpList"></div>
       <label class="mp-drop" id="mpDrop"><input type="file" id="mpFile" accept="image/*" multiple hidden>＋ 사진 여러 장 넣기<small>눌러서 고르거나, 이 칸에 끌어다 놓거나, Ctrl+V로 붙여넣어요 · 최대 20장</small></label>
       <button class="btn outl sm" type="button" id="mpPaste" style="margin:6px 0 2px">📋 복사한 사진 붙여넣기 (아이패드·폰)</button>
@@ -3716,6 +3717,45 @@ $('mpList').addEventListener('click',function(e){
   if(a==='l'&&i>0)ord.splice(i-1,0,ord.splice(i,1)[0]);else if(a==='r'&&i<ord.length-1)ord.splice(i+1,0,ord.splice(i,1)[0]);else return;
   SET.mph[oid]=ord;saveSet();renderMpList();GAL={oid:'',vi:-1,idx:-1};render();
 });
+
+/* 사진을 끌어서 순서 바꾸기(마우스·터치·펜). 끄는 동안 놓을 자리에 검은 막대가 보이고, 놓으면 저장돼요 */
+(function(){
+  var box=$('mpList'),D=null;
+  function cardAt(x,y){var e=document.elementFromPoint(x,y);return e&&e.closest?e.closest('#mpList [data-mp]'):null}
+  function target(x,y){ // 막대를 둘 자리: 가리키는 사진의 앞 또는 뒤
+    var e0=document.elementFromPoint(x,y);if(e0&&(e0===D.ins||e0===box))return D.t; // 막대 위에 있으면 그대로 둬요(막대가 칸을 밀어 깜빡이는 것 방지)
+    var c=cardAt(x,y);if(!c||c===D.card)return D.t&&c===D.card?D.t:null;
+    var r=c.getBoundingClientRect();return {c:c,after:x>r.left+r.width/2}}
+  function mark(t){if(!t){if(D.ins.parentNode)D.ins.remove();return}
+    if(t.after)t.c.parentNode.insertBefore(D.ins,t.c.nextSibling);else t.c.parentNode.insertBefore(D.ins,t.c)}
+  box.addEventListener('pointerdown',function(e){
+    var im=e.target.closest&&e.target.closest('.mp-c img');if(!im||e.button>0||!cur)return;
+    var card=im.closest('[data-mp]');
+    D={id:card.getAttribute('data-mp'),card:card,im:im,x:e.clientX,y:e.clientY,on:false,pid:e.pointerId,ins:el('div',{class:'mp-ins'}),ghost:null,t:null};
+    try{im.setPointerCapture(e.pointerId)}catch(_){}
+  });
+  box.addEventListener('pointermove',function(e){
+    if(!D||e.pointerId!==D.pid)return;
+    if(!D.on){if(Math.abs(e.clientX-D.x)+Math.abs(e.clientY-D.y)<8)return;
+      D.on=true;touch();D.card.classList.add('drag');
+      var g=D.im.cloneNode(false);g.className='mp-ghost';g.removeAttribute('id');document.body.appendChild(g);D.ghost=g}
+    D.ghost.style.left=e.clientX+'px';D.ghost.style.top=e.clientY+'px';
+    D.t=target(e.clientX,e.clientY);mark(D.t);e.preventDefault();
+  });
+  function end(e,ok){
+    if(!D||e.pointerId!==D.pid)return;var d=D;D=null;
+    try{d.im.releasePointerCapture(e.pointerId)}catch(_){}
+    if(!d.on)return;
+    d.card.classList.remove('drag');if(d.ghost)d.ghost.remove();if(d.ins.parentNode)d.ins.remove();
+    if(!ok||!d.t||!cur)return;
+    var ord=photoOrder().slice(),from=ord.indexOf(d.id),tid=d.t.c.getAttribute('data-mp'),to=ord.indexOf(tid);if(from<0||to<0)return;
+    ord.splice(from,1);to=ord.indexOf(tid);ord.splice(d.t.after?to+1:to,0,d.id);
+    SET.mph=SET.mph||{};SET.mph[cur.oid]=ord;saveSet();renderMpList();GAL={oid:'',vi:-1,idx:-1};render();toast('사진 순서를 바꿨어요');
+  }
+  box.addEventListener('pointerup',function(e){end(e,true)});
+  box.addEventListener('pointercancel',function(e){end(e,false)});
+  box.addEventListener('dragstart',function(e){e.preventDefault()});
+})();
 function clipImages(e){ // 붙여넣기에서 사진 꺼내기(사파리는 files가 비고 items에만 들어 있을 때가 있어요)
   var cd=e.clipboardData,out=[];if(!cd)return out;
   Array.prototype.forEach.call(cd.files||[],function(f){if(/^image\//.test(f.type))out.push(f)});
