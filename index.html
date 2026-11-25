@@ -413,8 +413,8 @@ body.out #bgph,body.out header{display:none!important}
  body:not(.out) #drawer{transition:transform .25s ease}
  body:not(.out) header,body:not(.out) main{transition:margin-left .25s ease}
  body.side-off:not(.out) #drawer{transform:translateX(-102%);pointer-events:none}
- body.side-mini:not(.out) header,body.side-mini:not(.out) main{margin-left:0}
- body.side-peek:not(.out) #drawer{box-shadow:12px 0 40px rgba(0,0,0,.18)}
+ body.side-off:not(.out) header,body.side-off:not(.out) main{margin-left:0} /* 열리면(side-off 해제) 내용이 오른쪽으로 밀려 글씨를 가리지 않아요 */
+ 
  #sideTab{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:9;width:22px;height:72px;border:0;border-radius:0 14px 14px 0;background:#000;color:#fff;font-size:13px;opacity:.55;transition:opacity .2s,width .15s;display:none;align-items:center;justify-content:center;padding:0}
  #sideTab:hover,#sideTab:active{opacity:1;width:28px}
  body.side-off:not(.out) #sideTab{display:flex}
