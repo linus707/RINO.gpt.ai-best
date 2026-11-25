@@ -406,6 +406,23 @@ body.out #bgph,body.out header{display:none!important}
 :root:not([data-theme=dark]) .posbar a{color:#000;text-decoration:underline}
 }
 
+/* ---------- 왼쪽 사이드바 숨김·자동 숨김 (900px 이상 화면) ----------
+   모드: show(항상 보임) · auto(자동 숨김: 잠깐 쓰지 않으면 사라짐) · hide(숨김: 왼쪽 가장자리 손잡이로 열기) */
+#sideTab,#sidemode{display:none}
+@media(min-width:900px){
+ body:not(.out) #drawer{transition:transform .25s ease}
+ body:not(.out) header,body:not(.out) main{transition:margin-left .25s ease}
+ body.side-off:not(.out) #drawer{transform:translateX(-102%);pointer-events:none}
+ body.side-mini:not(.out) header,body.side-mini:not(.out) main{margin-left:0}
+ body.side-peek:not(.out) #drawer{box-shadow:12px 0 40px rgba(0,0,0,.18)}
+ #sideTab{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:9;width:22px;height:72px;border:0;border-radius:0 14px 14px 0;background:#000;color:#fff;font-size:13px;opacity:.55;transition:opacity .2s,width .15s;display:none;align-items:center;justify-content:center;padding:0}
+ #sideTab:hover,#sideTab:active{opacity:1;width:28px}
+ body.side-off:not(.out) #sideTab{display:flex}
+ #sidemode{display:flex;gap:4px;margin:8px 4px 6px;padding:3px;border-radius:10px;background:var(--fill)}
+ #sidemode button{flex:1;border:0;background:none;border-radius:8px;padding:6px 2px;font-size:12px;font-weight:500;color:var(--mut)}
+ #sidemode button.on{background:#fff;color:#000;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+}
+
 </style>
 </head>
 <body>
@@ -3049,6 +3066,38 @@ function posFit(){
     else Object.assign(f.style,{width:"100%",height:"100%",transform:"none"})}
 }
 window.addEventListener("resize",()=>{try{posFit()}catch{}});
+/* 사이드바 숨김: 모드는 이 기기에 저장해요 */
+(function(){
+  const KEY="rino-side";let mode="show",peek=false,timer=0;
+  try{const v=localStorage.getItem(KEY);if(v==="auto"||v==="hide")mode=v}catch{}
+  const wide=()=>matchMedia("(min-width:900px)").matches;
+  const tab=document.createElement("button");tab.id="sideTab";tab.type="button";tab.setAttribute("aria-label","메뉴 열기");tab.textContent="▶";document.body.appendChild(tab);
+  const nav=document.querySelector("#drawer nav"),who=document.getElementById("who");
+  const box=document.createElement("div");box.id="sidemode";
+  box.innerHTML='<button data-m="show" type="button">항상 보임</button><button data-m="auto" type="button">자동 숨김</button><button data-m="hide" type="button">숨김</button>';
+  if(nav)nav.insertBefore(box,who);
+  function apply(){
+    const off=wide()&&mode!=="show"&&!peek;
+    document.body.classList.toggle("side-off",off);document.body.classList.toggle("side-mini",wide()&&mode!=="show");document.body.classList.toggle("side-peek",wide()&&mode!=="show"&&peek);
+    box.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
+    setTimeout(()=>{try{posFit()}catch{}},300);
+  }
+  function arm(){clearTimeout(timer);if(mode==="show"||!peek)return;timer=setTimeout(()=>{peek=false;apply()},mode==="auto"?4000:8000)}
+  function setMode(m){mode=m;try{localStorage.setItem(KEY,m)}catch{}peek=m==="auto"; /* 자동 숨김은 켜자마자 잠깐 보였다가 사라져요 */apply();arm()}
+  function open(){if(mode==="show")return;peek=true;apply();arm()}
+  tab.addEventListener("click",open);
+  /* 마우스를 왼쪽 가장자리에 대면 열려요 */
+  document.addEventListener("mousemove",e=>{if(mode!=="show"&&!peek&&wide()&&e.clientX<=6)open()});
+  box.addEventListener("click",e=>{const b=e.target.closest("button[data-m]");if(b)setMode(b.dataset.m)});
+  const d=document.getElementById("drawer");
+  if(d){["pointermove","pointerdown","touchstart"].forEach(ev=>d.addEventListener(ev,()=>{if(peek)arm()},{passive:true}));
+    d.addEventListener("click",e=>{if(e.target.closest(".navbtn")&&mode!=="show"){peek=false;apply()}})}
+  /* 사이드바 밖을 누르면 닫혀요 */
+  document.addEventListener("pointerdown",e=>{if(peek&&mode!=="show"&&!e.target.closest("#drawer,#sideTab")){peek=false;apply()}},true);
+  window.addEventListener("resize",apply);
+  apply();if(mode==="auto"){peek=true;apply();arm()}
+})();
+
 views.inventory=()=>{
   if(!INV_TABS.some(t=>t[0]===invTab))invTab="frame";
   const gift=D.inv.filter(x=>invCatOf(x)==="사은품"),giftN=gift.reduce((a,x)=>a+x.qty,0);
