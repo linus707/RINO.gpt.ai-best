@@ -51,6 +51,16 @@ h1{font-size:clamp(30px,4vw,42px);line-height:1.08;letter-spacing:-.02em;margin:
 .app[data-o=A]{--a-bg:#ffffff;--a-card:#f4f4f3;--a-line:#e7e7e4;--a-ink:#141414;--a-sub:#6b6b6b;--a-pri:#141414;--a-on:#fff;--a-acc:#ff5a3c;--a-warn:#d92d20;--r:14px;--a-font:"IBM Plex Sans KR",sans-serif;--a-disp:"IBM Plex Sans KR",sans-serif;--a-dw:700}
 .app[data-o=B]{--a-bg:#0d0d0f;--a-card:#1a1a1e;--a-line:#2b2b31;--a-ink:#f3f3f3;--a-sub:#9b9ba4;--a-pri:#f3f3f3;--a-on:#0d0d0f;--a-acc:#ff3b30;--a-warn:#ff6b5e;--r:4px;--a-font:"Noto Sans KR",sans-serif;--a-disp:"Black Han Sans","Noto Sans KR",sans-serif;--a-dw:400}
 .app[data-o=C]{--a-bg:#ffffff;--a-card:#eef2ff;--a-line:#d9e0f7;--a-ink:#14161f;--a-sub:#5b6178;--a-pri:#0047ab;--a-on:#fff;--a-acc:#e60033;--a-warn:#e60033;--r:22px;--a-font:"Gothic A1",sans-serif;--a-disp:"Do Hyeon","Gothic A1",sans-serif;--a-dw:400}
+.app[data-o=D]{--a-bg:#ffffff;--a-card:#f5f5f5;--a-line:#e6e6e6;--a-ink:#222222;--a-sub:#8b8b8b;--a-pri:#1d8bff;--a-on:#fff;--a-acc:#1d8bff;--a-warn:#f94239;--a-lock:#f94239;--a-hero:#f7323f;--r:12px;--a-font:Pretendard,"Noto Sans KR",sans-serif;--a-disp:"Black Han Sans","Noto Sans KR",sans-serif;--a-dw:400;letter-spacing:-.02em}
+.app[data-o=D] .card{border-color:transparent}
+.app[data-o=D] .chip[aria-pressed=true]{background:#f2f8ff;color:#1d8bff;border-color:#1d8bff}
+.ban{position:relative;background:var(--a-hero);color:#fff;border-radius:16px;height:200px;overflow:hidden;margin-bottom:14px}
+.ban-t{position:absolute;left:16px;top:18px;font-family:var(--a-disp);font-size:31px;line-height:1.12;z-index:1}
+.ban-t small{display:block;font-family:var(--a-font);font-size:13px;margin-top:8px;opacity:.9}
+.ban-art{position:absolute;right:-14px;top:4px;width:160px;height:184px}
+.ban-s{position:absolute;left:12px;bottom:12px;width:62%;height:44px;border:0;border-radius:12px;background:#fff;color:#222;font-weight:700;font-size:14px;display:flex;align-items:center;padding:4px 4px 4px 12px;z-index:1}
+.ban-s b{margin-left:auto;background:#1d8bff;color:#fff;border-radius:8px;height:36px;padding:0 12px;display:grid;place-items:center}
+.dev.pc .ban-s{width:min(340px,60%)}
 .sb{display:flex;justify-content:space-between;padding:12px 26px 4px;font-size:13px;font-weight:600}
 .dev.pc .sb{display:none}
 .scr{overflow-y:auto;padding:8px 18px 20px}
@@ -95,7 +105,7 @@ label.f{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
 .map svg{position:absolute;inset:0;width:100%;height:100%}
 .map .tag{position:absolute;left:8px;top:8px;font-size:11px;background:var(--a-bg);border-radius:6px;padding:2px 7px;color:var(--a-sub)}
 .heart{border:0;background:none;font-size:20px;width:40px;height:40px;color:var(--a-acc)}
-.lock{display:inline-flex;gap:4px;align-items:center;font-size:12px;font-weight:700;color:var(--a-acc)}
+.lock{display:inline-flex;gap:4px;align-items:center;font-size:12px;font-weight:700;color:var(--a-lock,var(--a-acc))}
 .cover{height:130px;border-radius:calc(var(--r)*.8);margin:-4px -4px 12px;position:relative;overflow:hidden;background:var(--a-acc)}
 .cover svg{width:100%;height:100%;display:block}
 .toc li{padding:8px 0;border-bottom:1px solid var(--a-line);display:flex;justify-content:space-between;gap:8px}
@@ -126,7 +136,7 @@ label.f{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
 </head>
 <body>
 <div class="wrap">
-  <h1>여행 앱 뼈대, 세 가지 방향으로 먼저 눌러 보세요</h1>
+  <h1>여행 앱 뼈대, 네 가지 방향으로 먼저 눌러 보세요</h1>
   <p class="lead">설계서 11장 Phase 1 범위(탭 5개, 화면 7개, 무료 5회 차감, 오사카 3박 4일 잠금 카드)를 그대로 동작하게 만든 시안이에요. 오른쪽에서 디자인 방향을 바꾸면 같은 앱이 그 옷으로 바뀌고, 마음에 드는 방향을 고르면 바이브코딩용 프롬프트가 만들어져요.</p>
   <div class="grid">
     <section class="stage" aria-label="앱 미리보기">
@@ -150,8 +160,10 @@ label.f{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
 const OPTS={
   A:{name:"A. 클린 미니멀",desc:"흰 바탕에 먹색, 산호색 한 점. 정보가 많아도 가장 차분하게 읽혀요. 가구 브랜드와 결이 맞아요.",sw:["#ffffff","#141414","#ff5a3c","#f4f4f3"],tok:"배경 #FFFFFF / 글자 #141414 / 기본 #141414 / 강조 #FF5A3C / 경고 #D92D20, 모서리 14, 글꼴 IBM Plex Sans KR"},
   B:{name:"B. 스트릿 포토 다크",desc:"사진이 주인공인 어두운 화면, 각진 모서리와 굵은 제목. 스트릿포토 채널 감성 그대로예요.",sw:["#0d0d0f","#f3f3f3","#ff3b30","#1a1a1e"],tok:"배경 #0D0D0F / 글자 #F3F3F3 / 기본 #F3F3F3 / 강조 #FF3B30 / 경고 #FF6B5E, 모서리 4, 제목 Black Han Sans·본문 Noto Sans KR"},
-  C:{name:"C. 오사카 팝",desc:"코발트 블루와 오사카 레드, 둥근 카드. 밝고 친근해서 여행 초보도 편하게 써요.",sw:["#ffffff","#0047ab","#e60033","#eef2ff"],tok:"배경 #FFFFFF / 글자 #14161F / 기본 #0047AB / 강조 #E60033 / 경고 #E60033, 모서리 22, 제목 Do Hyeon·본문 Gothic A1"}
+  C:{name:"C. 오사카 팝",desc:"코발트 블루와 오사카 레드, 둥근 카드. 밝고 친근해서 여행 초보도 편하게 써요.",sw:["#ffffff","#0047ab","#e60033","#eef2ff"],tok:"배경 #FFFFFF / 글자 #14161F / 기본 #0047AB / 강조 #E60033 / 경고 #E60033, 모서리 22, 제목 Do Hyeon·본문 Gothic A1"},
+  D:{name:"D. 레드 배너 & 블루 버튼",desc:"여기어때 디자인 원칙을 참고했어요. 빨간 큰 배너와 굵은 제목으로 설레게 하고, 검색·저장 같은 행동은 파랑으로 모아요. 카드는 그림자 없이 평평해요.",sw:["#f7323f","#1d8bff","#222222","#f5f5f5"],tok:"배경 #FFFFFF / 글자 #222222 / 보조 글자 #8B8B8B / 입력·카드 바탕 #F5F5F5 / 브랜드(홈 배너) #F7323F / 행동 버튼·선택 상태 #1D8BFF(누름 #006CE0) / 할인·오류·잠금 #F94239 / 평점 #FFB803, 모서리 배너·검색판 16·카드·사진 12·배지 4, 그림자 없음(평평한 카드), 제목 잘난체(무료 폰트, 사용 전 라이선스 확인)·본문 Pretendard.\n규칙: 빨강은 홈 배너와 할인·오류·잠금에만 쓰고, 모든 버튼은 파랑으로 통일해 줘. 홈 맨 위에는 빨간 큰 배너 + 굵은 두 줄 제목 + 여행 가방 그림 + 흰 검색판(오른쪽 파란 버튼)을 넣어 줘. 로고·그림은 우리 앱 것으로 새로 만들어 줘"}
 };
+const CASE=`<svg class="ban-art" viewBox="0 0 160 184" aria-hidden="true"><defs><linearGradient id="dsf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE0CC"/><stop offset=".45" stop-color="#FFA987"/><stop offset="1" stop-color="#EC6656"/></linearGradient><linearGradient id="dss" x2="1"><stop stop-color="#DE574B"/><stop offset="1" stop-color="#A3313A"/></linearGradient></defs><ellipse cx="84" cy="172" rx="58" ry="8" fill="#7a1d2b" opacity=".3"/><g transform="rotate(11 84 96)"><path d="M62 44V22q0-9 9-9h26q9 0 9 9v22" fill="none" stroke="#a23d3e" stroke-width="7"/><path d="M64 42V23q0-6 7-6h25q7 0 7 6v19" fill="none" stroke="#ffd0b8" stroke-width="2"/><rect x="44" y="42" width="96" height="120" rx="18" fill="url(#dss)"/><rect x="34" y="40" width="94" height="120" rx="18" fill="url(#dsf)"/>${[48,66,84,102].map(x=>`<rect x="${x}" y="56" width="11" height="90" rx="5.5" fill="#f08b71" opacity=".75"/><path d="M${x+8} 60v82" stroke="#ffe3c6" stroke-width="1.4"/>`).join("")}<path d="M42 58q0-10 10-11h60" fill="none" stroke="#fff3df" stroke-width="3" stroke-linecap="round"/><rect x="58" y="36" width="34" height="8" rx="4" fill="#c84c43"/><circle cx="50" cy="166" r="8" fill="#7f2834"/><circle cx="118" cy="166" r="8" fill="#7f2834"/><circle cx="52" cy="165" r="3.5" fill="#c15b51"/><circle cx="120" cy="165" r="3.5" fill="#c15b51"/><path d="m112 70 14-2 3 22-14 3Z" fill="#fff0d7"/></g></svg>`;
 const CATS={attr:["관광지","#3b6fe0"],food:["맛집","#e8590c"],stay:["숙소","#7048e8"],cafe:["카페","#a0522d"],shop:["쇼핑","#0c8599"],photo:["촬영 스팟","#d6336c"]};
 const PLACES=[
   {id:1,n:"도톤보리",c:"attr",a:"난바",lat:34.6687,lng:135.5013,t:"관광지 · 공식 일정 확인 전"},
@@ -168,7 +180,7 @@ const PLACES=[
 const P=id=>PLACES.find(p=>p.id===id);
 const GUIDE={title:"오사카 3박 4일",theme:"먹고 걷고 찍는 첫 오사카",days:[[7,1,9,3],[4,10,6],[5,8],[2]],names:["난바 도착과 도톤보리 밤","오사카성과 강변 산책","우메다 전망과 신세카이 네온","시장 아침 후 출국"]};
 const CITIES=["오사카","도쿄","후쿠오카","방콕","파리"];
-const S={o:"A",mode:"phone",r:"home",hist:[],trips:[],cur:null,day:0,left:5,saved:new Set([4]),bought:false,cat:"all",q:"",sheet:null,toast:"",chosen:null,
+const S={o:"D",mode:"phone",r:"home",hist:[],trips:[],cur:null,day:0,left:5,saved:new Set([4]),bought:false,cat:"all",q:"",sheet:null,toast:"",chosen:null,
   f:{city:"오사카",s:"2027-01-15",e:"2027-01-18",who:"친구",sty:"사진 중심"}};
 try{const c=localStorage.getItem("rino-travel-opt");if(c&&OPTS[c]){S.o=c;S.chosen=c}}catch(e){}
 const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
@@ -187,8 +199,10 @@ const fmt=d=>{const x=new Date(d+"T00:00:00");return `${x.getMonth()+1}.${x.getD
 const skyline=c=>`<svg viewBox="0 0 150 90" aria-hidden="true"><g fill="${c}"><rect x="8" y="50" width="16" height="40"/><rect x="28" y="34" width="12" height="56"/><path d="M60 90V40l8-16 8 16v50z"/><rect x="66" y="12" width="4" height="12"/><rect x="82" y="46" width="20" height="44"/><path d="M108 90V58h30v32z"/><path d="M106 58l17-12 17 12z"/></g></svg>`;
 const SCR={
 home(){const t=S.trips;const nx=t[0];
+ const D=S.o==="D";
  return top("내 여행",0,count())+
- (nx?`<div class="card hero" data-a="open" data-id="${nx.id}" role="button" tabindex="0"><small>다음 여행</small><strong>${esc(nx.city)}</strong><small>${fmt(nx.s)} – ${fmt(nx.e)} · ${nx.days.length}일 · ${esc(nx.who)}</small>${skyline("#ffffff33")}</div>`:"")+
+ (D?`<div class="ban"><div class="ban-t">이번 주말,<br>어디 갈까?<small>도시와 날짜만 고르면 일정 틀 완성</small></div>${CASE}<button class="ban-s" data-a="new">여행지 찾기<b>→</b></button></div>`:"")+
+ (nx&&!D?`<div class="card hero" data-a="open" data-id="${nx.id}" role="button" tabindex="0"><small>다음 여행</small><strong>${esc(nx.city)}</strong><small>${fmt(nx.s)} – ${fmt(nx.e)} · ${nx.days.length}일 · ${esc(nx.who)}</small>${skyline("#ffffff33")}</div>`:"")+
  (t.length?`<div class="pcgrid">${t.map(x=>`<div class="card row" data-a="open" data-id="${x.id}" role="button" tabindex="0"><div><b>${esc(x.city)} ${x.days.length-1}박 ${x.days.length}일</b><div class="muted">${fmt(x.s)} – ${fmt(x.e)} · ${esc(x.sty)}${x.g?" · 가이드북 코스":""}</div></div><span class="muted">›</span></div>`).join("")}</div>`
  :empty("아직 만든 여행이 없어요","도시와 날짜만 정하면 일정 틀이 바로 만들어져요. 새 여행을 만들 때만 무료 횟수가 1회 차감돼요.","+ 첫 여행 만들기","new"))+
  `<div class="card row" data-a="tab" data-r="store" role="button" tabindex="0"><div><b>오사카 3박 4일 가이드북</b><div class="muted">첫날 코스는 무료로 미리 볼 수 있어요</div></div><span class="lock">잠금</span></div>`;},
