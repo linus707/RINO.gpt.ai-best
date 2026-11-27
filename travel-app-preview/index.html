@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>여행 앱 뼈대 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&family=Black+Han+Sans&family=Do+Hyeon&family=Gothic+A1:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: 바이브코딩 Phase 1 뼈대를 실제 앱처럼 눌러 보는 시안
+   IDEA 진열대에 놓인 시제품 폰 한 대, 옆에 디자인 방향 견본 카드 3장
+   PICTURE 실제로 동작하는 앱(탭 5개·화면 7개·무료 5회·오사카 가이드북 잠금)
+   COLOUR 바깥은 흰/먹색, 앱 안은 선택한 방향의 토큰이 지배
+   TYPE 방향별 글꼴(IBM Plex Sans KR / Black Han Sans + Noto Sans KR / Do Hyeon + Gothic A1)
+   LAYOUT 노트북: 왼쪽 기기, 오른쪽 방향 선택·프롬프트 / 폰: 제목, 기기, 선택 순서 */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#121214);--ink:light-dark(#141414,#efefef);--sub:light-dark(#62626a,#a2a2ab);--line:light-dark(#e3e3e6,#2c2c31);--panel:light-dark(#f4f4f5,#1b1b1f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans KR","Noto Sans KR",system-ui,sans-serif;overflow-x:clip}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #ff5a3c;outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:28px max(4vw,16px) 48px}
+h1{font-size:clamp(30px,4vw,42px);line-height:1.08;letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
+.lead{color:var(--sub);margin:0 0 24px;max-width:64ch}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:32px;align-items:start}
+.stage{background:var(--panel);border-radius:20px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:8px 16px;border-radius:999px;min-height:40px}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.side h2{font-size:20px;margin:0 0 12px}
+.opts{display:grid;gap:12px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:16px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:center}
+.opt[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.opt b{font-size:17px}
+.opt small{grid-column:2;color:var(--sub);font-size:14px;line-height:1.45}
+.sw{grid-row:span 2;display:grid;grid-template-columns:repeat(2,18px);gap:3px}
+.sw i{width:18px;height:18px;border-radius:5px;border:1px solid #0002}
+.pick{margin-top:16px;width:100%;min-height:52px;border:0;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:700;font-size:17px}
+.result{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+.result p{margin:0 0 10px;color:var(--sub);font-size:15px}
+.result pre{white-space:pre-wrap;background:var(--panel);border-radius:12px;padding:14px;font-size:14px;line-height:1.6;margin:0 0 10px;font-family:inherit;max-height:300px;overflow:auto}
+.ghost{border:1px solid var(--line);background:var(--bg);border-radius:12px;min-height:44px;padding:0 16px}
+.note{font-size:13px;color:var(--sub);margin-top:14px}
+/* ---- 앱 프레임 ---- */
+.dev{width:min(380px,100%);height:720px;border-radius:44px;background:#0b0b0c;padding:11px;box-shadow:0 2px 0 #0003}
+.dev.pc{width:100%;height:600px;border-radius:14px;padding:26px 8px 8px;position:relative}
+.dev.pc::before{content:"";position:absolute;top:10px;left:14px;width:42px;height:8px;border-radius:4px;background:radial-gradient(circle at 4px 4px,#ff5f57 4px,transparent 4.5px),radial-gradient(circle at 21px 4px,#febc2e 4px,transparent 4.5px),radial-gradient(circle at 38px 4px,#28c840 4px,transparent 4.5px)}
+.app{height:100%;border-radius:34px;overflow:hidden;background:var(--a-bg);color:var(--a-ink);font-family:var(--a-font);display:grid;grid-template-rows:auto minmax(0,1fr) auto;position:relative;font-size:15px}
+.dev.pc .app{border-radius:8px;grid-template-columns:200px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.app[data-o=A]{--a-bg:#ffffff;--a-card:#f4f4f3;--a-line:#e7e7e4;--a-ink:#141414;--a-sub:#6b6b6b;--a-pri:#141414;--a-on:#fff;--a-acc:#ff5a3c;--a-warn:#d92d20;--r:14px;--a-font:"IBM Plex Sans KR",sans-serif;--a-disp:"IBM Plex Sans KR",sans-serif;--a-dw:700}
+.app[data-o=B]{--a-bg:#0d0d0f;--a-card:#1a1a1e;--a-line:#2b2b31;--a-ink:#f3f3f3;--a-sub:#9b9ba4;--a-pri:#f3f3f3;--a-on:#0d0d0f;--a-acc:#ff3b30;--a-warn:#ff6b5e;--r:4px;--a-font:"Noto Sans KR",sans-serif;--a-disp:"Black Han Sans","Noto Sans KR",sans-serif;--a-dw:400}
+.app[data-o=C]{--a-bg:#ffffff;--a-card:#eef2ff;--a-line:#d9e0f7;--a-ink:#14161f;--a-sub:#5b6178;--a-pri:#0047ab;--a-on:#fff;--a-acc:#e60033;--a-warn:#e60033;--r:22px;--a-font:"Gothic A1",sans-serif;--a-disp:"Do Hyeon","Gothic A1",sans-serif;--a-dw:400}
+.sb{display:flex;justify-content:space-between;padding:12px 26px 4px;font-size:13px;font-weight:600}
+.dev.pc .sb{display:none}
+.scr{overflow-y:auto;padding:8px 18px 20px}
+.dev.pc .scr{padding:22px 32px}
+.top{display:flex;align-items:center;gap:8px;margin:6px 0 14px}
+.top h3{font-family:var(--a-disp);font-weight:var(--a-dw);font-size:22px;margin:0;flex:1;letter-spacing:-.01em}
+.back{border:0;background:var(--a-card);width:36px;height:36px;border-radius:50%;font-size:18px;line-height:1}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--a-card);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+.badge i{width:8px;height:8px;border-radius:50%;background:var(--a-acc)}
+.card{background:var(--a-card);border-radius:var(--r);padding:14px;margin-bottom:10px;border:1px solid var(--a-line)}
+.app[data-o=B] .card{border-color:var(--a-line)}
+.hero{background:var(--a-pri);color:var(--a-on);border:0;position:relative;overflow:hidden;min-height:132px}
+.hero small{opacity:.75}
+.hero strong{display:block;font-family:var(--a-disp);font-weight:var(--a-dw);font-size:26px;line-height:1.15;margin:6px 0 2px}
+.hero svg{position:absolute;right:-6px;bottom:-4px;width:150px;height:90px;opacity:.9}
+.row{display:flex;align-items:center;gap:10px}
+.row>div{flex:1}
+.muted{color:var(--a-sub);font-size:13px}
+.btn{border:0;background:var(--a-pri);color:var(--a-on);border-radius:var(--r);min-height:46px;padding:0 16px;font-weight:700;width:100%}
+.btn.acc{background:var(--a-acc);color:#fff}
+.btn.line{background:none;border:1.5px solid var(--a-line);color:var(--a-ink)}
+.fab{position:absolute;right:18px;bottom:78px;width:54px;height:54px;border-radius:50%;border:0;background:var(--a-acc);color:#fff;font-size:28px;line-height:1;z-index:2}
+.dev.pc .fab{bottom:22px;right:26px}
+.empty{text-align:center;padding:26px 10px;border:1.5px dashed var(--a-line);border-radius:var(--r);margin:10px 0}
+.empty b{display:block;font-size:16px;margin-bottom:4px}
+.empty p{margin:0 0 14px;color:var(--a-sub);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.chip{border:1.5px solid var(--a-line);background:none;border-radius:999px;padding:6px 12px;font-size:13px;min-height:34px}
+.chip[aria-pressed=true]{background:var(--a-pri);color:var(--a-on);border-color:var(--a-pri)}
+label.f{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+.app input,.app select{width:100%;font:inherit;font-size:16px;padding:10px 12px;border-radius:calc(var(--r)*.7);border:1.5px solid var(--a-line);background:var(--a-bg);color:var(--a-ink)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.days{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+.days .chip{flex:none}
+.item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center}
+.num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.ord{display:flex;flex-direction:column;gap:2px}
+.ord button{border:1px solid var(--a-line);background:var(--a-bg);width:30px;height:24px;border-radius:6px;font-size:11px;line-height:1}
+.cat{font-size:12px;font-weight:600}
+.map{position:relative;border-radius:var(--r);overflow:hidden;background:var(--a-card);border:1px solid var(--a-line);aspect-ratio:1/1;margin-bottom:10px}
+.dev.pc .map{aspect-ratio:16/9}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.map .tag{position:absolute;left:8px;top:8px;font-size:11px;background:var(--a-bg);border-radius:6px;padding:2px 7px;color:var(--a-sub)}
+.heart{border:0;background:none;font-size:20px;width:40px;height:40px;color:var(--a-acc)}
+.lock{display:inline-flex;gap:4px;align-items:center;font-size:12px;font-weight:700;color:var(--a-acc)}
+.cover{height:130px;border-radius:calc(var(--r)*.8);margin:-4px -4px 12px;position:relative;overflow:hidden;background:var(--a-acc)}
+.cover svg{width:100%;height:100%;display:block}
+.toc li{padding:8px 0;border-bottom:1px solid var(--a-line);display:flex;justify-content:space-between;gap:8px}
+.toc{list-style:none;padding:0;margin:0 0 12px}
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--a-line);padding:6px 6px 16px;background:var(--a-bg)}
+.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--a-sub);min-height:48px}
+.tabs button[aria-current=page]{color:var(--a-ink);font-weight:700}
+.tabs button[aria-current=page] svg{stroke:var(--a-acc)}
+.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dev.pc .tabs{grid-row:1;grid-column:1;display:flex;flex-direction:column;gap:4px;border-top:0;border-right:1px solid var(--a-line);padding:20px 12px;justify-content:flex-start}
+.dev.pc .tabs::before{content:"리노 트립";font-family:var(--a-disp);font-weight:var(--a-dw);font-size:20px;padding:0 10px 14px;color:var(--a-ink)}
+.dev.pc .tabs button{flex-direction:row;gap:10px;font-size:14px;padding:0 10px;border-radius:10px;justify-content:flex-start}
+.dev.pc .tabs button[aria-current=page]{background:var(--a-card)}
+.dev.pc .scr{grid-column:2;grid-row:1}
+.dev.pc .pcgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sheet{position:absolute;inset:0;background:#0008;display:flex;align-items:flex-end;z-index:5}
+.sheet>div{background:var(--a-bg);width:100%;border-radius:22px 22px 0 0;padding:20px 18px 26px}
+.dev.pc .sheet{align-items:center;justify-content:center}
+.dev.pc .sheet>div{max-width:420px;border-radius:16px}
+.sheet h4{font-family:var(--a-disp);font-weight:var(--a-dw);font-size:20px;margin:0 0 6px}
+.sheet .btn{margin-top:8px}
+.toast{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);background:var(--a-ink);color:var(--a-bg);padding:8px 14px;border-radius:10px;font-size:13px;z-index:6;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.sample{font-size:11px;color:var(--a-sub);border:1px solid var(--a-line);border-radius:6px;padding:1px 6px;white-space:nowrap}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.stage{padding:12px;border-radius:16px}.dev{height:680px}.seg button{padding:8px 12px}}
+@media(prefers-reduced-motion:no-preference){.sheet>div{animation:up .22s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.4}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>여행 앱 뼈대, 세 가지 방향으로 먼저 눌러 보세요</h1>
+  <p class="lead">설계서 11장 Phase 1 범위(탭 5개, 화면 7개, 무료 5회 차감, 오사카 3박 4일 잠금 카드)를 그대로 동작하게 만든 시안이에요. 오른쪽에서 디자인 방향을 바꾸면 같은 앱이 그 옷으로 바뀌고, 마음에 드는 방향을 고르면 바이브코딩용 프롬프트가 만들어져요.</p>
+  <div class="grid">
+    <section class="stage" aria-label="앱 미리보기">
+      <div class="seg" role="group" aria-label="화면 크기">
+        <button id="m-phone" aria-pressed="true">폰 앱</button>
+        <button id="m-pc" aria-pressed="false">PC 웹</button>
+      </div>
+      <div class="dev" id="dev"><div class="app" id="app" data-o="A"></div></div>
+    </section>
+    <aside class="side">
+      <h2>디자인 방향 고르기</h2>
+      <div class="opts" id="opts"></div>
+      <button class="pick" id="pick">이 방향으로 선택</button>
+      <div class="result" id="result" hidden></div>
+      <p class="note">장소·코스·가이드북 내용은 화면 확인용 샘플이에요. 영업시간·입장료·가격은 넣지 않았어요(설계서 기준: 공식 출처 확인 후 저장, 가격 미정).</p>
+    </aside>
+  </div>
+</div>
+<script>
+{
+const OPTS={
+  A:{name:"A. 클린 미니멀",desc:"흰 바탕에 먹색, 산호색 한 점. 정보가 많아도 가장 차분하게 읽혀요. 가구 브랜드와 결이 맞아요.",sw:["#ffffff","#141414","#ff5a3c","#f4f4f3"],tok:"배경 #FFFFFF / 글자 #141414 / 기본 #141414 / 강조 #FF5A3C / 경고 #D92D20, 모서리 14, 글꼴 IBM Plex Sans KR"},
+  B:{name:"B. 스트릿 포토 다크",desc:"사진이 주인공인 어두운 화면, 각진 모서리와 굵은 제목. 스트릿포토 채널 감성 그대로예요.",sw:["#0d0d0f","#f3f3f3","#ff3b30","#1a1a1e"],tok:"배경 #0D0D0F / 글자 #F3F3F3 / 기본 #F3F3F3 / 강조 #FF3B30 / 경고 #FF6B5E, 모서리 4, 제목 Black Han Sans·본문 Noto Sans KR"},
+  C:{name:"C. 오사카 팝",desc:"코발트 블루와 오사카 레드, 둥근 카드. 밝고 친근해서 여행 초보도 편하게 써요.",sw:["#ffffff","#0047ab","#e60033","#eef2ff"],tok:"배경 #FFFFFF / 글자 #14161F / 기본 #0047AB / 강조 #E60033 / 경고 #E60033, 모서리 22, 제목 Do Hyeon·본문 Gothic A1"}
+};
+const CATS={attr:["관광지","#3b6fe0"],food:["맛집","#e8590c"],stay:["숙소","#7048e8"],cafe:["카페","#a0522d"],shop:["쇼핑","#0c8599"],photo:["촬영 스팟","#d6336c"]};
+const PLACES=[
+  {id:1,n:"도톤보리",c:"attr",a:"난바",lat:34.6687,lng:135.5013,t:"관광지 · 공식 일정 확인 전"},
+  {id:2,n:"구로몬 시장",c:"food",a:"닛폰바시",lat:34.6652,lng:135.5066,t:"대표 메뉴: 해산물 꼬치"},
+  {id:3,n:"신사이바시스지",c:"shop",a:"신사이바시",lat:34.6748,lng:135.5012,t:"동네: 신사이바시 · 일정 근처"},
+  {id:4,n:"오사카성 공원",c:"attr",a:"모리노미야",lat:34.6873,lng:135.5262,t:"관광지 · 공식 일정 확인 전"},
+  {id:5,n:"우메다 스카이빌딩",c:"photo",a:"우메다",lat:34.7053,lng:135.4896,t:"촬영 팁: 해 질 녘 전망대"},
+  {id:6,n:"나카자키초 골목 카페",c:"cafe",a:"나카자키초",lat:34.7088,lng:135.504,t:"동선 중 휴식 지점"},
+  {id:7,n:"난바 권역 숙소",c:"stay",a:"난바",lat:34.6655,lng:135.501,t:"권역: 교통 중심 · 첫날·마지막 날 가까움"},
+  {id:8,n:"츠텐카쿠·신세카이",c:"photo",a:"신세카이",lat:34.6525,lng:135.5063,t:"촬영 팁: 네온 간판, 아이폰 야간 모드"},
+  {id:9,n:"도톤보리 라멘 골목",c:"food",a:"난바",lat:34.6688,lng:135.503,t:"대표 메뉴: 돈코츠 라멘"},
+  {id:10,n:"나카노시마 공원",c:"photo",a:"기타하마",lat:34.6925,lng:135.507,t:"촬영 팁: 강변 다리 구도"}
+];
+const P=id=>PLACES.find(p=>p.id===id);
+const GUIDE={title:"오사카 3박 4일",theme:"먹고 걷고 찍는 첫 오사카",days:[[7,1,9,3],[4,10,6],[5,8],[2]],names:["난바 도착과 도톤보리 밤","오사카성과 강변 산책","우메다 전망과 신세카이 네온","시장 아침 후 출국"]};
+const CITIES=["오사카","도쿄","후쿠오카","방콕","파리"];
+const S={o:"A",mode:"phone",r:"home",hist:[],trips:[],cur:null,day:0,left:5,saved:new Set([4]),bought:false,cat:"all",q:"",sheet:null,toast:"",chosen:null,
+  f:{city:"오사카",s:"2027-01-15",e:"2027-01-18",who:"친구",sty:"사진 중심"}};
+try{const c=localStorage.getItem("rino-travel-opt");if(c&&OPTS[c]){S.o=c;S.chosen=c}}catch(e){}
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const IC={home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',itinerary:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',map:'<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',store:'<path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/>',mypage:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'};
+const TABS=[["home","홈"],["itinerary","일정"],["map","지도"],["store","가이드북"],["mypage","마이페이지"]];
+const app=document.getElementById("app"),dev=document.getElementById("dev");
+const trip=()=>S.trips.find(t=>t.id===S.cur);
+const go=(r,keep)=>{if(!keep)S.hist.push(S.r);S.r=r;S.sheet=null;render();app.querySelector(".scr").scrollTop=0};
+const tab=r=>{S.hist=[];S.r=r;S.sheet=null;render()};
+const back=()=>{S.r=S.hist.pop()||"home";render()};
+const toast=m=>{S.toast=m;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{S.toast="";render()},1800)};
+const top=(t,b,extra="")=>`<div class="top">${b?'<button class="back" data-a="back" aria-label="뒤로">‹</button>':""}<h3>${t}</h3>${extra}</div>`;
+const count=()=>`<span class="badge"><i></i>무료 5회 중 ${S.left}회 남음</span>`;
+const empty=(b,p,btn,act)=>`<div class="empty"><b>${b}</b><p>${p}</p>${btn?`<button class="btn" data-a="${act}">${btn}</button>`:""}</div>`;
+const fmt=d=>{const x=new Date(d+"T00:00:00");return `${x.getMonth()+1}.${x.getDate()}`};
+const skyline=c=>`<svg viewBox="0 0 150 90" aria-hidden="true"><g fill="${c}"><rect x="8" y="50" width="16" height="40"/><rect x="28" y="34" width="12" height="56"/><path d="M60 90V40l8-16 8 16v50z"/><rect x="66" y="12" width="4" height="12"/><rect x="82" y="46" width="20" height="44"/><path d="M108 90V58h30v32z"/><path d="M106 58l17-12 17 12z"/></g></svg>`;
+const SCR={
+home(){const t=S.trips;const nx=t[0];
+ return top("내 여행",0,count())+
+ (nx?`<div class="card hero" data-a="open" data-id="${nx.id}" role="button" tabindex="0"><small>다음 여행</small><strong>${esc(nx.city)}</strong><small>${fmt(nx.s)} – ${fmt(nx.e)} · ${nx.days.length}일 · ${esc(nx.who)}</small>${skyline("#ffffff33")}</div>`:"")+
+ (t.length?`<div class="pcgrid">${t.map(x=>`<div class="card row" data-a="open" data-id="${x.id}" role="button" tabindex="0"><div><b>${esc(x.city)} ${x.days.length-1}박 ${x.days.length}일</b><div class="muted">${fmt(x.s)} – ${fmt(x.e)} · ${esc(x.sty)}${x.g?" · 가이드북 코스":""}</div></div><span class="muted">›</span></div>`).join("")}</div>`
+ :empty("아직 만든 여행이 없어요","도시와 날짜만 정하면 일정 틀이 바로 만들어져요. 새 여행을 만들 때만 무료 횟수가 1회 차감돼요.","+ 첫 여행 만들기","new"))+
+ `<div class="card row" data-a="tab" data-r="store" role="button" tabindex="0"><div><b>오사카 3박 4일 가이드북</b><div class="muted">첫날 코스는 무료로 미리 볼 수 있어요</div></div><span class="lock">잠금</span></div>`;},
+new(){const f=S.f;const ch=(k,arr)=>`<div class="chips">${arr.map(v=>`<button class="chip" data-a="f" data-k="${k}" data-v="${v}" aria-pressed="${f[k]===v}">${v}</button>`).join("")}</div>`;
+ return top("여행 만들기",1)+`<div class="card"><span class="badge"><i></i>저장하면 1회 차감 · 지금 ${S.left}회 남음</span></div>
+ <label class="f" for="city">도시</label><select id="city">${CITIES.map(c=>`<option ${c===f.city?"selected":""}>${c}</option>`).join("")}</select>
+ <div class="two"><div><label class="f" for="ds">시작일</label><input id="ds" type="date" value="${f.s}"></div><div><label class="f" for="de">종료일</label><input id="de" type="date" value="${f.e}"></div></div>
+ <label class="f">동행</label>${ch("who",["혼자","친구","연인","가족"])}
+ <label class="f">여행 스타일</label>${ch("sty",["맛집 중심","사진 중심","쇼핑 중심","여유롭게"])}
+ <button class="btn acc" data-a="save">여행 저장하고 일정 짜기</button>`;},
+itinerary(){const t=trip();if(!t)return top("일자별 일정")+empty("열려 있는 여행이 없어요","홈에서 여행을 고르거나 새로 만들어 주세요.","여행 만들기","new");
+ const d=t.days[S.day]||[];
+ return top(`${esc(t.city)} 일정`,0,`<span class="sample">샘플</span>`)+`<div class="days">${t.days.map((_,i)=>`<button class="chip" data-a="day" data-i="${i}" aria-pressed="${i===S.day}">${i+1}일차 · ${fmt(addD(t.s,i))}</button>`).join("")}</div>`+
+ (d.length?d.map((id,i)=>{const p=P(id),c=CATS[p.c];return `<div class="card item"><span class="num" style="background:${c[1]}">${i+1}</span><div><b>${p.n}</b><div class="cat" style="color:${c[1]}">${c[0]} <span class="muted">· ${p.a}</span></div></div><div class="ord"><button data-a="mv" data-i="${i}" data-d="-1" aria-label="위로">▲</button><button data-a="mv" data-i="${i}" data-d="1" aria-label="아래로">▼</button></div></div>`}).join("")+`<p class="muted">순서를 바꾸면 지도 탭의 동선이 바로 따라 바뀌어요. (실제 앱은 드래그)</p>`
+ :empty("이날은 아직 비어 있어요","장소 탐색에서 가 보고 싶은 곳을 담아 보세요.","","")) +`<button class="btn" data-a="go" data-r="search">+ 장소 추가</button>`;},
+map(){const t=trip();if(!t)return top("지도 동선")+empty("동선을 그릴 여행이 없어요","여행을 만들면 일정 순서대로 핀과 선이 그려져요.","여행 만들기","new");
+ const d=t.days[S.day]||[];const ps=d.map(P);
+ const la=ps.map(p=>p.lat),lo=ps.map(p=>p.lng),cx=(Math.min(...lo)+Math.max(...lo))/2,cy=(Math.min(...la)+Math.max(...la))/2;
+ const span=Math.max(Math.max(...lo)-Math.min(...lo),(Math.max(...la)-Math.min(...la))*1.2,.004),k=140/span;
+ const pt=ps.map(p=>[150+(p.lng-cx)*k,150-(p.lat-cy)*k*1.2,p]);
+ const c=getComputedStyle(app).getPropertyValue("--a-acc");
+ return top("지도 동선",0,`<span class="sample">샘플</span>`)+`<div class="days">${t.days.map((_,i)=>`<button class="chip" data-a="day" data-i="${i}" aria-pressed="${i===S.day}">${i+1}일차</button>`).join("")}</div>
+ <div class="map"><svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice" aria-label="${S.day+1}일차 동선"><g stroke="var(--a-line)" stroke-width="1">${[60,120,180,240].map(v=>`<path d="M${v} 0V300M0 ${v}H300"/>`).join("")}</g><path d="M-10 70 C60 90 120 60 170 100 S260 120 320 90" fill="none" stroke="#7fb3e6" stroke-width="10" opacity=".45"/>
+ ${pt.length>1?`<polyline points="${pt.map(p=>p[0]+","+p[1]).join(" ")}" fill="none" stroke="${c}" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round"/>`:""}
+ ${pt.map((p,i)=>`<g data-a="place" data-id="${p[2].id}" style="cursor:pointer"><circle cx="${p[0]}" cy="${p[1]}" r="13" fill="${CATS[p[2].c][1]}" stroke="#fff" stroke-width="2.5"/><text x="${p[0]}" y="${p[1]+4.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${i+1}</text></g>`).join("")}</svg><span class="tag">MapView 자리 · 오사카 시내</span></div>`+
+ (pt.length?pt.map((p,i)=>`<div class="card row" data-a="place" data-id="${p[2].id}" role="button" tabindex="0"><span class="num" style="background:${CATS[p[2].c][1]}">${i+1}</span><div><b>${p[2].n}</b><div class="muted">${i<pt.length-1?"다음: "+pt[i+1][2].n:"그날 마지막 장소"}</div></div></div>`).join("")+`<p class="muted">이동 시간 숫자는 지도 제공자 조건 확인 후 붙여요.</p>`
+ :empty("이날 동선이 비어 있어요","일정에 장소를 넣으면 번호 핀이 생겨요.","장소 추가","search"));},
+search(){const t=trip();const city=t?t.city:"오사카";const q=S.q.trim();
+ const list=city==="오사카"?PLACES.filter(p=>(S.cat==="all"||p.c===S.cat)&&(!q||p.n.includes(q)||p.a.includes(q))):[];
+ return top("장소 탐색",1)+`<input id="q" type="search" placeholder="${esc(city)}에서 장소 검색" value="${esc(S.q)}" aria-label="장소 검색"><div class="chips" style="margin-top:10px"><button class="chip" data-a="cat" data-c="all" aria-pressed="${S.cat==="all"}">전체</button>${Object.entries(CATS).map(([k,v])=>`<button class="chip" data-a="cat" data-c="${k}" aria-pressed="${S.cat===k}">${v[0]}</button>`).join("")}</div>`+
+ (city!=="오사카"?empty(`${esc(city)} 장소 데이터는 아직이에요`,"뼈대 단계에는 오사카 샘플만 있어요. 장소 검색 연결은 Phase 3이에요.","",""):
+ list.length?`<div class="pcgrid">${list.map(p=>`<div class="card item" style="grid-template-columns:minmax(0,1fr) auto auto"><div data-a="place" data-id="${p.id}" role="button" tabindex="0"><b>${p.n}</b><div class="cat" style="color:${CATS[p.c][1]}">${CATS[p.c][0]} <span class="muted">· ${p.a}</span></div></div><button class="heart" data-a="heart" data-id="${p.id}" aria-label="저장">${S.saved.has(p.id)?"♥":"♡"}</button><button class="chip" data-a="add" data-id="${p.id}">담기</button></div>`).join("")}</div>`:empty("찾는 장소가 없어요","검색어를 바꾸거나 카테고리를 전체로 돌려 보세요.","",""));},
+place(){const p=P(S.pid);const c=CATS[p.c];
+ return top(p.n,1)+`<div class="card"><span class="cat" style="color:${c[1]}">${c[0]}</span><h4 style="margin:4px 0">${p.n}</h4><div class="muted">${p.a} · ${p.t}</div></div><div class="card"><b>확인 정보</b><div class="muted">영업시간·입장료: 공식 출처 확인 후 확인일과 함께 표시돼요</div></div><button class="btn" data-a="add" data-id="${p.id}">${trip()?"이 일정에 담기":"여행을 먼저 만들어 주세요"}</button>`;},
+store(){return top("가이드북",0)+`<div class="card" data-a="go" data-r="guide" role="button" tabindex="0"><div class="cover">${skyline("#ffffff55")}</div><div class="row"><div><b>${GUIDE.title}</b><div class="muted">${GUIDE.theme}</div></div>${S.bought?'<span class="badge">구매함</span>':'<span class="lock">잠금</span>'}</div><div class="row" style="margin-top:8px"><span class="muted">가격 미정 · 첫날 무료 미리보기</span><span class="sample">샘플</span></div></div>`+
+ empty("다음 도시 가이드북 준비 중","오사카가 첫 상품이에요. 도시가 늘면 이곳에 카드가 쌓여요.","","");},
+guide(){return top(GUIDE.title,1)+`<div class="cover" style="margin:0 0 12px">${skyline("#ffffff55")}</div><p class="muted" style="margin-top:0">${GUIDE.theme} · 4일 코스 · 장소 ${GUIDE.days.flat().length}곳</p><b>목차</b><ul class="toc">${GUIDE.names.map((n,i)=>`<li><span>${i+1}일차 · ${n}</span>${i===0||S.bought?'<span class="muted">열람 가능</span>':'<span class="lock">잠금</span>'}</li>`).join("")}</ul>
+ <div class="card"><b>1일차 무료 미리보기</b>${GUIDE.days[0].map((id,i)=>`<div class="muted">${i+1}. ${P(id).n}</div>`).join("")}</div>
+ ${S.bought?`<button class="btn acc" data-a="import">내 일정으로 불러오기 (횟수 차감 없음)</button>`:`<button class="btn acc" data-a="buy">테스트로 구매해 보기</button><p class="muted">실제 결제는 Phase 4에서 연결해요. 앱은 스토어 인앱결제, 웹은 외부 결제예요.</p>`}`;},
+mypage(){const sv=[...S.saved].map(P);return top("마이페이지",0)+`<div class="card row"><div><b>무료 일정 만들기</b><div class="muted">새 여행을 만들 때만 1회 차감돼요</div></div>${count()}</div>
+ <div class="card"><b>내 일정 ${S.trips.length}개</b>${S.trips.length?S.trips.map(t=>`<div class="muted">${esc(t.city)} · ${fmt(t.s)} – ${fmt(t.e)}</div>`).join(""):'<div class="muted">아직 없어요</div>'}</div>
+ <div class="card"><b>구매한 가이드북</b><div class="muted">${S.bought?"오사카 3박 4일 · 다시 불러오기 가능":"아직 없어요 · 가이드북 탭에서 미리보기를 확인해 보세요"}</div></div>
+ <div class="card"><b>저장한 장소 ${sv.length}곳</b>${sv.map(p=>`<div class="muted">${p.n}</div>`).join("")||'<div class="muted">장소 탐색에서 하트를 눌러 모아 보세요</div>'}</div>
+ <div class="card"><b>계정</b><div class="muted">로그아웃 · 계정 삭제 · 개인정보 처리방침</div></div>
+ <button class="btn line" data-a="reset">시안 처음 상태로 되돌리기</button>`;}
+};
+const addD=(s,i)=>{const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+i);return d.toISOString().slice(0,10)};
+function render(){
+ app.dataset.o=S.o;dev.className="dev"+(S.mode==="pc"?" pc":"");
+ const r=S.r,isTab=TABS.some(t=>t[0]===r);const sh=S.sheet==="out"?`<div class="sheet" data-a="close"><div data-stop="1"><h4>무료 5회를 모두 썼어요</h4><p class="muted">이미 만든 일정은 계속 보고 고칠 수 있어요. 새 여행을 더 만들려면 아래에서 골라 주세요.</p><button class="btn" data-a="more">직접 짜기 이어 가기 (결제 형태 미정)</button><button class="btn acc" data-a="tab" data-r="store">같은 도시 가이드북 보기</button><button class="btn line" data-a="close">닫기</button></div></div>`:"";
+ app.innerHTML=`<div class="sb"><span>9:41</span><span>LTE ▮▮▮</span></div><div class="scr">${SCR[r]()}</div>${r==="home"?'<button class="fab" data-a="new" aria-label="새 여행 만들기">+</button>':""}<nav class="tabs">${TABS.map(([k,l])=>`<button data-a="tab" data-r="${k}" ${k===r||(!isTab&&k===(r==="new"?"home":r==="guide"?"store":"itinerary"))?'aria-current="page"':""}><svg viewBox="0 0 24 24">${IC[k]}</svg>${l}</button>`).join("")}</nav>${sh}${S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:""}`;
+ document.getElementById("m-phone").setAttribute("aria-pressed",S.mode==="phone");document.getElementById("m-pc").setAttribute("aria-pressed",S.mode==="pc");
+ document.getElementById("opts").innerHTML=Object.entries(OPTS).map(([k,o])=>`<button class="opt" data-o="${k}" aria-pressed="${S.o===k}"><span class="sw">${o.sw.map(c=>`<i style="background:${c}"></i>`).join("")}</span><b>${o.name}${S.chosen===k?" · 선택함":""}</b><small>${o.desc}</small></button>`).join("");
+ const q=document.getElementById("q");if(q&&render.fq){q.focus();q.setSelectionRange(q.value.length,q.value.length)}render.fq=false;
+}
+const A={
+ back,tab:e=>tab(e.dataset.r),go:e=>go(e.dataset.r),
+ new(){if(S.left<=0){S.sheet="out";render()}else go("new")},
+ f(e){S.f[e.dataset.k]=e.dataset.v;render()},
+ save(){const f=S.f;if(S.left<=0){S.sheet="out";render();return}
+  let n=Math.round((new Date(f.e)-new Date(f.s))/864e5)+1;if(!(n>0)){toast("종료일을 시작일 뒤로 골라 주세요");return}n=Math.min(n,10);
+  const t={id:Date.now(),city:f.city,s:f.s,e:f.e,who:f.who,sty:f.sty,days:Array.from({length:n},()=>[])};
+  S.trips.unshift(t);S.cur=t.id;S.day=0;S.left--;S.hist=[];S.r="itinerary";toast(`저장했어요 · 무료 ${S.left}회 남음`);},
+ open(e){S.cur=+e.dataset.id;S.day=0;tab("itinerary")},
+ day(e){S.day=+e.dataset.i;render()},
+ mv(e){const d=trip().days[S.day],i=+e.dataset.i,j=i+ +e.dataset.d;if(j<0||j>=d.length)return;[d[i],d[j]]=[d[j],d[i]];render()},
+ cat(e){S.cat=e.dataset.c;render()},
+ heart(e){const id=+e.dataset.id;S.saved.has(id)?S.saved.delete(id):S.saved.add(id);render()},
+ add(e){const t=trip();if(!t){go("new");return}const d=t.days[S.day];const id=+e.dataset.id;if(d.includes(id)){toast("이미 이날 일정에 있어요");return}d.push(id);toast(`${S.day+1}일차에 ${P(id).n} 담았어요`)},
+ place(e){S.pid=+e.dataset.id;go("place")},
+ buy(){S.bought=true;toast("테스트 구매 완료 · 전체 코스가 열렸어요")},
+ import(){const s="2027-02-10";const t={id:Date.now(),city:"오사카",s,e:addD(s,3),who:"친구",sty:"가이드북 코스",g:1,days:GUIDE.days.map(d=>[...d])};S.trips.unshift(t);S.cur=t.id;S.day=0;S.hist=[];S.r="itinerary";toast("코스를 불러왔어요 · 무료 횟수는 그대로예요")},
+ more(){S.sheet=null;toast("추가 결제 형태는 아직 미정이에요(설계서 13장)")},
+ close(){S.sheet=null;render()},
+ reset(){Object.assign(S,{trips:[],cur:null,day:0,left:5,saved:new Set([4]),bought:false,hist:[],r:"home"});render()}
+};
+app.addEventListener("click",ev=>{const el=ev.target.closest("[data-a],[data-stop]");if(!el||!app.contains(el))return;if(el.dataset.stop&&!ev.target.closest("[data-a]"))return;const f=A[el.dataset.a];if(f)f(el)});
+app.addEventListener("keydown",ev=>{if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches('[role=button]')){ev.preventDefault();ev.target.click()}});
+app.addEventListener("input",ev=>{const t=ev.target;if(t.id==="q"){S.q=t.value;render.fq=true;render()}});
+app.addEventListener("change",ev=>{const t=ev.target;if(t.id==="city")S.f.city=t.value;if(t.id==="ds")S.f.s=t.value;if(t.id==="de")S.f.e=t.value});
+document.getElementById("opts").addEventListener("click",ev=>{const b=ev.target.closest(".opt");if(b){S.o=b.dataset.o;render()}});
+document.getElementById("m-phone").onclick=()=>{S.mode="phone";render()};
+document.getElementById("m-pc").onclick=()=>{S.mode="pc";render()};
+const res=document.getElementById("result");
+const showRes=()=>{const o=OPTS[S.chosen];const pr=`Expo + TypeScript + Expo Router로 여행 앱 뼈대를 만들어 줘. 하단 탭 5개(홈·일정·지도·가이드북·마이페이지)와 여행 만들기, 장소 탐색, 가이드북 상세 화면 틀을 파일 기반 라우트로 만들고, 각 화면은 빈 상태와 제목만 넣어 줘. Supabase 연결과 trips, usage_counter 테이블을 만들고, 새 여행을 만들 때만 무료 횟수가 차감되고 남은 횟수가 홈에 표시되게 해 줘. 지도는 공통 MapView 자리만 만들고, 가이드북 스토어에는 오사카 3박 4일 카드 1개와 잠금 표시만 넣어 줘. 아이폰, 안드로이드, 웹에서 모두 열리는 것이 완료 기준이야.\n\n디자인은 「${o.name}」 방향으로, constants/design.ts에 아래 토큰을 고정하고 모든 화면은 이 값만 써 줘.\n${o.tok}\n글자 크기: 제목 22 / 소제목 17 / 본문 15 / 보조 13, 간격: 8·12·16·24·32.\n웹 넓은 화면(PC)은 하단 탭 대신 왼쪽 사이드바로 바꿔 줘.`;
+ res.hidden=false;res.innerHTML=`<p>선택한 방향: <b>${o.name}</b> · 이 프롬프트를 Cursor나 Claude Code에 그대로 붙이면 Phase 1이 시작돼요.</p><pre id="pr"></pre><button class="ghost" id="cp">프롬프트 복사</button>`;
+ document.getElementById("pr").textContent=pr;
+ document.getElementById("cp").onclick=async e=>{try{await navigator.clipboard.writeText(pr);e.target.textContent="복사했어요"}catch(_){e.target.textContent="복사가 막혔어요 · 위 글을 길게 눌러 복사해 주세요"}};};
+document.getElementById("pick").onclick=()=>{S.chosen=S.o;try{localStorage.setItem("rino-travel-opt",S.o)}catch(e){}render();showRes()};
+render();if(S.chosen)showRes();
+}
+</script>
+</body>
+</html>
