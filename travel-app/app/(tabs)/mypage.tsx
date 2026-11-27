@@ -12,6 +12,7 @@ import { color, radius, space } from '@/constants/design';
 import { deleteAccount, signOut } from '@/features/auth/api';
 import { useAccount } from '@/features/auth/hooks';
 import { shortDate } from '@/features/trips/dates';
+import { useSaved } from '@/features/saved/hooks';
 import { useTrips } from '@/features/trips/hooks';
 import { useDemoStore } from '@/stores/demoStore';
 
@@ -28,6 +29,7 @@ function Box({ title, children }: { title: string; children: React.ReactNode }) 
 export default function MyPage() {
   const { data: trips } = useTrips();
   const account = useAccount();
+  const { data: saved } = useSaved();
   const qc = useQueryClient();
   const [confirm, setConfirm] = useState<'logout' | 'delete' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,7 +75,10 @@ export default function MyPage() {
           : <AppText v="caption" color={color.sub}>아직 없어요</AppText>}
       </Box>
       <Box title="구매한 가이드북"><AppText v="caption" color={color.sub}>아직 없어요 · 가이드북 탭에서 첫날 미리보기를 볼 수 있어요</AppText></Box>
-      <Box title="저장한 장소"><AppText v="caption" color={color.sub}>장소 탐색에서 하트로 모아요 (3-2에서 연결)</AppText></Box>
+      <Box title={`저장한 장소 ${saved?.length ?? 0}곳`}>
+        <AppText v="caption" color={color.sub}>{saved?.length ? '하트 누른 장소와 내 메모·별점을 모아 봐요' : '장소 탐색에서 하트를 누르면 여기 모여요'}</AppText>
+        <Button label="저장한 장소 보기" variant="secondary" onPress={() => router.push('/saved')} style={{ marginTop: space.md }} />
+      </Box>
 
       {account.kind === 'member' || account.kind === 'anonymous' ? (
         <View style={{ gap: space.xs, marginTop: space.sm }}>

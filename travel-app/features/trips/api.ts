@@ -7,7 +7,7 @@ import { FreeLimitError, type NewTripInput, type Trip } from './types';
 type TripRow = {
   id: string; city: string; start_date: string; end_date: string; companion: string; style: string;
   status: Trip['status']; from_guidebook_id: string | null; created_at: string;
-  trip_days: { id: string; day_number: number; date: string; itinerary_items: { id: string; place_id: string; sort_order: number; visit_time: string | null; memo: string | null }[] }[];
+  trip_days: { id: string; day_number: number; date: string; itinerary_items: { id: string; place_id: string; place_source: 'our' | 'google'; sort_order: number; visit_time: string | null; memo: string | null }[] }[];
 };
 
 export const fromRow = (r: TripRow): Trip => ({
@@ -18,12 +18,12 @@ export const fromRow = (r: TripRow): Trip => ({
     .map((d) => ({
       id: d.id, dayNumber: d.day_number, date: d.date,
       items: [...d.itinerary_items].sort((a, b) => a.sort_order - b.sort_order)
-        .map((i) => ({ id: i.id, placeId: i.place_id, order: i.sort_order, visitTime: i.visit_time, memo: i.memo })),
+        .map((i) => ({ id: i.id, placeId: i.place_id, source: i.place_source, order: i.sort_order, visitTime: i.visit_time, memo: i.memo })),
     })),
 });
 
 export const TRIP_SELECT =
-  'id,city,start_date,end_date,companion,style,status,from_guidebook_id,created_at,trip_days(id,day_number,date,itinerary_items(id,place_id,sort_order,visit_time,memo))';
+  'id,city,start_date,end_date,companion,style,status,from_guidebook_id,created_at,trip_days(id,day_number,date,itinerary_items(id,place_id,place_source,sort_order,visit_time,memo))';
 
 export async function fetchTrips(): Promise<Trip[]> {
   if (!supabase) {

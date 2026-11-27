@@ -1,4 +1,6 @@
-export type ItineraryItem = { id: string; placeId: string; order: number; visitTime?: string | null; memo?: string | null };
+import type { PlaceSource } from '@/features/places/types';
+
+export type ItineraryItem = { id: string; placeId: string; source?: PlaceSource; order: number; visitTime?: string | null; memo?: string | null };
 export type TripDay = { id: string; dayNumber: number; date: string; items: ItineraryItem[] };
 export type Trip = {
   id: string;

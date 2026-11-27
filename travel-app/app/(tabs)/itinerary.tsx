@@ -10,9 +10,12 @@ import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
 import { categoryOf } from '@/constants/categories';
 import { color, radius, space } from '@/constants/design';
-import { placeById } from '@/features/places/data';
+import { GoogleAttribution } from '@/features/places/GoogleAttribution';
+import { useResolvedPlaces } from '@/features/places/hooks';
+import { refKey, routeId } from '@/features/places/types';
 import { nightsDays } from '@/features/trips/dates';
 import { useCurrentTrip } from '@/features/trips/hooks';
+import { itemRef } from '@/features/trips/itemRef';
 import { useItineraryEdit } from '@/features/trips/itineraryHooks';
 import { useAppStore } from '@/stores/appStore';
 
@@ -35,6 +38,8 @@ export default function Itinerary() {
   const dayNo = useAppStore((s) => s.selectedDay);
   const edit = useItineraryEdit(trip);
   const [dragging, setDragging] = useState(false);
+  const day0 = trip?.days.find((d) => d.dayNumber === dayNo) ?? trip?.days[0];
+  const { byKey } = useResolvedPlaces((day0?.items ?? []).map(itemRef));
 
   if (isLoading) return <Screen title="일정"><AppText color={color.sub}>불러오는 중…</AppText></Screen>;
   if (!trip) {
@@ -61,7 +66,7 @@ export default function Itinerary() {
             onReorder={reorder}
             onDragChange={setDragging}
             renderRow={(item, i, handle, isDragged) => {
-              const p = placeById(item.placeId);
+              const p = byKey.get(refKey(itemRef(item)));
               const c = p ? categoryOf(p.category) : null;
               return (
                 <View
@@ -81,9 +86,9 @@ export default function Itinerary() {
                   <View style={[s.num, { backgroundColor: c?.color ?? color.faint }]}>
                     <AppText v="caption" color={color.white} style={{ fontWeight: '700' }}>{i + 1}</AppText>
                   </View>
-                  <Pressable style={{ flex: 1 }} onPress={() => p && router.push(`/place/${p.id}`)} accessibilityRole="link">
-                    <AppText v="bodyBold" numberOfLines={1}>{p?.name ?? '알 수 없는 장소'}</AppText>
-                    {c ? <AppText v="caption" color={c.color} style={{ fontWeight: '700' }}>{c.label} <AppText v="caption" color={color.sub}>· {p!.area}</AppText></AppText> : null}
+                  <Pressable style={{ flex: 1 }} onPress={() => p && router.push(`/place/${encodeURIComponent(routeId(p))}`)} accessibilityRole="link">
+                    <AppText v="bodyBold" numberOfLines={1}>{p?.name ?? '불러오는 중…'}</AppText>
+                    {c ? <AppText v="caption" numberOfLines={1} color={c.color} style={{ fontWeight: '700' }}>{c.label} <AppText v="caption" color={color.sub}>· {p!.area}</AppText></AppText> : null}
                   </Pressable>
                   <Pressable onPress={() => edit.remove(day.dayNumber, item.id)} accessibilityRole="button" accessibilityLabel={`${p?.name ?? '장소'} 빼기`} style={s.remove} hitSlop={6}>
                     <Icon name="close" size={18} color={color.sub} />
@@ -96,6 +101,7 @@ export default function Itinerary() {
       ) : (
         <EmptyState title={`${day.dayNumber}일차가 비어 있어요`} description="장소 탐색에서 가 보고 싶은 곳을 담아 보세요. 정한 순서가 곧 지도 동선이 돼요." />
       )}
+      {day.items.some((i) => i.source === 'google') ? <GoogleAttribution /> : null}
       {edit.error ? <AppText v="caption" color={color.danger}>저장하지 못해 되돌렸어요. 연결을 확인해 주세요.</AppText> : null}
       <View style={{ marginTop: space.md, flexDirection: 'row', gap: space.sm }}>
         <Button label="+ 장소 추가" onPress={() => router.push('/place/search')} style={{ flex: 1 }} />

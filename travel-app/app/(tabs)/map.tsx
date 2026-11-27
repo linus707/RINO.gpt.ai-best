@@ -8,9 +8,12 @@ import { MapView } from '@/components/MapView';
 import { Screen } from '@/components/Screen';
 import { categoryOf } from '@/constants/categories';
 import { color, radius, space } from '@/constants/design';
-import { placeById, type Place } from '@/features/places/data';
+import { GoogleAttribution } from '@/features/places/GoogleAttribution';
+import { useResolvedPlaces } from '@/features/places/hooks';
+import { refKey, routeId, type ResolvedPlace } from '@/features/places/types';
 import { cityCenter } from '@/features/trips/cities';
 import { useCurrentTrip } from '@/features/trips/hooks';
+import { itemRef } from '@/features/trips/itemRef';
 import type { MapPin } from '@/lib/maps';
 import { useAppStore } from '@/stores/appStore';
 
@@ -18,28 +21,34 @@ import { useAppStore } from '@/stores/appStore';
 export default function MapTab() {
   const { trip } = useCurrentTrip();
   const dayNo = useAppStore((s) => s.selectedDay);
-  if (!trip) {
+  const day = trip?.days.find((d) => d.dayNumber === dayNo) ?? trip?.days[0];
+  const refs = (day?.items ?? []).map(itemRef);
+  const { byKey, loading } = useResolvedPlaces(refs);
+  if (!trip || !day) {
     return (
       <Screen title="지도 동선">
         <EmptyState title="동선을 그릴 여행이 없어요" description="여행을 만들고 장소를 담으면 일정 순서대로 핀과 선이 그려져요." actionLabel="여행 만들기" onAction={() => router.push('/trip/new')} />
       </Screen>
     );
   }
-  const day = trip.days.find((d) => d.dayNumber === dayNo) ?? trip.days[0];
-  const places = day.items.map((i) => placeById(i.placeId)).filter((p): p is Place => !!p);
-  const pins: MapPin[] = places.map((p, i) => ({ id: p.id, order: i + 1, lat: p.lat, lng: p.lng, label: p.name, color: categoryOf(p.category).color }));
+  const places = refs.map((r) => byKey.get(refKey(r))).filter((p): p is ResolvedPlace => !!p);
+  const pins: MapPin[] = places.flatMap((p, i) => (p.lat != null && p.lng != null
+    ? [{ id: p.key, order: i + 1, lat: p.lat, lng: p.lng, label: p.name, color: categoryOf(p.category).color }] : []));
+  const open = (p: ResolvedPlace) => router.push(`/place/${encodeURIComponent(routeId(p))}`);
   const center = cityCenter(trip.city);
 
   return (
     <Screen title="지도 동선">
       <DayTabs trip={trip} withDate={false} />
-      <MapView pins={pins} emptyCenter={center} onPinPress={(id) => router.push(`/place/${id}`)} />
+      <MapView pins={pins} emptyCenter={center} onPinPress={(key) => { const p = places.find((x) => x.key === key); if (p) open(p); }} />
+      {places.some((p) => p.source === 'google') ? <GoogleAttribution /> : null}
+      {loading && places.length < refs.length ? <AppText v="caption" color={color.sub}>장소 정보를 불러오는 중…</AppText> : null}
       {places.length ? (
         <View style={{ marginTop: space.lg }}>
           <AppText v="subtitle" style={{ marginBottom: space.sm }}>{day.dayNumber}일차 이동 순서</AppText>
           {places.map((p, i) => (
-            <View key={`${p.id}-${i}`}>
-              <PlaceRow place={p} order={i + 1} onPress={() => router.push(`/place/${p.id}`)} />
+            <View key={`${p.key}-${i}`}>
+              <PlaceRow place={p} order={i + 1} onPress={() => open(p)} />
               {i < places.length - 1 ? (
                 <View style={s.leg} accessibilityLabel={`${p.name}에서 ${places[i + 1].name}로 이동`}>
                   <View style={s.legLine} />

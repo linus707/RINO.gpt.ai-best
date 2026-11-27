@@ -27,6 +27,7 @@ export default function RootLayout() {
         <Stack.Screen name="place/[id]" options={{ title: '장소' }} />
         <Stack.Screen name="guidebook/[id]/index" options={{ title: '가이드북' }} />
         <Stack.Screen name="guidebook/[id]/course" options={{ title: '전체 코스' }} />
+        <Stack.Screen name="saved" options={{ title: '저장한 장소' }} />
         <Stack.Screen name="login" options={{ title: '로그인 · 가입', presentation: 'modal' }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       </Stack>

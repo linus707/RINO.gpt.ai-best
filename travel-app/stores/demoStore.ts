@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import type { SavedPlace } from '@/features/saved/types';
 import type { Trip } from '@/features/trips/types';
 
 /**
@@ -10,6 +11,8 @@ import type { Trip } from '@/features/trips/types';
 type DemoState = {
   trips: Trip[];
   freeUsed: number;
+  saved: SavedPlace[];
+  setSaved: (saved: SavedPlace[]) => void;
   addTrip: (trip: Trip) => void;
   setTrips: (trips: Trip[]) => void;
   reset: () => void;
@@ -20,9 +23,11 @@ export const useDemoStore = create<DemoState>()(
     (set) => ({
       trips: [],
       freeUsed: 0,
+      saved: [],
+      setSaved: (saved) => set({ saved }),
       addTrip: (trip) => set((s) => ({ trips: [trip, ...s.trips], freeUsed: s.freeUsed + 1 })),
       setTrips: (trips) => set({ trips }),
-      reset: () => set({ trips: [], freeUsed: 0 }),
+      reset: () => set({ trips: [], freeUsed: 0, saved: [] }),
     }),
     { name: 'rino-trip-demo', storage: createJSONStorage(() => AsyncStorage) },
   ),

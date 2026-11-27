@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { tripsKey } from './hooks';
 import { applyChange, newItemId, saveChange, type ItineraryChange } from './itinerary';
+import type { PlaceRef } from '@/features/places/types';
 import type { Trip } from './types';
 
 /**
@@ -23,9 +24,9 @@ export function useItineraryEdit(trip: Trip | null) {
 
   return {
     error: m.error,
-    add: (dayNumber: number, placeId: string) => {
+    add: (dayNumber: number, place: PlaceRef) => {
       if (!trip) return;
-      m.mutate({ type: 'add', tripId: trip.id, dayNumber, item: { id: newItemId(), placeId, order: 999 } });
+      m.mutate({ type: 'add', tripId: trip.id, dayNumber, item: { id: newItemId(), placeId: place.id, source: place.source, order: 999 } });
     },
     remove: (dayNumber: number, itemId: string) => trip && m.mutate({ type: 'remove', tripId: trip.id, dayNumber, itemId }),
     reorder: (dayNumber: number, itemIds: string[]) => trip && m.mutate({ type: 'reorder', tripId: trip.id, dayNumber, itemIds }),

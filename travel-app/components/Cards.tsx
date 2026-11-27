@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { categoryOf } from '@/constants/categories';
 import { color, radius, space } from '@/constants/design';
 import type { Guidebook } from '@/features/guidebooks/data';
-import type { Place } from '@/features/places/data';
+import type { ResolvedPlace } from '@/features/places/types';
 import { nightsDays, shortDate } from '@/features/trips/dates';
 import type { Trip } from '@/features/trips/types';
 import { AppText } from './AppText';
@@ -58,7 +58,7 @@ export function ComingSoonCard({ city }: { city: string }) {
   );
 }
 
-export function PlaceRow({ place, order, onPress, right }: { place: Place; order?: number; onPress?: () => void; right?: React.ReactNode }) {
+export function PlaceRow({ place, order, onPress, right }: { place: ResolvedPlace; order?: number; onPress?: () => void; right?: React.ReactNode }) {
   const c = categoryOf(place.category);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.place, pressed && s.pressed]}>
@@ -68,8 +68,8 @@ export function PlaceRow({ place, order, onPress, right }: { place: Place; order
         <View style={[s.num, { backgroundColor: color.bg }]}><FilledIcon d={c.icon} color={c.color} /></View>
       )}
       <View style={{ flex: 1 }}>
-        <AppText v="bodyBold">{place.name}</AppText>
-        <AppText v="caption" color={color.sub}><AppText v="caption" color={c.color} style={{ fontWeight: '700' }}>{c.label}</AppText> · {place.area}</AppText>
+        <AppText v="bodyBold" numberOfLines={1}>{place.name}</AppText>
+        <AppText v="caption" color={color.sub} numberOfLines={1}><AppText v="caption" color={c.color} style={{ fontWeight: '700' }}>{c.label}</AppText> · {place.area}</AppText>
       </View>
       {right}
     </Pressable>

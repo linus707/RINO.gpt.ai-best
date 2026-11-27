@@ -1,4 +1,4 @@
-# 리노 트립 — 여행 앱 (Phase 1 뼈대 · Phase 2 일정·동선 · Phase 3-1 로그인)
+# 리노 트립 — 여행 앱 (Phase 1 뼈대 · Phase 2 일정·동선 · Phase 3-1 로그인 · 3-2 장소 검색·저장)
 
 아이폰 · 안드로이드 · 웹을 **코드 하나**로 만드는 여행 앱의 뼈대예요.
 구조 설계서(`travel-app-architecture.docx`) 11장 Phase 1 범위를 그대로 옮겼고, 디자인은 **D안(레드 배너 & 블루 버튼)**, 홈 화면 배치는 참고 코드(가운데 큰 헤드라인 + 버튼 하나 + 카테고리 줄 + 썸네일 카드)를 따랐어요.
@@ -20,7 +20,7 @@ npx expo start
 ## 서버(Supabase) 연결하기
 
 1. [supabase.com](https://supabase.com)에서 프로젝트를 만들어요.
-2. SQL Editor에서 `supabase/migrations/` 안의 파일을 **이름 순서대로** 실행하고(`..._init.sql` → `..._itinerary_reorder.sql` → `..._auth_accounts.sql`), 이어서 `supabase/seed.sql`(오사카 샘플)을 실행해요.
+2. SQL Editor에서 `supabase/migrations/` 안의 파일을 **이름 순서대로** 실행하고(`..._init.sql` → `..._itinerary_reorder.sql` → `..._auth_accounts.sql` → `..._saved_places_google.sql`), 이어서 `supabase/seed.sql`(오사카 샘플)을 실행해요.
 3. Authentication → Sign In / Providers에서 **Anonymous sign-ins**를 켜요. 로그인 전에도 사용자별로 무료 횟수를 세기 위해서예요.
 4. `.env.example`을 복사해 `.env`를 만들고, Project URL과 anon(공개) 키를 넣어요.
 5. `npx expo start`를 다시 실행하면 데모 모드 표시가 사라져요.
@@ -38,6 +38,36 @@ npx expo start
 | 데이터 틀 (Supabase 연결, 테이블 SQL, 로그인 틀) | ✅ | SQL은 PostgreSQL 16에서 실행 검증 |
 | 무료 5회 틀 (서버 판정, 차감, 0회 안내) | ✅ | 5회 뒤 6번째 생성은 서버가 거절 |
 | 오사카 샘플 자리 (카드, 잠금, 첫날 미리보기) | ✅ | 샘플 표시 포함 |
+
+## Phase 3-2 장소 검색(Google)·저장(하트)·메모
+
+- **장소 탐색**: 위에는 "리노 추천"(우리가 확인한 장소), 아래는 Google 검색 결과. 검색 버튼이나 카테고리를 눌렀을 때만 Google을 불러요(글자마다 부르지 않아 비용 절약).
+- **담기·하트**: Google 장소도 일정에 담고 지도에 핀으로 보여요. 하트를 누르면 "저장한 장소"에 모이고, 상세 화면에서 **내 별점·다녀온 날·메모**를 남겨요.
+- **약관 지키기**: DB에는 Google 장소의 **ID만** 저장해요. 이름·주소·좌표는 화면을 열 때 서버 함수(`places`)로 받아 앱 메모리에만 둬요. Google 정보가 보이는 곳에는 "Google Maps" 출처를 표시해요.
+- **비용 안전장치**: Google 키는 서버 함수에만 있어요. 평점·영업시간·전화처럼 비싼 필드는 요청하지 않고, 사용자 1명당 하루 검색 100회·상세 400회로 제한해요. 영업시간·후기는 "Google 지도에서 보기" 링크로 연결해요.
+
+| 확인한 것 (로컬 Supabase + 가짜 Google 서버로 실제 실행) | 결과 |
+|---|---|
+| 로그인 안 한 호출 거절, 검색 결과를 앱 카테고리 6개로 변환 | ✅ |
+| 카테고리만 눌러도 "오사카 숙소"처럼 검색, 한국어·도시 주변 우선 | ✅ |
+| 비싼 필드 요청 안 함, 이상한 장소 id 걸러냄, 하루 한도 초과 시 거절 | ✅ |
+| Google 장소 하트·메모·별점·다녀옴 저장, 중복 저장 방지, 남의 저장 못 봄 | ✅ |
+| 앱 화면: 검색 → 담기 → 새로고침 후에도 일정·지도에 이름과 핀 → 메모 저장 → 저장 목록 | ✅ |
+| 실제 Google 키로 검색 | ⏳ 아래 설정 후 확인 필요 |
+
+### Google 키 설정 (리노가 직접)
+1. [Google Cloud 콘솔](https://console.cloud.google.com)에서 프로젝트를 만들고 결제 계정을 연결해요(무료 사용량 안에서도 필요).
+2. API 및 서비스 → **Places API (New)** 사용 설정
+3. 사용자 인증 정보 → API 키 만들기 → **API 제한: Places API (New)만** 선택
+4. 할당량에서 하루 요청 수 상한을 걸고, 결제 → 예산 알림을 만들어요(예: 월 1만 원 넘으면 메일).
+5. 키를 Supabase 서버 비밀값으로 넣고 함수를 배포해요:
+```bash
+npx supabase secrets set GOOGLE_MAPS_API_KEY=발급받은키
+```
+```bash
+npx supabase functions deploy places
+```
+> 정식 공개 전 확인: Google 장소 정보를 Google 이외 지도(아이폰 Apple 지도, 웹 OpenStreetMap) 위에 표시하는 조건과 출처 표시 방식을 최신 약관(Places API 정책)에서 확인해 주세요.
 
 ## Phase 3-1 로그인·가입
 
@@ -101,7 +131,7 @@ npx supabase functions deploy delete-account
 ## 폴더 구조 (설계서 9장)
 
 ```
-app/                  화면 (Expo Router, 파일 이름 = 주소) · login.tsx(로그인·가입), auth/callback.tsx(소셜 로그인 복귀)
+app/                  화면 (Expo Router, 파일 이름 = 주소) · login.tsx(로그인·가입), auth/callback.tsx(소셜 로그인 복귀), saved.tsx(저장한 장소)
   (tabs)/             index(홈) itinerary(일정) map(지도) store(가이드북) mypage(마이페이지)
   trip/new.tsx        여행 만들기 (무료 1회 차감 지점)
   place/search.tsx    장소 탐색        place/[id].tsx  장소 상세
@@ -109,11 +139,12 @@ app/                  화면 (Expo Router, 파일 이름 = 주소) · login.tsx(
   login.tsx           로그인 틀
 components/           공통 UI (버튼, 카드, 횟수 배지, 빈 상태, 잠금, 여행 가방 그림)
                       MapView.tsx(앱 지도) / MapView.web.tsx(웹 지도), DraggableList(끌어서 순서 바꾸기)
-features/             기능 로직 (trips, places, guidebooks, usage, purchases, auth)
+features/             기능 로직 (trips, places, guidebooks, usage, purchases, auth, saved)
 lib/                  supabase.ts, maps.ts, iap.ts, env.ts
 stores/               Zustand (선택한 여행·일차, 데모 저장소)
 constants/            design.ts(토큰), categories.ts(장소 카테고리 6개)
-supabase/             migrations(테이블·함수·가입 처리), seed.sql(오사카 샘플), functions/delete-account(계정 삭제)
+supabase/             migrations(테이블·함수·가입 처리·저장 장소), seed.sql(오사카 샘플)
+                      functions/delete-account(계정 삭제), functions/places(Google 장소 검색·상세)
 ```
 
 ## 핵심 규칙 (코드에 반영됨)
@@ -125,7 +156,7 @@ supabase/             migrations(테이블·함수·가입 처리), seed.sql(오
 
 ## 다음 단계
 
-- **Phase 3**: 장소 검색 API, 카테고리 6개 검색, 저장(하트), 숙소 후보 비교
+- **Phase 3-3**: 나만의 장소 모음, 숙소 후보 비교, 내 데이터 내보내기
 - **Phase 4**: 가이드북 인앱결제(앱) / 외부 결제(웹), 영수증 서버 검증, 내 일정으로 불러오기
 - **폰트**: 제목 잘난체, 본문 Pretendard 파일을 `assets/fonts`에 넣고 `expo-font`로 불러오기. 잘난체는 상업용 라이선스 조건을 먼저 확인해 주세요.
 

@@ -49,7 +49,7 @@ export async function saveChange(trip: Trip, c: ItineraryChange): Promise<void> 
   const day = dayOf(trip, c.dayNumber);
   if (c.type === 'add') {
     const { error } = await supabase.from('itinerary_items').insert({
-      id: c.item.id, trip_day_id: day.id, place_id: c.item.placeId, sort_order: day.items.length,
+      id: c.item.id, trip_day_id: day.id, place_id: c.item.placeId, place_source: c.item.source ?? 'our', sort_order: day.items.length,
     });
     if (error) throw error;
   } else if (c.type === 'remove') {

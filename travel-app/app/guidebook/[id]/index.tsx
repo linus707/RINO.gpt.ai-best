@@ -10,6 +10,7 @@ import { Suitcase } from '@/components/Suitcase';
 import { color, radius, space } from '@/constants/design';
 import { guidebookById } from '@/features/guidebooks/data';
 import { placeById } from '@/features/places/data';
+import { ourToResolved } from '@/features/places/hooks';
 import { useIsPurchased } from '@/features/purchases/hooks';
 import { PURCHASE_ENABLED } from '@/lib/iap';
 
@@ -43,7 +44,7 @@ export default function GuidebookDetail() {
       <AppText v="subtitle" style={{ marginTop: space.xl, marginBottom: space.sm }}>1일차 무료 미리보기</AppText>
       {book.previewPlaceIds.map((pid, i) => {
         const p = placeById(pid);
-        return p ? <PlaceRow key={pid} place={p} order={i + 1} /> : null;
+        return p ? <PlaceRow key={pid} place={ourToResolved(p)} order={i + 1} /> : null;
       })}
 
       <View style={{ gap: space.sm, marginTop: space.xl }}>
