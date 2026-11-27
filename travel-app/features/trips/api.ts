@@ -1,5 +1,5 @@
 import { ensureSession, supabase } from '@/lib/supabase';
-import { useDemoStore } from '@/stores/demoStore';
+import { demoReady, useDemoStore } from '@/stores/demoStore';
 import { FREE_TRIP_LIMIT } from '@/features/usage/constants';
 import { addDays, dayCount } from './dates';
 import { FreeLimitError, type NewTripInput, type Trip } from './types';
@@ -10,7 +10,7 @@ type TripRow = {
   trip_days: { id: string; day_number: number; date: string; itinerary_items: { id: string; place_id: string; sort_order: number; visit_time: string | null; memo: string | null }[] }[];
 };
 
-const fromRow = (r: TripRow): Trip => ({
+export const fromRow = (r: TripRow): Trip => ({
   id: r.id, city: r.city, startDate: r.start_date, endDate: r.end_date, companion: r.companion, style: r.style,
   status: r.status, fromGuidebookId: r.from_guidebook_id, createdAt: r.created_at,
   days: [...r.trip_days]
@@ -22,11 +22,14 @@ const fromRow = (r: TripRow): Trip => ({
     })),
 });
 
-const TRIP_SELECT =
+export const TRIP_SELECT =
   'id,city,start_date,end_date,companion,style,status,from_guidebook_id,created_at,trip_days(id,day_number,date,itinerary_items(id,place_id,sort_order,visit_time,memo))';
 
 export async function fetchTrips(): Promise<Trip[]> {
-  if (!supabase) return useDemoStore.getState().trips;
+  if (!supabase) {
+    await demoReady();
+    return useDemoStore.getState().trips;
+  }
   await ensureSession();
   const { data, error } = await supabase.from('trips').select(TRIP_SELECT).order('created_at', { ascending: false });
   if (error) throw error;
@@ -40,6 +43,7 @@ export async function fetchTrips(): Promise<Trip[]> {
 export async function createTrip(input: NewTripInput): Promise<Trip> {
   const n = dayCount(input.startDate, input.endDate);
   if (!supabase) {
+    await demoReady();
     const store = useDemoStore.getState();
     if (store.freeUsed >= FREE_TRIP_LIMIT) throw new FreeLimitError();
     const id = `demo-${Date.now()}`;

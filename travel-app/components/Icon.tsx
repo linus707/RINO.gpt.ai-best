@@ -11,6 +11,8 @@ const PATHS = {
   chevron: 'M9 5l7 7-7 7',
   lock: 'M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3',
   plus: 'M12 5v14M5 12h14',
+  grip: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01',
+  close: 'M6 6l12 12M18 6 6 18',
   heart: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z',
 } as const;
 

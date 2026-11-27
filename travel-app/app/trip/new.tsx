@@ -8,12 +8,12 @@ import { Chip } from '@/components/Chip';
 import { FreeLimitSheet } from '@/components/FreeLimitSheet';
 import { Screen } from '@/components/Screen';
 import { color, font, radius, space } from '@/constants/design';
+import { CITIES } from '@/features/trips/cities';
 import { dayCount, isValidDate, MAX_TRIP_DAYS } from '@/features/trips/dates';
 import { useCreateTrip } from '@/features/trips/hooks';
 import { FreeLimitError } from '@/features/trips/types';
 import { useUsage } from '@/features/usage/hooks';
 
-const CITIES = ['오사카', '도쿄', '후쿠오카', '방콕', '파리'];
 const WHO = ['혼자', '친구', '연인', '가족'];
 const STYLES = ['맛집 중심', '사진 중심', '쇼핑 중심', '여유롭게'];
 
@@ -56,7 +56,7 @@ export default function NewTrip() {
     <Screen edges={['bottom']}>
       <UsageBadge />
       <AppText v="caption" color={color.sub} style={{ marginTop: space.xs }}>저장하면 무료 횟수가 1회 줄어요.</AppText>
-      <Field label="도시"><Choice items={CITIES} value={city} onChange={setCity} /></Field>
+      <Field label="도시"><Choice items={CITIES.map((c) => c.name)} value={city} onChange={setCity} /></Field>
       <View style={s.row}>
         <View style={{ flex: 1 }}><Field label="시작일"><TextInput value={start} onChangeText={setStart} style={s.input} placeholder="2027-01-15" accessibilityLabel="시작일" inputMode="numeric" /></Field></View>
         <View style={{ flex: 1 }}><Field label="종료일"><TextInput value={end} onChangeText={setEnd} style={s.input} placeholder="2027-01-18" accessibilityLabel="종료일" inputMode="numeric" /></Field></View>

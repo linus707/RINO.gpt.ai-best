@@ -1,5 +1,5 @@
 import { ensureSession, supabase } from '@/lib/supabase';
-import { useDemoStore } from '@/stores/demoStore';
+import { demoReady, useDemoStore } from '@/stores/demoStore';
 import { FREE_TRIP_LIMIT } from './constants';
 
 export type Usage = { used: number; limit: number; remaining: number };
@@ -8,6 +8,7 @@ export type Usage = { used: number; limit: number; remaining: number };
 export async function fetchUsage(): Promise<Usage> {
   let used = 0;
   if (!supabase) {
+    await demoReady();
     used = useDemoStore.getState().freeUsed;
   } else {
     const session = await ensureSession();

@@ -8,12 +8,14 @@ import { AppText } from './AppText';
  * 모든 화면의 바깥 틀: 안전 영역(노치·홈 인디케이터), 스크롤, 넓은 화면에서 가운데 정렬.
  * 화면 코드는 플랫폼을 구분하지 않는다.
  */
-export function Screen({ title, right, children, edges = ['top'], padded = true }: {
+export function Screen({ title, right, children, edges = ['top'], padded = true, scrollEnabled = true }: {
   title?: string; right?: ReactNode; children: ReactNode; edges?: ('top' | 'bottom')[]; padded?: boolean;
+  /** 드래그 중에는 화면 스크롤을 잠근다 */
+  scrollEnabled?: boolean;
 }) {
   return (
     <SafeAreaView style={s.safe} edges={edges}>
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" scrollEnabled={scrollEnabled}>
         <View style={[s.inner, padded && s.padded]}>
           {title ? (
             <View style={s.head}>

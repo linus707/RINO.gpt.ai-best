@@ -11,6 +11,7 @@ type DemoState = {
   trips: Trip[];
   freeUsed: number;
   addTrip: (trip: Trip) => void;
+  setTrips: (trips: Trip[]) => void;
   reset: () => void;
 };
 
@@ -20,8 +21,17 @@ export const useDemoStore = create<DemoState>()(
       trips: [],
       freeUsed: 0,
       addTrip: (trip) => set((s) => ({ trips: [trip, ...s.trips], freeUsed: s.freeUsed + 1 })),
+      setTrips: (trips) => set({ trips }),
       reset: () => set({ trips: [], freeUsed: 0 }),
     }),
     { name: 'rino-trip-demo', storage: createJSONStorage(() => AsyncStorage) },
   ),
 );
+
+/** 저장소를 기기에서 다 읽어 올 때까지 기다린다 (앱을 껐다 켜도 일정이 남아 있게) */
+export function demoReady(): Promise<void> {
+  if (useDemoStore.persist.hasHydrated()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const off = useDemoStore.persist.onFinishHydration(() => { off(); resolve(); });
+  });
+}
