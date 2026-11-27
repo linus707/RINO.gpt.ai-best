@@ -1,4 +1,4 @@
-import type { PlaceSource } from '@/features/places/types';
+import type { PlaceRef, PlaceSource } from '@/features/places/types';
 
 export type ItineraryItem = { id: string; placeId: string; source?: PlaceSource; order: number; visitTime?: string | null; memo?: string | null };
 export type TripDay = { id: string; dayNumber: number; date: string; items: ItineraryItem[] };
@@ -11,6 +11,8 @@ export type Trip = {
   style: string;
   status: 'planning' | 'done';
   fromGuidebookId?: string | null;
+  /** 후보 비교 후 고른 숙소 (없으면 아직 미정) */
+  stay?: PlaceRef | null;
   createdAt: string;
   days: TripDay[];
 };

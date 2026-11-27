@@ -12,6 +12,8 @@ import { color, radius, space } from '@/constants/design';
 import { deleteAccount, signOut } from '@/features/auth/api';
 import { useAccount } from '@/features/auth/hooks';
 import { shortDate } from '@/features/trips/dates';
+import { useExport } from '@/features/export/hooks';
+import { useLists } from '@/features/lists/hooks';
 import { useSaved } from '@/features/saved/hooks';
 import { useTrips } from '@/features/trips/hooks';
 import { useDemoStore } from '@/stores/demoStore';
@@ -30,6 +32,8 @@ export default function MyPage() {
   const { data: trips } = useTrips();
   const account = useAccount();
   const { data: saved } = useSaved();
+  const { data: lists } = useLists();
+  const exp = useExport();
   const qc = useQueryClient();
   const [confirm, setConfirm] = useState<'logout' | 'delete' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -75,9 +79,17 @@ export default function MyPage() {
           : <AppText v="caption" color={color.sub}>아직 없어요</AppText>}
       </Box>
       <Box title="구매한 가이드북"><AppText v="caption" color={color.sub}>아직 없어요 · 가이드북 탭에서 첫날 미리보기를 볼 수 있어요</AppText></Box>
-      <Box title={`저장한 장소 ${saved?.length ?? 0}곳`}>
-        <AppText v="caption" color={color.sub}>{saved?.length ? '하트 누른 장소와 내 메모·별점을 모아 봐요' : '장소 탐색에서 하트를 누르면 여기 모여요'}</AppText>
-        <Button label="저장한 장소 보기" variant="secondary" onPress={() => router.push('/saved')} style={{ marginTop: space.md }} />
+      <Box title={`저장한 장소 ${saved?.length ?? 0}곳 · 내 모음 ${lists?.length ?? 0}개`}>
+        <AppText v="caption" color={color.sub}>{saved?.length ? '하트 누른 장소, 내 메모·별점, 직접 만든 모음을 모아 봐요' : '장소 탐색에서 하트를 누르면 여기 모여요'}</AppText>
+        <Button label="저장한 장소·모음 보기" variant="secondary" onPress={() => router.push('/saved')} style={{ marginTop: space.md }} />
+      </Box>
+      <Box title="내 데이터 내보내기">
+        <AppText v="caption" color={color.sub}>일정·저장한 장소·메모·모음·숙소 후보를 파일로 받아요. Google 장소는 이름 대신 장소 ID와 지도 링크로 담겨요.</AppText>
+        <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.md }}>
+          <Button label="엑셀용 CSV" variant="secondary" onPress={() => exp.run('csv')} loading={exp.busy === 'csv'} style={{ flex: 1 }} />
+          <Button label="전체 백업 JSON" variant="secondary" onPress={() => exp.run('json')} loading={exp.busy === 'json'} style={{ flex: 1 }} />
+        </View>
+        {exp.error ? <AppText v="caption" color={color.danger} style={{ marginTop: space.sm }}>{exp.error}</AppText> : null}
       </Box>
 
       {account.kind === 'member' || account.kind === 'anonymous' ? (

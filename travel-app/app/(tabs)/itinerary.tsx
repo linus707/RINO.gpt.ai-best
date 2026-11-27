@@ -8,6 +8,7 @@ import { DraggableList } from '@/components/DraggableList';
 import { EmptyState } from '@/components/EmptyState';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
+import { StayCard } from '@/components/StayCard';
 import { categoryOf } from '@/constants/categories';
 import { color, radius, space } from '@/constants/design';
 import { GoogleAttribution } from '@/features/places/GoogleAttribution';
@@ -55,6 +56,7 @@ export default function Itinerary() {
 
   return (
     <Screen title={`${trip.city} ${nightsDays(trip.days.length)}`} scrollEnabled={!dragging}>
+      <StayCard trip={trip} />
       <DayTabs trip={trip} />
       {day.items.length ? (
         <>

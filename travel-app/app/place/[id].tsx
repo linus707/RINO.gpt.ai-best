@@ -6,6 +6,9 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
 import { HeartButton } from '@/components/HeartButton';
+import { ListPickerSheet } from '@/components/ListPickerSheet';
+import { useLists } from '@/features/lists/hooks';
+import { useStayEdit, useStays } from '@/features/stay/hooks';
 import { Screen } from '@/components/Screen';
 import { categoryOf } from '@/constants/categories';
 import { color, font, radius, space } from '@/constants/design';
@@ -35,6 +38,10 @@ export default function PlaceDetail() {
   const update = useUpdateSaved();
   const [memo, setMemo] = useState('');
   const [memoMsg, setMemoMsg] = useState('');
+  const [listOpen, setListOpen] = useState(false);
+  const { data: lists } = useLists();
+  const { data: stays } = useStays(trip?.id);
+  const stayEdit = useStayEdit(trip?.id);
   useEffect(() => { setMemo(saved?.memo ?? ''); }, [saved?.id, saved?.memo]);
 
   if (!place) {
@@ -90,6 +97,17 @@ export default function PlaceDetail() {
           <Button label={`${trip.city} ${day.dayNumber}일차에 담기`} onPress={() => edit.add(day.dayNumber, ref)} />
         )}
       </View>
+
+      <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.sm }}>
+        <Button label={(() => { const n = (lists ?? []).filter((l) => l.items.some((i) => i.source === ref.source && i.id === ref.id)).length; return n ? `모음 ${n}곳에 담김` : '모음에 담기'; })()}
+          variant="secondary" onPress={() => setListOpen(true)} style={{ flex: 1 }} />
+        {trip && place.category === 'stay' && (!place.city || place.city === trip.city) ? (
+          stays?.some((c) => c.source === ref.source && c.id === ref.id)
+            ? <Button label="숙소 후보 비교 ›" variant="secondary" onPress={() => router.push('/trip/stay')} style={{ flex: 1 }} />
+            : <Button label="숙소 후보에 추가" variant="secondary" onPress={() => stayEdit.add.mutate(ref)} style={{ flex: 1 }} />
+        ) : null}
+      </View>
+      <ListPickerSheet place={ref} name={place.name} visible={listOpen} onClose={() => setListOpen(false)} />
 
       <View style={s.mine}>
         <AppText v="subtitle">내 기록</AppText>

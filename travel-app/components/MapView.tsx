@@ -8,6 +8,7 @@ import { DEFAULT_CENTER, ROUTE_DASH, type MapViewProps } from '@/lib/maps';
 export function MapView({ pins, onPinPress, height = 320, emptyCenter = DEFAULT_CENTER }: MapViewProps) {
   const ref = useRef<RNMapView>(null);
   const coords = pins.map((p) => ({ latitude: p.lat, longitude: p.lng }));
+  const route = pins.filter((p) => !p.badge).map((p) => ({ latitude: p.lat, longitude: p.lng }));
   const fitKey = pins.map((p) => p.id).join(',');
 
   const fit = () => {
@@ -30,17 +31,17 @@ export function MapView({ pins, onPinPress, height = 320, emptyCenter = DEFAULT_
         initialRegion={{ latitude: coords[0]?.latitude ?? emptyCenter.lat, longitude: coords[0]?.longitude ?? emptyCenter.lng, latitudeDelta: 0.04, longitudeDelta: 0.04 }}
         toolbarEnabled={false}
       >
-        {coords.length > 1 ? <Polyline coordinates={coords} strokeColor={color.action} strokeWidth={3} lineDashPattern={ROUTE_DASH} /> : null}
+        {route.length > 1 ? <Polyline coordinates={route} strokeColor={color.action} strokeWidth={3} lineDashPattern={ROUTE_DASH} /> : null}
         {pins.map((p) => (
           <Marker
-            key={`${p.id}-${p.order}`}
+            key={`${p.id}-${p.order}-${p.color}`}
             coordinate={{ latitude: p.lat, longitude: p.lng }}
             onPress={() => onPinPress?.(p.id)}
-            accessibilityLabel={`${p.order}번 ${p.label}`}
+            accessibilityLabel={p.badge ? `${p.badge} ${p.label}` : `${p.order}번 ${p.label}`}
             tracksViewChanges={false}
           >
-            <View style={[s.pin, { backgroundColor: p.color }]}>
-              <Text style={s.pinText}>{p.order}</Text>
+            <View style={[s.pin, { backgroundColor: p.color }, p.badge ? s.badgePin : null]}>
+              <Text style={s.pinText}>{p.badge ?? p.order}</Text>
             </View>
           </Marker>
         ))}
@@ -52,5 +53,6 @@ export function MapView({ pins, onPinPress, height = 320, emptyCenter = DEFAULT_
 const s = StyleSheet.create({
   box: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: color.surface },
   pin: { width: 28, height: 28, borderRadius: 14, borderWidth: 2.5, borderColor: color.white, alignItems: 'center', justifyContent: 'center' },
+  badgePin: { borderRadius: 6 },
   pinText: { color: color.white, fontSize: 12, fontWeight: '700' },
 });

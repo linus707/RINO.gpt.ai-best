@@ -21,6 +21,7 @@ import { cityCenter } from '@/features/trips/cities';
 import { useCurrentTrip } from '@/features/trips/hooks';
 import { sameRef } from '@/features/trips/itemRef';
 import { useItineraryEdit } from '@/features/trips/itineraryHooks';
+import { useStayEdit, useStays } from '@/features/stay/hooks';
 import { useAppStore } from '@/stores/appStore';
 
 const UNAVAILABLE: Record<GoogleUnavailableError['reason'], string> = {
@@ -35,7 +36,8 @@ const UNAVAILABLE: Record<GoogleUnavailableError['reason'], string> = {
  * Google 검색은 검색 버튼·카테고리를 눌렀을 때만 부른다 (글자마다 부르지 않아 비용 절약).
  */
 export default function PlaceSearch() {
-  const params = useLocalSearchParams<{ cat?: CategoryKey }>();
+  const params = useLocalSearchParams<{ cat?: CategoryKey; pick?: 'stay' }>();
+  const pickStay = params.pick === 'stay';
   const [cat, setCat] = useState<CategoryKey | 'all'>(params.cat ?? 'all');
   const [q, setQ] = useState('');
   const [submitted, setSubmitted] = useState<{ query: string; category?: CategoryKey } | null>(params.cat ? { query: '', category: params.cat } : null);
@@ -43,6 +45,8 @@ export default function PlaceSearch() {
   const { trip } = useCurrentTrip();
   const dayNo = useAppStore((s) => s.selectedDay);
   const edit = useItineraryEdit(trip);
+  const { data: stays } = useStays(pickStay ? trip?.id : undefined);
+  const stayEdit = useStayEdit(trip?.id);
   const city = trip?.city ?? '오사카';
   const center = cityCenter(city);
   const day = trip?.days.find((d) => d.dayNumber === dayNo) ?? trip?.days[0];
@@ -65,14 +69,20 @@ export default function PlaceSearch() {
     edit.add(day.dayNumber, p);
     setNotice(`${day.dayNumber}일차에 ${josa(p.name, '을', '를')} 담았어요`);
   };
+  const addStay = (p: ResolvedPlace) => {
+    if (stays?.some((c) => c.source === p.source && c.id === p.id)) return setNotice(`${josa(p.name, '은', '는')} 이미 후보에 있어요`);
+    stayEdit.add.mutate(p);
+    setNotice(`숙소 후보에 ${josa(p.name, '을', '를')} 담았어요`);
+  };
   const row = (p: ResolvedPlace) => {
-    const added = !!day?.items.some((i) => sameRef(i, p));
+    const added = pickStay ? !!stays?.some((c) => c.source === p.source && c.id === p.id) : !!day?.items.some((i) => sameRef(i, p));
     return (
       <PlaceRow key={p.key} place={p} onPress={() => router.push(`/place/${encodeURIComponent(routeId(p))}`)}
         right={
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <HeartButton place={p} name={p.name} />
-            {trip ? <Chip label={added ? '담김' : '담기'} selected={added} onPress={() => add(p)} /> : null}
+            {trip && pickStay ? <Chip label={added ? '후보' : '후보 추가'} selected={added} onPress={() => addStay(p)} />
+              : trip ? <Chip label={added ? '담김' : '담기'} selected={added} onPress={() => add(p)} /> : null}
           </View>
         } />
     );
@@ -80,7 +90,13 @@ export default function PlaceSearch() {
 
   return (
     <Screen edges={['bottom']}>
-      <AddTarget trip={trip} />
+      {pickStay && trip ? (
+        <View style={s.pick}>
+          <AppText v="bodyBold">{trip.city} 여행 숙소 후보 고르기</AppText>
+          <AppText v="caption" color={color.sub}>후보에 담은 숙소는 '숙소 후보 비교'에서 거리·메모로 비교해요.</AppText>
+          <Button label="비교하러 가기" variant="secondary" onPress={() => router.dismissTo('/trip/stay')} style={{ marginTop: space.sm, minHeight: 40 }} />
+        </View>
+      ) : <AddTarget trip={trip} />}
       <View style={s.searchRow}>
         <TextInput value={q} onChangeText={setQ} onSubmitEditing={() => search()} placeholder={`${city}에서 장소 검색`} style={s.input}
           accessibilityLabel="장소 검색" returnKeyType="search" />
@@ -122,4 +138,5 @@ const s = StyleSheet.create({
   searchRow: { flexDirection: 'row', gap: space.sm },
   input: { ...font.body, flex: 1, fontSize: 16, minHeight: 48, borderRadius: radius.md, backgroundColor: color.surface, paddingHorizontal: space.lg, color: color.ink },
   chips: { gap: space.sm, paddingVertical: space.md },
+  pick: { backgroundColor: color.surface, borderRadius: radius.lg, padding: space.lg, marginBottom: space.md },
 });

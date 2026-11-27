@@ -23,7 +23,8 @@ export default function MapTab() {
   const dayNo = useAppStore((s) => s.selectedDay);
   const day = trip?.days.find((d) => d.dayNumber === dayNo) ?? trip?.days[0];
   const refs = (day?.items ?? []).map(itemRef);
-  const { byKey, loading } = useResolvedPlaces(refs);
+  const stayRefs = trip?.stay ? [trip.stay] : [];
+  const { byKey, loading } = useResolvedPlaces([...refs, ...stayRefs]);
   if (!trip || !day) {
     return (
       <Screen title="지도 동선">
@@ -34,13 +35,15 @@ export default function MapTab() {
   const places = refs.map((r) => byKey.get(refKey(r))).filter((p): p is ResolvedPlace => !!p);
   const pins: MapPin[] = places.flatMap((p, i) => (p.lat != null && p.lng != null
     ? [{ id: p.key, order: i + 1, lat: p.lat, lng: p.lng, label: p.name, color: categoryOf(p.category).color }] : []));
+  const stay = trip.stay ? byKey.get(refKey(trip.stay)) : undefined;
+  if (stay && stay.lat != null && stay.lng != null) pins.push({ id: stay.key, order: 0, lat: stay.lat, lng: stay.lng, label: `숙소 ${stay.name}`, badge: '숙', color: color.brand });
   const open = (p: ResolvedPlace) => router.push(`/place/${encodeURIComponent(routeId(p))}`);
   const center = cityCenter(trip.city);
 
   return (
     <Screen title="지도 동선">
       <DayTabs trip={trip} withDate={false} />
-      <MapView pins={pins} emptyCenter={center} onPinPress={(key) => { const p = places.find((x) => x.key === key); if (p) open(p); }} />
+      <MapView pins={pins} emptyCenter={center} onPinPress={(key) => { const p = places.find((x) => x.key === key) ?? (stay?.key === key ? stay : undefined); if (p) open(p); }} />
       {places.some((p) => p.source === 'google') ? <GoogleAttribution /> : null}
       {loading && places.length < refs.length ? <AppText v="caption" color={color.sub}>장소 정보를 불러오는 중…</AppText> : null}
       {places.length ? (

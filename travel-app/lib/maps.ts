@@ -4,7 +4,9 @@
  * - 웹: components/MapView.web.tsx → Leaflet + OpenStreetMap 타일
  * 이동 시간 숫자·동선 자동 최적화는 지도 제공자 조건·비용을 확인한 뒤 별도 단계에서 붙인다.
  */
-export type MapPin = { id: string; order: number; lat: number; lng: number; label: string; color: string };
+export type MapPin = { id: string; order: number; lat: number; lng: number; label: string; color: string;
+  /** 숫자 대신 보여 줄 글자 (예: 숙소 '숙'). 있으면 동선 선에서 빠진다 */
+  badge?: string };
 export type MapViewProps = {
   pins: MapPin[];
   onPinPress?: (id: string) => void;

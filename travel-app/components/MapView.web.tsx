@@ -30,24 +30,25 @@ export function MapView({ pins, onPinPress, height = 320, emptyCenter = DEFAULT_
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const key = pins.map((p) => `${p.id}:${p.order}`).join(',');
+  const key = pins.map((p) => `${p.id}:${p.order}:${p.badge ?? ''}:${p.color}`).join(',');
   useEffect(() => {
     const m = map.current, g = layer.current;
     if (!m || !g) return;
     g.clearLayers();
     const latlngs = pins.map((p) => L.latLng(p.lat, p.lng));
-    if (latlngs.length > 1) {
-      L.polyline(latlngs, { color: color.action, weight: 3, dashArray: ROUTE_DASH.join(' '), lineCap: 'round' }).addTo(g);
+    const route = pins.filter((p) => !p.badge).map((p) => L.latLng(p.lat, p.lng));
+    if (route.length > 1) {
+      L.polyline(route, { color: color.action, weight: 3, dashArray: ROUTE_DASH.join(' '), lineCap: 'round' }).addTo(g);
     }
     pins.forEach((p) => {
       const icon = L.divIcon({
         className: '',
         iconSize: [28, 28],
         iconAnchor: [14, 14],
-        // 숫자와 정해진 색만 들어간다 (사용자 입력 없음)
-        html: `<div style="width:28px;height:28px;border-radius:14px;border:2.5px solid #fff;box-sizing:border-box;background:${p.color};color:#fff;font:700 12px/23px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25)">${Number(p.order)}</div>`,
+        // 숫자·정해진 글자(영문·한글만 남김)·정해진 색만 들어간다 (사용자 입력 없음)
+        html: `<div style="width:28px;height:28px;border-radius:${p.badge ? 6 : 14}px;border:2.5px solid #fff;box-sizing:border-box;background:${p.color};color:#fff;font:700 12px/23px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25)">${p.badge ? String(p.badge).replace(/[^A-Za-z0-9가-힣]/g, '').slice(0, 2) : Number(p.order)}</div>`,
       });
-      L.marker([p.lat, p.lng], { icon, title: `${p.order}번 ${p.label}`, keyboard: true })
+      L.marker([p.lat, p.lng], { icon, title: p.badge ? `${p.badge} ${p.label}` : `${p.order}번 ${p.label}`, keyboard: true })
         .on('click', () => press.current?.(p.id))
         .addTo(g);
     });

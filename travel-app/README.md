@@ -1,4 +1,4 @@
-# 리노 트립 — 여행 앱 (Phase 1 뼈대 · Phase 2 일정·동선 · Phase 3-1 로그인 · 3-2 장소 검색·저장)
+# 리노 트립 — 여행 앱 (Phase 1 뼈대 · Phase 2 일정·동선 · Phase 3-1 로그인 · 3-2 장소 검색·저장 · 3-3 모음·숙소 비교·내보내기)
 
 아이폰 · 안드로이드 · 웹을 **코드 하나**로 만드는 여행 앱의 뼈대예요.
 구조 설계서(`travel-app-architecture.docx`) 11장 Phase 1 범위를 그대로 옮겼고, 디자인은 **D안(레드 배너 & 블루 버튼)**, 홈 화면 배치는 참고 코드(가운데 큰 헤드라인 + 버튼 하나 + 카테고리 줄 + 썸네일 카드)를 따랐어요.
@@ -20,7 +20,7 @@ npx expo start
 ## 서버(Supabase) 연결하기
 
 1. [supabase.com](https://supabase.com)에서 프로젝트를 만들어요.
-2. SQL Editor에서 `supabase/migrations/` 안의 파일을 **이름 순서대로** 실행하고(`..._init.sql` → `..._itinerary_reorder.sql` → `..._auth_accounts.sql` → `..._saved_places_google.sql`), 이어서 `supabase/seed.sql`(오사카 샘플)을 실행해요.
+2. SQL Editor에서 `supabase/migrations/` 안의 파일을 **이름 순서대로** 실행하고(`..._init.sql` → `..._itinerary_reorder.sql` → `..._auth_accounts.sql` → `..._saved_places_google.sql` → `..._lists_stays.sql`), 이어서 `supabase/seed.sql`(오사카 샘플)을 실행해요.
 3. Authentication → Sign In / Providers에서 **Anonymous sign-ins**를 켜요. 로그인 전에도 사용자별로 무료 횟수를 세기 위해서예요.
 4. `.env.example`을 복사해 `.env`를 만들고, Project URL과 anon(공개) 키를 넣어요.
 5. `npx expo start`를 다시 실행하면 데모 모드 표시가 사라져요.
@@ -38,6 +38,21 @@ npx expo start
 | 데이터 틀 (Supabase 연결, 테이블 SQL, 로그인 틀) | ✅ | SQL은 PostgreSQL 16에서 실행 검증 |
 | 무료 5회 틀 (서버 판정, 차감, 0회 안내) | ✅ | 5회 뒤 6번째 생성은 서버가 거절 |
 | 오사카 샘플 자리 (카드, 잠금, 첫날 미리보기) | ✅ | 샘플 표시 포함 |
+
+## Phase 3-3 내 모음 · 숙소 후보 비교 · 내 데이터 내보내기
+
+- **내 모음**: "오사카 야경 코스"처럼 이름 붙인 모음을 만들고, 장소 상세의 "모음에 담기"로 넣고 빼요. 저장한 장소 화면의 "내 모음" 탭에서 이름 바꾸기·삭제.
+- **숙소 후보 비교** (설계서 Phase 3 체크리스트): 일정 맨 위 숙소 카드 → 후보 추가(숙소 검색) → 지도에서 후보 A·B·C와 그날 동선을 함께 보고, **1일차·마지막 날·전체 평균 직선 거리**, 내가 적은 **가격 메모·메모**로 비교 → "이 숙소로 정하기"로 고정. 정한 숙소는 일정 맨 위와 지도에 '숙' 핀으로 보여요. 거리는 직선 거리예요(이동 시간 아님).
+- **내 데이터 내보내기**: 마이페이지에서 엑셀용 CSV(한글 깨짐 방지) / 전체 백업 JSON. 일정·숙소·숙소 후보·저장한 장소·메모·모음이 담기고, Google 장소는 이름 대신 장소 ID와 Google 지도 링크로 담겨요(약관상 Google 정보를 밖으로 복사하지 않음). 웹은 바로 내려받기, 앱은 공유 창으로 저장해요.
+
+| 확인한 것 (로컬 Supabase로 실제 실행) | 결과 |
+|---|---|
+| 모음 만들기·담기, 빈 이름 막기, 남의 모음 못 보고 못 넣음 | ✅ |
+| 숙소 후보 추가·중복 방지·하나로 정하기, 남의 여행엔 못 넣고 못 바꿈, 여행 삭제 시 후보도 삭제 | ✅ |
+| 앱 화면: 숙소 후보 2곳 거리 비교 → 가격 메모 → 정하기 → 새로고침 후 유지 → 일정·지도에 숙소 표시 | ✅ |
+| 앱 화면: 모음 만들고 담기 → 모음 화면 확인 | ✅ |
+| 내보내기: CSV(BOM 포함·엑셀 수식 주입 방지)·JSON 내려받기, Google 장소 이름은 빠짐 | ✅ |
+| 데모 모드에서도 같은 흐름 동작 | ✅ |
 
 ## Phase 3-2 장소 검색(Google)·저장(하트)·메모
 
@@ -131,7 +146,8 @@ npx supabase functions deploy delete-account
 ## 폴더 구조 (설계서 9장)
 
 ```
-app/                  화면 (Expo Router, 파일 이름 = 주소) · login.tsx(로그인·가입), auth/callback.tsx(소셜 로그인 복귀), saved.tsx(저장한 장소)
+app/                  화면 (Expo Router, 파일 이름 = 주소) · login.tsx(로그인·가입), auth/callback.tsx(소셜 로그인 복귀)
+                      saved.tsx(저장한 장소·내 모음), lists/[id].tsx(모음), trip/stay.tsx(숙소 후보 비교)
   (tabs)/             index(홈) itinerary(일정) map(지도) store(가이드북) mypage(마이페이지)
   trip/new.tsx        여행 만들기 (무료 1회 차감 지점)
   place/search.tsx    장소 탐색        place/[id].tsx  장소 상세
@@ -139,7 +155,7 @@ app/                  화면 (Expo Router, 파일 이름 = 주소) · login.tsx(
   login.tsx           로그인 틀
 components/           공통 UI (버튼, 카드, 횟수 배지, 빈 상태, 잠금, 여행 가방 그림)
                       MapView.tsx(앱 지도) / MapView.web.tsx(웹 지도), DraggableList(끌어서 순서 바꾸기)
-features/             기능 로직 (trips, places, guidebooks, usage, purchases, auth, saved)
+features/             기능 로직 (trips, places, guidebooks, usage, purchases, auth, saved, lists, stay, export)
 lib/                  supabase.ts, maps.ts, iap.ts, env.ts
 stores/               Zustand (선택한 여행·일차, 데모 저장소)
 constants/            design.ts(토큰), categories.ts(장소 카테고리 6개)
@@ -156,7 +172,6 @@ supabase/             migrations(테이블·함수·가입 처리·저장 장소
 
 ## 다음 단계
 
-- **Phase 3-3**: 나만의 장소 모음, 숙소 후보 비교, 내 데이터 내보내기
 - **Phase 4**: 가이드북 인앱결제(앱) / 외부 결제(웹), 영수증 서버 검증, 내 일정으로 불러오기
 - **폰트**: 제목 잘난체, 본문 Pretendard 파일을 `assets/fonts`에 넣고 `expo-font`로 불러오기. 잘난체는 상업용 라이선스 조건을 먼저 확인해 주세요.
 
