@@ -1,0 +1,34 @@
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
+import { EmptyState } from '@/components/EmptyState';
+import { Screen } from '@/components/Screen';
+import { categoryOf } from '@/constants/categories';
+import { color, radius, space } from '@/constants/design';
+import { placeById } from '@/features/places/data';
+
+/** 장소 상세 — 영업시간·입장료는 공식 출처 확인값만, 확인일과 함께 */
+export default function PlaceDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const place = placeById(id);
+  if (!place) return <Screen><EmptyState title="장소를 찾을 수 없어요" description="목록으로 돌아가 다시 골라 주세요." /></Screen>;
+  const c = categoryOf(place.category);
+  return (
+    <Screen edges={['bottom']}>
+      <Stack.Screen options={{ title: place.name }} />
+      <AppText v="caption" color={c.color} style={{ fontWeight: '700' }}>{c.label}</AppText>
+      <AppText v="title">{place.name}</AppText>
+      <AppText v="body" color={color.sub}>{place.area} · {place.note}</AppText>
+      <View style={s.box}>
+        <AppText v="bodyBold">확인 정보</AppText>
+        <AppText v="caption" color={color.sub}>
+          {place.verifiedAt ? `확인일 ${place.verifiedAt}` : '영업시간·입장료는 공식 출처로 확인한 뒤 확인일과 함께 표시돼요 (지금은 샘플)'}
+        </AppText>
+      </View>
+      <Button label="일정에 담기 (Phase 2)" disabled />
+    </Screen>
+  );
+}
+
+const s = StyleSheet.create({ box: { backgroundColor: color.surface, borderRadius: radius.lg, padding: space.lg, marginVertical: space.lg } });
