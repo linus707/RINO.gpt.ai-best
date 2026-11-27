@@ -43,3 +43,6 @@ yarn-error.*
 # 환경변수 (실제 값은 커밋 금지)
 .env
 .env.local
+
+# 로컬 Deno 검사에서 생기는 파일
+deno.lock
