@@ -6,11 +6,11 @@ import { Icon } from './Icon';
 
 /** 남은 무료 횟수 — 홈·여행 만들기·마이페이지 공통 */
 export function UsageBadge() {
-  const { data } = useUsage();
+  const { data, isError } = useUsage();
   return (
     <View style={s.usage} accessibilityLabel={data ? `무료 ${data.limit}회 중 ${data.remaining}회 남음` : '무료 횟수 확인 중'}>
       <View style={s.dot} />
-      <AppText v="caption" style={{ fontWeight: '700' }}>{data ? `무료 ${data.limit}회 중 ${data.remaining}회 남음` : '확인 중…'}</AppText>
+      <AppText v="caption" style={{ fontWeight: '700' }}>{data ? `무료 ${data.limit}회 중 ${data.remaining}회 남음` : isError ? '연결을 확인해 주세요' : '확인 중…'}</AppText>
     </View>
   );
 }

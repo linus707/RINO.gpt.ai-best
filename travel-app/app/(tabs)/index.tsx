@@ -10,6 +10,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
 import { SectionHeader } from '@/components/SectionHeader';
+import { SignupNudge } from '@/components/SignupNudge';
+import { useAccount } from '@/features/auth/hooks';
 import { color, font, radius, space } from '@/constants/design';
 import { GUIDEBOOKS } from '@/features/guidebooks/data';
 import { useTrips } from '@/features/trips/hooks';
@@ -27,6 +29,7 @@ export default function Home() {
   const { data: trips, isLoading } = useTrips();
   const { data: usage } = useUsage();
   const selectTrip = useAppStore((s) => s.selectTrip);
+  const account = useAccount();
   const goNew = () => router.push('/trip/new');
 
   return (
@@ -43,8 +46,8 @@ export default function Home() {
         <Pressable onPress={() => router.push('/place/search')} accessibilityRole="button" accessibilityLabel="장소 검색" style={s.iconBtn}>
           <Icon name="search" size={20} />
         </Pressable>
-        <Pressable onPress={() => router.push('/login')} accessibilityRole="button" style={s.login}>
-          <AppText v="caption" style={{ fontWeight: '700' }}>로그인</AppText>
+        <Pressable onPress={() => router.push(account.kind === 'member' ? '/mypage' : '/login')} accessibilityRole="button" style={s.login}>
+          <AppText v="caption" style={{ fontWeight: '700' }}>{account.kind === 'member' ? '내 계정' : '로그인'}</AppText>
         </Pressable>
       </View>
 
@@ -69,6 +72,7 @@ export default function Home() {
           <View style={s.demo}><AppText v="caption" color={color.sub}>데모 모드 · 서버 연결 전이라 이 기기에만 저장돼요</AppText></View>
         ) : null}
 
+        <SignupNudge />
         <SectionHeader title="내 여행" actionLabel={trips?.length ? '일정 보기' : undefined} onAction={() => router.push('/itinerary')} />
         {isLoading ? (
           <AppText v="body" color={color.sub}>불러오는 중…</AppText>

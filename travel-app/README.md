@@ -1,4 +1,4 @@
-# 리노 트립 — 여행 앱 (Phase 1 뼈대 + Phase 2 일정·동선)
+# 리노 트립 — 여행 앱 (Phase 1 뼈대 · Phase 2 일정·동선 · Phase 3-1 로그인)
 
 아이폰 · 안드로이드 · 웹을 **코드 하나**로 만드는 여행 앱의 뼈대예요.
 구조 설계서(`travel-app-architecture.docx`) 11장 Phase 1 범위를 그대로 옮겼고, 디자인은 **D안(레드 배너 & 블루 버튼)**, 홈 화면 배치는 참고 코드(가운데 큰 헤드라인 + 버튼 하나 + 카테고리 줄 + 썸네일 카드)를 따랐어요.
@@ -20,7 +20,7 @@ npx expo start
 ## 서버(Supabase) 연결하기
 
 1. [supabase.com](https://supabase.com)에서 프로젝트를 만들어요.
-2. SQL Editor에서 `supabase/migrations/` 안의 파일을 **이름 순서대로** 실행하고(`..._init.sql` → `..._itinerary_reorder.sql`), 이어서 `supabase/seed.sql`(오사카 샘플)을 실행해요.
+2. SQL Editor에서 `supabase/migrations/` 안의 파일을 **이름 순서대로** 실행하고(`..._init.sql` → `..._itinerary_reorder.sql` → `..._auth_accounts.sql`), 이어서 `supabase/seed.sql`(오사카 샘플)을 실행해요.
 3. Authentication → Sign In / Providers에서 **Anonymous sign-ins**를 켜요. 로그인 전에도 사용자별로 무료 횟수를 세기 위해서예요.
 4. `.env.example`을 복사해 `.env`를 만들고, Project URL과 anon(공개) 키를 넣어요.
 5. `npx expo start`를 다시 실행하면 데모 모드 표시가 사라져요.
@@ -38,6 +38,46 @@ npx expo start
 | 데이터 틀 (Supabase 연결, 테이블 SQL, 로그인 틀) | ✅ | SQL은 PostgreSQL 16에서 실행 검증 |
 | 무료 5회 틀 (서버 판정, 차감, 0회 안내) | ✅ | 5회 뒤 6번째 생성은 서버가 거절 |
 | 오사카 샘플 자리 (카드, 잠금, 첫날 미리보기) | ✅ | 샘플 표시 포함 |
+
+## Phase 3-1 로그인·가입
+
+**흐름**: 처음엔 가입 없이 익명으로 쓰고 → 여행을 만들면 "가입하기"를 권하고 → 카카오·Apple·이메일을 **지금 계정에 연결**해요. 사용자 id가 그대로라 일정·순서·남은 무료 횟수가 그대로 남아요. 이미 가입된 수단이면 "그 계정으로 로그인할지" 따로 확인해요(이 기기의 가입 전 기록은 옮겨지지 않는다고 안내).
+
+| 확인한 것 (로컬 Supabase 인증 서버 + DB로 실제 실행) | 결과 |
+|---|---|
+| 익명 → 이메일 코드로 가입, 같은 id 유지, 일정·순서·무료 횟수 그대로 | ✅ |
+| 다른 기기에서 같은 이메일 연결 시 "이미 가입됨" 감지 → 기존 계정 로그인 | ✅ |
+| 로그아웃하면 새 익명으로 시작, 다시 로그인하면 기록 복원 | ✅ |
+| 계정 삭제 서버 함수: 로그인 없으면 거절, 본인 삭제, 기록 함께 삭제 | ✅ |
+| 계정 삭제 후에도 결제 기록은 남고 개인 연결만 끊김 (전자상거래법 보관 의무) | ✅ |
+| 카카오·Apple 로그인 | ⏳ 아래 콘솔 설정 후 실제 기기에서 확인 필요 |
+
+### 리노가 직접 해야 하는 설정
+
+**① Supabase 대시보드 → Authentication**
+1. Sign In / Providers → **Allow anonymous sign-ins** 켜기
+2. Sign In / Providers → **Allow manual linking** 켜기 (익명 계정에 카카오·Apple 연결)
+3. URL Configuration → Redirect URLs에 추가: `rinotrip://auth/callback`, `exp://**`(Expo Go 개발용), `http://localhost:8081/auth/callback`, 정식 웹 주소의 `/auth/callback`
+4. Emails → Templates → **Magic Link**와 **Change Email Address** 본문에 `{{ .Token }}`을 넣기 (예: `인증 코드: {{ .Token }}`) — 앱은 링크 대신 6자리 코드를 입력받아요
+5. 정식 공개 전: Emails → SMTP Settings에서 자체 메일 발송 서비스 연결 (기본 메일은 시간당 발송 수가 아주 적어요)
+
+**② 카카오 로그인** ([developers.kakao.com](https://developers.kakao.com))
+1. 내 애플리케이션 → 앱 만들기 → REST API 키 확인
+2. 카카오 로그인 → 활성화, Redirect URI에 `https://<프로젝트>.supabase.co/auth/v1/callback` 등록
+3. 동의항목: 닉네임·프로필 사진, **카카오계정(이메일)** — 이메일 동의항목은 비즈 앱 전환이 필요할 수 있어요
+4. 보안 → Client Secret 생성·사용 설정
+5. Supabase → Providers → Kakao: Client ID = REST API 키, Secret = Client Secret
+
+**③ Apple 로그인** (Apple Developer Program 가입 필요)
+1. Certificates, Identifiers & Profiles → App ID `com.rino.trip`에 Sign in with Apple 켜기
+2. 웹·Android용: Services ID 만들고 Return URL에 `https://<프로젝트>.supabase.co/auth/v1/callback`, 키(.p8) 생성
+3. Supabase → Providers → Apple: Client IDs에 `com.rino.trip`(아이폰 앱)과 Services ID를 함께, Secret Key는 키로 만든 값
+4. 아이폰의 Apple 기본 로그인 창은 개발 빌드(`eas build --profile development`)에서 확인해요
+
+**④ 계정 삭제 서버 함수 배포**
+```bash
+npx supabase functions deploy delete-account
+```
 
 ## Phase 2 완료 기준 체크리스트
 
@@ -61,7 +101,7 @@ npx expo start
 ## 폴더 구조 (설계서 9장)
 
 ```
-app/                  화면 (Expo Router, 파일 이름 = 주소)
+app/                  화면 (Expo Router, 파일 이름 = 주소) · login.tsx(로그인·가입), auth/callback.tsx(소셜 로그인 복귀)
   (tabs)/             index(홈) itinerary(일정) map(지도) store(가이드북) mypage(마이페이지)
   trip/new.tsx        여행 만들기 (무료 1회 차감 지점)
   place/search.tsx    장소 탐색        place/[id].tsx  장소 상세
@@ -69,11 +109,11 @@ app/                  화면 (Expo Router, 파일 이름 = 주소)
   login.tsx           로그인 틀
 components/           공통 UI (버튼, 카드, 횟수 배지, 빈 상태, 잠금, 여행 가방 그림)
                       MapView.tsx(앱 지도) / MapView.web.tsx(웹 지도), DraggableList(끌어서 순서 바꾸기)
-features/             기능 로직 (trips, places, guidebooks, usage, purchases)
+features/             기능 로직 (trips, places, guidebooks, usage, purchases, auth)
 lib/                  supabase.ts, maps.ts, iap.ts, env.ts
 stores/               Zustand (선택한 여행·일차, 데모 저장소)
 constants/            design.ts(토큰), categories.ts(장소 카테고리 6개)
-supabase/             migrations(테이블 SQL·순서 저장 함수), seed.sql(오사카 샘플)
+supabase/             migrations(테이블·함수·가입 처리), seed.sql(오사카 샘플), functions/delete-account(계정 삭제)
 ```
 
 ## 핵심 규칙 (코드에 반영됨)
