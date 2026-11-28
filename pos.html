@@ -86,7 +86,7 @@ body.test .cstrip{background:#fff6dc}
 .tabs .cnt{margin-left:auto;display:flex;align-items:center;font-size:13px;font-weight:400;color:var(--tx3);padding-left:var(--space-lg)}
 
 /* 상단 고정 띠 */
-.bar{position:sticky;top:0;z-index:5;background:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:12px var(--space-lg);padding:10px var(--space-lg);box-shadow:inset 0 -1px 0 var(--line)}
+.bar{position:sticky;top:var(--stk,0px);z-index:5;background:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:12px var(--space-lg);padding:10px var(--space-lg);box-shadow:inset 0 -1px 0 var(--line)}
 .bar .t{margin-right:auto;min-width:0}
 .bar h1{font-weight:700;font-size:22px;line-height:28px;letter-spacing:-.44px}
 .code{font-size:13px;line-height:16px;letter-spacing:0;color:var(--tx)}
@@ -112,7 +112,7 @@ body.test .cstrip{background:#fff6dc}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:32px;align-items:start;padding:12px var(--space-lg) var(--space-3xl);max-width:1440px;margin:0 auto}
 .gal{min-width:0;grid-area:gal}
 .main{grid-template-areas:"gal opts" "det opts"}
-.main>.opts{grid-area:opts;position:sticky;top:78px;align-self:start;max-height:calc(100vh - 90px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
+.main>.opts{grid-area:opts;position:sticky;top:calc(var(--stk,0px) + 14px);align-self:start;max-height:calc(100vh - var(--stk,0px) - 26px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
 .main>.opts::-webkit-scrollbar{display:none}
 /* 상세페이지: 그림 아래 사진·글 블록 + 옵션별 가격 */
 .pdet{grid-area:det;min-width:0;margin-top:40px;padding-top:40px;border-top:1px solid var(--hair)}
@@ -263,7 +263,8 @@ a.pd-ln:hover{background:var(--sub)}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:12px 20px;border-radius:var(--r-full);background:rgba(0,0,0,.88);color:#fff;box-shadow:0 4px 8px rgba(0,0,0,.2);z-index:10;max-width:90vw;text-align:center}
 .state{padding:80px 20px;text-align:center;color:var(--tx3);line-height:1.7}
 /* 메뉴 펼침 */
-.gnb{position:relative;z-index:13;background:#fff}
+.gnb{position:sticky;top:0;z-index:13;background:#fff} /* 스크롤해도 맨 위 메뉴가 고정돼요 */
+.flow{position:sticky;top:var(--gnbh,64px);z-index:12;background:#fff}
 .mega{position:absolute;left:0;right:0;top:64px;z-index:13;display:grid;grid-template-columns:minmax(0,1.1fr) 1px minmax(0,1.9fr);gap:0 40px;padding:28px var(--space-lg) 36px;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.08),inset 0 1px 0 var(--line)}
 .mega h5{margin:0 0 16px;font-size:15px;font-weight:700}
 .mega .rule{background:var(--line)}
@@ -449,7 +450,7 @@ a.pd-ln:hover{background:var(--sub)}
 .cmp-guide{margin-top:10px;line-height:1.7;color:var(--tx2)}
 /* 손님 화면 */
 .cview{position:fixed;inset:0;z-index:30;background:#fff;overflow:auto}
-.cv-top{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px var(--space-lg);background:#fff;box-shadow:inset 0 -1px 0 var(--line)}
+.cv-top{position:sticky;top:var(--stk,0px);z-index:1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px var(--space-lg);background:#fff;box-shadow:inset 0 -1px 0 var(--line)}
 .cv-top h2{margin:0;flex:1;min-width:200px;font-size:24px;line-height:32px;letter-spacing:-.48px}
 .cv-top h2 small{display:block;font-size:13px;line-height:18px;font-weight:400;color:var(--tx3);letter-spacing:0}
 .cv-body{max-width:1280px;margin:0 auto;padding:28px var(--space-lg) 48px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
@@ -3789,6 +3790,15 @@ $('mpList').addEventListener('click',function(e){
   }
   window.addEventListener('error',function(e){if(e&&e.message&&!/ResizeObserver|Script error\.?$/.test(e.message))show(e.message+(e.lineno?' @'+e.lineno:''))});
   window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;show((r&&(r.message||r.name))||String(r))});
+})();
+
+/* 위쪽 메뉴(상품 메뉴·상담 단계)가 고정돼 있어서, 그 아래에 붙는 요소들이 겹치지 않게 높이를 재요 */
+(function(){
+  var g=document.querySelector('.gnb'),f=document.getElementById('flow');if(!g)return;
+  function set(){var gh=g.offsetHeight,fh=(f&&!f.hidden)?f.offsetHeight:0,r=document.documentElement.style;r.setProperty('--gnbh',gh+'px');r.setProperty('--stk',(gh+fh)+'px')}
+  set();window.addEventListener('resize',set);
+  if(window.ResizeObserver){var ro=new ResizeObserver(set);ro.observe(g);if(f)ro.observe(f)}
+  if(f&&window.MutationObserver)new MutationObserver(set).observe(f,{attributes:true,attributeFilter:['hidden']});
 })();
 function clipImages(e){ // 붙여넣기에서 사진 꺼내기(사파리는 files가 비고 items에만 들어 있을 때가 있어요)
   var cd=e.clipboardData,out=[];if(!cd)return out;
