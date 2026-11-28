@@ -3814,11 +3814,11 @@ $('mpList').addEventListener('click',function(e){
 })();
 
 /* ───── 인터넷 없이 쓰기: 서비스 워커가 POS 화면·가격표 파일을 기기에 저장해 둬요 ───── */
-var OFF={ready:false,n:0,total:8,sw:false};
+var OFF={ready:false,n:0,total:8,sw:false,persist:null};
 function offText(){
   if(!('serviceWorker' in navigator))return '이 브라우저는 오프라인 저장을 지원하지 않아요.';
   var t=OFF.ready?'✅ 인터넷 없이 열 준비가 끝났어요':(OFF.sw?'⏳ 준비 중이에요(잠시 뒤 다시 확인해 주세요)':'⚠ 아직 준비 전이에요(인터넷이 되는 곳에서 이 화면을 한 번 더 열어 주세요)');
-  return t+' · 저장된 파일 '+OFF.n+'/'+OFF.total+' · 지금 '+(navigator.onLine?'인터넷 연결됨':'인터넷 없음(오프라인)');
+  return t+' · 저장된 파일 '+OFF.n+'/'+OFF.total+(OFF.persist===null?'':' · 저장 공간 보호 '+(OFF.persist?'켜짐':'꺼짐(홈 화면 앱으로 설치하면 더 안전해요)'))+' · 지금 '+(navigator.onLine?'인터넷 연결됨':'인터넷 없음(오프라인)');
 }
 function offCheck(){
   if(!('caches' in window))return Promise.resolve();
@@ -3830,6 +3830,7 @@ function offCheck(){
 }
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){
   navigator.serviceWorker.register('sw.js').then(function(){setTimeout(offCheck,2500)}).catch(function(){});
+  try{if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().then(function(v){OFF.persist=!!v;offCheck()}).catch(function(){});if(navigator.storage.persisted)navigator.storage.persisted().then(function(v){OFF.persist=!!v}).catch(function(){})}}catch(e){} // 브라우저가 사진·설정을 임의로 지우지 않게 보호를 요청해요
   navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='pos-precache-done'){offCheck();toast('오프라인용 파일을 다시 받았어요')}});
 }
 setInterval(function(){if(document.getElementById('offInfo'))offCheck()},4000);
