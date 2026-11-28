@@ -776,6 +776,7 @@ select.pin{height:36px;font-weight:700;font-size:14px}
   </div>
   <button class="gear" type="button" id="openCart" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 4h2.6l2.4 11.2h10.8L20.6 7.5H6.2"/><circle cx="9.2" cy="19.4" r="1.3"/><circle cx="17" cy="19.4" r="1.3"/></svg>장바구니<b class="badge num" id="cartN">0</b></button>
   <button class="gear" type="button" id="openRec" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>기록</button>
+  <button class="gear" type="button" id="cloudBadge" hidden aria-live="polite" title="눌러서 지금 동기화"></button>
   <button class="gear" type="button" id="openAdm" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="7" height="7" rx="1.5"/><rect x="13.5" y="4" width="7" height="7" rx="1.5"/><rect x="3.5" y="14" width="7" height="7" rx="1.5"/><path d="M14 17.5h6M17 14.5v6"/></svg>제품 설정</button>
   <button class="gear" type="button" id="openSet" aria-haspopup="dialog" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
 </header>
@@ -2776,10 +2777,10 @@ function renderProdPane(){
     +'<section class="sh-sec"><h4>매장에서 만든 제품 ('+list.length+')</h4><ul class="mlist">'+(list.map(function(c){return '<li><span>'+esc(c.name)+'<small>'+esc([gname[c.group]||'',c.size,c.color,won(c.price)+'원',c.code].filter(Boolean).join(' · '))+'</small></span><button class="btn outl sm" type="button" data-pedit="'+esc(c.code)+'">고치기</button><button class="btn outl sm" type="button" data-pdel="'+esc(c.code)+'" style="color:var(--err);border-color:var(--err)">지우기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>이름·메뉴를 바꾼 제품 ('+named.length+')</h4><ul class="mlist">'+(named.map(function(k){var o=k.slice(k.indexOf('|')+1);return '<li><span>'+esc(SET.names[k]||o)+'<small>가격표 이름 '+esc(o)+(SET.moved[k]?' · '+esc(gname[k.split('|')[0]]||'')+' → '+esc(gname[SET.moved[k]]||''):'')+'</small></span><button class="btn outl sm" type="button" data-prev="'+esc(k)+'">되돌리기</button></li>'}).join('')||'<li class="none">없어요. 제품을 고른 뒤 「기본 정보」에서 바꿔요.</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>삭제한 제품 ('+SET.deleted.filter(function(d){return !d.gone}).length+')</h4><ul class="mlist">'+(SET.deleted.map(function(d,i){if(d.gone)return '';return '<li><span>'+esc(d.name)+'<small>'+esc(gname[d.id.split('|')[0]]||'')+'</small></span><button class="btn outl sm" type="button" data-pundel="'+i+'">되살리기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul>'+(SET.deleted.some(function(d){return !d.gone})?'<div class="sh-foot"><button class="btn outl" type="button" data-prpurge="1" style="color:#e5252a">삭제 목록 비우기 (되살리기 불가)</button></div>':'')+'</section>'
-    +'<section class="sh-sec"><h4>사진·제품 설정 클라우드 동기화 (모든 기기에서 보기)</h4><p class="hint">사진은 기기마다 따로 저장돼서 PC에서 넣은 사진이 아이패드에는 안 보여요. 회사 저장소(비공개)에 올려 두면 모든 기기가 열 때 자동으로 받아 가요. 보통 <b>사진을 관리하는 매장 PC 한 대만</b> 「이 기기에서 올리기」를 켜고, 나머지 기기는 보기만 해요. 올라가는 것: 사진, 상세페이지, 슬라이드 순서, 옵션 순서·이름·설명, 가격 수정, 메뉴 설정 (할인·결제·상담 기록은 안 올라가요).</p>'
+    +'<section class="sh-sec"><h4>사진·제품 설정 클라우드 동기화 (모든 기기에서 보기)</h4><p class="hint">사진은 기기마다 따로 저장돼서 PC에서 넣은 사진이 아이패드에는 안 보여요. 회사 저장소(비공개)에 올려 두면 모든 기기가 열 때 자동으로 받아 가요. 올라가는 것: 사진, 상세페이지, 슬라이드 순서, 옵션 순서·이름·설명, 제품 삭제·숨김, 가격 수정, 메뉴 설정, 할인·결제 설정 (상담 기록·장바구니·비밀번호는 안 올라가요).</p>'
     +'<p class="hint">쓰기 토큰이 저장된 기기는 사진·제품 설정을 <b>자동으로 올리고 받아요</b>(어느 기기에서 고치든 모든 기기가 같아져요). 읽기 토큰만 있는 기기는 받기만 해요.</p>'
     +'<p class="hint" id="cloudInfo">'+esc(cloudInfoText())+'</p>'
-    +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn" type="button" data-pp="cloudsync">지금 동기화</button><button class="btn outl" type="button" data-pp="cloudall">이 기기의 사진·설정 전부 올리기</button></div></section>'
+    +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn" type="button" data-pp="cloudsync">지금 동기화</button><button class="btn outl" type="button" data-pp="cloudall">이 기기의 사진·설정 전부 올리기</button><button class="btn outl" type="button" data-pp="cloudforce">클라우드와 똑같이 맞추기(받기 우선)</button></div></section>'
     +'<section class="sh-sec"><h4>연결 안 된 사진 점검</h4><p class="hint">저장해 둔 사진인데 화면에 안 보일 때 눌러 보세요. 제품 이름이 바뀌어(타입 묶기·합치기·가격표 교체 등) 연결이 끊긴 사진을 찾아서, 가까운 제품에 다시 이어 줘요(사진 파일은 그대로 두고 연결 이름만 옮겨요).</p><div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-pp="orph">사진 점검하기</button></div><ul class="mlist" id="orphList"></ul></section>'
     +'<section class="sh-sec"><h4>사진 백업</h4><p class="hint">사진은 이 기기에만 저장돼요. 다른 태블릿으로 옮기거나 기기를 바꿀 때 백업 파일을 내보내 그 기기에서 불러와요. 예전 POS의 사진 백업 파일도 불러올 수 있어요. 지금 사진 '+PHOTO.size+'장.</p>'
     +'<div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-pp="phexp">백업 내보내기</button><label class="btn outl" style="cursor:pointer"><input type="file" id="phImp" accept="application/json,.json" hidden>백업 불러오기</label></div></section>'
@@ -2873,6 +2874,14 @@ $('prodPane').addEventListener('click',function(e){
   else if(a==='phexp')exportPhotos();
   else if(a==='orph')checkOrphans();
   else if(a==='cloudsync'){cloudPush().then(function(){return cloudPull(true)})}
+  else if(a==='cloudforce'){
+    var cf0=cloudCfg();if(!cf0.repo||!(cf0.rt||cf0.wt)){toast('저장소·토큰이 없어요');return}
+    if(confirm('이 기기를 클라우드와 똑같이 맞춰요. 이 기기에서만 바꾼 설정과 클라우드에 없는 사진은 지워져요. 계속할까요?')){
+      var fm=cloudMeta();fm.kat={};fm.cfgAt=0;fm.setDirty=0;fm.q={put:{},del:{}};fm.synced={};
+      PHOTO.forEach(function(u,id){if(/^(model|code|mp|detail):/.test(id))fm.synced[id]=PHOTO_AT[id]||1});
+      cloudMetaSave(fm);CL.busy=false;cloudPull(true);
+    }
+  }
   else if(a==='cloudall'){if(!cloudOn()){toast('올리려면 앱 설정의 「지시함 연결」에 쓰기 토큰을 먼저 저장해 주세요');return}if(confirm('이 기기의 사진 '+PHOTO.size+'장과 제품 설정을 모두 클라우드에 올려요. 다른 기기의 같은 설정은 이 기기 것으로 바뀌어요. 계속할까요?'))cloudAll()}
   else if(b.hasAttribute('data-orlink')){linkOrphan(b.getAttribute('data-orlink'),b.getAttribute('data-ormodel'))}
   else if(a==='test'){
@@ -4416,7 +4425,8 @@ function orderAsCalc(o){
    할인율·결제·상담 기록은 올리지 않아요. */
 var CLOUD={dir:'프로젝트/POS사진',br:'pos-photos'};
 var CL={busy:false,t:0,msg:'',applying:false};
-var CL_KEYS=['details','mph','descs','names','moved','merge','deleted','vadd','vedit','vorder','hidden','gifts','aliases','menus'];
+var CL_KEYS=['details','mph','descs','names','moved','merge','deleted','vadd','vedit','vorder','hidden','gifts','aliases','menus',
+  'storeName','mode','modeV','prodDefault','groupRates','itemRates','branchRate','branchDefaultOn','managerRate','instRate','rounding','flow','paybacks']; // 마지막 줄은 할인·결제 설정(상담 기록·장바구니·비밀번호는 올라가지 않아요)
 function cloudCfg(){
   var c={};try{c=JSON.parse(localStorage.getItem('rino-cfg')||'{}')||{}}catch(e){}
   var repo=String(c.repo||'').trim();
@@ -4428,7 +4438,21 @@ function cloudOn(){var c=cloudCfg();return !!(c.repo&&c.wt)}
 function cloudStatus(msg){
   CL.msg=msg||'';var m=cloudMeta();if(msg&&!/중…$/.test(msg)){m.last=Date.now();m.lastMsg=msg;cloudMetaSave(m)}
   var e=document.getElementById('cloudInfo');if(e)e.textContent=cloudInfoText();
+  cloudBadge();
 }
+function cloudBadge(){ // 화면 위쪽에 항상 보이는 동기화 상태(어디서 막혔는지 바로 알 수 있게)
+  var b=document.getElementById('cloudBadge');if(!b)return;
+  var c=cloudCfg(),m=cloudMeta();
+  if(!c.repo||!(c.rt||c.wt)){b.hidden=true;return}
+  var q=m.q||{},pend=Object.keys(q.put||{}).length+Object.keys(q.del||{}).length+(m.setDirty?1:0),t,bad=false;
+  if(CL.busy)t='☁ 동기화 중…';
+  else if(/실패/.test(CL.msg||m.lastMsg||'')&&!/완료/.test(CL.msg||''))t='☁ ⚠ 동기화 실패',bad=true;
+  else if(!c.wt)t='☁ 보기 전용'+(m.last?' · '+new Date(m.last).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'');
+  else if(pend)t='☁ 올릴 것 '+pend+'건';
+  else t='☁ 동기화됨'+(m.last?' · '+new Date(m.last).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'');
+  b.hidden=false;b.textContent=t;b.style.color=bad?'#d92d20':'';b.title=(CL.msg||m.lastMsg||'')+' (눌러서 지금 동기화)';
+}
+setInterval(function(){try{cloudBadge()}catch(e){}},15000);
 function cloudInfoText(){
   var c=cloudCfg(),m=cloudMeta(),q=m.q||{},pend=Object.keys(q.put||{}).length+Object.keys(q.del||{}).length+(m.setDirty?1:0);
   if(!c.repo)return '아직 연결 전이에요. 이 기기의 앱 설정(Linus Company 작업 폴더 불러오기)에 저장소 주소(예: linus707/SOLAMEN)와 읽기 토큰을 저장하면 받아 와요. 올리는 기기는 「지시함 연결」의 쓰기 토큰도 필요해요.';
@@ -4488,12 +4512,15 @@ function cfgVal(k){return k==='prices'?PRICES:k==='custom'?customList():SET[k]}
 function hs(t){var h=5381;for(var i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;return h+':'+t.length}
 function cfgHash(k){var v=cfgVal(k);return hs(v===undefined?'':JSON.stringify(v))}
 function cloudKeysInit(){ // 처음 한 번: 예전에 올리던 기기면 지금 설정을 최신으로, 아니면 지금 상태를 기준으로 삼아요
-  var m=cloudMeta();if(m.kh)return;m.kh={};m.kat=m.kat||{};
+  var m=cloudMeta();
+  if(m.kh){ // 새로 동기화 대상이 된 항목(예: 할인·결제 설정)은 지금 값을 기준으로만 삼고, 최신으로 올리지는 않아요(기본값이 다른 기기를 덮어쓰지 않게)
+    var add=0;CFG_KEYS.forEach(function(k){if(m.kh[k]===undefined){m.kh[k]=cfgHash(k);add=1}});if(add)cloudMetaSave(m);return}
+  m.kh={};m.kat=m.kat||{};
   CFG_KEYS.forEach(function(k){m.kh[k]=cfgHash(k);if(m.up)m.kat[k]=Date.now()});
   if(m.up&&cloudOn())m.setDirty=1;cloudMetaSave(m);
 }
 function cloudSetDirty(){ // 설정이 바뀐 항목만 시각을 적어 둬요(여러 기기가 서로 다른 항목을 고쳐도 합쳐져요)
-  if(CL.applying||!cloudOn())return;if(!cloudMeta().kh)cloudKeysInit();var m=cloudMeta();m.kh=m.kh||{};m.kat=m.kat||{};var ch=0;
+  if(CL.applying||!cloudOn())return;cloudKeysInit();var m=cloudMeta();m.kh=m.kh||{};m.kat=m.kat||{};var ch=0;
   CFG_KEYS.forEach(function(k){var h=cfgHash(k);if(m.kh[k]!==h){m.kh[k]=h;m.kat[k]=Date.now();ch=1}});
   if(!ch)return;m.setDirty=1;cloudMetaSave(m);cloudSchedule();
 }
@@ -4593,7 +4620,8 @@ function cloudAll(){ // 이 기기의 사진·설정을 전부 올릴 목록에 
   PHOTO.forEach(function(u,id){if(/^(model|code|mp|detail):/.test(id))m.q.put[id]=1});
   m.kat=m.kat||{};CFG_KEYS.forEach(function(k){m.kat[k]=Date.now()});m.setDirty=1;cloudMetaSave(m);cloudSchedule();cloudStatus('올릴 목록을 만들었어요 · 곧 올려요');
 }
-function cloudTick(){cloudPush().then(function(){return cloudPull(false)})}
+function cloudTick(){cloudPush().then(function(){return cloudPull(false)}).then(cloudBadge)}
+setTimeout(function(){var b=document.getElementById('cloudBadge');if(b){b.addEventListener('click',function(){cloudStatus('확인 중…');cloudPush().then(function(){return cloudPull(true)})});cloudBadge()}},0);
 setTimeout(function(){cloudKeysInit();cloudTick()},3500);
 setInterval(function(){if(!document.hidden)cloudTick()},60*1000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)cloudTick()});
