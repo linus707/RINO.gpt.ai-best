@@ -1,25 +1,28 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { LockBadge, Tag } from '@/components/Badges';
 import { Button } from '@/components/Button';
-import { PlaceRow } from '@/components/Cards';
 import { EmptyState } from '@/components/EmptyState';
+import { ImportSheet } from '@/components/ImportSheet';
+import { RedeemSheet } from '@/components/RedeemSheet';
 import { Screen } from '@/components/Screen';
+import { StopRow } from '@/components/StopRow';
 import { Suitcase } from '@/components/Suitcase';
 import { color, radius, space } from '@/constants/design';
-import { guidebookById } from '@/features/guidebooks/data';
-import { placeById } from '@/features/places/data';
-import { ourToResolved } from '@/features/places/hooks';
-import { useIsPurchased } from '@/features/purchases/hooks';
+import { useGuidebook } from '@/features/guidebooks/hooks';
 import { PURCHASE_ENABLED } from '@/lib/iap';
 
-/** 가이드북 상세 — 목차 + 첫날 무료 미리보기. 구매 전 본문 잠금 (로그인 없이 열람 가능) */
+/** 가이드북 상세 — 목차(누구나) + 1일차 무료 미리보기. 보유하면 전체 코스·내 일정으로 불러오기 */
 export default function GuidebookDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const book = guidebookById(id);
-  const { data: purchased } = useIsPurchased(id);
-  if (!book) return <Screen><EmptyState title="가이드북을 찾을 수 없어요" description="스토어에서 다시 골라 주세요." /></Screen>;
+  const { book, owned, isLoading } = useGuidebook(id);
+  const [redeemOpen, setRedeemOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  if (!book) return <Screen>{isLoading ? <AppText color={color.sub}>불러오는 중…</AppText> : <EmptyState title="가이드북을 찾을 수 없어요" description="스토어에서 다시 골라 주세요." />}</Screen>;
+  const preview = book.stops.filter((s) => s.day <= book.previewDays);
+
   return (
     <Screen edges={['bottom']}>
       <Stack.Screen options={{ title: book.title }} />
@@ -29,34 +32,40 @@ export default function GuidebookDetail() {
         <AppText v="caption" color={color.white}>{book.theme}</AppText>
       </View>
       <View style={s.meta}>
-        <AppText v="bodyBold">가격 미정</AppText>
-        {book.isSample ? <Tag label="샘플" tone="outline" /> : null}
+        <AppText v="bodyBold">{owned ? '보유 중' : '가격 미정'}</AppText>
+        <View style={{ flexDirection: 'row', gap: space.xs }}>
+          {owned ? <Tag label="전체 코스 열림" /> : null}
+          {book.isSample ? <Tag label="샘플" tone="outline" /> : null}
+        </View>
       </View>
 
       <AppText v="subtitle" style={{ marginTop: space.xl, marginBottom: space.sm }}>목차</AppText>
       {book.toc.map((t, i) => (
         <View key={t} style={s.toc}>
           <AppText v="body" style={{ flex: 1 }}>{i + 1}일차 · {t}</AppText>
-          {i < book.previewDays || purchased ? <AppText v="caption" color={color.sub}>열람 가능</AppText> : <LockBadge />}
+          {i < book.previewDays || owned ? <AppText v="caption" color={color.sub}>열람 가능</AppText> : <LockBadge />}
         </View>
       ))}
 
-      <AppText v="subtitle" style={{ marginTop: space.xl, marginBottom: space.sm }}>1일차 무료 미리보기</AppText>
-      {book.previewPlaceIds.map((pid, i) => {
-        const p = placeById(pid);
-        return p ? <PlaceRow key={pid} place={ourToResolved(p)} order={i + 1} /> : null;
-      })}
-
-      <View style={{ gap: space.sm, marginTop: space.xl }}>
-        {purchased ? (
+      {owned ? (
+        <View style={{ gap: space.sm, marginTop: space.xl }}>
           <Button label="전체 코스 보기" onPress={() => router.push(`/guidebook/${book.id}/course`)} />
-        ) : (
-          <>
-            <Button label={PURCHASE_ENABLED ? '구매하기' : '구매하기 (Phase 4에서 연결)'} disabled={!PURCHASE_ENABLED} />
-            <AppText v="caption" color={color.sub}>앱은 스토어 인앱결제, 웹은 외부 결제로 연결돼요. 구매한 코스는 무료 횟수와 관계없이 내 일정으로 불러올 수 있어요.</AppText>
-          </>
-        )}
-      </View>
+          <Button label="내 일정으로 불러오기" variant="secondary" onPress={() => setImportOpen(true)} />
+          <AppText v="caption" color={color.sub}>불러온 일정은 무료 횟수와 관계없이 자유롭게 고칠 수 있어요.</AppText>
+        </View>
+      ) : (
+        <>
+          <AppText v="subtitle" style={{ marginTop: space.xl, marginBottom: space.sm }}>1일차 무료 미리보기</AppText>
+          {preview.map((st, i) => <StopRow key={`${st.day}-${st.order}`} stop={st} order={i + 1} />)}
+          <View style={{ gap: space.sm, marginTop: space.xl }}>
+            <Button label={PURCHASE_ENABLED ? '구매하기' : '구매하기 (결제 연결 준비 중)'} disabled={!PURCHASE_ENABLED} />
+            <Button label="이용권 코드가 있어요" variant="secondary" onPress={() => setRedeemOpen(true)} />
+            <AppText v="caption" color={color.sub}>이벤트·베타 테스트로 받은 코드를 넣으면 전체 코스가 열려요.</AppText>
+          </View>
+        </>
+      )}
+      <RedeemSheet visible={redeemOpen} onClose={() => setRedeemOpen(false)} />
+      <ImportSheet book={book} visible={importOpen} onClose={() => setImportOpen(false)} />
     </Screen>
   );
 }

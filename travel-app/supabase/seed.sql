@@ -14,9 +14,21 @@ insert into public.places (id, name, category, lat, lng, area, note, source) val
   ('osk-shinsekai', '츠텐카쿠·신세카이', 'photo', 34.6525, 135.5063, '신세카이', '촬영 팁: 네온 간판, 야간 모드', 'sample')
 on conflict (id) do nothing;
 
-insert into public.guidebook_days (guidebook_id, day_number, title, place_ids) values
-  ('osaka-3n4d', 1, '난바 도착과 도톤보리 밤', array['osk-namba-stay','osk-dotonbori','osk-shinsaibashi']),
-  ('osaka-3n4d', 2, '오사카성과 강변 산책', array['osk-castle','osk-nakazakicho']),
-  ('osaka-3n4d', 3, '우메다 전망과 신세카이 네온', array['osk-umeda-sky','osk-shinsekai']),
-  ('osaka-3n4d', 4, '시장 아침 후 출국', array['osk-kuromon'])
+insert into public.guidebook_days (guidebook_id, day_number, title) values
+  ('osaka-3n4d', 1, '난바 도착과 도톤보리 밤'),
+  ('osaka-3n4d', 2, '오사카성과 강변 산책'),
+  ('osaka-3n4d', 3, '우메다 전망과 신세카이 네온'),
+  ('osaka-3n4d', 4, '시장 아침 후 출국')
 on conflict (guidebook_id, day_number) do nothing;
+
+-- 오사카 3박 4일 코스 + 리노의 팁 (샘플 문구 — 판매 전에 직접 다녀온 내용과 공식 정보로 교체)
+insert into public.guidebook_stops (guidebook_id, day_number, sort_order, place_id, tip) values
+  ('osaka-3n4d', 1, 0, 'osk-namba-stay', '첫날은 난바 권역에 짐을 풀면 공항 열차와 저녁 동선이 짧아져요.'),
+  ('osaka-3n4d', 1, 1, 'osk-dotonbori', '해가 진 뒤 강 건너편 다리에서 간판이 물에 비치는 구도로 찍어 보세요.'),
+  ('osaka-3n4d', 1, 2, 'osk-shinsaibashi', '아케이드라 비 오는 날 대체 코스로도 좋아요.'),
+  ('osaka-3n4d', 2, 0, 'osk-castle', '천수각 입장 여부와 시간은 방문 전 공식 사이트에서 확인하세요.'),
+  ('osaka-3n4d', 2, 1, 'osk-nakazakicho', '골목 카페가 모여 있어 오후 휴식 지점으로 넣었어요.'),
+  ('osaka-3n4d', 3, 0, 'osk-umeda-sky', '해 질 녘 30분 전에 올라가면 낮·노을·야경을 한 번에 담을 수 있어요.'),
+  ('osaka-3n4d', 3, 1, 'osk-shinsekai', '네온 간판은 아이폰 야간 모드보다 노출을 살짝 낮추는 편이 선명해요.'),
+  ('osaka-3n4d', 4, 0, 'osk-kuromon', '출국 전 아침 식사 코스. 공항 가는 열차 시간을 먼저 정하고 움직이세요.')
+on conflict (guidebook_id, day_number, sort_order) do nothing;

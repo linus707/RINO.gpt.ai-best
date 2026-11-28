@@ -14,6 +14,7 @@ import { SignupNudge } from '@/components/SignupNudge';
 import { useAccount } from '@/features/auth/hooks';
 import { color, font, radius, space } from '@/constants/design';
 import { GUIDEBOOKS } from '@/features/guidebooks/data';
+import { useGuidebooks, useOwned } from '@/features/guidebooks/hooks';
 import { useTrips } from '@/features/trips/hooks';
 import { useUsage } from '@/features/usage/hooks';
 import { isDemoMode } from '@/lib/env';
@@ -30,6 +31,8 @@ export default function Home() {
   const { data: usage } = useUsage();
   const selectTrip = useAppStore((s) => s.selectTrip);
   const account = useAccount();
+  const books = useGuidebooks().data ?? GUIDEBOOKS;
+  const { data: owned } = useOwned();
   const goNew = () => router.push('/trip/new');
 
   return (
@@ -91,12 +94,12 @@ export default function Home() {
 
         <SectionHeader title="지금 인기 있는 코스" actionLabel="가이드북 전체" onAction={() => router.push('/store')} />
         <View style={[s.grid, { flexDirection: cols === 1 ? 'column' : 'row' }]}>
-          {GUIDEBOOKS.map((b) => (
+          {books.map((b) => (
             <View key={b.id} style={cols === 1 ? s.cellFull : { flex: 1 }}>
-              <GuidebookCard book={b} onPress={() => router.push(`/guidebook/${b.id}`)} />
+              <GuidebookCard book={b} purchased={!!owned?.includes(b.id)} onPress={() => router.push(`/guidebook/${b.id}`)} />
             </View>
           ))}
-          {cols > 1 ? Array.from({ length: cols - GUIDEBOOKS.length }, (_, i) => (
+          {cols > 1 ? Array.from({ length: Math.max(0, cols - books.length) }, (_, i) => (
             <View key={i} style={{ flex: 1 }}><ComingSoonCard city={['도쿄', '후쿠오카'][i] ?? '다음 도시'} /></View>
           )) : null}
         </View>

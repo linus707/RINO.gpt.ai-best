@@ -13,6 +13,8 @@ import { deleteAccount, signOut } from '@/features/auth/api';
 import { useAccount } from '@/features/auth/hooks';
 import { shortDate } from '@/features/trips/dates';
 import { useExport } from '@/features/export/hooks';
+import { GUIDEBOOKS } from '@/features/guidebooks/data';
+import { useGuidebooks, useOwned } from '@/features/guidebooks/hooks';
 import { useLists } from '@/features/lists/hooks';
 import { useSaved } from '@/features/saved/hooks';
 import { useTrips } from '@/features/trips/hooks';
@@ -34,6 +36,9 @@ export default function MyPage() {
   const { data: saved } = useSaved();
   const { data: lists } = useLists();
   const exp = useExport();
+  const { data: owned } = useOwned();
+  const books = useGuidebooks().data ?? GUIDEBOOKS;
+  const mine = books.filter((b) => owned?.includes(b.id));
   const qc = useQueryClient();
   const [confirm, setConfirm] = useState<'logout' | 'delete' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -78,7 +83,15 @@ export default function MyPage() {
         {trips?.length ? trips.map((t) => <AppText key={t.id} v="caption" color={color.sub}>{t.city} · {shortDate(t.startDate)} – {shortDate(t.endDate)}</AppText>)
           : <AppText v="caption" color={color.sub}>아직 없어요</AppText>}
       </Box>
-      <Box title="구매한 가이드북"><AppText v="caption" color={color.sub}>아직 없어요 · 가이드북 탭에서 첫날 미리보기를 볼 수 있어요</AppText></Box>
+      <Box title={`내 가이드북 ${mine.length}권`}>
+        {mine.length ? mine.map((b) => (
+          <View key={b.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.xs }}>
+            <AppText v="body" style={{ flex: 1 }}>{b.title}</AppText>
+            <Button label="코스 보기" variant="secondary" onPress={() => router.push(`/guidebook/${b.id}/course`)} style={{ minHeight: 36 }} />
+          </View>
+        )) : <AppText v="caption" color={color.sub}>아직 없어요 · 가이드북 탭에서 첫날 미리보기를 보거나 이용권 코드를 등록해요</AppText>}
+        {mine.length ? <AppText v="caption" color={color.sub} style={{ marginTop: space.sm }}>코스 화면에서 언제든 다시 내 일정으로 불러올 수 있어요.</AppText> : null}
+      </Box>
       <Box title={`저장한 장소 ${saved?.length ?? 0}곳 · 내 모음 ${lists?.length ?? 0}개`}>
         <AppText v="caption" color={color.sub}>{saved?.length ? '하트 누른 장소, 내 메모·별점, 직접 만든 모음을 모아 봐요' : '장소 탐색에서 하트를 누르면 여기 모여요'}</AppText>
         <Button label="저장한 장소·모음 보기" variant="secondary" onPress={() => router.push('/saved')} style={{ marginTop: space.md }} />

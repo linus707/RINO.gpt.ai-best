@@ -19,6 +19,8 @@ type DemoState = {
   setLists: (lists: PlaceList[]) => void;
   stays: StayCandidate[];
   setStays: (stays: StayCandidate[]) => void;
+  owned: string[]; // 데모에서 코드로 연 가이드북
+  setOwned: (owned: string[]) => void;
   addTrip: (trip: Trip) => void;
   setTrips: (trips: Trip[]) => void;
   reset: () => void;
@@ -35,9 +37,11 @@ export const useDemoStore = create<DemoState>()(
       setLists: (lists) => set({ lists }),
       stays: [],
       setStays: (stays) => set({ stays }),
+      owned: [],
+      setOwned: (owned) => set({ owned }),
       addTrip: (trip) => set((s) => ({ trips: [trip, ...s.trips], freeUsed: s.freeUsed + 1 })),
       setTrips: (trips) => set({ trips }),
-      reset: () => set({ trips: [], freeUsed: 0, saved: [], lists: [], stays: [] }),
+      reset: () => set({ trips: [], freeUsed: 0, saved: [], lists: [], stays: [], owned: [] }),
     }),
     { name: 'rino-trip-demo', storage: createJSONStorage(() => AsyncStorage) },
   ),

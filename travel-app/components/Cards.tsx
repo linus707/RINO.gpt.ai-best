@@ -38,8 +38,8 @@ export function GuidebookCard({ book, purchased, onPress }: { book: Guidebook; p
       <AppText v="body" style={{ marginTop: space.sm }}>{book.theme}</AppText>
       <AppText v="caption" color={color.sub}>{book.city} · {book.days}일 코스{book.isSample ? ' · 샘플' : ''}</AppText>
       <View style={s.bookFoot}>
-        <AppText v="bodyBold">가격 미정</AppText>
-        {purchased ? <Tag label="구매함" tone="outline" /> : <LockBadge />}
+        <AppText v="bodyBold">{purchased ? '전체 코스 열림' : '가격 미정'}</AppText>
+        {purchased ? <Tag label="보유 중" tone="outline" /> : <LockBadge />}
       </View>
     </Pressable>
   );
