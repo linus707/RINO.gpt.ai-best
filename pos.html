@@ -13,6 +13,11 @@
 <title>매장 POS · ACE BED</title>
 <meta name="pos-build" content="__BUILD__">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="pos.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="매장 POS">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <!-- 글꼴은 화면을 막지 않고 뒤늦게 입혀요(인터넷이 느려도 POS가 바로 떠요). 못 받으면 맑은 고딕·시스템 글꼴을 써요 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
@@ -2778,6 +2783,7 @@ function renderProdPane(){
     +'<section class="sh-sec"><h4>매장에서 만든 제품 ('+list.length+')</h4><ul class="mlist">'+(list.map(function(c){return '<li><span>'+esc(c.name)+'<small>'+esc([gname[c.group]||'',c.size,c.color,won(c.price)+'원',c.code].filter(Boolean).join(' · '))+'</small></span><button class="btn outl sm" type="button" data-pedit="'+esc(c.code)+'">고치기</button><button class="btn outl sm" type="button" data-pdel="'+esc(c.code)+'" style="color:var(--err);border-color:var(--err)">지우기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>이름·메뉴를 바꾼 제품 ('+named.length+')</h4><ul class="mlist">'+(named.map(function(k){var o=k.slice(k.indexOf('|')+1);return '<li><span>'+esc(SET.names[k]||o)+'<small>가격표 이름 '+esc(o)+(SET.moved[k]?' · '+esc(gname[k.split('|')[0]]||'')+' → '+esc(gname[SET.moved[k]]||''):'')+'</small></span><button class="btn outl sm" type="button" data-prev="'+esc(k)+'">되돌리기</button></li>'}).join('')||'<li class="none">없어요. 제품을 고른 뒤 「기본 정보」에서 바꿔요.</li>')+'</ul></section>'
     +'<section class="sh-sec"><h4>삭제한 제품 ('+SET.deleted.filter(function(d){return !d.gone}).length+')</h4><ul class="mlist">'+(SET.deleted.map(function(d,i){if(d.gone)return '';return '<li><span>'+esc(d.name)+'<small>'+esc(gname[d.id.split('|')[0]]||'')+'</small></span><button class="btn outl sm" type="button" data-pundel="'+i+'">되살리기</button></li>'}).join('')||'<li class="none">없어요</li>')+'</ul>'+(SET.deleted.some(function(d){return !d.gone})?'<div class="sh-foot"><button class="btn outl" type="button" data-prpurge="1" style="color:#e5252a">삭제 목록 비우기 (되살리기 불가)</button></div>':'')+'</section>'
+    +'<section class="sh-sec" id="offSec"><h4>인터넷 없이 쓰기 (오프라인)</h4><p class="hint">이 화면(매장 POS)은 <b>한 번 인터넷으로 열어 두면</b> 이후에는 인터넷이 없어도 열려요. 제품·사진·가격·상담 기록은 이 기기에 저장돼 있어서 인터넷 없이도 상담·견적이 돼요. 클라우드 동기화(사진·설정 올리기·받기)만 인터넷이 다시 연결될 때 자동으로 이어져요.</p><p class="hint" id="offInfo">'+esc(offText())+'</p><div class="sh-foot" style="justify-content:flex-start"><button class="btn outl" type="button" data-pp="offrefresh">오프라인용 다시 받기</button></div><p class="hint">아이패드: Safari에서 <b>pos.html 주소</b>를 열고 <b>공유 ▸ 홈 화면에 추가</b>를 눌러 앱으로 쓰세요(와이파이가 되는 곳에서 한 번 열어 두기). PC(크롬·엣지): 주소창 오른쪽의 <b>설치</b> 아이콘으로 앱으로 설치하면 돼요.</p></section>'
     +'<section class="sh-sec"><h4>사진·제품 설정 클라우드 동기화 (모든 기기에서 보기)</h4><p class="hint">사진은 기기마다 따로 저장돼서 PC에서 넣은 사진이 아이패드에는 안 보여요. 회사 저장소(비공개)에 올려 두면 모든 기기가 열 때 자동으로 받아 가요. 올라가는 것: 사진, 상세페이지, 슬라이드 순서, 옵션 순서·이름·설명, 제품 삭제·숨김, 가격 수정, 메뉴 설정, 할인·결제 설정 (상담 기록·장바구니·비밀번호는 안 올라가요).</p>'
     +'<p class="hint">쓰기 토큰이 저장된 기기는 사진·제품 설정을 <b>자동으로 올리고 받아요</b>(어느 기기에서 고치든 모든 기기가 같아져요). 읽기 토큰만 있는 기기는 받기만 해요.</p>'
     +'<p class="hint" id="cloudInfo">'+esc(cloudInfoText())+'</p>'
@@ -2875,6 +2881,12 @@ $('prodPane').addEventListener('click',function(e){
   else if(a==='phexp')exportPhotos();
   else if(a==='orph')checkOrphans();
   else if(a==='cloudsync'){cloudPush().then(function(){return cloudPull(true)})}
+  else if(a==='offrefresh'){
+    if(!navigator.onLine){toast('인터넷이 연결된 곳에서 눌러 주세요');return}
+    var sw0=navigator.serviceWorker&&navigator.serviceWorker.controller;
+    if(sw0){sw0.postMessage({type:'pos-precache'});toast('오프라인용 파일을 받는 중이에요…')}else{toast('아직 준비 중이에요. 이 화면을 한 번 새로고침한 뒤 다시 눌러 주세요')}
+    setTimeout(offCheck,3000);
+  }
   else if(a==='cloudforce'){
     var cf0=cloudCfg();if(!cf0.repo||!(cf0.rt||cf0.wt)){toast('저장소·토큰이 없어요');return}
     if(confirm('이 기기를 클라우드와 똑같이 맞춰요. 이 기기에서만 바꾼 설정과 클라우드에 없는 사진은 지워져요. 계속할까요?')){
@@ -3800,6 +3812,29 @@ $('mpList').addEventListener('click',function(e){
   if(window.ResizeObserver){var ro=new ResizeObserver(set);ro.observe(g);if(f)ro.observe(f)}
   if(f&&window.MutationObserver)new MutationObserver(set).observe(f,{attributes:true,attributeFilter:['hidden']});
 })();
+
+/* ───── 인터넷 없이 쓰기: 서비스 워커가 POS 화면·가격표 파일을 기기에 저장해 둬요 ───── */
+var OFF={ready:false,n:0,total:8,sw:false};
+function offText(){
+  if(!('serviceWorker' in navigator))return '이 브라우저는 오프라인 저장을 지원하지 않아요.';
+  var t=OFF.ready?'✅ 인터넷 없이 열 준비가 끝났어요':(OFF.sw?'⏳ 준비 중이에요(잠시 뒤 다시 확인해 주세요)':'⚠ 아직 준비 전이에요(인터넷이 되는 곳에서 이 화면을 한 번 더 열어 주세요)');
+  return t+' · 저장된 파일 '+OFF.n+'/'+OFF.total+' · 지금 '+(navigator.onLine?'인터넷 연결됨':'인터넷 없음(오프라인)');
+}
+function offCheck(){
+  if(!('caches' in window))return Promise.resolve();
+  var files=['pos.html','prices.json','store-prices.json','pos.webmanifest','icon.svg','icon-180.png','icon-192.png','icon-512.png'];OFF.total=files.length;
+  return caches.open('linus-pos-v1').then(function(c){return Promise.all(files.map(function(f){return c.match(f).then(function(r){return !!r})}))}).then(function(a){
+    OFF.n=a.filter(Boolean).length;OFF.ready=OFF.n>=3&&a[0]&&a[1];OFF.sw=!!(navigator.serviceWorker&&navigator.serviceWorker.controller);
+    var e=document.getElementById('offInfo');if(e)e.textContent=offText();
+  }).catch(function(){});
+}
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){
+  navigator.serviceWorker.register('sw.js').then(function(){setTimeout(offCheck,2500)}).catch(function(){});
+  navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='pos-precache-done'){offCheck();toast('오프라인용 파일을 다시 받았어요')}});
+}
+setInterval(function(){if(document.getElementById('offInfo'))offCheck()},4000);
+window.addEventListener('online',function(){offCheck();try{cloudStatus('인터넷이 다시 연결됐어요 · 동기화를 이어가요');cloudTick()}catch(e){}});
+window.addEventListener('offline',function(){offCheck();try{cloudBadge()}catch(e){}});
 function clipImages(e){ // 붙여넣기에서 사진 꺼내기(사파리는 files가 비고 items에만 들어 있을 때가 있어요)
   var cd=e.clipboardData,out=[];if(!cd)return out;
   Array.prototype.forEach.call(cd.files||[],function(f){if(/^image\//.test(f.type))out.push(f)});
@@ -4455,6 +4490,7 @@ function cloudBadge(){ // 화면 위쪽에 항상 보이는 동기화 상태(어
   var c=cloudCfg(),m=cloudMeta();
   if(!c.repo||!(c.rt||c.wt)){b.hidden=true;return}
   var q=m.q||{},pend=Object.keys(q.put||{}).length+Object.keys(q.del||{}).length+(m.setDirty?1:0),t,bad=false;
+  if(!navigator.onLine){var pn=Object.keys((m.q||{}).put||{}).length+Object.keys((m.q||{}).del||{}).length+(m.setDirty?1:0);b.hidden=false;b.textContent='☁ 오프라인'+(pn?' · 올릴 것 '+pn+'건':'');b.style.color='#6b6b6b';b.title='인터넷이 연결되면 자동으로 이어져요';return}
   if(CL.busy)t='☁ 동기화 중…';
   else if(/실패/.test(CL.msg||m.lastMsg||'')&&!/완료/.test(CL.msg||''))t='☁ ⚠ 동기화 실패',bad=true;
   else if(!c.wt)t='☁ 보기 전용'+(m.last?' · '+new Date(m.last).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'');
@@ -4630,7 +4666,7 @@ function cloudAll(){ // 이 기기의 사진·설정을 전부 올릴 목록에 
   PHOTO.forEach(function(u,id){if(/^(model|code|mp|detail):/.test(id))m.q.put[id]=1});
   m.kat=m.kat||{};CFG_KEYS.forEach(function(k){m.kat[k]=Date.now()});m.setDirty=1;cloudMetaSave(m);cloudSchedule();cloudStatus('올릴 목록을 만들었어요 · 곧 올려요');
 }
-function cloudTick(){cloudPush().then(function(){return cloudPull(false)}).then(cloudBadge)}
+function cloudTick(){if(!navigator.onLine){cloudBadge();return Promise.resolve()}return cloudPush().then(function(){return cloudPull(false)}).then(cloudBadge)}
 setTimeout(function(){var b=document.getElementById('cloudBadge');if(b){b.addEventListener('click',function(){cloudStatus('확인 중…');cloudPush().then(function(){return cloudPull(true)})});cloudBadge()}},0);
 setTimeout(function(){cloudKeysInit();cloudTick()},3500);
 setInterval(function(){if(!document.hidden)cloudTick()},60*1000);
